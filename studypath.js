@@ -43,7 +43,20 @@
     if (window.__op){ const v = window.__op.view; const i = cands.find(k => viewsOf(STOPS[k]).includes(v)); return i === undefined ? -1 : i; }
     return cands[0];
   }
-  if (PAGE === "index.html" || get(KEY) === null) return;
+  if (PAGE === "index.html") return;
+
+  if (get(KEY) === null){
+    const nudgeCss = document.createElement("style");
+    nudgeCss.textContent = `.spnudge{background:#fff;border:2px solid #3f4cc0;border-radius:16px;padding:8px 16px;margin:0 0 12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;font-size:.92rem}
+    .spnudge b{color:#3f4cc0}
+    .spnudge button{font:700 .88rem var(--font,system-ui);border-radius:999px;padding:6px 14px;border:2px solid #3f4cc0;background:#3f4cc0;color:#fff;cursor:pointer}`;
+    document.head.appendChild(nudgeCss);
+    const nudge = document.createElement("div"); nudge.className = "spnudge";
+    nudge.innerHTML = `<span>\u{1F9ED} <b>New here?</b> The Study Path walks you through every module in order.</span><button id="spNudgeGo">Start the Study Path →</button>`;
+    const wrap0 = document.querySelector(".wrap");
+    if (wrap0){ wrap0.insertBefore(nudge, wrap0.firstChild); nudge.querySelector("#spNudgeGo").addEventListener("click", start); }
+    return;
+  }
 
   const css = document.createElement("style");
   css.textContent = `
