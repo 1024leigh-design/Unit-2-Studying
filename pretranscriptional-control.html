@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pre-Transcriptional Control: Operons and More</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d2433; --muted:#5a6376; --page:#eef1f5; --card:#ffffff; --line:#d9dee7;
+    --accent:#3f4cc0; --accent-soft:#e7e9fb;
+    --good:#1b7f4e; --good-soft:#e1f3e8; --warn:#9a6212; --warn-soft:#fbefd9; --bad:#b83a34; --bad-soft:#fbe8e7;
+    --more:#5b3fb0; --more-soft:#f3effd;
+    --font:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font)}
+  .wrap{max-width:1060px;margin:0 auto;padding:18px 16px 30px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+  h1{font-size:1.55rem;line-height:1.15;margin:0;letter-spacing:-0.01em}
+  .sub{color:var(--muted);font-size:.92rem;margin-top:3px}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .seg{display:inline-flex;background:#dfe4ec;border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:700 .95rem var(--font);padding:8px 18px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(29,36,51,.18)}
+  .ghost{border:1px solid var(--line);background:var(--card);font:700 .9rem var(--font);padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--muted)}
+
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--line);margin-bottom:14px}
+  .tabs button{border:0;background:transparent;font:700 1rem var(--font);color:var(--muted);padding:10px 16px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+  .tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+
+  .home h2{font-size:1.3rem;margin:6px 0 4px}
+  .home p.lead{color:var(--muted);margin:0 0 16px;font-size:1.02rem}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:18px;text-align:left;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:8px}
+  .card:hover{border-color:var(--accent)}
+  .card h3{margin:0;font-size:1.2rem}
+  .card p{margin:0;color:var(--muted);line-height:1.5}
+  .card .meta{font-weight:700;color:var(--accent);font-size:.9rem;margin-top:auto}
+  .card svg{width:100%;height:84px}
+
+  .modehint{color:var(--muted);font-size:.92rem;margin:0 0 10px}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  #scene{display:block;width:100%;height:auto;font-family:var(--font);transition:opacity .2s}
+
+  .tablewrap{margin-top:12px;overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+  .tablewrap[hidden]{display:none}
+  .tablewrap .cap{font-weight:700;font-size:.9rem;padding:10px 12px 4px;color:var(--muted)}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:640px}
+  th,td{text-align:left;padding:7px 10px;border-top:1px solid var(--line);vertical-align:top}
+  th{font-size:.8rem;color:var(--muted)}
+  tr.hl td{background:#fff6d6}
+  td.on{color:var(--good);font-weight:700} td.off{color:var(--bad);font-weight:700} td.low{color:var(--warn);font-weight:700}
+  tr.new td{animation:rowin .5s ease}
+  @keyframes rowin{from{background:#fde9a8}to{background:transparent}}
+
+  .bubble{position:relative;margin-top:18px;background:var(--card);border:2px solid var(--accent);border-radius:16px;padding:16px 20px}
+  .bubble::before{content:"";position:absolute;top:-11px;left:52px;width:18px;height:18px;background:var(--card);border-left:2px solid var(--accent);border-top:2px solid var(--accent);transform:rotate(45deg)}
+  .bubble.pop{animation:pop .32s cubic-bezier(.2,.9,.3,1.25)}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .stepno{font-size:.88rem;color:var(--accent);font-weight:700}
+  .title{font-size:1.2rem;font-weight:700;margin:2px 0 8px}
+  .text{font-size:1.06rem;line-height:1.65;margin:0;max-width:80ch}
+  .after{margin:10px 0 0;font-weight:700;color:var(--accent)}
+  .term{background:var(--accent-soft);color:#2c3796;padding:1px 6px;border-radius:6px;white-space:nowrap}
+  .term.correct{background:var(--good-soft);color:var(--good)}
+  .term.revealed{background:var(--warn-soft);color:var(--warn)}
+  input.blank,input.pred{font:700 1rem var(--font);border:0;border-bottom:2px solid var(--accent);background:#f3f4fd;padding:2px 6px;border-radius:6px 6px 0 0;color:var(--ink);min-width:3em;max-width:100%}
+  input.blank:focus,input.pred:focus{outline:2px solid var(--accent);outline-offset:1px;background:var(--accent-soft)}
+  input.wrong{border-bottom-color:var(--bad);background:var(--bad-soft);animation:shake .32s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .check-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+  .check-row[hidden]{display:none}
+  a.btn{text-decoration:none;display:inline-block}
+  .btn{font:700 .96rem var(--font);border-radius:999px;padding:9px 20px;cursor:pointer;border:2px solid var(--accent)}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.secondary{background:#fff;color:var(--accent)}
+  .btn:disabled{opacity:.38;cursor:not-allowed}
+  .feedback{font-weight:700;font-size:.96rem;margin-top:10px;min-height:1.2em}
+  .feedback:empty{min-height:0;margin:0}
+  .feedback.good{color:var(--good)} .feedback.bad{color:var(--bad)} .feedback.warn{color:var(--warn)}
+  .bubble-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+  .more-btn{font:700 .92rem var(--font);border-radius:999px;padding:7px 14px;cursor:pointer;border:2px solid #cbbdf2;background:var(--more-soft);color:var(--more)}
+  .more-note{font-size:.84rem;color:var(--muted)}
+
+  .overlay{position:fixed;inset:0;background:rgba(29,36,51,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+  .overlay[hidden]{display:none}
+  .panel{background:#fff;border-radius:18px;max-width:680px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;border-top:6px solid var(--more)}
+  .panel .ptag{display:inline-block;background:var(--more-soft);color:var(--more);font-weight:700;font-size:.85rem;border-radius:999px;padding:4px 12px}
+  .panel h2{margin:10px 0 8px;font-size:1.3rem}
+  .panel h3{font-size:1.02rem;margin:14px 0 4px;color:var(--more)}
+  .panel p{margin:0 0 8px;line-height:1.6}
+  .panel .close{margin-top:10px}
+
+  .lab{margin-top:4px;display:grid;gap:12px}
+  .opsel{display:flex;flex-wrap:wrap;gap:8px}
+  .opsel button{font:700 .95rem var(--font);border-radius:12px;padding:8px 14px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+  .opsel button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:#2c3796}
+  .opsel .x{display:block;font-size:.72rem;color:var(--more);font-weight:700}
+  .xtag{background:var(--more-soft);color:var(--more);border-radius:10px;padding:8px 12px;font-weight:700;font-size:.9rem}
+  .toggles{display:flex;flex-wrap:wrap;gap:10px}
+  .tog{display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:14px;padding:8px 12px;background:#fff;cursor:pointer;font:700 .98rem var(--font);color:var(--ink)}
+  .tog .sw{width:44px;height:24px;border-radius:12px;background:#cfd5df;position:relative;transition:background .2s}
+  .tog .sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+  .tog[aria-pressed="true"] .sw{background:var(--good)}
+  .tog[aria-pressed="true"] .sw::after{left:23px}
+  .tog:disabled{opacity:.5;cursor:not-allowed}
+  .readout{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border-radius:999px;padding:5px 12px;font-weight:700;font-size:.9rem;background:#eef1f5}
+  .chip.on{background:var(--good-soft);color:var(--good)} .chip.off{background:var(--bad-soft);color:var(--bad)} .chip.low{background:var(--warn-soft);color:var(--warn)}
+  .explain{font-size:1rem;line-height:1.55;margin:0}
+  .predict{background:#fff8e6;border:1px solid #f0d99a;border-radius:12px;padding:10px 12px;line-height:1.9}
+
+  nav.stepnav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .dots{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;flex:1;align-items:center}
+  .dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:#fff;font:700 .72rem var(--font);color:var(--muted);cursor:pointer;padding:0}
+  .dot.seen{border-color:var(--accent);color:var(--accent)}
+  .dot.current{background:var(--accent);border-color:var(--accent);color:#fff}
+  .dot:disabled{opacity:.35;cursor:not-allowed}
+  .gap{width:8px}
+  .navbtns{display:flex;gap:8px}
+  [hidden]{display:none !important}
+  button:focus-visible{outline:3px solid #f2b134;outline-offset:2px}
+  @media (max-width:640px){
+    h1{font-size:1.3rem}
+    .dot{width:22px;height:22px;font-size:.62rem}
+    .text{font-size:1rem}
+    .bubble{padding:14px}
+    .tabs button{padding:8px 10px;font-size:.92rem}
+  }
+  @media (prefers-reduced-motion:reduce){ .bubble.pop,input.wrong,tr.new td{animation:none} }
+
+  .subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;align-items:center}
+  .subtabs .lbl{font-size:.85rem;font-weight:700;color:var(--muted);margin-right:4px}
+  .subtabs button{font:700 .9rem var(--font);border-radius:999px;padding:6px 14px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+  .subtabs button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
+  .subtabs button.bonus{border-style:dashed;border-color:#b9a6ee;color:var(--more)}
+  .subtabs button.bonus[aria-pressed="true"]{background:var(--more);border-color:var(--more);color:#fff}
+  .labgroup{font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:-6px}
+  .card.bonus{border-style:dashed;border-color:#b9a6ee}
+  .card .tag{font-size:.8rem;font-weight:700;color:var(--more)}
+  .note{background:#eef6ff;border:1px solid #bcd6f5;border-radius:12px;padding:10px 12px;font-size:.95rem;line-height:1.5}
+  .radios{display:flex;flex-wrap:wrap;gap:8px}
+  .radios button{font:700 .9rem var(--font);border-radius:12px;padding:7px 12px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+  .radios button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:#2c3796}
+  .radios button:disabled,.opsel button:disabled{opacity:.5;cursor:not-allowed}
+  .rowlbl{font-size:.85rem;font-weight:700;color:var(--muted)}
+  .labrow{display:grid;gap:6px}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .uvbtn[aria-pressed="true"]{background:#2d2450;color:#b9ff9e;border-color:#2d2450}
+
+  .backlink{display:inline-block;font-size:.88rem;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:4px}
+  .backlink::before{content:"\2190  "}
+
+  /* SVG text */
+  .t12{font-size:12px;font-weight:700;fill:#343b4a}
+  .t13{font-size:13px;font-weight:700;fill:#343b4a}
+  .t15{font-size:15px;font-weight:700;fill:#343b4a}
+  .t18{font-size:18px;font-weight:700;fill:#343b4a}
+  .mid{text-anchor:middle} .end{text-anchor:end}
+  .muted{fill:#5a6376} .it{font-style:italic}
+  .wht{fill:#fff}
+  .grn{fill:#1b7f4e} .red{fill:#b83a34} .blu{fill:#3f4cc0} .pur{fill:#6b4bb8}
+
+  /* ===== Study helpers (hint, checkmarks, bridge) ===== */
+  input.blank{border:2px solid var(--accent);border-bottom-width:3px;background:#fff7d6;border-radius:8px;padding:3px 8px;animation:blankpulse 1.8s ease-in-out infinite}
+  input.blank:focus{animation:none;background:#fff}
+  input.blank::placeholder{color:#9a8a55;letter-spacing:.12em;font-weight:700}
+  @keyframes blankpulse{0%,100%{box-shadow:0 0 0 0 rgba(63,76,192,.0)}50%{box-shadow:0 0 0 5px rgba(63,76,192,.18)}}
+  .btn.hint{border-color:#e5c56a;background:#fff8e6;color:#8a5a00}
+  .dot{position:relative}
+  body:has(#testBtn[aria-pressed="true"]) .dot.seen::after{content:"\2713";position:absolute;right:-5px;top:-6px;width:14px;height:14px;border-radius:50%;background:var(--good);color:#fff;font-size:.56rem;line-height:14px;text-align:center;box-shadow:0 0 0 2px var(--page)}
+  .bridge{margin-top:14px;border:2px dashed #b9a6ee;background:var(--more-soft);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .bridge b{color:var(--more);margin-right:6px}
+  .bridge[hidden]{display:none}
+  .donetoast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:30}
+  @media (prefers-reduced-motion:reduce){ input.blank{animation:none} }
+</style>
+</head>
+<body data-next='[["Transcription", "transcription.html"], ["Post-transcriptional control", "posttranscriptional-control.html"], ["Mutations", "mutations.html"]]'>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="backlink" href="index.html">All modules</a>
+      <h1>Pre-Transcriptional Control</h1>
+      <div class="sub">BIOL 112 Microbiology, Chapter 8: how cells decide which genes to transcribe</div>
+    </div>
+    <div class="controls" id="modeControls">
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="learnBtn" aria-pressed="true">Learn</button>
+        <button id="testBtn" aria-pressed="false">Test</button>
+      </div>
+      <button class="ghost" id="restartBtn">Restart</button>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-view="home" aria-selected="true">Home</button>
+    <button role="tab" data-view="euk" aria-selected="false">Eukaryotes</button>
+    <button role="tab" data-view="pro" aria-selected="false">Prokaryotes</button>
+    <button role="tab" data-view="lab" aria-selected="false">Operon Lab</button>
+    <button role="tab" data-view="build" aria-selected="false">Operon Builder</button>
+  </div>
+
+  <section class="home" id="home">
+    <h2>Where do you want to start?</h2>
+    <p class="lead">Every cell has to decide which genes to use right now. Pick a path below. You can switch any time using the tabs.</p>
+    <div class="cards">
+      <button class="card" data-go="euk">
+        <svg viewBox="0 0 240 84" aria-hidden="true"><path d="M10,60 H230" stroke="#0f766e" stroke-width="4"/><circle cx="50" cy="60" r="16" fill="#9a88c2"/><circle cx="90" cy="60" r="16" fill="#9a88c2"/><rect x="130" y="50" width="90" height="20" rx="5" fill="#d6efdf" stroke="#8b93a3"/><path d="M60,44 C70,4 150,4 150,48" fill="none" stroke="#0f766e" stroke-width="3"/></svg>
+        <h3>Eukaryotes</h3>
+        <p>The basics: DNA packaging, transcription factors, enhancers, and silencers.</p>
+        <span class="meta">6 steps</span>
+      </button>
+      <button class="card" data-go="pro">
+        <svg viewBox="0 0 240 84" aria-hidden="true"><path d="M10,64 H230" stroke="#0f766e" stroke-width="4"/><rect x="40" y="36" width="60" height="16" rx="6" fill="#3f4cc0"/><circle cx="54" cy="56" r="6" fill="#2b2f3a"/><circle cx="86" cy="56" r="6" fill="#2b2f3a"/><polygon points="140,20 152,20 161,29 161,41 152,50 140,50 131,41 131,29" fill="#d9443a"/><rect x="176" y="24" width="30" height="30" rx="5" fill="#2f9e63"/></svg>
+        <h3>Prokaryotes</h3>
+        <p>Operons! Stop signs, gas, and the famous lac and trp operons.</p>
+        <span class="meta">4 short modules</span>
+      </button>
+      <button class="card" data-go="build">
+        <svg viewBox="0 0 240 84" aria-hidden="true"><path d="M10,66 H230" stroke="#0f766e" stroke-width="4"/><rect x="120" y="54" width="50" height="24" rx="4" fill="none" stroke="#3f4cc0" stroke-width="2" stroke-dasharray="4 3"/><polygon points="44,10 56,10 65,19 65,31 56,40 44,40 35,31 35,19" fill="#d9443a"/><path d="M70,26 C100,6 130,20 140,48" fill="none" stroke="#5a6376" stroke-width="2" stroke-dasharray="4 3"/></svg>
+        <h3>Operon Builder</h3>
+        <p>Get a situation, then drag the car, stop sign, and gas into place. Predict how much transcription happens!</p>
+        <span class="meta">Practice challenges</span>
+      </button>
+      <button class="card" data-go="lab">
+        <svg viewBox="0 0 240 84" aria-hidden="true"><rect x="20" y="22" width="90" height="40" rx="20" fill="#e1f3e8" stroke="#1b7f4e" stroke-width="2"/><circle cx="90" cy="42" r="14" fill="#1b7f4e"/><rect x="130" y="22" width="90" height="40" rx="20" fill="#dfe4ec" stroke="#8b93a3" stroke-width="2"/><circle cx="150" cy="42" r="14" fill="#fff" stroke="#8b93a3"/></svg>
+        <h3>Operon Lab</h3>
+        <p>Flip sugars and amino acids on and off and watch four operons respond in real time.</p>
+        <span class="meta">Explore any time</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="home" id="proMenu" hidden>
+    <h2>Prokaryotes: pick a module</h2>
+    <p class="lead">Each module is short. Start with the basics, then explore inducible and repressible operons.</p>
+    <div class="cards">
+      <button class="card" data-go="basics"><h3>1. Gene regulation basics</h3><p>Why cells control genes, operon parts, stop signs, gas, inducible vs. repressible, and negative feedback.</p><span class="meta">10 steps</span></button>
+      <button class="card" data-go="ind"><h3>2. Inducible operons</h3><p>The lac operon: lactose, glucose, cAMP, and CAP, plus the summary table.</p><span class="meta">10 steps</span></button>
+      <button class="card bonus" data-go="xgal"><span class="tag">Bonus inside the lac operon module</span><h3>X-gal and blue-white screening</h3><p>How scientists use the lac operon to spot their gene, and how it differs from the pGLO lab.</p><span class="meta">6 steps</span></button>
+      <button class="card" data-go="rep"><h3>3. Repressible operons</h3><p>The trp operon: tryptophan as a corepressor, the trp feedback loop, and inducers vs. corepressors.</p><span class="meta">5 steps</span></button>
+    </div>
+  </section>
+
+  <section id="main" hidden>
+    <div class="subtabs" id="subTabs" hidden></div>
+    <p class="modehint" id="modeHint"></p>
+    <div class="stage">
+      <svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="Animated diagram of gene regulation"></svg>
+    </div>
+    <div class="tablewrap" id="tableWrap" hidden></div>
+
+    <section class="bubble" id="bubble" aria-live="polite">
+      <div class="stepno" id="stepNo"></div>
+      <div class="title" id="stepTitle"></div>
+      <p class="text" id="stepText"></p>
+      <p class="after" id="stepAfter" hidden></p>
+      <div class="feedback" id="feedback"></div>
+      <div class="check-row" id="checkRow" hidden>
+        <button class="btn primary" id="checkBtn">Check</button>
+        <button class="btn secondary" id="moveOnBtn">Move on</button>
+      </div>
+      <div id="labArea"></div>
+      <div class="bubble-foot" id="bubbleFoot"></div>
+    </section>
+
+    <nav class="stepnav" id="stepNav">
+      <div class="navbtns"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="replayBtn">Replay</button></div>
+      <div class="dots" id="dots"></div>
+      <div class="navbtns"><button class="btn primary" id="nextBtn">Next</button></div>
+    </nav>
+  </section>
+</div>
+
+<div class="overlay" id="moreOverlay" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
+    <span class="ptag">Learn more: just for the curious, not on the exam</span>
+    <h2 id="moreTitle"></h2>
+    <div id="moreBody"></div>
+    <button class="btn primary close" id="moreClose">Back to the module</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ================= Helpers ================= */
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t) => a + (b - a) * t;
+  const smooth = t => { t = clamp(t,0,1); return t * t * (3 - 2 * t); };
+  const seg = (t,a,b) => clamp((t - a) / (b - a), 0, 1);
+  const f1 = v => (+v).toFixed(1);
+  const f3 = v => (+v).toFixed(3);
+  const RED = "#d9443a", GREEN = "#2f9e63", BLUE = "#3f4cc0", GOLD = "#f2b134", PURPLE = "#8e5bd0", TEAL = "#0f9fb0", ORANGE = "#e8744f", PINK = "#d0508a";
+
+  /* ================= Shape primitives ================= */
+  function hexPts(x, y, r){ let p = []; for (let i = 0; i < 6; i++){ const a = Math.PI / 6 + i * Math.PI / 3; p.push(f1(x + r * Math.cos(a)) + "," + f1(y + r * Math.sin(a))); } return p.join(" "); }
+  function pentPts(x, y, r){ let p = []; for (let i = 0; i < 5; i++){ const a = -Math.PI / 2 + i * 2 * Math.PI / 5; p.push(f1(x + r * Math.cos(a)) + "," + f1(y + r * Math.sin(a))); } return p.join(" "); }
+  const glucose = (x, y, op) => `<polygon points="${hexPts(x,y,10)}" fill="${GOLD}" stroke="#a8760f" stroke-width="1.5" opacity="${f3(op)}"/>`;
+  function disacc(x, y, op, stroke, fill){ stroke = stroke || BLUE; fill = fill || "#fff"; return `<g opacity="${f3(op)}"><line x1="${f1(x-8)}" y1="${f1(y)}" x2="${f1(x+8)}" y2="${f1(y)}" stroke="${stroke}" stroke-width="2"/><polygon points="${hexPts(x-9,y,8)}" fill="${fill}" stroke="${stroke}" stroke-width="2"/><polygon points="${hexPts(x+9,y,8)}" fill="${fill}" stroke="${stroke}" stroke-width="2"/></g>`; }
+  const arabinose = (x, y, op) => `<polygon points="${pentPts(x,y,10)}" fill="#f7d3e4" stroke="${PINK}" stroke-width="2" opacity="${f3(op)}"/>`;
+  const maltose = (x, y, op) => disacc(x, y, op, "#a8760f", GOLD);
+  const camp = (x, y, op) => `<polygon points="${f1(x)},${f1(y-9)} ${f1(x+9)},${f1(y)} ${f1(x)},${f1(y+9)} ${f1(x-9)},${f1(y)}" fill="${TEAL}" stroke="#0a6e7a" stroke-width="1.5" opacity="${f3(op)}"/>`;
+  const trpChip = (x, y, op) => `<g opacity="${f3(op)}"><rect x="${f1(x-15)}" y="${f1(y-9)}" width="30" height="18" rx="9" fill="${GREEN}"/><text x="${f1(x)}" y="${f1(y+4)}" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">Trp</text></g>`;
+
+  function stopSign(x, y, act, op, scale){
+    scale = scale || 1; op = op === undefined ? 1 : op;
+    let pts = []; for (let i = 0; i < 8; i++){ const a = Math.PI / 8 + i * Math.PI / 4; pts.push(f1(30 * Math.cos(a)) + "," + f1(30 * Math.sin(a))); }
+    const rot = (1 - act) * 22;
+    return `<g transform="translate(${f1(x)},${f1(y)}) scale(${f3(scale)})" opacity="${f3(op)}">`
+      + `<g transform="rotate(${f1(rot)})" opacity="${f3(act)}"><polygon points="${pts.join(" ")}" fill="${RED}" stroke="#fff" stroke-width="3"/><polygon points="${pts.join(" ")}" fill="none" stroke="#9e2c25" stroke-width="1.2" transform="scale(1.07)"/><text y="5" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">STOP</text></g>`
+      + `<g transform="rotate(${f1(rot)})" opacity="${f3(1-act)}"><rect x="-27" y="-24" width="54" height="48" rx="18" fill="#eeaaa4" stroke="#c9837d" stroke-width="2"/><path d="M-10,-6 q10,10 20,0" stroke="#b86b64" stroke-width="2" fill="none"/></g></g>`;
+  }
+  function gasCan(x, y, fuel, label, op, above){
+    op = op === undefined ? 1 : op;
+    const body = fuel > 0.5 ? GREEN : "#a9c2b3";
+    let o = `<g opacity="${f3(op)}"><rect x="${f1(x+6)}" y="${f1(y-56)}" width="16" height="14" rx="4" fill="none" stroke="${body}" stroke-width="4"/>`
+      + `<path d="M${f1(x-20)},${f1(y-44)} l-8,-12 l7,-3 l9,11 z" fill="${body}"/>`
+      + `<rect x="${f1(x-24)}" y="${f1(y-46)}" width="48" height="46" rx="7" fill="#a9c2b3"/>`
+      + `<rect x="${f1(x-24)}" y="${f1(y-46)}" width="48" height="46" rx="7" fill="${GREEN}" opacity="${f3(fuel)}"/>`;
+    if (above) o += `<text x="${f1(x)}" y="${f1(y-18)}" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">GAS</text><text x="${f1(x)}" y="${f1(y-66)}" font-size="12" font-weight="700" fill="#1b7f4e" text-anchor="middle">${label}</text>`;
+    else o += `<text x="${f1(x)}" y="${f1(y-18)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">${label}</text>`;
+    return o + `</g>`;
+  }
+  function car(x, y, op, tilt){
+    op = op === undefined ? 1 : op; tilt = tilt || 0;
+    return `<g transform="translate(${f1(x)},${f1(y)}) rotate(${f1(tilt)})" opacity="${f3(op)}">`
+      + `<rect x="-24" y="-52" width="46" height="20" rx="9" fill="#5563d6"/><rect x="-17" y="-48" width="16" height="12" rx="3" fill="#dfe3ff"/><rect x="2" y="-48" width="14" height="12" rx="3" fill="#dfe3ff"/>`
+      + `<rect x="-47" y="-36" width="94" height="26" rx="10" fill="${BLUE}"/><circle cx="42" cy="-26" r="3.5" fill="#ffe28a"/>`
+      + `<text x="0" y="-18" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">RNA pol</text>`
+      + `<circle cx="-27" cy="-9" r="9" fill="#2b2f3a"/><circle cx="-27" cy="-9" r="3.5" fill="#c9cdd6"/><circle cx="27" cy="-9" r="9" fill="#2b2f3a"/><circle cx="27" cy="-9" r="3.5" fill="#c9cdd6"/></g>`;
+  }
+  function mrna(x1, x2, y, op){
+    if (x2 <= x1 + 2) return "";
+    let d = `M${f1(x1)},${f1(y)}`; for (let x = x1; x < x2; x += 16) d += ` q4,-6 8,0 q4,6 8,0`;
+    return `<path d="${d}" fill="none" stroke="${ORANGE}" stroke-width="3.5" stroke-linecap="round" opacity="${f3(op)}"/>`;
+  }
+  function pill(x, y, text, fill, op, color){
+    const w = text.length * 7.2 + 18;
+    return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - w/2)}" y="${f1(y - 14)}" width="${f1(w)}" height="24" rx="12" fill="${fill}"/><text x="${f1(x)}" y="${f1(y+3)}" font-size="12" font-weight="700" fill="${color || "#fff"}" text-anchor="middle">${text}</text></g>`;
+  }
+  function dnaLadder(x1, x2, y){
+    let r = ""; for (let x = x1 + 6; x < x2; x += 10) r += `M${x},${y-8}V${y+8}`;
+    return `<path d="${r}" stroke="#b7bfcc" stroke-width="2"/><path d="M${x1},${y-8}H${x2}M${x1},${y+8}H${x2}" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/>`;
+  }
+
+  /* ================= Operon layouts ================= */
+  const gene3 = (names, x0) => names.map((g,i) => ({x1:x0 + i * Math.round((950 - x0) / names.length), x2: i === names.length - 1 ? 950 : x0 + (i + 1) * Math.round((950 - x0) / names.length), fill:"#d6efdf", txt:g, it:true}));
+  const LAY = {
+    generic:{segs:[{x1:60,x2:180,fill:"#e6e0f3",below:"reg"},{x1:330,x2:470,fill:"#fbe3b5",below:"Promoter"},{x1:470,x2:540,fill:"#fde2e0",below:"op"},
+      {x1:540,x2:680,fill:"#d6efdf",txt:"Gene 1"},{x1:680,x2:820,fill:"#d6efdf",txt:"Gene 2"},{x1:820,x2:950,fill:"#d6efdf",txt:"Gene 3"}],
+      genesLbl:[540,950,"Structural genes"], bracket:[330,950,"Operon"], opX:505, carX:425, capX:352, genes:540, repHome:[250,210], capHome:[352,196], regX:120, sugar:null},
+    lac:{segs:[{x1:60,x2:180,fill:"#e6e0f3",txt:"lacI",it:true,below:"reg"},{x1:330,x2:390,fill:"#d7efe3",below:"CAP site"},{x1:390,x2:490,fill:"#fbe3b5",below:"Promoter"},{x1:490,x2:560,fill:"#fde2e0",below:"op"}].concat(gene3(["lacZ","lacY","lacA"],560)),
+      genesLbl:[560,950,"lac genes"], bracket:[330,950,"lac operon"], opX:525, carX:440, capX:360, genes:560, repHome:[212,205], capHome:[380,196], regX:120, sugar:"lac"},
+    trp:{segs:[{x1:60,x2:160,fill:"#e6e0f3",txt:"trpR",it:true,below:"reg"},{x1:320,x2:420,fill:"#fbe3b5",below:"Promoter"},{x1:420,x2:490,fill:"#fde2e0",below:"op"}].concat(gene3(["trpE","trpD","trpC","trpB","trpA"],490)),
+      genesLbl:[490,950,"trp genes"], bracket:[320,950,"trp operon"], opX:455, carX:370, genes:490, repHome:[250,210], regX:110, brk:true, sugar:null},
+    ara:{segs:[{x1:60,x2:180,fill:"#e6e0f3",txt:"araC",it:true,below:"reg"},{x1:300,x2:355,fill:"#d7efe3",below:"CAP site"},{x1:355,x2:425,fill:"#f7dcea",below:"araI site"},{x1:425,x2:515,fill:"#fbe3b5",below:"Promoter"}].concat(gene3(["araB","araA","araD"],515)),
+      genesLbl:[515,950,"ara genes"], bracket:[300,950,"ara operon"], carX:470, capX:327, siteX:390, genes:515, capHome:[250,196], regX:120, sugar:"ara", shifter:true, blockMsg:"Blocked by the DNA loop!", blockY:196},
+    pos:{segs:[{x1:60,x2:180,fill:"#e6e0f3",below:"reg"},{x1:300,x2:370,fill:"#d7efe3",below:"Activator site"},{x1:370,x2:470,fill:"#fbe3b5",below:"Promoter"},
+      {x1:470,x2:630,fill:"#d6efdf",txt:"Gene 1"},{x1:630,x2:790,fill:"#d6efdf",txt:"Gene 2"},{x1:790,x2:950,fill:"#d6efdf",txt:"Gene 3"}],
+      genesLbl:[470,950,"Structural genes"], bracket:[300,950,"Operon"], carX:420, capX:335, genes:470, capHome:[240,196], regX:120, sugar:null},
+    mal:{segs:[{x1:60,x2:180,fill:"#e6e0f3",txt:"malT",it:true,below:"reg"},{x1:300,x2:355,fill:"#d7efe3",below:"CAP site"},{x1:355,x2:425,fill:"#f4ecd0",below:"MalT site"},{x1:425,x2:515,fill:"#fbe3b5",below:"Promoter"}].concat(gene3(["malE","malF","malG"],515)),
+      genesLbl:[515,950,"mal genes"], bracket:[300,950,"mal operon"], carX:470, capX:327, siteX:390, genes:515, capHome:[250,196], act2Home:[330,150], regX:120, sugar:"mal"}
+  };
+  const GLU_POS = [[616,100],[652,134],[700,98],[742,140],[618,176],[690,172],[760,100],[735,190]];
+  const SUG_POS = [[815,104],[880,96],[930,140],[845,150],[905,190],[820,196]];
+  const CAMP_POS = [[440,100],[480,132],[520,98],[455,160],[530,160],[500,190],[560,128]];
+  const TRP_POS = [[630,100],[700,128],[775,96],[850,132],[920,100],[660,180],[760,176],[880,184]];
+  const iptgIcon = (x, y, op) => `<g opacity="${f3(op)}"><polygon points="${hexPts(x-4,y,8)}" fill="#fff" stroke="#c2410c" stroke-width="2"/><line x1="${f1(x+4)}" y1="${f1(y)}" x2="${f1(x+11)}" y2="${f1(y)}" stroke="#c2410c" stroke-width="2"/><circle cx="${f1(x+14)}" cy="${f1(y)}" r="4" fill="#c2410c"/></g>`;
+  const SUGAR = {lac:{name:"Lactose", draw:(x,y,op) => disacc(x,y,op)}, ara:{name:"Arabinose", draw:arabinose}, mal:{name:"Maltose", draw:maltose}, iptg:{name:"IPTG", draw:iptgIcon}};
+
+  function rng(seed){ let v = seed; return () => { v = (v * 16807) % 2147483647; return (v - 1) / 2147483646; }; }
+  const COL_POS = (() => { const r = rng(11), out = []; let guard = 0; while (out.length < 44 && guard++ < 5000){ const a = r() * Math.PI * 2, d = Math.sqrt(r()) * .84; const p = [Math.cos(a) * d, Math.sin(a) * d, .6 + r() * .55]; if (out.every(q => (q[0]-p[0]) ** 2 + (q[1]-p[1]) ** 2 > .013)) out.push(p); } return out; })();
+  const PCOL = {blue:["#2f63c7","#1f4a9c"], white:["#fcfcf8","#b9ae8c"], cream:["#ecdfb9","#c2b184"], glow:["#e6ecc4","#b9c08c"]};
+  function plate(cx, cy, R, spec, g, uv, label){
+    const agar = uv ? "#2d2450" : "#f3e5b5", rim = uv ? "#5b5190" : "#c3c8d2";
+    let o = `<circle cx="${cx}" cy="${cy}" r="${R + 9}" fill="${uv ? "#1c1636" : "#e9ecf1"}" stroke="${rim}" stroke-width="3"/><circle cx="${cx}" cy="${cy}" r="${R}" fill="${agar}"/>`;
+    if (spec && spec.growth === "lawn" && g > 0){
+      const c = uv ? "#6f6399" : PCOL[spec.lawn || "cream"][0];
+      o += `<circle cx="${cx}" cy="${cy}" r="${R - 6}" fill="${c}" opacity="${f3(.92 * g)}"/>`;
+      COL_POS.slice(0, 30).forEach(p => { o += `<circle cx="${f1(cx + p[0] * R)}" cy="${f1(cy + p[1] * R)}" r="${f1(4 * p[2])}" fill="#000" opacity="${f3(.05 * g)}"/>`; });
+      if (uv && spec.specks) COL_POS.slice(0, spec.specks).forEach(p => { const x = cx + p[0] * R * .9, y = cy + p[1] * R * .9; o += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(9 * g)}" fill="#8dff78" opacity="${f3(.25 * g)}"/><circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(4 * g)}" fill="#8dff78"/>`; });
+    }
+    if (spec && spec.growth === "colonies" && g > 0){
+      COL_POS.forEach((p, i) => {
+        const key = spec.color(i), x = cx + p[0] * R, y = cy + p[1] * R, r = 8.5 * p[2] * g;
+        if (uv){ if (key === "glow") o += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r * 2.1)}" fill="#8dff78" opacity="${f3(.22 * g)}"/><circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r)}" fill="#8dff78"/>`; else o += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r)}" fill="#9a90c4"/>`; }
+        else o += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r)}" fill="${PCOL[key][0]}" stroke="${PCOL[key][1]}" stroke-width="1.2"/>`;
+      });
+    }
+    if (label) o += `<text x="${cx}" y="${cy + R + 34}" class="t13 mid" fill="${uv ? "#fff" : "#343b4a"}" style="fill:${uv ? "#fff" : "#343b4a"}">${label}</text>`;
+    return o;
+  }
+  function indole(x, y, fill, op){ return `<g opacity="${f3(op)}"><polygon points="${hexPts(x,y,9)}" fill="${fill}" stroke="#5a6376" stroke-width="1.5"/><polygon points="${pentPts(x+15,y+1,8)}" fill="${fill}" stroke="#5a6376" stroke-width="1.5"/></g>`; }
+  function pacman(x, y, open, label){ const a = 10 + 28 * open, r = 30; const x1 = x + r * Math.cos(a * Math.PI / 180), y1 = y - r * Math.sin(a * Math.PI / 180), y2 = y + r * Math.sin(a * Math.PI / 180);
+    return `<path d="M${f1(x)},${f1(y)} L${f1(x1)},${f1(y1)} A${r},${r} 0 1 0 ${f1(x1)},${f1(y2)} Z" fill="#c97b4a"/><circle cx="${f1(x - 4)}" cy="${f1(y - 14)}" r="3.5" fill="#2b2f3a"/>` + (label ? `<text x="${f1(x)}" y="${f1(y + 50)}" class="t12 mid">${label}</text>` : ""); }
+  function arcPath(cx, cy, r, a0, a1){ const P = a => [cx + r * Math.sin(a * Math.PI / 180), cy - r * Math.cos(a * Math.PI / 180)]; const p0 = P(a0), p1 = P(a1); return `M${f1(p0[0])},${f1(p0[1])} A${r},${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${f1(p1[0])},${f1(p1[1])}`; }
+
+  /* ================= Blanks ================= */
+  const BL = window.__BL = {
+    constitutive:{show:"constitutive", ans:["constitutive"], fuzzy:true},
+    operon:{show:"operon", ans:["operon","operons"], fuzzy:true},
+    histones:{show:"histones", ans:["histones","histone"], fuzzy:true},
+    factors:{show:"factors", ans:["factors","factor"], fuzzy:true},
+    enhancers:{show:"enhancers", ans:["enhancers","enhancer"], fuzzy:true},
+    silencers:{show:"silencers", ans:["silencers","silencer"], fuzzy:true},
+    quickly:{show:"quickly", ans:["quickly","quick","fast","faster","rapidly","rapid","quicker"], fuzzy:true},
+    operator:{show:"operator", ans:["operator"], fuzzy:true},
+    regulatory:{show:"regulatory", ans:["regulatory","regulator","regulatorygene","regulatorgene","repressorgene"], fuzzy:true},
+    cis:{show:"cis", ans:["cis"]},
+    trans:{show:"trans", ans:["trans"]},
+    negative:{show:"negative", ans:["negative"], fuzzy:true},
+    positive:{show:"positive", ans:["positive"], fuzzy:true},
+    reduced:{show:"reduced", ans:["reduced","low","lower","lowered","decreased","less","slower","slowed","weaker"], fuzzy:true},
+    inducible:{show:"inducible", ans:["inducible"], fuzzy:true},
+    repressible:{show:"repressible", ans:["repressible"], fuzzy:true},
+    inducible2:{show:"inducible", ans:["inducible"], fuzzy:true},
+    negative2:{show:"negative", ans:["negative"], fuzzy:true},
+    positive2:{show:"positive", ans:["positive"], fuzzy:true},
+    operator2:{show:"operator", ans:["operator"], fuzzy:true},
+    allolactose:{show:"allolactose", ans:["allolactose"], fuzzy:true},
+    glucose:{show:"glucose", ans:["glucose"], fuzzy:true},
+    low:{show:"low", ans:["low","lower","decreased","down","less"]},
+    cap:{show:"CAP", ans:["cap","crp","cataboliteactivatorprotein","catabolicactivatorprotein"], fuzzy:true},
+    high:{show:"high", ans:["high","full","fullspeed","maximum","max","highest"]},
+    lactose:{show:"lactose", ans:["lactose","allolactose","inducer"], fuzzy:true},
+    catabolite:{show:"catabolite", ans:["catabolite"], fuzzy:true},
+    repressible2:{show:"repressible", ans:["repressible"], fuzzy:true},
+    inactive:{show:"inactive", ans:["inactive","notactive","off"], fuzzy:true},
+    corepressor:{show:"corepressor", ans:["corepressor"], fuzzy:true},
+    selection:{show:"selection", ans:["selection","antibioticselection","selecting"], fuzzy:true},
+    blue:{show:"blue", ans:["blue"]},
+    iptg:{show:"IPTG", ans:["iptg"]},
+    white:{show:"white", ans:["white","colorless","clear"]},
+    white2:{show:"white", ans:["white"]},
+    arabinose:{show:"arabinose", ans:["arabinose"], fuzzy:true},
+    feedback:{show:"feedback", ans:["feedback","feedbackloop","feedbackinhibition"], fuzzy:true},
+    feedback2:{show:"feedback", ans:["feedback","feedbackloop","feedbackinhibition"], fuzzy:true}
+  };
+
+  /* ================= Tables ================= */
+  const LAC_TABLE = {cap:"lac operon summary", head:["Sugars","CAP (gas)","Repressor (stop sign)","RNA polymerase (car)","lac genes"], order:["GL","Gl","gl","gL"], rows:{
+    GL:[["+ Glucose, + Lactose","Not bound to DNA","Lifted off operator","Binds weakly, usually falls off","Very little transcription"],"low"],
+    Gl:[["+ Glucose, \u2212 Lactose","Not bound to DNA","Bound to operator","Blocked by the repressor","No transcription"],"off"],
+    gl:[["\u2212 Glucose, \u2212 Lactose","Bound to DNA","Bound to operator","Blocked by the repressor","No transcription"],"off"],
+    gL:[["\u2212 Glucose, + Lactose","Bound to DNA","Lifted off operator","Sits on promoter and transcribes","High transcription!"],"on"]}};
+  const TRP_TABLE = {cap:"trp operon summary", head:["Tryptophan","Repressor (stop sign)","RNA polymerase (car)","trp genes"], order:["H","l"], rows:{
+    H:[["High","Tryptophan bound, sitting on operator","Blocked by the repressor","No transcription"],"off"],
+    l:[["Low","Inactive, floating free","Sits on promoter and transcribes","Transcription!"],"on"]}};
+  const ARA_TABLE = {cap:"ara operon summary (extra example)", head:["Sugars","CAP (gas)","AraC","RNA polymerase (car)","ara genes"], order:["GA","Ga","ga","gA"], rows:{
+    GA:[["+ Glucose, + Arabinose","Not bound to DNA","Activator form (gas)","Binds some of the time","Low transcription"],"low"],
+    Ga:[["+ Glucose, \u2212 Arabinose","Not bound to DNA","Repressor form (DNA loop)","Blocked by the loop","No transcription"],"off"],
+    ga:[["\u2212 Glucose, \u2212 Arabinose","Bound to DNA","Repressor form (DNA loop)","Blocked by the loop","No transcription"],"off"],
+    gA:[["\u2212 Glucose, + Arabinose","Bound to DNA","Activator form (gas)","Sits on promoter and transcribes","High transcription!"],"on"]}};
+  const MAL_TABLE = {cap:"mal operon summary (extra example)", head:["Sugars","CAP (gas)","MalT (gas)","RNA polymerase (car)","mal genes"], order:["GM","Gm","gm","gM"], rows:{
+    GM:[["+ Glucose, + Maltose","Not bound to DNA","Loaded and bound","Binds some of the time","Low transcription"],"low"],
+    Gm:[["+ Glucose, \u2212 Maltose","Not bound to DNA","Empty, not bound","Almost never binds","Almost none"],"off"],
+    gm:[["\u2212 Glucose, \u2212 Maltose","Bound to DNA","Empty, not bound","Almost never binds","Almost none"],"off"],
+    gM:[["\u2212 Glucose, + Maltose","Bound to DNA","Loaded and bound","Sits on promoter and transcribes","High transcription!"],"on"]}};
+  const CMP_TABLE = {cap:"Prokaryotes vs. eukaryotes", head:["","Prokaryotes","Eukaryotes"], order:["a","b","c","d","e"], rows:{
+    a:[["Main strategy","Operons: related genes controlled together","Each gene is regulated on its own"],""],
+    b:[["Gene organization","Genes clustered, sharing one promoter and operator","Genes scattered, each with its own control elements"],""],
+    c:[["Control elements","Promoter, operator, regulatory genes","Promoters, enhancers, silencers, transcription factors"],""],
+    d:[["Response speed","Rapid: whole gene sets flip on or off","Slower and more complex"],""],
+    e:[["Examples","lac operon (inducible), trp operon (repressible)","Individual genes with many regulatory sites"],""]}};
+
+  const XVP_TABLE = {cap:"Don't mix them up: X-gal screening vs. the pGLO lab", head:["","X-gal (blue-white) screening","pGLO lab"], order:["a","b","c","d","e"], rows:{
+    a:[["Reporter gene","lacZ (makes \u03b2-galactosidase)","GFP (green fluorescent protein)"],""],
+    b:[["What switches it on","IPTG or lactose (lac operon inducer)","Arabinose (AraC turns on the ara promoter)"],""],
+    c:[["How you see it","Blue colonies on X-gal, in normal light","Green glow under UV light"],""],
+    d:[["Selection","Ampicillin: only plasmid carriers grow","Ampicillin: only plasmid carriers grow"],""],
+    e:[["What it tells you","White colony = your gene is inside lacZ","Glowing colony = cell took up pGLO and GFP is on"],""]}};
+
+  /* ================= Visual definitions ================= */
+  const OB = {rep:0, repAct:1, repShow:0, ind:0, cap:0, capAmp:0, capShow:0, glu:0, lac:0, ara:0, mal:0, trp:0, camp:0, carShow:1, made:1, act2:0, act2Fuel:0, act2Show:0};
+  const O = (layout, s, car, flags) => ({scene:"operon", layout, s:{...OB, ...s}, car:car || "park", flags:flags || {}});
+  const T = (scene, extra) => ({scene, ...(extra || {})});
+  const LAC_OFF = {repShow:1, rep:1, glu:1, capShow:1};
+  const LAC_IND = {repShow:1, rep:0, repAct:0, ind:1, glu:1, lac:1, capShow:1};
+  const LAC_ON  = {repShow:1, rep:0, repAct:0, ind:1, lac:1, camp:1, capShow:1, capAmp:1, cap:1};
+  const LAC_NONE = {repShow:1, rep:1, camp:1, capShow:1, capAmp:1, cap:1};
+  const TRP_LOW = {repShow:1, rep:0, repAct:0};
+  const TRP_HIGH = {repShow:1, rep:1, repAct:1, ind:1, trp:1};
+
+  /* ================= Learn more content ================= */
+  const MORE = {
+    why:{title:"Sigma factors: swapping the car's GPS", html:`<p>Bacterial RNA polymerase has a detachable piece called a sigma (\u03c3) factor that decides which promoters it recognizes. E. coli has seven. \u03c3<sup>70</sup> handles everyday "housekeeping" genes, \u03c3<sup>32</sup> turns on heat shock genes, \u03c3<sup>S</sup> takes over when cells stop growing, and \u03c3<sup>28</sup> runs flagella genes.</p><p>By swapping sigma factors, a bacterium can reprogram hundreds of genes at once. During starvation, a signal molecule called ppGpp (the "alarmone") reshapes transcription across the whole genome in what's called the stringent response.</p>`},
+    compare:{title:"Why don't eukaryotes use operons?", html:`<p>Bacterial ribosomes can start translating at several spots on one mRNA because each gene has its own ribosome landing pad (a Shine-Dalgarno sequence). Eukaryotic ribosomes usually load at the 5' cap and scan to the first AUG, so one mRNA normally makes one protein.</p><p>There are fun exceptions! About 15% of genes in the worm <i>C. elegans</i> sit in operons. Their long transcripts get cut apart and each piece receives a new cap through a process called trans-splicing. Trypanosomes (the parasites behind sleeping sickness) transcribe huge polycistronic stretches the same way.</p>`},
+    chromatin:{title:"Epigenetics and the histone code", html:`<h3>Nucleosomes</h3><p>About 147 base pairs of DNA wrap around a histone octamer (two each of H2A, H2B, H3, and H4). Histone H1 clips on the outside and helps pack nucleosomes tighter.</p><h3>Histone tags</h3><p>Histone tails can be acetylated, methylated, phosphorylated, and more. Acetylation (added by HATs, removed by HDACs) neutralizes positive charges on lysines, so DNA grips less tightly and genes open up. Specific marks have "meanings": H3K4me3 marks active promoters, while H3K27me3 and H3K9me3 mark silenced regions.</p><h3>DNA methylation</h3><p>In mammals, methyl groups are added to cytosines in CpG pairs. DNMT3 enzymes add new marks and DNMT1 copies them after replication, so the pattern is inherited by daughter cells. This drives X-chromosome inactivation and genomic imprinting (where only the mom's or dad's copy of a gene is used). Cancer drugs like azacitidine (blocks DNA methylation) and vorinostat (blocks HDACs) work by resetting these marks.</p><h3>Bacteria do it too</h3><p>E. coli's Dam enzyme methylates every GATC site. Right after replication, the new strand is briefly unmethylated, which helps mismatch repair figure out which strand has the mistake. Many bacteria also methylate their own DNA so their restriction enzymes only chop up invading phage DNA.</p>`},
+    tf:{title:"General transcription factors and three RNA polymerases", html:`<p>Eukaryotes have three nuclear RNA polymerases: Pol I makes most rRNA, Pol II makes mRNA, and Pol III makes tRNA and other small RNAs. Bacteria get by with one core enzyme plus sigma factors.</p><p>Pol II needs a team of general transcription factors to form the preinitiation complex. TFIID contains TBP (TATA-binding protein), which grabs the TATA box and bends the DNA. TFIIB, TFIIF, TFIIE, and TFIIH join next. TFIIH unwinds the DNA and phosphorylates the tail of Pol II, which releases it to start transcribing.</p><p>Fun and scary fact: the death cap mushroom makes \u03b1-amanitin, a toxin that jams Pol II. It is one of the deadliest natural toxins because it shuts down mRNA production in liver cells.</p>`},
+    enhancer:{title:"Long-distance control", html:`<p>Enhancers can work from tens of thousands to even a million base pairs away. The limb enhancer ZRS sits about one million base pairs from the <i>Sonic hedgehog</i> gene it controls, and single-letter changes in it can cause people to be born with extra fingers or toes.</p><p>A large protein bridge called the Mediator complex (around 25 to 30 proteins) connects activators on enhancers to RNA polymerase II at the promoter. To keep enhancers from switching on the wrong genes, the genome is organized into neighborhoods called TADs, fenced off by insulator proteins like CTCF and cohesin.</p><p>Repressors on silencers often recruit HDACs or other co-repressors that tighten chromatin, tying enhancers and silencers back to epigenetics.</p>`},
+    recap:{title:"Why bacteria respond so fast", html:`<p>A typical E. coli mRNA lasts only a few minutes, while many eukaryotic mRNAs last hours. When a bacterium stops transcribing a gene, the old mRNA disappears fast, so protein production changes quickly. That's perfect for a cell that can divide every 20 minutes in good conditions.</p><p>Eukaryotes trade speed for precision: layers of chromatin, transcription factors, RNA processing, and mRNA export give many checkpoints to fine-tune each gene in each cell type.</p>`},
+    parts:{title:"The lac operator isn't alone", html:`<p>The lac operon actually has three operators. O1 is the main one next to the promoter. O2 sits inside <i>lacZ</i> and O3 sits just upstream. The lac repressor is a tetramer with two DNA-grabbing ends, so it can hold two operators at once and loop the DNA between them. Knocking out the helper operators makes repression much weaker.</p><p>Operators are often palindromes (they read the same on both strands) because repressors usually bind as symmetric pairs of subunits.</p>`},
+    regulatory:{title:"How much repressor is there?", html:`<p><i>lacI</i> is transcribed constantly from a weak promoter, so each cell has only about 10 repressor tetramers. That's enough because the repressor binds the operator incredibly tightly.</p><p>A mutant called <i>lacI<sup>q</sup></i> ("q" for quantity) makes about 10 times more repressor. It's built into many lab plasmids so that genes under lac control stay firmly off until scientists add IPTG.</p>`},
+    cistrans:{title:"How Jacob and Monod cracked the operon", html:`<p><i>Cis</i> is Latin for "on this side" and <i>trans</i> means "across." Jacob and Monod gave E. coli a second copy of the lac region on an F' plasmid, making partial diploids. A broken <i>lacI</i> could be rescued by a working <i>lacI</i> on the other DNA molecule, which showed the repressor is diffusible (trans-acting).</p><p>Operator mutants called <i>lacO<sup>c</sup></i> (constitutive) only affected the genes on their own DNA molecule, even with a normal operator elsewhere. That proved the operator is a DNA site (cis-acting). Their work earned the 1965 Nobel Prize with Andr\u00e9 Lwoff.</p>`},
+    negative:{title:"Meet the lac repressor up close", html:`<p>LacI is a tetramer of four identical ~360 amino acid subunits. Each subunit's "headpiece" uses a helix-turn-helix motif to read bases in the DNA major groove. Its grip on the operator is one of the tightest protein-DNA interactions known.</p><p>How does it find a 21 base pair target in 4.6 million base pairs? It slides along DNA and hops between nearby segments (facilitated diffusion), searching much faster than random bumping alone. Single-molecule experiments have tracked individual LacI proteins doing this in living cells.</p>`},
+    positive:{title:"How CAP actually helps RNA polymerase", html:`<p>E. coli RNA polymerase holoenzyme is \u03b1<sub>2</sub>\u03b2\u03b2'\u03c9 plus \u03c3<sup>70</sup>. Sigma reads two promoter boxes, the \u221235 (TTGACA) and \u221210 (TATAAT). The lac promoter doesn't match those well, which is exactly why it needs help.</p><p>CAP-cAMP binds just upstream and bends the DNA about 90 degrees. A patch on CAP called activating region 1 touches the C-terminal domain of an \u03b1 subunit on RNA polymerase and helps it grab the promoter. Biotechnologists made a mutant called lacUV5 whose promoter matches the consensus better, so it works without CAP.</p>`},
+    nogas:{title:"Basal transcription", html:`<p>The low level of transcription that happens without activators is called basal transcription. How low depends on the promoter. The lac promoter is weak, so without CAP-cAMP it runs at only a small fraction of its full rate. Some promoters, like the mal promoters, are so weak they are almost silent without their activator.</p><p>Scientists measure this using reporter genes such as GFP or luciferase fused to a promoter, then comparing the glow with and without the activator.</p>`},
+    duo:{title:"More inducible and repressible systems", html:`<p>Catabolic (inducible) examples: <i>lac</i> (lactose), <i>ara</i> (arabinose), <i>gal</i> (galactose), <i>mal</i> (maltose). Anabolic (repressible) examples: <i>trp</i> (tryptophan), <i>his</i> (histidine), <i>leu</i> (leucine).</p><p>Some operons are controlled mostly by activators instead of repressors. The mal operon needs its activator MalT, and the ara operon uses one protein, AraC, as both a stop sign and gas. Try them in the Operon Lab!</p>`},
+    lacgenes:{title:"The lac genes in detail (not needed for the exam!)", html:`<p><i>lacZ</i> makes \u03b2-galactosidase, a tetramer of about 465 kDa that splits lactose into glucose and galactose. Here's a cool twist: the same enzyme also rearranges some lactose into allolactose, so the enzyme makes the inducer for its own operon!</p><p><i>lacY</i> makes lactose permease, a membrane transporter with 12 transmembrane helices that pulls lactose in along with a proton (H<sup>+</sup>). <i>lacA</i> makes thiogalactoside transacetylase. Its job is still debated; it may help detoxify sugars the cell can't use.</p>`},
+    switches:{title:"CAP is a global regulator", html:`<p>CAP doesn't just control lac. CAP-cAMP regulates over a hundred genes, including many operons for alternative sugars. A set of operons controlled by one regulator is called a regulon. When glucose disappears, CAP turns up this whole "backup food" program at once.</p>`},
+    leaky:{title:"The chicken-and-egg problem", html:`<p>If the repressor totally blocked transcription, how would the first lactose get in? It needs permease (from <i>lacY</i>) to enter the cell! The answer is that repression is slightly leaky. Every so often the repressor lets go and a few mRNAs get made, so each cell has a handful of permease and \u03b2-galactosidase molecules ready to go.</p><p>In the 1950s, Novick and Weiner showed that at low inducer levels, individual cells are either fully ON or fully OFF, with nothing in between. This all-or-none switch comes from a positive feedback loop: more permease brings in more inducer, which makes more permease.</p>`},
+    iptg:{title:"Hacking the lac switch", html:`<p>Lactose is joined by a \u03b2(1\u21924) bond, while allolactose uses a \u03b2(1\u21926) bond. Same two sugars, different connection.</p><p>In the lab, scientists use IPTG, a gratuitous inducer. The repressor grabs it like allolactose, but \u03b2-galactosidase can't break it down, so the switch stays on. When an inducer binds the repressor's core, it shifts the angle of the DNA-reading headpieces and cuts operator binding by about 1,000-fold.</p>`},
+    exclusion:{title:"Inducer exclusion: glucose's other trick", html:`<p>Glucose enters E. coli through the phosphotransferase system (PTS). One PTS protein, EIIA<sup>Glc</sup>, passes its phosphate to incoming glucose. While glucose is flowing in, most EIIA<sup>Glc</sup> is unphosphorylated, and that form sticks to lactose permease and blocks it.</p><p>So glucose also keeps lactose (and therefore allolactose) out of the cell. This is called inducer exclusion, and research suggests it is a major part of why E. coli ignores lactose when glucose is around, working together with the cAMP-CAP system.</p>`},
+    campmore:{title:"Where cAMP comes from", html:`<p>The enzyme adenylate cyclase (CyaA in E. coli) turns ATP into cAMP. CyaA is switched on by the phosphorylated form of EIIA<sup>Glc</sup>. When glucose is being imported, EIIA<sup>Glc</sup> keeps giving its phosphate away, so CyaA slows down and cAMP drops. That's the molecular link between glucose and cAMP.</p><p>cAMP is a messenger in humans too. Cholera toxin permanently switches on a protein that activates adenylyl cyclase in gut cells. cAMP skyrockets, chloride and water pour out of the cells, and the result is the severe watery diarrhea of cholera.</p>`},
+    capmore:{title:"CAP by the numbers", html:`<p>CAP (also called CRP, cAMP receptor protein) is a dimer, and each half binds one cAMP. It recognizes a 22 base pair site with the pattern TGTGA...TCACA and bends DNA about 90 degrees.</p><p>At some promoters, like lac, CAP binds upstream and reaches over to RNA polymerase's \u03b1 subunit (Class I). At others, like gal, it sits right next to the \u221235 box and touches several parts of RNA polymerase (Class II).</p><p>And adrenaline uses cAMP in your liver cells to trigger sugar release, so the same little molecule works across the tree of life.</p>`},
+    fullspeed:{title:"How much does induction change things?", html:`<p>Fully induced, the lac operon can be transcribed around 1,000 times more than when repressed. \u03b2-galactosidase can become one of the most abundant proteins in the cell.</p><p>Biotech runs on this! In the popular pET system, the gene for T7 RNA polymerase is placed under lacUV5 control in a strain called BL21(DE3). Add IPTG, T7 RNA polymerase is made, and it cranks out huge amounts of whatever protein scientists cloned behind a T7 promoter.</p>`},
+    nonemore:{title:"Is OFF really OFF?", html:`<p>Even fully repressed, the lac operon makes roughly one mRNA per cell cycle. Biologists call this leaky expression. It's usually harmless, but when scientists want to make a protein that is toxic to the cell, leakiness can kill the culture before they even add inducer. Adding extra glucose to the growth medium lowers cAMP and helps keep the leak tiny.</p>`},
+    together:{title:"Diauxie and blue-white screening", html:`<p>Grow E. coli with both glucose and lactose and the growth curve has two climbs with a pause in between. The cells eat all the glucose first, pause while they switch on the lac operon, then grow again on lactose. Jacques Monod named this diauxic growth in the 1940s.</p><p>In blue-white screening, bacteria with a working <i>lacZ</i> turn a chemical called X-gal blue. If a new gene gets inserted into the middle of <i>lacZ</i> on a plasmid, the enzyme breaks and the colonies stay white, so scientists know which colonies carry their gene.</p>`},
+    trpgenes:{title:"The trp genes in detail (not needed for the exam!)", html:`<p><i>trpE</i> and <i>trpD</i> make anthranilate synthase, <i>trpC</i> makes the next enzyme in the pathway, and <i>trpB</i> and <i>trpA</i> make tryptophan synthase, starting from a molecule called chorismate.</p><p>Tryptophan synthase is famous for a molecular tunnel. The \u03b1 subunit makes indole, and instead of letting it escape, the enzyme passes it through an internal channel about 25 \u00c5 long straight to the \u03b2 subunit. Biochemists call this substrate channeling.</p><p><i>trpR</i> sits far from the operon and also represses a few other genes, including itself.</p>`},
+    trprep:{title:"How tryptophan switches on TrpR", html:`<p>TrpR is a dimer. Without tryptophan (the "aporepressor"), its two DNA-reading helices are held at the wrong spacing to fit the operator's major grooves. When two tryptophan molecules bind, the helices swing into position, and now the repressor fits the operator snugly.</p>`},
+    atten:{title:"Attenuation: the trp dimmer switch", html:`<p>Between the operator and <i>trpE</i> is a leader region, <i>trpL</i>, that codes for a 14 amino acid leader peptide with two tryptophan codons in a row. Its mRNA has four regions that can pair up in different ways.</p><p>High tryptophan: the ribosome zips past the Trp codons and covers region 2, so regions 3 and 4 fold into a terminator hairpin and RNA polymerase stops early. Low tryptophan: the ribosome stalls at the Trp codons, regions 2 and 3 pair instead (the antiterminator), and transcription continues.</p><p>Repression (about 70-fold) and attenuation (about 10-fold) together tune trp operon output around 600-fold. <i>Bacillus subtilis</i> does it differently, with a ring-shaped RNA-binding protein called TRAP.</p>`},
+    ind_co:{title:"Repressors as research tools", html:`<p>Scientists borrowed bacterial repressors to control genes in other organisms. In the Tet-On and Tet-Off systems, the bacterial tetracycline repressor (TetR) is used in mouse and human cells, so researchers can switch genes on or off just by adding the antibiotic doxycycline.</p><p>Arrays of lac operators can also be inserted into a chromosome, and a LacI-GFP fusion protein that binds them makes that spot glow, letting researchers watch chromosomes move in living cells.</p>`},
+    lab_lac:{title:"lac operon extras", html:`<p>Try every combination and see if your predictions match the summary table. Notice that only one combination turns the genes fully on.</p><p>Beyond cAMP and CAP, glucose also blocks lactose permease (inducer exclusion), so in real cells very little lactose even gets inside while glucose is around.</p>`},
+    lab_trp:{title:"trp operon extras", html:`<p>The real trp operon has a second control layer called attenuation, where a ribosome racing along the leader mRNA decides whether RNA polymerase finishes the job. Repression plus attenuation lets E. coli fine-tune tryptophan production about 600-fold.</p>`},
+    lab_ara:{title:"The ara operon and AraC", html:`<p>The ara operon (<i>araBAD</i>) lets E. coli eat arabinose. Its regulator AraC is a shape-shifter. Without arabinose, AraC binds two sites (araO<sub>2</sub> and araI<sub>1</sub>) about 210 base pairs apart and bends the DNA into a loop that keeps RNA polymerase away. When arabinose binds, AraC lets go of araO<sub>2</sub>, grabs araI<sub>1</sub> and araI<sub>2</sub> next to the promoter, and becomes an activator. CAP-cAMP boosts it further.</p><p>Biotech loves this: pBAD plasmids use the ara promoter so scientists can dial protein production up or down by adding more or less arabinose, and add glucose to shut it off tightly.</p>`},
+    x_select:{title:"Satellite colonies and sneaky ampicillin", html:`<p>The ampicillin resistance gene (<i>bla</i>) makes \u03b2-lactamase, an enzyme that gets secreted and destroys ampicillin around the colony. If plates sit too long, the ampicillin in that halo is used up and tiny non-resistant "satellite colonies" can grow around a real colony. Many labs use carbenicillin instead, a more stable cousin of ampicillin.</p><p>\u03b2-lactamases are also a huge deal in medicine: they're one of the main ways pathogens resist penicillin-family antibiotics.</p>`},
+    x_chem:{title:"The chemistry of blue", html:`<p>X-gal's full name is 5-bromo-4-chloro-3-indolyl-\u03b2-D-galactopyranoside. \u03b2-galactosidase cuts off the galactose, releasing a colorless indoxyl piece. Two of those pieces then pair up and react with oxygen to form an insoluble blue dye (a relative of indigo, the dye in blue jeans). Because the dye doesn't dissolve, the blue stays right in the colony.</p><p>A cousin substrate, ONPG, turns yellow when cut. Clinical micro labs use an ONPG test to identify bacteria that have \u03b2-galactosidase.</p>`},
+    x_iptg:{title:"Why IPTG and not lactose?", html:`<p>IPTG (isopropyl \u03b2-D-1-thiogalactopyranoside) has a sulfur atom where lactose has an oxygen. The repressor still grabs it, but \u03b2-galactosidase can't cut that bond. So IPTG never gets used up, and the lac switch stays on at a steady level. Lactose would get eaten, and it would also compete with X-gal for the enzyme.</p><p>Many cloning strains also carry <i>lacI<sup>q</sup></i> (extra repressor), so they need IPTG to get strong expression.</p>`},
+    x_insert:{title:"\u03b1-complementation: the split enzyme trick", html:`<p>Plasmids like pUC19 don't carry the whole <i>lacZ</i> gene. They carry a small piece called <i>lacZ\u03b1</i>, and the restriction enzyme sites (the multiple cloning site) sit inside it. The host strain, such as DH5\u03b1, carries <i>lacZ\u0394M15</i>, which is missing exactly that piece.</p><p>Neither piece works alone, but together they snap into a working \u03b2-galactosidase. This is called \u03b1-complementation. Insert your gene into <i>lacZ\u03b1</i> and the plasmid's piece breaks, so no working enzyme forms.</p>`},
+    x_read:{title:"When blue-white screening fibs", html:`<p>A small insert that keeps the reading frame can leave a little enzyme activity, giving light blue colonies. A plasmid that closed back up with a small deletion can look white with no insert at all. That's why scientists confirm white colonies with colony PCR or a restriction digest, the tools from Chapter 9!</p>`},
+    x_pglo:{title:"GFP and the pGLO plasmid", html:`<p>GFP comes from the jellyfish <i>Aequorea victoria</i>. Its glowing center, the chromophore, forms on its own from three amino acids in the protein (serine, tyrosine, and glycine at positions 65 to 67). Osamu Shimomura, Martin Chalfie, and Roger Tsien won the 2008 Nobel Prize in Chemistry for discovering and developing it.</p><p>pGLO carries three key genes: <i>bla</i> (ampicillin resistance), <i>araC</i> (the regulator), and a GFP variant tuned to glow brightly under UV, placed behind the ara promoter. Cells are made to take up the plasmid with calcium chloride and a quick heat shock at 42 \u00b0C.</p>`},
+    lab_xgal:{title:"X-gal plate extras", html:`<p>Try the transformation mix with and without ampicillin. Without selection, the untransformed cells take over the plate as a lawn, so you can't find your transformants.</p><p>Without an inducer, repression is slightly leaky, so real colonies may turn faintly blue after a long time. Labs add IPTG to get a strong, clear signal.</p>`},
+    lab_pglo:{title:"pGLO plate extras", html:`<p>The pGLO lab combines two things you learned: ampicillin <b>selection</b> (only plasmid carriers survive) and <b>gene regulation</b> (arabinose flips AraC from repressor to activator, turning GFP on).</p><p>Compare the +pGLO plates with and without arabinose. Both have the same cells with the same plasmid. The only difference is whether the ara switch is on!</p>`},
+    feedback:{title:"Feedback loops are everywhere", html:`<p>Cells often stack feedback at more than one level. Tryptophan represses the trp operon (slow, minutes), but it also binds directly to the first enzyme in its own pathway, anthranilate synthase, and shuts it down within seconds. That's called feedback inhibition, and it's an example of the allosteric regulation from your enzyme slides.</p><p>Systems biologists have shown that genes that repress themselves (negative autoregulation) respond faster and more steadily than genes without feedback. Positive feedback does the opposite: it creates all-or-none switches, like the lac operon at low inducer levels.</p>`},
+    trpfeedback:{title:"Three layers of trp control", html:`<p>E. coli controls tryptophan at three levels. Repression shuts off transcription at the operator. Attenuation stops transcription early inside the leader. Feedback inhibition switches off the anthranilate synthase enzyme itself. Together they let the cell match tryptophan production to demand almost perfectly, without wasting energy.</p>`},
+    lab_mal:{title:"The mal genes and MalT", html:`<p>The mal genes let E. coli take up and use maltose and longer maltose chains. MalT is a positive regulator: the mal promoters are so weak that almost nothing happens without it. MalT is actually switched on by maltotriose (three glucoses in a row, made from maltose) plus ATP. In this lab we simplified that to "maltose loads the gas can."</p><p>Fun connection: one mal gene, <i>lamB</i>, makes a channel in the outer membrane called maltoporin. It's also the doorway phage lambda uses to infect E. coli, which is how it got its name.</p>`}
+  };
+
+  /* ================= Steps ================= */
+  const S_WHY = {title:"Why control genes?", v:T("genes"), more:"why",
+    text:`A bacterium is a tiny, super efficient machine. Some proteins are needed all the time, so their genes are always on. Those are called {{constitutive}} proteins. Other proteins are only made when the cell needs them. Making proteins costs a lot of energy, and the cheapest place to say "not right now" is before any mRNA is made. That's pre-transcriptional control!`};
+  const S_CMP = {title:"Two different strategies", v:T("compare"), more:"compare",
+    text:`Prokaryotes group genes that work together into an {{operon}}: several genes controlled by one promoter and transcribed together into one mRNA. Eukaryotes don't use operons. Each eukaryotic gene has its own promoter and its own control switches.`};
+
+  const EUK = [
+    {...S_WHY, part:"Getting started"},
+    {...S_CMP, part:"Getting started"},
+    {part:"Eukaryote basics", title:"Packing DNA away", v:T("chromatin"), more:"chromatin",
+     text:`Eukaryotic DNA wraps around proteins called {{histones}}, like thread around spools. When DNA is packed up tight (heterochromatin), RNA polymerase can't reach the genes, so they are not transcribed. Loosely packed DNA (euchromatin) is open for business.`},
+    {part:"Eukaryote basics", title:"Transcription factors", v:T("tf"), more:"tf",
+     text:`In eukaryotes, RNA polymerase can't find the promoter all by itself. Helper proteins called transcription {{factors}} land on the promoter first and guide RNA polymerase into place. No helpers, no transcription.`},
+    {part:"Eukaryote basics", title:"Enhancers and silencers", v:T("enhancer"), more:"enhancer",
+     text:`Eukaryotic genes also have control sequences that can sit far away from the gene. Activator proteins bind {{enhancers}} to boost transcription. Repressor proteins bind {{silencers}} to turn transcription down. The DNA can bend into a loop so these proteins can reach RNA polymerase.`},
+    {part:"Wrap-up", title:"The big picture", v:T("compare"), more:"recap", table:{data:CMP_TABLE, rows:["a","b","c","d","e"]},
+     text:`Nice work! Prokaryotes control whole groups of genes with operons, so they can switch sets of genes on or off {{quickly}}. Eukaryotes control genes one at a time using packaging, transcription factors, enhancers, and silencers. That's slower, but it gives much finer control.`,
+     after:`You've got the eukaryote basics. Operons are next!`, cta:[{label:"Head to Prokaryotes", view:"pro"}]}
+  ];
+
+  const P2 = "Operon basics", P3 = "The lac operon", P4 = "The trp operon";
+  const PRO = [
+    {...S_WHY, part:"Getting started"},
+    {...S_CMP, part:"Getting started"},
+    {part:P2, title:"The parts of an operon", v:O("generic", {}, "park"), more:"parts",
+     text:`Meet our road trip crew! RNA polymerase is the car, and DNA is the road. An operon has three parts in a row: the promoter, where the car parks to start; the {{operator}}, a short on/off switch right next to it; and the structural genes, which code for the proteins.`},
+    {part:P2, title:"The regulatory gene", v:O("generic", {repShow:1, made:1}, "park"), pre:O("generic", {repShow:1, made:0}, "park"), more:"regulatory",
+     text:`Upstream of the operon sits the {{regulatory}} gene (also called the repressor gene). It is not part of the operon, but it codes for the protein that controls it: the repressor. Watch it get made!`},
+    {part:P2, title:"Cis or trans?", v:O("generic", {repShow:1, carShow:0}, "park", {cistrans:true}), more:"cistrans",
+     text:`The regulatory gene can sit right next to the operon (like lacI) or far away on the chromosome (like trpR). Either way works, because the repressor is a protein that travels through the cytoplasm to find the operator. A DNA site that only controls the genes right next to it is {{cis}}-acting, like the operator. A product that can float over and act anywhere is {{trans}}-acting, like the repressor.`},
+    {part:P2, title:"Negative control: the stop sign", v:O("generic", {repShow:1, rep:1}, "blocked"), more:"negative",
+     text:`When a protein binds DNA and blocks transcription, that's {{negative}} control. The repressor is a stop sign sitting on the operator. The car pulls up to the promoter, but it can't get past. No mRNA, no proteins.`,
+     after:`Negative control = a stop sign that blocks the road.`},
+    {part:P2, title:"Positive control: the gas", v:O("generic", {repShow:0, rep:0, capShow:1, capAmp:1, cap:1}, "drive"), more:"positive",
+     text:`When a protein binds DNA and boosts transcription, that's {{positive}} control. An activator protein is gas in the tank. It binds near the promoter and helps RNA polymerase grab on and hold tight, so the car takes off again and again. Vroom!`},
+    {part:P2, title:"No gas? Not zero, just low", v:O("generic", {capShow:1, capAmp:0, cap:0}, "low"), more:"nogas",
+     text:`Here's an important detail. An activator is not an on/off switch. Without gas, the car can still start sometimes: RNA polymerase grabs the promoter now and then and makes a little mRNA, but most of the time it slips off. So no activator means transcription is {{reduced}}, not stopped. Watch the car: it usually stalls, but every few tries it makes it!`,
+     after:`Stop sign = blocked. No gas = way down, but a little still gets through.`},
+    {part:P2, title:"Inducible vs. repressible", v:T("duo", {mode:"generic"}), more:"duo",
+     text:`An {{inducible}} operon is normally OFF. A small molecule called an inducer shows up and takes the stop sign away. A {{repressible}} operon is normally ON. A small molecule called a corepressor shows up and helps put the stop sign up. Inducible operons usually make enzymes that break food down (catabolic). Repressible operons usually make enzymes that build things the cell needs (anabolic).`},
+
+    {part:P2, title:"Negative feedback loops", v:T("feedback", {mode:"gen"}), more:"feedback", links:true,
+     cta:[{label:"Next: Inducible operons", view:"ind"}],
+     text:`Let's connect operons to the central dogma. When an operon is ON, RNA polymerase transcribes its genes into mRNA (transcription). Ribosomes translate that mRNA into proteins (translation). In a repressible operon, those proteins are enzymes that build a product. When enough product piles up, it becomes the corepressor and switches its own genes OFF. As the product gets used up, the genes turn back ON. A product shutting down its own production is called negative {{feedback}}.`,
+     after:`DNA to mRNA to protein to product, and the product loops back to flip the switch!`},
+    {part:P3, title:"Meet the lac operon", v:O("lac", LAC_OFF, "blocked"), more:"lacgenes",
+     text:`E. coli's favorite food is glucose, but it can also eat lactose, the sugar in milk. The lac operon holds a set of lac genes for using lactose. (You don't need to memorize the individual gene names.) It's an {{inducible2}} operon: OFF until lactose shows up.`},
+    {part:P3, title:"Two sugars, two switches", v:O("lac", LAC_OFF, "blocked", {switches:true}), more:"switches",
+     text:`Here's the big idea, so let's go slow. The lac operon listens to TWO sugars, and each sugar controls a different switch. Lactose controls the stop sign (the repressor). A stop sign blocks transcription, so lactose regulation is {{negative2}} control. Glucose controls the gas (the activator). Gas boosts transcription, so glucose regulation is {{positive2}} control.`,
+     after:`Lactose = stop sign switch. Glucose = gas switch.`},
+    {part:P3, title:"No lactose: stop sign up", v:O("lac", LAC_OFF, "blocked"), table:{data:LAC_TABLE, rows:["Gl"], hl:"Gl"}, more:"leaky",
+     text:`The lacI gene makes repressor all the time. With no lactose around, the repressor sits on the {{operator2}}. Stop sign up! RNA polymerase is blocked, so no lac genes are transcribed. Why build lactose tools when there's no lactose to eat?`},
+    {part:P3, title:"Lactose arrives", v:O("lac", LAC_IND, "park"), table:{data:LAC_TABLE, rows:["Gl"]}, more:"iptg",
+     text:`Lactose enters the cell, and some of it is rearranged into {{allolactose}}. Allolactose comes straight from lactose and is almost the same molecule: same two sugars, just linked a little differently. Think of it as lactose's twin! Allolactose is the inducer. It clicks onto the repressor, the repressor changes shape, and it falls off the operator. Stop sign down!`},
+    {part:P3, title:"But glucose is still here", v:O("lac", LAC_IND, "low"), table:{data:LAC_TABLE, rows:["GL","Gl"], hl:"GL"}, more:"exclusion",
+     text:`The stop sign is gone, but {{glucose}} is also around, and that's E. coli's favorite, easiest food. When glucose is present, there's no gas in the tank. RNA polymerase keeps pulling up and falling off the promoter. Every few tries it makes it through, so the lac genes are transcribed, but only a trickle. Why work hard on lactose when the easy food is right there?`},
+    {part:P3, title:"How glucose controls the gas: cAMP", v:T("seesaw"), table:{data:LAC_TABLE, rows:["GL","Gl"]}, more:"campmore",
+     text:`The gas system has two parts. Part one is cAMP (cyclic AMP), a tiny signal molecule the cell makes from ATP. Here's the rule to remember: when glucose is high, cAMP is {{low}}. When glucose is low, cAMP is high. Glucose coming into the cell slows down the enzyme that makes cAMP, so glucose and cAMP always move in opposite directions.`,
+     after:`Glucose up, cAMP down. Glucose down, cAMP up.`},
+    {part:P3, title:"How glucose controls the gas: CAP", v:O("lac", {repShow:0, carShow:0, capShow:1, camp:1, capAmp:1, cap:1, lac:1}, "hide"),
+     pre:O("lac", {repShow:0, carShow:0, capShow:1, camp:1, capAmp:0, cap:0, lac:1}, "hide"), table:{data:LAC_TABLE, rows:["GL","Gl"]}, more:"capmore",
+     text:`Part two is {{cap}}, the catabolite activator protein. CAP is the gas can, but on its own it's empty and can't grab the DNA. When cAMP binds to CAP, CAP changes shape and can now attach to the CAP site right next to the promoter. So: low glucose, then lots of cAMP, then cAMP binds CAP, then CAP binds DNA. That's the gas!`},
+    {part:P3, title:"Glucose gone, lactose here: full speed!", v:O("lac", LAC_ON, "drive"), table:{data:LAC_TABLE, rows:["GL","Gl","gL"], hl:"gL"}, more:"fullspeed",
+     text:`Now glucose runs out. cAMP rises, cAMP binds CAP, and CAP-cAMP lands next to the promoter. It grabs RNA polymerase and helps it hold on. No stop sign AND a full tank, so the lac genes are transcribed at {{high}} levels. E. coli can finally eat that lactose!`},
+    {part:P3, title:"No glucose, no lactose", v:O("lac", LAC_NONE, "blocked"), table:{data:LAC_TABLE, rows:["GL","Gl","gl","gL"], hl:"gl"}, more:"nonemore",
+     text:`What if both sugars are gone? Glucose is low, so cAMP is high and CAP-cAMP is bound. Gas in the tank! But there's no {{lactose}}, so the repressor is back on the operator. Even a full tank can't get you through a stop sign. No transcription.`},
+    {part:P3, title:"Putting it all together", v:O("lac", LAC_ON, "drive"), table:{data:LAC_TABLE, rows:["GL","Gl","gl","gL"]}, more:"together",
+     cta:[{label:"Bonus: X-gal and blue-white screening", view:"xgal"},{label:"Next: Repressible operons", view:"rep"}],
+     text:`The lac genes are transcribed at high levels only when lactose is present AND glucose is absent. With both sugars around, it's just a trickle. Glucose turning down the operons for other sugars is called {{catabolite}} repression. It makes sure E. coli always eats its favorite food first. Check out the table: you just worked through every row!`},
+
+    {part:P4, title:"Meet the trp operon", v:O("trp", TRP_LOW, "drive"), more:"trpgenes",
+     text:`Tryptophan (trp) is an amino acid that E. coli can build itself using the trp operon. Building it takes a lot of energy, so why bother if tryptophan is already around? The trp operon is {{repressible2}}: normally ON, and switched OFF when there's plenty of tryptophan. (No need to memorize the trp gene names, they're just there for fun!)`},
+    {part:P4, title:"Low tryptophan: full speed ahead", v:O("trp", TRP_LOW, "drive", {inactive:true}), more:"trprep",
+     text:`The trp repressor is made by the trpR gene. On its own, the trp repressor is {{inactive}}: it can't grab the operator. The road is clear, so RNA polymerase transcribes the trp genes and the cell builds the tryptophan it needs.`},
+    {part:P4, title:"High tryptophan: stop sign up", v:O("trp", TRP_HIGH, "blocked"), more:"atten",
+     text:`When tryptophan builds up, tryptophan itself binds the repressor and switches it on. In this system, tryptophan is the {{corepressor}}. The active repressor sits on the operator and blocks RNA polymerase. The cell stops making something it already has. So smart!`},
+    {part:P4, title:"The trp operon is a feedback loop", v:T("feedback", {mode:"trp"}), more:"trpfeedback", links:true,
+     text:`Put it all together! The trp genes are transcribed into mRNA, the mRNA is translated into enzymes, and those enzymes build tryptophan. When tryptophan piles up, it becomes the corepressor and shuts the trp genes off. As the cell uses tryptophan to build its own proteins, the level drops, the repressor lets go, and the genes turn back on. The trp operon is a classic example of negative {{feedback2}}.`},
+    {part:P4, title:"Inducers vs. corepressors", v:T("duo", {mode:"lactrp"}), more:"ind_co",
+     text:`Let's compare! In the lac operon, the inducer (allolactose) pulls the stop sign OFF the road, so genes turn on. In the trp operon, the corepressor (tryptophan) helps put the stop sign ON the road, so genes turn off. Both are negative control, because both use a repressor. They just use it in opposite ways.`,
+     after:`Amazing work! Now go play with these operons yourself.`, cta:[{label:"Open the Operon Lab", view:"lab", lab:"lac"}]}
+  ];
+  const XP = "Blue-white screening";
+  const XGAL = [
+    {part:XP, title:"Which cells got the plasmid?", v:T("platepair"), more:"x_select",
+     text:`In biotech, we paste a gene of interest into a plasmid (the vector) and put it into bacteria. Only a few cells actually take up the plasmid! Our plasmid carries an ampicillin resistance gene, so we grow the cells on ampicillin. Only the cells that picked up the plasmid survive. Letting only the cells you want grow is called {{selection}}.`},
+    {part:XP, title:"Meet X-gal", v:T("xgalchem"), more:"x_chem",
+     text:`Remember \u03b2-galactosidase, the lactose-splitting enzyme made from lacZ? X-gal is a colorless lactose lookalike. When \u03b2-galactosidase cuts X-gal, one of the pieces turns {{blue}}. So on a plate with X-gal, a blue colony means a working lacZ gene.`},
+    {part:XP, title:"Flip the lac switch with IPTG", v:O("lac", {repShow:1, rep:0, repAct:0, ind:1, lac:1, camp:1, capShow:1, capAmp:1, cap:1}, "drive", {iptg:true, bgal:true}),
+     pre:O("lac", {repShow:1, rep:1, camp:1, capShow:1, capAmp:1, cap:1}, "blocked", {iptg:true}), more:"x_iptg",
+     text:`lacZ is part of the lac operon, so the repressor (our stop sign) normally keeps it off. To switch it on, we add {{iptg}}, a lactose lookalike that acts as the inducer. It pulls the stop sign off just like allolactose does, but the cells can't break it down, so the switch stays on. The plates have no glucose, so the gas tank is full too!`},
+    {part:XP, title:"Break lacZ on purpose", v:T("plasmid"), more:"x_insert",
+     text:`Here's the clever part. The plasmid's restriction enzyme sites sit right in the middle of its lacZ gene. When we paste our gene of interest in there, lacZ gets split and broken. No working \u03b2-galactosidase means X-gal stays colorless, so those colonies are {{white}}.`},
+    {part:XP, title:"Reading the plate", v:T("plateread"), more:"x_read",
+     text:`On a plate with ampicillin, X-gal, and IPTG, every colony has a plasmid (thanks, ampicillin!). Blue colonies got an empty plasmid, so lacZ still works. White colonies got the plasmid with our gene inside lacZ. So the colonies we pick are the {{white2}} ones! This is called blue-white screening.`,
+     after:`Blue = empty plasmid. White = your gene is in there!`},
+    {part:XP, title:"Don't mix it up: X-gal vs. pGLO", v:T("xvp"), more:"x_pglo", table:{data:XVP_TABLE, rows:["a","b","c","d","e"]},
+     text:`The pGLO lab uses a different reporter! pGLO carries the GFP gene (borrowed from a glowing jellyfish), controlled by the ara promoter and AraC. Ampicillin still does the selection, but adding {{arabinose}} is what switches GFP on, and those colonies glow green under UV light. X-gal screening uses lacZ and turns colonies blue in normal light.`,
+     after:`Now try both plate experiments in the Operon Lab!`, cta:[{label:"X-gal plates in the Lab", view:"lab", lab:"xgal"},{label:"pGLO plates in the Lab", view:"lab", lab:"pglo"}]}
+  ];
+  const TRACKS = {
+    euk:{name:"Eukaryotes", steps:EUK},
+    basics:{name:"Gene regulation basics", short:"1. Basics", steps:PRO.slice(0, 10)},
+    ind:{name:"Inducible operons", short:"2. Inducible operons", steps:PRO.slice(10, 20)},
+    xgal:{name:"X-gal bonus", short:"X-gal bonus", bonus:true, steps:XGAL},
+    rep:{name:"Repressible operons", short:"3. Repressible operons", steps:PRO.slice(20)}
+  };
+  const PRO_TRACKS = ["basics","ind","xgal","rep"];
+
+  /* ================= Lab definitions ================= */
+  const lvlName = {on:"ON", low:"LOW", off:"OFF"};
+  const LABS = {
+    lac:{name:"lac operon", table:LAC_TABLE, more:"lab_lac", toggles:[["glu","Glucose"],["lac","Lactose"]], start:{glu:true, lac:false},
+      intro:"Flip glucose and lactose on and off. Watch the stop sign (repressor), the gas (CAP-cAMP), and the car respond.",
+      def:s => O("lac", {repShow:1, capShow:1, glu:+s.glu, lac:+s.lac, camp:+!s.glu, capAmp:+!s.glu, cap:+!s.glu, rep:+!s.lac, repAct:+!s.lac, ind:+s.lac}, !s.lac ? "blocked" : (s.glu ? "low" : "drive")),
+      row:s => (s.glu ? "G" : "g") + (s.lac ? "L" : "l"),
+      out:s => {
+        const lv = !s.lac ? "off" : (s.glu ? "low" : "on");
+        const msg = {Gl:"Glucose here, no lactose. The stop sign is up, and there's no gas either. lac genes OFF.",
+          GL:"Both sugars here. Allolactose pulled the stop sign off, but glucose keeps cAMP low, so CAP can't bind. No gas! RNA polymerase usually falls off, so only a trickle of mRNA is made. lac genes LOW.",
+          gl:"No sugars at all. cAMP is high and CAP-cAMP is bound, so the tank is full. But with no lactose, the stop sign is up. lac genes OFF.",
+          gL:"Lactose only! Allolactose removed the stop sign, and high cAMP lets CAP bind. Full tank, open road. lac genes ON!"}[(s.glu ? "G" : "g") + (s.lac ? "L" : "l")];
+        return {lv, msg, chips:[["Stop sign", s.lac ? "Down" : "Up", s.lac ? "on" : "off"], ["Gas (CAP-cAMP)", s.glu ? "Empty" : "Full", s.glu ? "off" : "on"], ["lac genes", lvlName[lv], lv]]};
+      }},
+    trp:{name:"trp operon", table:TRP_TABLE, more:"lab_trp", toggles:[["trp","Tryptophan"]], start:{trp:false},
+      intro:"Control the tryptophan supply and watch the repressor respond.",
+      def:s => O("trp", {repShow:1, trp:+s.trp, ind:+s.trp, repAct:+s.trp, rep:+s.trp}, s.trp ? "blocked" : "drive", {inactive:!s.trp}),
+      row:s => s.trp ? "H" : "l",
+      out:s => {
+        const lv = s.trp ? "off" : "on";
+        const msg = s.trp ? "Plenty of tryptophan. Tryptophan (the corepressor) activates the repressor, and the stop sign goes up. trp genes OFF. No need to make more!" : "Tryptophan is low. The repressor is inactive on its own, so the road is clear. trp genes ON, and the cell builds tryptophan.";
+        return {lv, msg, chips:[["Stop sign", s.trp ? "Up" : "Down", s.trp ? "off" : "on"], ["trp genes", lvlName[lv], lv]]};
+      }},
+    ara:{name:"ara operon", extra:true, table:ARA_TABLE, more:"lab_ara", toggles:[["glu","Glucose"],["ara","Arabinose"]], start:{glu:true, ara:false},
+      intro:"The ara operon lets E. coli eat arabinose. Its regulator, AraC, is a shape-shifter: it's a stop sign without arabinose and gas with it!",
+      def:s => O("ara", {repShow:1, rep:1, repAct:+!s.ara, ind:+s.ara, glu:+s.glu, ara:+s.ara, camp:+!s.glu, capShow:1, capAmp:+!s.glu, cap:+!s.glu}, !s.ara ? "blocked" : (s.glu ? "low" : "drive")),
+      row:s => (s.glu ? "G" : "g") + (s.ara ? "A" : "a"),
+      out:s => {
+        const lv = !s.ara ? "off" : (s.glu ? "low" : "on");
+        const msg = {Ga:"Glucose here, no arabinose. AraC is in its stop sign form and bends the DNA into a loop that blocks the promoter. ara genes OFF.",
+          GA:"Both sugars. Arabinose flips AraC into its gas form, so RNA polymerase gets some help. But glucose keeps cAMP low, so CAP can't join in. ara genes LOW.",
+          ga:"No sugars. CAP-cAMP is bound, but AraC is still looping the DNA shut. ara genes OFF.",
+          gA:"Arabinose only! AraC switches to its gas form and CAP-cAMP joins in. Two kinds of gas! ara genes ON."}[(s.glu ? "G" : "g") + (s.ara ? "A" : "a")];
+        return {lv, msg, chips:[["AraC", s.ara ? "Gas form" : "Stop sign form", s.ara ? "on" : "off"], ["Gas (CAP-cAMP)", s.glu ? "Empty" : "Full", s.glu ? "off" : "on"], ["ara genes", lvlName[lv], lv]]};
+      }},
+    mal:{name:"mal operon", extra:true, table:MAL_TABLE, more:"lab_mal", toggles:[["glu","Glucose"],["mal","Maltose"]], start:{glu:true, mal:false},
+      intro:"The mal genes let E. coli eat maltose. This one runs on positive control: there's no stop sign, just two gas cans (MalT and CAP).",
+      def:s => O("mal", {act2Show:1, act2:+s.mal, act2Fuel:+s.mal, glu:+s.glu, mal:+s.mal, camp:+!s.glu, capShow:1, capAmp:+!s.glu, cap:+!s.glu}, !s.mal ? "trace" : (s.glu ? "low" : "drive")),
+      row:s => (s.glu ? "G" : "g") + (s.mal ? "M" : "m"),
+      out:s => {
+        const lv = !s.mal ? "off" : (s.glu ? "low" : "on");
+        const msg = {Gm:"No maltose, so MalT is empty and can't bind. The mal promoter is so weak on its own that RNA polymerase almost never gets going. mal genes basically OFF.",
+          GM:"Maltose loads up MalT and it binds, so there's some gas. Glucose keeps CAP off, though. mal genes LOW.",
+          gm:"CAP-cAMP is bound, but without maltose MalT stays empty. These genes really need MalT, so they stay basically OFF.",
+          gM:"Maltose loads MalT and CAP-cAMP is bound too. Double gas! mal genes ON."}[(s.glu ? "G" : "g") + (s.mal ? "M" : "m")];
+        return {lv, msg, chips:[["MalT gas", s.mal ? "Loaded" : "Empty", s.mal ? "on" : "off"], ["Gas (CAP-cAMP)", s.glu ? "Empty" : "Full", s.glu ? "off" : "on"], ["mal genes", lvlName[lv], lv]]};
+      }}
+  };
+  const LAB_ORDER = ["lac","trp","ara","mal"];
+  const PLATELABS = {
+    xgal:{name:"X-gal plates", more:"lab_xgal",
+      strains:[["wt","Wild-type E. coli (no plasmid)"],["empty","Transformed: empty plasmid"],["rec","Transformed: plasmid + your gene"],["mix","Transformation mix (real experiment)"]],
+      adds:[["amp","Ampicillin"],["xgal","X-gal"],["iptg","IPTG"],["lac","Lactose"]],
+      start:{strain:"mix", amp:true, xgal:true, iptg:true, lac:false, grown:false},
+      intro:"Pick your bacteria, choose what goes in the plate, then incubate overnight. Can you get blue colonies? White ones? Both?",
+      prompt:"Predict: will you see blue colonies, white colonies, both, a lawn, or no growth? Type blue, white, both, lawn, or none.",
+      guess:{blue:"blue", white:"white", colorless:"white", offwhite:"white", both:"both", mixed:"both", mix:"both", blueandwhite:"both", bluewhite:"both", lawn:"lawn", none:"none", nogrowth:"none", nothing:"none", dead:"none", no:"none"},
+      out:s => {
+        const induced = s.iptg || s.lac, col = works => !s.xgal ? "cream" : (works && induced ? "blue" : "white");
+        let spec, cat, msg = "";
+        const noIndMsg = "X-gal is there, but nothing flipped the lac switch. The repressor sits on the operator, so almost no \u03b2-galactosidase is made and the colonies stay white. Try adding IPTG or lactose!";
+        const noXMsg = "Colonies grow, but without X-gal there's nothing to turn blue, so every colony looks like a normal off-white colony.";
+        const lacNote = s.lac && !s.iptg ? " (Lactose works as an inducer too, but cells eat it up. That's why labs use IPTG, which they can't break down.)" : "";
+        if (s.strain === "wt"){
+          if (s.amp){ spec = {growth:"none"}; cat = "none"; msg = "Wild-type E. coli has no plasmid, so it has no ampicillin resistance gene. Ampicillin kills it: no growth."; }
+          else { const c = col(true); spec = {growth:"colonies", color:() => c}; cat = c === "blue" ? "blue" : "white";
+            msg = !s.xgal ? noXMsg : (c === "blue" ? "Wild-type E. coli has its own working lac operon. The inducer removed the repressor, lacZ was transcribed, and \u03b2-galactosidase cut X-gal. Blue colonies!" + lacNote : noIndMsg); }
+        } else if (s.strain === "empty"){
+          const c = col(true); spec = {growth:"colonies", color:() => c}; cat = c === "blue" ? "blue" : "white";
+          msg = (s.amp ? "The plasmid's ampicillin resistance gene lets every colony survive. " : "") + (!s.xgal ? noXMsg : (c === "blue" ? "The empty plasmid has an intact lacZ. The inducer switched it on and \u03b2-galactosidase cut X-gal: blue colonies." + lacNote : noIndMsg));
+        } else if (s.strain === "rec"){
+          const c = col(false); spec = {growth:"colonies", color:() => c}; cat = "white";
+          msg = (s.amp ? "The plasmid's ampicillin resistance gene lets every colony survive. " : "") + (!s.xgal ? noXMsg : "Your gene sits in the middle of lacZ, so lacZ is broken. No working \u03b2-galactosidase means X-gal stays colorless: white colonies. These are the ones you want!");
+        } else {
+          if (!s.amp){ spec = {growth:"lawn", lawn:"cream"}; cat = "lawn"; msg = "Without ampicillin, the cells that never took up a plasmid grow everywhere in a lawn. You can't find your transformed cells! That's why the ampicillin selection step matters."; }
+          else { const on = col(true), off = col(false); spec = {growth:"colonies", color:MIXCOL(on)}; cat = on === "blue" ? "both" : "white";
+            msg = on === "blue" ? "Ampicillin killed every cell without a plasmid. Blue colonies got the empty plasmid (lacZ still works). White colonies got the plasmid with your gene inside lacZ. Pick the white ones!" + lacNote
+              : (!s.xgal ? "Ampicillin kept only the plasmid carriers, but without X-gal, empty and recombinant colonies look identical. You can't tell which ones have your gene!" : "Ampicillin kept only the plasmid carriers, but with no inducer, lacZ stays off in every colony, so they're all white. You can't tell which ones have your gene!"); }
+        }
+        const colorTxt = {none:"None", blue:"Blue", white:s.xgal ? "White" : "Off-white", both:"Blue + white", lawn:"Lawn (can't tell)"}[cat];
+        return {spec, cat, msg, chips:[["Growth", spec.growth === "none" ? "None" : (spec.growth === "lawn" ? "Lawn" : "Colonies"), spec.growth === "none" ? "off" : "on"], ["Color", colorTxt, cat === "blue" || cat === "both" ? "on" : "low"]]};
+      }},
+    pglo:{name:"pGLO plates", more:"lab_pglo",
+      strains:[["minus","\u2212pGLO (not transformed)"],["plus","+pGLO (transformed)"]],
+      adds:[["amp","Ampicillin"],["ara","Arabinose"]],
+      start:{strain:"plus", amp:true, ara:true, uv:false, grown:false},
+      intro:"This is the pGLO lab you do in class. Pick +pGLO or \u2212pGLO bacteria, choose the plate, incubate, then flip on the UV light.",
+      prompt:"Predict: under UV light, will you see glowing colonies, colonies that don't glow, a lawn, or no growth? Type glow, no glow, lawn, or none.",
+      guess:{glow:"glow", green:"glow", glowing:"glow", yes:"glow", noglow:"noglow", doesntglow:"noglow", dontglow:"noglow", white:"noglow", dark:"noglow", notglowing:"noglow", lawn:"lawn", none:"none", nogrowth:"none", nothing:"none", dead:"none", no:"none"},
+      out:s => {
+        let spec, cat, msg;
+        if (s.strain === "minus"){
+          if (s.amp){ spec = {growth:"none"}; cat = "none"; msg = "These cells never got pGLO, so they have no ampicillin resistance gene. Ampicillin kills them: no growth."; }
+          else { spec = {growth:"lawn", lawn:"cream"}; cat = "lawn"; msg = "No antibiotic, so everything grows into a lawn. No pGLO means no GFP gene, so nothing glows under UV" + (s.ara ? ", even with arabinose." : "."); }
+        } else if (s.amp){
+          spec = {growth:"colonies", color:() => s.ara ? "glow" : "cream"}; cat = s.ara ? "glow" : "noglow";
+          msg = s.ara ? "Ampicillin selects for cells that took up pGLO, and arabinose switches AraC into its activator form, turning on GFP. Glowing green colonies under UV!" + (s.uv ? "" : " Flip on the UV light to see them glow.")
+                      : "Only cells that took up pGLO survive ampicillin, so you get separate colonies. But GFP is controlled by the ara promoter. With no arabinose, AraC keeps it off, so the colonies don't glow.";
+        } else {
+          spec = {growth:"lawn", lawn:"cream", specks:s.ara ? 7 : 0}; cat = "lawn";
+          msg = "Without ampicillin, the many cells that didn't take up pGLO grow too and make a lawn. Only a few cells got the plasmid" + (s.ara ? ", so under UV you'd see just a few faint green specks." : ", and with no arabinose nothing glows anyway.");
+        }
+        const glowTxt = spec.growth === "none" ? "None" : (cat === "glow" ? "Green glow" : (cat === "lawn" && s.ara && s.strain === "plus" && !s.amp ? "A few specks" : "No glow"));
+        return {spec, cat, msg, chips:[["Growth", spec.growth === "none" ? "None" : (spec.growth === "lawn" ? "Lawn" : "Colonies"), spec.growth === "none" ? "off" : "on"], ["Under UV", glowTxt, cat === "glow" ? "on" : "low"]]};
+      }}
+  };
+  const LAB_GROUPS = [["Operons", LAB_ORDER], ["Plate experiments", ["xgal","pglo"]]];
+
+  /* ================= Operon Builder ================= */
+  const ZONES = {
+    lac:[["cap",330,390,"CAP site"],["prom",390,490,"Promoter"],["op",490,560,"Operator"],["genes",560,950,"Genes"]],
+    trp:[["prom",320,420,"Promoter"],["op",420,490,"Operator"],["genes",490,950,"Genes"]],
+    generic:[["prom",330,470,"Promoter"],["op",470,540,"Operator"],["genes",540,950,"Genes"]],
+    pos:[["act",300,370,"Activator site"],["prom",370,470,"Promoter"],["genes",470,950,"Genes"]]
+  };
+  const BUILD = [
+    {id:"lac1", real:true, layout:"lac", env:{glu:1, lac:0}, text:"The <i>lac</i> operon. Glucose is present and lactose is absent.", ans:{car:"prom", stop:"op", gas:"tray"}, level:"none",
+     hint:"Two questions: Is there an inducer around to pull off the stop sign? Is glucose keeping the gas tank empty?",
+     why:"No lactose means no allolactose, so the repressor sits on the operator. Glucose keeps cAMP low, so CAP can't bind. Stop sign up and no gas: no transcription."},
+    {id:"lac2", real:true, layout:"lac", env:{glu:0, lac:1}, text:"The <i>lac</i> operon. Glucose is absent and lactose is present.", ans:{car:"prom", stop:"tray", gas:"cap"}, level:"high",
+     hint:"Lactose makes allolactose. And with no glucose, what happens to cAMP?",
+     why:"Allolactose pulled the repressor off the operator. No glucose means high cAMP, so CAP-cAMP binds the CAP site. Open road and a full tank: high transcription!"},
+    {id:"lac3", real:true, layout:"lac", env:{glu:1, lac:1}, text:"The <i>lac</i> operon. Glucose and lactose are both present.", ans:{car:"prom", stop:"tray", gas:"tray"}, level:"low",
+     hint:"Lactose takes care of the stop sign. But what does glucose do to the gas?",
+     why:"Allolactose removed the stop sign, but glucose keeps cAMP low, so CAP can't bind. RNA polymerase usually falls off: only a trickle of transcription (low)."},
+    {id:"lac4", real:true, layout:"lac", env:{glu:0, lac:0}, text:"The <i>lac</i> operon. Glucose and lactose are both absent.", ans:{car:"prom", stop:"op", gas:"cap"}, level:"none",
+     hint:"No glucose fills the gas tank. But is anything pulling off the stop sign?",
+     why:"No glucose means high cAMP, so CAP-cAMP is bound (gas!). But with no lactose, the repressor sits on the operator. Gas can't get you through a stop sign: no transcription."},
+    {id:"trp1", real:true, layout:"trp", env:{trp:1}, text:"The <i>trp</i> operon. The cell has plenty of tryptophan.", ans:{car:"prom", stop:"op"}, level:"none",
+     hint:"In the trp operon, tryptophan is the corepressor. What does a corepressor do to the repressor?",
+     why:"Tryptophan binds the repressor and activates it, so the stop sign sits on the operator. No transcription. The cell stops making what it already has."},
+    {id:"trp2", real:true, layout:"trp", env:{trp:0}, text:"The <i>trp</i> operon. Tryptophan is running low.", ans:{car:"prom", stop:"tray"}, level:"high",
+     hint:"Without its corepressor, can the trp repressor grab the operator?",
+     why:"With no tryptophan, the repressor is inactive and floats free. The road is clear: high transcription, so the cell builds more tryptophan."},
+    {id:"v1", layout:"generic", text:"A <b>negative inducible</b> operon. The inducer is <b>absent</b>.", ans:{car:"prom", stop:"op"}, level:"none",
+     hint:"Negative = stop sign. Inducible = normally OFF until an inducer shows up.",
+     why:"Negative control uses a repressor. In an inducible operon, the repressor is active until the inducer arrives. No inducer, so the stop sign stays up: no transcription."},
+    {id:"v2", layout:"generic", text:"A <b>negative inducible</b> operon. The inducer is <b>present</b>.", ans:{car:"prom", stop:"tray"}, level:"high",
+     hint:"What does an inducer do to a repressor?",
+     why:"The inducer binds the repressor and pulls it off the operator. Stop sign down: high transcription."},
+    {id:"v3", layout:"generic", text:"A <b>negative repressible</b> operon. The corepressor is <b>present</b>.", ans:{car:"prom", stop:"op"}, level:"none",
+     hint:"Repressible = normally ON. What does the corepressor do to the repressor?",
+     why:"The corepressor binds the repressor and switches it on, so it grabs the operator. Stop sign up: no transcription."},
+    {id:"v4", layout:"generic", text:"A <b>negative repressible</b> operon. The corepressor is <b>absent</b>.", ans:{car:"prom", stop:"tray"}, level:"high",
+     hint:"Without its corepressor, is the repressor active?",
+     why:"Without the corepressor, the repressor is inactive and can't bind the operator. The road is clear: high transcription."},
+    {id:"v5", layout:"pos", text:"A <b>positive inducible</b> operon. The inducer is <b>present</b>.", ans:{car:"prom", gas:"act"}, level:"high",
+     hint:"Positive = gas. In an inducible system, the inducer helps the activator grab the DNA.",
+     why:"Positive control uses an activator. The inducer binds the activator so it can attach to the activator site. Full tank: high transcription."},
+    {id:"v6", layout:"pos", text:"A <b>positive inducible</b> operon. The inducer is <b>absent</b>.", ans:{car:"prom", gas:"tray"}, level:"low",
+     hint:"Without the inducer, can the activator bind? And remember: no gas is not the same as a stop sign.",
+     why:"Without the inducer, the activator can't bind the DNA. No gas, but no stop sign either, so RNA polymerase only occasionally gets going: low transcription."},
+    {id:"v7", layout:"pos", text:"A <b>positive repressible</b> operon. The corepressor is <b>present</b>.", ans:{car:"prom", gas:"tray"}, level:"low",
+     hint:"In a positive repressible system, the corepressor knocks the activator off the DNA.",
+     why:"The corepressor binds the activator and pulls it off the DNA. No gas, no stop sign: transcription drops to a low level."},
+    {id:"v8", layout:"pos", text:"A <b>positive repressible</b> operon. The corepressor is <b>absent</b>.", ans:{car:"prom", gas:"act"}, level:"high",
+     hint:"Repressible = normally ON. With no corepressor, what's the activator doing?",
+     why:"With no corepressor, the activator stays bound to the DNA. Full tank: high transcription."}
+  ];
+  const PIECE_NAME = {car:"RNA polymerase (car)", stop:"Repressor (stop sign)", gas:"Activator (gas)"};
+  const TRAY = {car:[150,130], stop:[330,95], gas:[500,128]};
+  const bld = {pool:"mix", sc:null, place:{}, stage:"place", sel:null, anim:false, tries:0, msg:"", msgCls:""};
+  const scPieces = sc => Object.keys(sc.ans);
+  function pickScenario(){
+    const pool = BUILD.filter(b => bld.pool === "mix" || (bld.pool === "real") === !!b.real);
+    let n; do { n = pool[Math.floor(Math.random() * pool.length)]; } while (pool.length > 1 && bld.sc && n.id === bld.sc.id);
+    bld.sc = n; bld.place = {}; scPieces(n).forEach(p => { bld.place[p] = "tray"; });
+    bld.stage = "place"; bld.sel = null; bld.anim = false; bld.msg = ""; bld.msgCls = "";
+  }
+  function pieceAnchor(p){
+    const z = bld.place[p];
+    if (z === "tray") return TRAY[p];
+    const zn = ZONES[bld.sc.layout].find(q => q[0] === z), x = (zn[1] + zn[2]) / 2;
+    return [x, p === "stop" ? 284 : 314];
+  }
+  function pieceSVG(p, x, y){
+    const lay = bld.sc.layout;
+    let inner = p === "car" ? car(0, 0) : p === "stop" ? stopSign(0, 0, 1, 1) : gasCan(0, 0, 1, lay === "lac" ? "CAP" : "Activator", 1, lay !== "lac");
+    const sel = bld.sel === p ? `<circle cx="0" cy="${p === "stop" ? 0 : -26}" r="${p === "car" ? 58 : 42}" fill="none" stroke="#f2b134" stroke-width="4" stroke-dasharray="6 4"/>` : "";
+    return `<g data-piece="${p}" transform="translate(${f1(x)},${f1(y)})" style="cursor:grab">${sel}<rect x="-55" y="-70" width="110" height="80" fill="transparent"/>${inner}</g>`;
+  }
+  function builderSVG(){
+    const sc = bld.sc, L = LAY[sc.layout];
+    let o = `<rect x="20" y="20" width="620" height="150" rx="16" fill="#f5f6fa" stroke="#c9cfdb" stroke-dasharray="6 5" data-zone="tray"/><text x="36" y="42" class="t12 muted">Off the DNA (floating in the cytoplasm). Pieces that aren't bound stay here.</text>`;
+    o += dnaLadder(40, 960, 330);
+    L.segs.forEach(sg => {
+      o += `<rect x="${sg.x1}" y="316" width="${sg.x2 - sg.x1}" height="28" rx="5" fill="${sg.fill}" stroke="#8b93a3"/>`;
+      if (sg.txt) o += `<text x="${(sg.x1 + sg.x2) / 2}" y="335" class="t12 mid${sg.it ? " it" : ""}">${sg.txt}</text>`;
+      if (sg.below){ let lbl = sg.below === "reg" ? "Regulatory gene" : sg.below === "op" ? "Operator" : sg.below; o += `<text x="${(sg.x1 + sg.x2) / 2}" y="364" class="t12 mid">${lbl}</text>`; }
+    });
+    const g = L.genesLbl; o += `<text x="${(g[0] + g[1]) / 2}" y="364" class="t12 mid${sc.layout === "generic" || sc.layout === "pos" ? "" : " it"}">${g[2]}</text>`;
+    ZONES[sc.layout].forEach(z => { o += `<rect data-zone="${z[0]}" x="${z[1] + 2}" y="226" width="${z[2] - z[1] - 4}" height="118" rx="8" fill="${bld.sel ? "rgba(63,76,192,.06)" : "transparent"}" stroke="${bld.sel ? "#8f98e6" : "transparent"}" stroke-dasharray="5 4"/>`; });
+    if (sc.env){
+      if ("glu" in sc.env) o += `<text x="700" y="60" class="t13">Glucose: ${sc.env.glu ? "present" : "absent"}</text>` + (sc.env.glu ? glucose(875, 55, 1) + glucose(901, 55, 1) : "");
+      if ("lac" in sc.env) o += `<text x="700" y="100" class="t13">Lactose: ${sc.env.lac ? "present" : "absent"}</text>` + (sc.env.lac ? disacc(888, 95, 1) : "");
+      if ("trp" in sc.env) o += `<text x="700" y="60" class="t13">Tryptophan: ${sc.env.trp ? "plenty" : "low"}</text>` + (sc.env.trp ? trpChip(880, 55, 1) + trpChip(916, 55, 1) : "");
+    } else o += `<text x="700" y="60" class="t13">Mystery operon:</text><text x="700" y="80" class="t12 muted">use the vocab to decide!</text>`;
+    scPieces(sc).forEach(p => { const a = pieceAnchor(p); o += pieceSVG(p, a[0], a[1]); });
+    return o;
+  }
+  function drawBuilder(){ svg.innerHTML = builderSVG(); }
+  function svgPt(e){ const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+  function zoneAt(x, y){
+    if (y < 190) return "tray";
+    const z = ZONES[bld.sc.layout].find(q => x >= q[1] && x <= q[2] && y > 200 && y < 380);
+    return z ? z[0] : null;
+  }
+  function placePiece(p, zone){
+    if (bld.stage !== "place" || !zone) return;
+    if (zone !== "tray"){ const other = Object.keys(bld.place).find(k => k !== p && bld.place[k] === zone); if (other) bld.place[other] = "tray"; }
+    bld.place[p] = zone; bld.sel = null; bld.msg = ""; drawBuilder(); renderBuilderBubble();
+  }
+  let drag = null;
+  function wireBuilder(){
+  svg.addEventListener("pointerdown", e => {
+    if (view !== "build" || bld.anim || bld.stage !== "place") return;
+    const g = e.target.closest("[data-piece]");
+    if (g){ const p = svgPt(e), a = pieceAnchor(g.dataset.piece); drag = {p:g.dataset.piece, sx:p.x, sy:p.y, ax:a[0], ay:a[1], moved:false, el:g}; try { svg.setPointerCapture(e.pointerId); } catch(err){} e.preventDefault(); return; }
+    const z = e.target.closest("[data-zone]");
+    if (z && bld.sel) placePiece(bld.sel, z.dataset.zone);
+  });
+  svg.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const p = svgPt(e), dx = p.x - drag.sx, dy = p.y - drag.sy;
+    if (Math.abs(dx) + Math.abs(dy) > 6) drag.moved = true;
+    if (drag.moved) drag.el.setAttribute("transform", `translate(${f1(drag.ax + dx)},${f1(drag.ay + dy)})`);
+  });
+  svg.addEventListener("pointerup", e => {
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (!d.moved){ bld.sel = bld.sel === d.p ? null : d.p; drawBuilder(); return; }
+    const p = svgPt(e), zx = d.ax + (p.x - d.sx), zy = d.ay + (p.y - d.sy) - (d.p === "stop" ? 0 : 20);
+    const z = zoneAt(zx, zy);
+    if (z) placePiece(d.p, z); else drawBuilder();
+  });
+
+  }
+  function builderCheck(){
+    const sc = bld.sc, wrong = [];
+    scPieces(sc).forEach(p => {
+      const have = bld.place[p], want = sc.ans[p];
+      if (have === want) return;
+      if (p === "car") wrong.push("RNA polymerase (the car) always parks at the promoter to start.");
+      else if (p === "stop") wrong.push(want === "op" ? (have === "tray" ? "Look again at the stop sign. In this situation, is the repressor active and able to grab the operator?" : "The stop sign only belongs on the operator, or off the DNA.") : (have === "op" ? "Is the repressor really active here? Something may have switched it off." : "The stop sign only belongs on the operator, or off the DNA."));
+      else {
+        const site = bld.sc.layout === "lac" ? "cap" : "act", siteName = bld.sc.layout === "lac" ? "CAP site" : "activator site";
+        if (want === "tray") wrong.push(have === site ? "Can the activator really bind here? Think about what controls the gas." : `The gas only binds the ${siteName}, or stays off the DNA.`);
+        else wrong.push(have === "tray" ? "Check the gas. In this situation, can the activator bind the DNA?" : `The gas only binds the ${siteName}, or stays off the DNA.`);
+      }
+    });
+    bld.tries++;
+    if (wrong.length){ bld.msg = wrong.join(" "); bld.msgCls = "bad"; renderBuilderBubble(); return; }
+    bld.stage = "level"; bld.msg = "Everything is in the right place!"; bld.msgCls = "good"; renderBuilderBubble();
+  }
+  function builderShow(){
+    scPieces(bld.sc).forEach(p => { bld.place[p] = bld.sc.ans[p]; });
+    bld.sel = null; bld.stage = "level"; bld.msg = "Here's where everything goes. Now, how much transcription?"; bld.msgCls = "warn"; drawBuilder(); renderBuilderBubble();
+  }
+  function builderLevel(lv){
+    const sc = bld.sc;
+    if (lv !== sc.level){ bld.msg = `Not quite. ${sc.hint}`; bld.msgCls = "bad"; renderBuilderBubble(); return; }
+    bld.stage = "done"; bld.msg = "Yes! " + sc.why; bld.msgCls = "good";
+    const st = {}, e = sc.env || {};
+    if (sc.ans.stop) Object.assign(st, sc.ans.stop === "op" ? {repShow:1, rep:1, repAct:1} : {repShow:1, rep:0, repAct:0});
+    if (sc.ans.gas) Object.assign(st, sc.ans.gas === "tray" ? {capShow:1, cap:0, capAmp:0} : {capShow:1, cap:1, capAmp:1});
+    if (sc.layout === "lac") Object.assign(st, {glu:e.glu, lac:e.lac, camp:e.glu ? 0 : 1, ind:e.lac});
+    if (sc.layout === "trp") Object.assign(st, {trp:e.trp, ind:e.trp});
+    bld.anim = true; visKey = "build";
+    applyVisual(O(sc.layout, st, sc.level === "high" ? "drive" : sc.level === "low" ? "low" : "blocked", {inactive:sc.ans.stop === "tray"}));
+    renderBuilderBubble();
+  }
+  function renderBuilderBubble(){
+    const sc = bld.sc;
+    $("stepNo").textContent = "Operon Builder";
+    $("stepTitle").innerHTML = sc.text;
+    textEl.innerHTML = bld.stage === "place"
+      ? `Drag each piece onto the DNA where it belongs, or leave it in the gray area if it isn't bound. (On a phone, tap a piece, then tap where it goes.)`
+      : bld.stage === "level" ? `Now predict: how much transcription will there be?` : `Watch it play out!`;
+    afterEl.hidden = true; checkRow.hidden = true; fb.textContent = bld.msg; fb.className = "feedback " + bld.msgCls;
+    let h = `<div class="lab"><div class="labgroup">Challenge type</div><div class="opsel">` + [["real","Real operons"],["vocab","Vocab challenges"],["mix","Mix it up"]].map(x => `<button data-pool="${x[0]}" aria-pressed="${bld.pool === x[0]}">${x[1]}</button>`).join("") + `</div>`;
+    if (bld.stage === "place"){
+      if (mode === "learn") h += `<div class="note"><b>Hint:</b> ${sc.hint}</div>`;
+      h += `<div class="actions"><button class="btn primary" id="bCheck">Check placement</button><button class="btn secondary" id="bShow">Show me</button>${mode === "test" ? `<button class="btn secondary" id="bHint">Hint</button>` : ""}</div>`;
+    } else if (bld.stage === "level"){
+      h += `<div class="actions">` + [["high","High"],["low","Low"],["none","None"]].map(x => `<button class="btn secondary" data-level="${x[0]}">${x[1]}</button>`).join("") + `</div>`;
+    }
+    h += `<div class="actions"><button class="btn ${bld.stage === "done" ? "primary" : "secondary"}" id="bNext">New scenario</button></div></div>`;
+    $("labArea").innerHTML = h;
+    $("bubbleFoot").innerHTML = "";
+    const A = $("labArea");
+    A.querySelectorAll("[data-pool]").forEach(b => b.addEventListener("click", () => { bld.pool = b.dataset.pool; enterBuild(true); }));
+    A.querySelectorAll("[data-level]").forEach(b => b.addEventListener("click", () => builderLevel(b.dataset.level)));
+    if ($("bCheck")) $("bCheck").addEventListener("click", builderCheck);
+    if ($("bShow")) $("bShow").addEventListener("click", builderShow);
+    if ($("bHint")) $("bHint").addEventListener("click", () => { bld.msg = "Hint: " + sc.hint; bld.msgCls = "warn"; renderBuilderBubble(); });
+    $("bNext").addEventListener("click", () => enterBuild(true));
+  }
+  function enterBuild(fresh){
+    if (fresh || !bld.sc) pickScenario();
+    bld.anim = false; visKey = "build"; svg.style.opacity = 1;
+    renderTable(null); drawBuilder(); renderBuilderBubble(); pop();
+  }
+
+  /* ================= App state ================= */
+  let mode = "learn", view = "home", bl = {};
+  const pos = {}, furthest = {};
+  const resetPos = () => { Object.keys(TRACKS).forEach(k => { pos[k] = 0; furthest[k] = 0; }); };
+  resetPos();
+  const plateState = {}; const resetPlates = () => { Object.keys(PLATELABS).forEach(k => { plateState[k] = {...PLATELABS[k].start}; }); }; resetPlates();
+  const isTrack = v => !!TRACKS[v];
+  let labOp = "lac", labState = {}; LAB_ORDER.forEach(k => { labState[k] = {...LABS[k].start}; });
+  let labPending = null, labMsg = "";
+  let vis = O("generic", {}), visKey = "", frozen = false;
+  let opCur = {...OB}, opTw = null, carMode = "park", pendingCar = null, carT = 0;
+  let sceneT = 0;
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const $ = id => document.getElementById(id);
+  const svg = $("scene");
+  const textEl = $("stepText"), afterEl = $("stepAfter"), fb = $("feedback"), checkRow = $("checkRow");
+  const nextBtn = $("nextBtn"), backBtn = $("backBtn"), replayBtn = $("replayBtn"), bubble = $("bubble");
+
+  const steps = () => TRACKS[view].steps;
+  const idx = () => pos[view];
+  const resolved = id => view === "lab" || mode === "learn" || !!bl[id];
+  const blanksOf = st => (st.text.match(/\{\{(\w+)\}\}/g) || []).map(m => m.slice(2, -2));
+  const stepResolved = i => mode === "learn" || blanksOf(steps()[i]).every(id => bl[id]);
+  function preDef(i){
+    const S = steps(), st = S[i];
+    if (st.pre) return st.pre;
+    const p = S[i - 1];
+    if (p && p.v.scene === "operon" && st.v.scene === "operon" && p.v.layout === st.v.layout) return p.v;
+    return {...st.v, frozen:true};
+  }
+
+  /* ================= Operon tween ================= */
+  const WIN = {glu:[0,.35], lac:[0,.35], ara:[0,.35], mal:[0,.35], trp:[0,.35], camp:[0,.35], made:[0,.75], ind:[.25,.6], capAmp:[.25,.6], act2Fuel:[.25,.6], repAct:[.5,.72], rep:[.55,.95], cap:[.55,.95], act2:[.55,.95]};
+  function opWindow(k, from, to){
+    if (k.endsWith("Show")){
+      if (to[k] > from[k]) return [0, .3];
+      const moving = (k === "repShow" && Math.abs(to.rep - from.rep) > .5) || (k === "capShow" && Math.abs(to.cap - from.cap) > .5);
+      return moving ? [.8, 1] : [0, .3];
+    }
+    return WIN[k] || [0, 1];
+  }
+  function applyVisual(def){
+    const key = def.scene + ":" + (def.layout || def.mode || "");
+    frozen = !!def.frozen;
+    if (key !== visKey){
+      const first = visKey === "";
+      visKey = key; vis = def;
+      if (!first){ svg.style.opacity = 0; setTimeout(() => { svg.style.opacity = 1; }, 200); }
+      if (def.scene === "operon"){ opCur = {...def.s}; opTw = null; carMode = def.car; pendingCar = null; carT = 0; }
+    } else {
+      vis = def;
+      if (def.scene === "operon"){
+        opTw = {from:{...opCur}, to:{...def.s}, t0:performance.now(), dur:reduced ? 800 : 2400};
+        if (def.car !== carMode){
+          const big = ["rep","cap","ind","capAmp","repAct","act2"].some(k => Math.abs(def.s[k] - opCur[k]) > .5);
+          if (big && def.car !== "hide"){ carMode = "park"; pendingCar = def.car; } else { carMode = def.car; pendingCar = null; }
+          carT = 0;
+        }
+      }
+    }
+  }
+  function stepOpTween(now){
+    if (!opTw) return;
+    const p = clamp((now - opTw.t0) / opTw.dur, 0, 1);
+    for (const k in opTw.to){ const w = opWindow(k, opTw.from, opTw.to); opCur[k] = lerp(opTw.from[k], opTw.to[k], smooth(seg(p, w[0], w[1]))); }
+    if (p >= 1){ opTw = null; if (pendingCar){ carMode = pendingCar; pendingCar = null; carT = 0; } }
+  }
+
+  /* ================= Operon scene ================= */
+  function carLayer(L, s){
+    const cx0 = L.carX, ct = carT;
+    let x = cx0, y = 314, op = s.carShow, tilt = 0, extra = "";
+    if (carMode === "blocked"){
+      x = cx0 + 6 * Math.abs(Math.sin(ct * 3));
+      if ((ct % 2.4) < 1.2) extra += pill(cx0 - 10, L.blockY || 222, L.blockMsg || "Stop sign ahead!", RED, s.carShow);
+    } else if (carMode === "low" || carMode === "trace"){
+      const P = 2.8, n = carMode === "low" ? 3 : 6, k = Math.floor(ct / P), p = ct % P;
+      const success = k % n === n - 1;
+      if (p < .7){ x = lerp(cx0 - 120, cx0, smooth(p / .7)); op *= smooth(p / .4); }
+      else if (!success){
+        if (p < 1.6){ x = cx0 + 2 * Math.sin(p * 40); extra += pill(cx0 - 20, 222, "No gas... slipping off", "#7a8292", s.carShow); }
+        else if (p < 2.3){ const q = smooth((p - 1.6) / .7); x = cx0 - 70 * q; y = 314 - 30 * q; tilt = -12 * q; op *= 1 - q; }
+        else op = 0;
+      } else {
+        const q = seg(p, .8, 2.5); x = lerp(cx0, 905, smooth(q));
+        if (p > 2.5) op *= 1 - (p - 2.5) / .3;
+        if (x - 50 > L.genes) extra += mrna(L.genes, x - 50, 272, 1);
+        extra += pill(cx0 - 20, 222, "Made it this time!", "#9a6212", s.carShow * (1 - seg(p, 1.6, 2.0)));
+      }
+      if (k % n === 0 && k > 0 && p < 2.2) extra += mrna(L.genes + 10 * (p + .3), 855 + 10 * (p + .3), 272 - (p + .3) * 34, 1 - (p + .3) / 2.5);
+    } else if (carMode === "drive"){
+      const P = 3.0, p = ct % P, cyc = Math.floor(ct / P);
+      if (p < .4) x = cx0;
+      else if (p < 2.5) x = lerp(cx0, 905, smooth((p - .4) / 2.1));
+      else if (p < 2.8){ x = 905; op *= 1 - (p - 2.5) / .3; }
+      else { x = cx0; op *= (p - 2.8) / .2; }
+      if (p > .4 && p < 2.5 && x - 50 > L.genes) extra += mrna(L.genes, x - 50, 272, 1);
+      for (let j = 0; j < 3; j++){ const age = ct - ((cyc - j) * P + 2.5); if (age > 0 && age < 2.4) extra += mrna(L.genes + 10 * age, 855 + 10 * age, 272 - age * 34, 1 - age / 2.4); }
+      if (ct > 2.5) extra += `<text x="${f1((L.genes + 900) / 2)}" y="236" class="t12 mid" fill="${ORANGE}" opacity="${f3(Math.min(1, ct - 2.5))}">mRNA</text>`;
+      if (p > .4 && p < 1.1 && x - 60 > cx0) extra += `<text x="${f1(x - 56)}" y="296" class="t12 end blu">Vroom!</text>`;
+    }
+    return extra + car(x, y, op, tilt);
+  }
+
+  function opSVG(s, L, def){
+    const lay = def.layout, t = sceneT;
+    let o = "";
+    // environment
+    if (lay === "trp"){
+      TRP_POS.forEach((p,i) => { const op = clamp(s.trp * TRP_POS.length - i, 0, 1); if (op > 0) o += trpChip(p[0], p[1] + 3 * Math.sin(t * 1.4 + i), op); });
+      if (s.trp > .05) o += `<text x="780" y="72" class="t13 mid" opacity="${f3(s.trp)}">Tryptophan</text>`;
+    } else {
+      GLU_POS.forEach((p,i) => { const op = clamp(s.glu * GLU_POS.length - i, 0, 1); if (op > 0) o += glucose(p[0], p[1] + 3 * Math.sin(t * 1.5 + i), op); });
+      if (L.sugar){ const sg = def.flags.iptg ? SUGAR.iptg : SUGAR[L.sugar], lvl = s[L.sugar]; SUG_POS.forEach((p,i) => { const op = clamp(lvl * SUG_POS.length - i, 0, 1); if (op > 0) o += sg.draw(p[0], p[1] + 3 * Math.sin(t * 1.3 + i), op); }); if (lvl > .05) o += `<text x="875" y="76" class="t13 mid" opacity="${f3(lvl)}">${sg.name}</text>`; }
+      CAMP_POS.forEach((p,i) => { const op = clamp(s.camp * CAMP_POS.length - i, 0, 1); if (op > 0) o += camp(p[0], p[1] + 3 * Math.sin(t * 1.7 + i), op); });
+      if (s.glu > .05) o += `<text x="690" y="76" class="t13 mid" opacity="${f3(s.glu)}">Glucose</text>`;
+      if (s.camp > .05) o += `<text x="500" y="76" class="t13 mid" opacity="${f3(s.camp)}">cAMP</text>`;
+    }
+    // DNA and segments
+    if (L.brk) o += dnaLadder(40, 190, 330) + dnaLadder(290, 960, 330) + `<text x="240" y="336" class="t18 mid muted">\u2215\u2215</text>`;
+    else o += dnaLadder(40, 960, 330);
+    L.segs.forEach(sg => {
+      o += `<rect x="${sg.x1}" y="316" width="${sg.x2 - sg.x1}" height="28" rx="5" fill="${sg.fill}" stroke="#8b93a3" stroke-width="1"/>`;
+      if (sg.txt) o += `<text x="${(sg.x1 + sg.x2) / 2}" y="335" class="t12 mid${sg.it ? " it" : ""}">${sg.txt}</text>`;
+      if (sg.below){
+        let lbl = sg.below;
+        if (lbl === "reg") lbl = resolved("regulatory") ? (lay === "trp" ? "Regulatory gene (far away)" : "Regulatory gene") : "?";
+        if (lbl === "op") lbl = resolved("operator") ? "Operator" : "?";
+        o += `<text x="${(sg.x1 + sg.x2) / 2}" y="364" class="t12 mid">${lbl}</text>`;
+      }
+    });
+    const g = L.genesLbl; o += `<text x="${(g[0] + g[1]) / 2}" y="364" class="t12 mid${lay === "generic" ? "" : " it"}">${g[2]}</text>`;
+    const b = L.bracket; o += `<path d="M${b[0]},380 v8 H${b[1]} v-8" fill="none" stroke="#8b93a3" stroke-width="1.5"/><text x="${(b[0] + b[1]) / 2}" y="406" class="t13 mid muted">${b[2]}</text>`;
+
+    if (def.flags.cistrans){
+      o += dnaLadder(40, 200, 118) + `<rect x="80" y="104" width="90" height="28" rx="5" fill="#e6e0f3" stroke="#8b93a3"/><text x="125" y="96" class="t12 mid muted">or far away (like trpR)</text>`;
+      o += `<path d="M150,140 Q210,160 226,184" fill="none" stroke="${PURPLE}" stroke-width="2" stroke-dasharray="5 4"/><path d="M130,312 Q160,250 220,236" fill="none" stroke="${PURPLE}" stroke-width="2" stroke-dasharray="5 4"/>`;
+      o += `<path d="M285,222 Q420,190 488,300" fill="none" stroke="${RED}" stroke-width="2" stroke-dasharray="5 4"/>`;
+      o += pill(250, 262, resolved("trans") ? "trans-acting protein" : "? protein", "#6b4bb8", 1);
+      o += pill(505, 300, resolved("cis") ? "cis-acting site" : "? site", "#b83a34", 1);
+    }
+
+    // CAP / generic activator
+    if (s.capShow > .01 && L.capX){
+      const bob = (1 - s.cap) * 4 * Math.sin(t * 2);
+      const x = lerp(L.capHome[0], L.capX, s.cap), y = lerp(L.capHome[1], 314, s.cap) + bob;
+      if (lay === "generic" || lay === "pos") o += gasCan(x, y, s.capAmp, "Activator", s.capShow, true);
+      else {
+        o += gasCan(x, y, s.capAmp, resolved("cap") ? "CAP" : "?", s.capShow);
+        if (s.capAmp > .01) o += camp(lerp(x + 70, x + 10, s.capAmp), lerp(y - 110, y - 60, s.capAmp), s.capAmp * s.capShow);
+      }
+      if (def.flags.switches) o += pill(x - 30, y - 92, "Glucose controls the gas", "#8a6410", s.capShow);
+    }
+
+    // MalT (second gas can)
+    if (s.act2Show > .01 && L.act2Home){
+      const bob = (1 - s.act2) * 4 * Math.sin(t * 2.3);
+      const x = lerp(L.act2Home[0], L.siteX, s.act2), y = lerp(L.act2Home[1], 314, s.act2) + bob;
+      o += gasCan(x, y, s.act2Fuel, "MalT", s.act2Show);
+      if (s.act2Fuel > .01) o += maltose(lerp(x + 90, x + 14, s.act2Fuel), lerp(y - 100, y - 60, s.act2Fuel), s.act2Fuel);
+    }
+
+    // repressor / AraC
+    if (s.repShow > .01){
+      if (L.shifter){
+        const x = L.siteX;
+        o += stopSign(x, 284, 1, s.repShow * s.repAct);
+        o += gasCan(x, 314, 1, "AraC", s.repShow * (1 - s.repAct));
+        o += `<text x="${x}" y="${f1(lerp(222, 244, s.repAct))}" class="t12 mid">AraC</text>`;
+        if (s.repAct > .02) o += `<g opacity="${f3(s.repAct)}"><path d="M${x + 22},262 Q${L.carX},140 ${L.carX + 70},314" fill="none" stroke="${RED}" stroke-width="3" stroke-dasharray="7 5"/></g>`;
+        if (s.ind > .01) o += arabinose(lerp(x + 120, x + 30, s.ind), lerp(210, 262, s.ind), s.ind);
+      } else {
+        const home = L.repHome;
+        const hx = lerp(L.regX, home[0], s.made), hy = lerp(318, home[1], s.made);
+        const bob = (1 - s.rep) * 5 * Math.sin(t * 2.2);
+        const x = lerp(hx, L.opX, s.rep), y = lerp(hy, 284, s.rep) + bob;
+        o += stopSign(x, y, s.repAct, s.repShow, lerp(.3, 1, s.made));
+        if (s.made > .6) o += `<text x="${f1(x)}" y="${f1(y - 40)}" class="t12 mid" opacity="${f3(s.repShow * seg(s.made, .6, 1))}">${def.flags.inactive ? "Inactive repressor" : "Repressor"}</text>`;
+        if (s.ind > .01){
+          const ix = lerp(x + 110, x + 26, s.ind), iy = lerp(y - 100, y - 26, s.ind);
+          o += lay === "trp" ? trpChip(ix, iy, s.ind) : (def.flags.iptg ? iptgIcon(ix, iy, s.ind) : disacc(ix, iy, s.ind, PURPLE));
+          if (s.ind > .6) o += `<text x="${f1(ix + 24)}" y="${f1(iy + 4)}" class="t12 pur" opacity="${f3((s.ind - .6) / .4)}">${lay === "trp" ? "Tryptophan" : (def.flags.iptg ? (resolved("iptg") ? "IPTG" : "?") : (resolved("allolactose") ? "Allolactose" : "?"))}</text>`;
+        }
+        if (def.flags.switches) o += pill(x + 150, y - 40, "Lactose controls the stop sign", "#6b4bb8", s.repShow);
+      }
+    }
+    if (s.carShow > .01 && carMode !== "hide") o += carLayer(L, s);
+    if (def.flags.bgal && carMode === "drive" && carT > 2.5) o += pill(690, 206, "\u03b2-galactosidase made!", "#9a6212", Math.min(1, carT - 2.5));
+    return o;
+  }
+
+  /* ================= Other scenes ================= */
+  function genesSVG(t){
+    let o = `<rect x="40" y="50" width="920" height="370" rx="170" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="6"/>` + dnaLadder(110, 890, 300);
+    const tt = t % 6;
+    for (let i = 0; i < 6; i++){
+      const x1 = 130 + i * 125, xm = x1 + 50, always = i % 2 === 0;
+      let on = always ? 1 : 0;
+      if (i === 3) on = smooth(seg(tt, 1.5, 2.1)) * (1 - smooth(seg(tt, 4.6, 5.2)));
+      o += `<rect x="${x1}" y="286" width="100" height="28" rx="6" fill="${on > .5 ? "#bfe8cf" : "#e6e9ee"}" stroke="${on > .5 ? GREEN : "#9aa3b5"}" stroke-width="2"/>`;
+      if (on > .01){
+        o += `<rect x="${x1 - 4}" y="282" width="108" height="36" rx="9" fill="none" stroke="${GREEN}" stroke-width="3" opacity="${f3(on * (.5 + .5 * Math.sin(t * 4 + i)))}"/>`;
+        const age = ((t + i * .7) % 2.2) / 2.2;
+        o += mrna(x1 + 20, x1 + 84, 270 - age * 110, on * (1 - age));
+      }
+      o += `<text x="${xm}" y="305" class="t12 mid">Gene ${i + 1}</text><text x="${xm}" y="344" class="t12 mid ${always ? "grn" : "muted"}">${always ? "Always on" : "On demand"}</text>`;
+    }
+    const lo = smooth(seg(tt, .8, 1.4)) * (1 - smooth(seg(tt, 4.2, 4.8)));
+    if (lo > .01) o += disacc(555, 200, lo) + disacc(595, 180, lo) + `<text x="575" y="160" class="t12 mid" opacity="${f3(lo)}">Lactose shows up!</text>`;
+    return o + `<text x="500" y="400" class="t13 mid muted">Energy spent only on genes the cell needs right now</text>`;
+  }
+  function compareSVG(t){
+    let o = `<rect x="20" y="30" width="465" height="410" rx="24" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="3"/><rect x="515" y="30" width="465" height="410" rx="24" fill="#f5f1fb" stroke="#8f7fb0" stroke-width="3"/>`;
+    o += `<text x="252" y="70" class="t18 mid">Prokaryote: operon</text><text x="747" y="70" class="t18 mid">Eukaryote: one gene at a time</text>`;
+    const cols = [ORANGE, BLUE, GREEN];
+    o += dnaLadder(50, 460, 320) + `<rect x="60" y="306" width="60" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="90" y="325" class="t12 mid">P</text><rect x="120" y="306" width="40" height="28" rx="5" fill="#fde2e0" stroke="#8b93a3"/><text x="140" y="325" class="t12 mid">O</text>`;
+    for (let i = 0; i < 3; i++) o += `<rect x="${160 + i * 95}" y="306" width="95" height="28" rx="5" fill="${cols[i]}" opacity=".8"/><text x="${207 + i * 95}" y="325" class="t12 mid wht">Gene ${i + 1}</text>`;
+    const len = clamp((t % 4) / 3.2, 0, 1) * 285;
+    for (let i = 0; i < 3; i++){ const a = 160 + i * 95, b = Math.min(a + 95, 160 + len); if (b > a) o += `<line x1="${a}" y1="240" x2="${f1(b)}" y2="240" stroke="${cols[i]}" stroke-width="8"/>`; }
+    o += `<text x="252" y="220" class="t12 mid">one mRNA, three genes</text><text x="252" y="390" class="t13 mid muted">One promoter controls all three genes</text>`;
+    for (let i = 0; i < 3; i++){
+      const y = 150 + i * 100;
+      o += dnaLadder(560, 940, y) + `<rect x="580" y="${y - 14}" width="60" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="610" y="${y + 5}" class="t12 mid">P</text><rect x="640" y="${y - 14}" width="130" height="28" rx="5" fill="${cols[i]}" opacity=".8"/><text x="705" y="${y + 5}" class="t12 mid wht">Gene ${i + 1}</text>`;
+      const q = clamp(((t + i * 1.1) % 4) / 2.6, 0, 1);
+      if (q > 0) o += `<line x1="640" y1="${y - 30}" x2="${f1(640 + q * 130)}" y2="${y - 30}" stroke="${cols[i]}" stroke-width="7"/>`;
+    }
+    return o + `<text x="747" y="420" class="t13 mid muted">Each gene has its own promoter and mRNA</text>`;
+  }
+  function chromatinSVG(t){
+    let o = `<path d="M30,300 H960" stroke="#0f766e" stroke-width="5"/>`;
+    [[150,300],[190,280],[230,300],[270,282],[310,300],[170,248],[210,244],[250,250],[290,246],[190,215],[230,212],[270,218],[210,184],[250,186],[330,270],[130,265]].forEach(p => { o += `<circle cx="${p[0]}" cy="${p[1]}" r="21" fill="#9a88c2" stroke="#6d5a97" stroke-width="2"/>`; });
+    o += `<text x="230" y="130" class="t15 mid">Tightly packed (heterochromatin)</text><text x="230" y="152" class="t13 mid red">Genes OFF</text>`;
+    [520, 600, 680, 900].forEach(x => { o += `<circle cx="${x}" cy="300" r="22" fill="#9a88c2" stroke="#6d5a97" stroke-width="2"/><path d="M${x - 22},296 q22,-14 44,0" stroke="#0f766e" stroke-width="3" fill="none"/>`; });
+    o += `<text x="600" y="352" class="t12 mid pur">${resolved("histones") ? "Histones" : "?"}</text><path d="M586,340 L600,324 M614,340 L600,324" stroke="#6b4bb8" stroke-width="1.5"/>`;
+    o += `<rect x="730" y="288" width="130" height="24" rx="5" fill="#d6efdf" stroke="#8b93a3"/><text x="795" y="305" class="t12 mid">Gene</text>`;
+    o += `<text x="730" y="130" class="t15 mid">Loosely packed (euchromatin)</text><text x="730" y="152" class="t13 mid grn">Genes ON</text>`;
+    const p = (t % 3) / 3;
+    o += car(lerp(760, 830, smooth(p)), 286, 1 - smooth(seg(p, .85, 1))) + mrna(740, lerp(740, 800, smooth(p)), 250, 1);
+    return o + car(410 + Math.abs(Math.sin(t * 3)) * 8, 286, 1) + pill(410, 216, "Can't get in!", "#7a8292", 1);
+  }
+  function tfSVG(t){
+    const tt = t % 7;
+    let o = dnaLadder(40, 960, 330);
+    o += `<rect x="300" y="316" width="170" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="385" y="364" class="t12 mid">Promoter</text><rect x="470" y="316" width="440" height="28" rx="5" fill="#d6efdf" stroke="#8b93a3"/><text x="690" y="335" class="t12 mid">Gene</text>`;
+    const tfs = [[320, TEAL, .4],[360, GOLD, .9],[400, PURPLE, 1.4]];
+    tfs.forEach(f => { const q = smooth(seg(tt, f[2], f[2] + .5)); const y = lerp(120, 296, q); o += `<rect x="${f[0] - 18}" y="${f1(y - 20)}" width="36" height="40" rx="14" fill="${f[1]}" opacity="${f3(Math.max(.15, q))}"/>`; });
+    o += `<text x="360" y="232" class="t13 mid pur" opacity="${f3(smooth(seg(tt, 1.9, 2.3)))}">${resolved("factors") ? "Transcription factors" : "?"}</text>`;
+    let x, op = 1;
+    if (tt < 2.2){ x = 120; op = 0; }
+    else if (tt < 3.0){ x = lerp(120, 468, smooth((tt - 2.2) / .8)); op = smooth((tt - 2.2) / .3); }
+    else if (tt < 3.4) x = 468;
+    else { const q = seg(tt, 3.4, 5.8); x = lerp(468, 890, smooth(q)); op = 1 - seg(tt, 5.8, 6.2); o += mrna(480, Math.max(480, x - 50), 272, 1); }
+    return o + car(x, 314, op);
+  }
+  function laneES(y, kind, loop, t, go){
+    let o = "";
+    const ex = lerp(120, 372, loop), h = 150 * loop;
+    o += `<path d="M40,${y} L${f1(ex)},${y} M${f1(ex + 80)},${y} C${f1(ex + 60)},${f1(y - h)} 500,${f1(y - h)} 476,${y} L950,${y}" fill="none" stroke="#0f766e" stroke-width="5"/>`;
+    const lbl = kind === "enh" ? (resolved("enhancers") ? "Enhancer" : "?") : (resolved("silencers") ? "Silencer" : "?");
+    o += `<rect x="${f1(ex)}" y="${y - 14}" width="80" height="28" rx="5" fill="${kind === "enh" ? "#d7efe3" : "#fde2e0"}" stroke="#8b93a3"/><text x="${f1(ex + 40)}" y="${y + 5}" class="t12 mid">${lbl}</text>`;
+    o += `<rect x="476" y="${y - 14}" width="84" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="518" y="${y + 5}" class="t12 mid">Promoter</text><rect x="560" y="${y - 14}" width="340" height="28" rx="5" fill="#d6efdf" stroke="#8b93a3"/><text x="730" y="${y + 5}" class="t12 mid">Gene</text>`;
+    if (kind === "enh"){
+      o += gasCan(ex + 40, y - 16, 1, "Activator", 1, true);
+      let x = 518, op = 1;
+      if (go){ const p = ((t - 2.6) % 1.8) / 1.8; x = lerp(518, 880, smooth(p)); op = 1 - smooth(seg(p, .85, 1)); o += mrna(560, Math.max(560, x - 50), y - 58, 1); }
+      o += car(x, y - 16, op);
+    } else {
+      o += stopSign(ex + 40, y - 46, 1, 1, .85) + `<text x="${f1(ex + 40)}" y="${y - 82}" class="t12 mid">Repressor</text>`;
+      o += car(518 + (loop > .9 ? 4 * Math.abs(Math.sin(t * 3)) : 0), y - 16, 1);
+    }
+    return o;
+  }
+  function enhancerSVG(t){
+    const tt = t % 7, loop = smooth(seg(tt, .8, 2.3)) * (1 - smooth(seg(tt, 6.2, 7)));
+    return `<text x="30" y="46" class="t15">Enhancer + activator: transcription boosted</text><text x="30" y="266" class="t15">Silencer + repressor: transcription turned down</text>` + laneES(200, "enh", loop, tt, tt > 2.6 && tt < 6.2) + laneES(420, "sil", loop, tt, false);
+  }
+  function seesawSVG(t, still){
+    let g = .5, cap = "";
+    if (!still){ const tt = t % 8; g = 1 - smooth(seg(tt, 3, 4)) + smooth(seg(tt, 7, 8)); cap = g > .5 ? "Lots of glucose, so cAMP is low" : "Glucose is gone, so cAMP is high"; }
+    const ang = (g - .5) * 22, px = 500, py = 330;
+    let o = `<polygon points="${px - 36},${py + 70} ${px + 36},${py + 70} ${px},${py}" fill="#c9cdd6"/><g transform="translate(${px},${py}) rotate(${f1(-ang)})"><rect x="-320" y="-8" width="640" height="16" rx="8" fill="#8b93a3"/>`;
+    o += `<g transform="translate(-280,-8) rotate(${f1(ang)})"><rect x="-70" y="-10" width="140" height="10" rx="5" fill="#b0873a"/>`;
+    for (let i = 0; i < 7; i++) o += glucose(-54 + (i % 4) * 34 + (i > 3 ? 17 : 0), -24 - (i > 3 ? 22 : 0), clamp(g * 7 - i, 0, 1));
+    o += `<text x="0" y="28" class="t15 mid">Glucose</text></g><g transform="translate(280,-8) rotate(${f1(ang)})"><rect x="-70" y="-10" width="140" height="10" rx="5" fill="#0a6e7a"/>`;
+    for (let i = 0; i < 7; i++) o += camp(-54 + (i % 4) * 34 + (i > 3 ? 17 : 0), -22 - (i > 3 ? 22 : 0), clamp((1 - g) * 7 - i, 0, 1));
+    o += `<text x="0" y="28" class="t15 mid">cAMP</text></g></g>`;
+    if (cap) o += `<text x="500" y="80" class="t18 mid">${cap}</text>`;
+    return o + `<text x="500" y="440" class="t13 mid muted">cAMP is made from ATP. Glucose entering the cell slows that down.</text>`;
+  }
+  function duoLane(y, kind, tt, labels){
+    let o = dnaLadder(200, 950, y) + `<rect x="260" y="${y - 14}" width="100" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="310" y="${y + 5}" class="t12 mid">Promoter</text><rect x="360" y="${y - 14}" width="70" height="28" rx="5" fill="#fde2e0" stroke="#8b93a3"/><text x="395" y="${y + 5}" class="t12 mid">Operator</text><rect x="430" y="${y - 14}" width="480" height="28" rx="5" fill="#d6efdf" stroke="#8b93a3"/><text x="670" y="${y + 5}" class="t12 mid">Genes</text>`;
+    const home = [230, y - 110], bound = [395, y - 46];
+    const fly = smooth(seg(tt, 2.5, 3.3)), move = smooth(seg(tt, 3.3, 4.0));
+    const rp = kind === "ind" ? [lerp(bound[0], home[0], move), lerp(bound[1], home[1], move)] : [lerp(home[0], bound[0], move), lerp(home[1], bound[1], move)];
+    const act = kind === "ind" ? 1 - move : move;
+    const mol = [lerp(720, rp[0] + 26, fly), lerp(y - 130, rp[1] - 26, fly)];
+    const molOp = smooth(seg(tt, 2.2, 2.5));
+    o += stopSign(rp[0], rp[1], act, 1, .85);
+    if (molOp > 0) o += (kind === "ind" ? disacc(mol[0], mol[1], molOp, PURPLE) : trpChip(mol[0], mol[1], molOp)) + `<text x="${f1(mol[0] + 22)}" y="${f1(mol[1] - 12)}" class="t12 pur" opacity="${f3(molOp)}">${kind === "ind" ? labels.ind : labels.co}</text>`;
+    const drive = kind === "ind" ? tt > 4.0 : tt < 2.5;
+    let cx = 310, cop = 1;
+    if (drive){ const p = ((tt - (kind === "ind" ? 4.0 : 0)) % 1.7) / 1.7; cx = lerp(310, 880, smooth(p)); cop = 1 - smooth(seg(p, .85, 1)); o += mrna(430, Math.max(430, cx - 50), y - 58, 1); }
+    else cx = 310 + 5 * Math.abs(Math.sin(tt * 3));
+    return o + car(cx, y - 16, cop);
+  }
+  function duoSVG(t, m, still){
+    const tt = still ? 0 : t % 8, lt = m === "lactrp";
+    const L1 = lt ? "lac operon" : (resolved("inducible") ? "Inducible" : "?"), L2 = lt ? "trp operon" : (resolved("repressible") ? "Repressible" : "?");
+    const labels = lt ? {ind:"Allolactose", co:"Tryptophan"} : {ind:"Inducer", co:"Corepressor"};
+    const fade = still ? 1 : Math.min(t < 8 ? 1 : smooth(seg(tt, 0, .3)), 1 - smooth(seg(tt, 7.6, 8)));
+    return `<text x="30" y="160" class="t18">${L1}</text><text x="30" y="182" class="t13 muted">normally OFF</text><text x="30" y="380" class="t18">${L2}</text><text x="30" y="402" class="t13 muted">normally ON</text>`
+      + `<g opacity="${f3(fade)}">` + duoLane(190, "ind", tt, labels) + duoLane(410, "rep", tt, labels) + `</g>`;
+  }
+
+  const MIXCOL = (on) => i => (i % 5 < 3 ? on : "white");
+  function platePairSVG(t){
+    const g = smooth(seg(t % 7, .2, 1.8));
+    return plate(260, 225, 160, {growth:"lawn", lawn:"cream"}, g, false, "LB agar, no ampicillin: everything grows")
+      + plate(740, 225, 160, {growth:"colonies", color:() => "cream"}, g, false, "LB + ampicillin: only plasmid carriers survive")
+      + `<text x="500" y="40" class="t15 mid">Same transformed cells, two different plates</text>`;
+  }
+  function xgalChemSVG(t){
+    const tt = t % 7;
+    const ex = lerp(140, 392, smooth(seg(tt, .3, 1.5)));
+    const chomp = tt > 1.4 && tt < 2.0 ? Math.abs(Math.sin((tt - 1.4) * 16)) : (tt < 1.4 ? .6 + .4 * Math.abs(Math.sin(tt * 6)) : .5);
+    const cut = seg(tt, 1.7, 2.0), drift = smooth(seg(tt, 2.0, 3.2)), blueQ = smooth(seg(tt, 2.3, 3.2)), pair = smooth(seg(tt, 3.4, 4.4));
+    const fade = 1 - smooth(seg(tt, 6.4, 7));
+    let o = `<text x="500" y="46" class="t15 mid">\u03b2-galactosidase cuts X-gal</text>`;
+    const gx = lerp(455, 430, drift), gy = lerp(240, 120, drift);
+    const ix = lerp(485, 640, drift), iy = 240;
+    const c = blueQ > .5 ? "#2f63c7" : "#d7dbe3";
+    o += `<g opacity="${f3(fade)}">`;
+    if (cut < 1) o += `<line x1="463" y1="240" x2="478" y2="240" stroke="#5a6376" stroke-width="2.5" opacity="${f3(1 - cut)}"/>`;
+    o += `<polygon points="${hexPts(gx, gy, 12)}" fill="#fff" stroke="${BLUE}" stroke-width="2.5"/>`;
+    o += indole(ix, iy, blueQ > 0 ? `rgb(${Math.round(lerp(215,47,blueQ))},${Math.round(lerp(219,99,blueQ))},${Math.round(lerp(227,199,blueQ))})` : "#d7dbe3", 1);
+    if (pair > 0) o += indole(lerp(900, 680, pair), lerp(330, 262, pair), "#2f63c7", 1);
+    o += `<text x="470" y="200" class="t13 mid" opacity="${f3(1 - drift)}">X-gal (colorless)</text>`;
+    if (drift > .5) o += `<text x="430" y="92" class="t12 mid" opacity="${f3(drift)}">Galactose</text>`;
+    if (pair > .6) o += `<text x="670" y="318" class="t15 mid" fill="#2f63c7" style="fill:#2f63c7" opacity="${f3(pair)}">${resolved("blue") ? "Blue dye!" : "?"}</text>`;
+    o += `</g>` + pacman(ex, 240, chomp, "\u03b2-galactosidase (made from lacZ)");
+    return o;
+  }
+  function plasmidSVG(t){
+    const tt = t % 7;
+    const cut = smooth(seg(tt, 1.2, 1.8)), ins = smooth(seg(tt, 1.9, 2.9)), fade = 1 - smooth(seg(tt, 6.3, 7));
+    const one = (cx, label, anim) => {
+      const R = 105; let o = `<circle cx="${cx}" cy="245" r="${R}" fill="none" stroke="#9aa3b5" stroke-width="6"/>`;
+      o += `<path d="${arcPath(cx, 245, R, 115, 175)}" stroke="${RED}" stroke-width="14" fill="none"/><text x="${f1(cx + 86)}" y="345" class="t12 mid red">ampR</text>`;
+      o += `<path d="${arcPath(cx, 245, R, 205, 222)}" stroke="#5a6376" stroke-width="14" fill="none"/><text x="${f1(cx - 108)}" y="345" class="t12 mid muted">ori</text>`;
+      const gap = anim ? 14 * cut : 0;
+      const broken = anim && ins > .5;
+      o += `<path d="${arcPath(cx, 245, R, -60, -gap)}" stroke="${broken ? "#9db4e0" : BLUE}" stroke-width="14" fill="none"/><path d="${arcPath(cx, 245, R, gap, 60)}" stroke="${broken ? "#9db4e0" : BLUE}" stroke-width="14" fill="none"/>`;
+      o += `<text x="${cx - (anim ? 60 : 0)}" y="${245 - R - 26}" class="t13 ${anim ? "end" : "mid"} blu">${broken ? "lacZ (broken)" : "lacZ"}</text>`;
+      if (anim){
+        if (cut > 0 && ins < .2) o += `<text x="${cx}" y="${245 - R - 44}" font-size="26" text-anchor="middle" opacity="${f3(cut * (1 - ins))}">\u2702</text>`;
+        if (ins > 0){ const y = lerp(245 - R - 90, 245 - R, ins); o += `<rect x="${cx - 26}" y="${f1(y - 9)}" width="52" height="18" rx="5" fill="${ORANGE}"/><text x="${cx + 34}" y="${f1(y + 4)}" class="t12" opacity="${f3(ins)}">Your gene</text>`; }
+      }
+      o += `<text x="${cx}" y="250" class="t13 mid">${label[0]}</text><text x="${cx}" y="268" class="t12 mid muted">${label[1]}</text>`;
+      return o;
+    };
+    return `<g opacity="${f3(fade)}">` + one(270, ["Empty plasmid", "lacZ works"], false) + one(730, ["Recombinant plasmid", "gene inside lacZ"], true) + `</g><text x="500" y="440" class="t13 mid muted">Restriction enzyme sites sit in the middle of lacZ</text>`;
+  }
+  function plateReadSVG(t){
+    const g = smooth(seg(t, .2, 1.6));
+    let o = plate(320, 230, 185, {growth:"colonies", color:MIXCOL("blue")}, g, false, "LB + ampicillin + X-gal + IPTG");
+    const pick = COL_POS.findIndex((p, i) => MIXCOL("blue")(i) === "white" && p[0] > .2 && p[1] < -.1);
+    const P = COL_POS[pick < 0 ? 3 : pick], px = 320 + P[0] * 185, py = 230 + P[1] * 185;
+    const bob = 6 * Math.sin(t * 3);
+    if (g > .9) o += `<line x1="${f1(px + 150)}" y1="${f1(py - 150 + bob)}" x2="${f1(px + 4)}" y2="${f1(py - 4 + bob / 3)}" stroke="#b0873a" stroke-width="5" stroke-linecap="round"/><circle cx="${f1(px)}" cy="${f1(py)}" r="14" fill="none" stroke="${GREEN}" stroke-width="3"/>`;
+    o += `<circle cx="640" cy="170" r="10" fill="#2f63c7"/><text x="660" y="175" class="t15">Blue: empty plasmid (lacZ works)</text>`;
+    o += `<circle cx="640" cy="220" r="10" fill="#fcfcf8" stroke="#b9ae8c" stroke-width="1.5"/><text x="660" y="225" class="t15">${resolved("white2") ? "White: your gene is inside lacZ" : "? : your gene is inside lacZ"}</text>`;
+    o += `<text x="640" y="280" class="t13 muted">Every colony here has a plasmid,</text><text x="640" y="298" class="t13 muted">thanks to ampicillin selection.</text>`;
+    return o;
+  }
+  function xvpSVG(t){
+    const g = smooth(seg(t, .2, 1.6));
+    let o = `<rect x="500" y="0" width="500" height="470" fill="#140f28"/>`;
+    o += `<text x="250" y="40" class="t15 mid">X-gal plate (normal light)</text><text x="750" y="40" class="t15 mid" style="fill:#fff">pGLO plate (UV light)</text>`;
+    o += plate(250, 235, 165, {growth:"colonies", color:MIXCOL("blue")}, g, false, "LB + amp + X-gal + IPTG");
+    o += plate(750, 235, 165, {growth:"colonies", color:() => "glow"}, g, true, "LB + amp + arabinose");
+    return o;
+  }
+  function plateLabSVG(d, t){
+    const uv = d.kind === "pglo" && d.st.uv;
+    const L = PLATELABS[d.kind], res = L.out(d.st), g = d.st.grown ? smooth(seg(t, .1, 1.7)) : 0;
+    let o = uv ? `<rect x="0" y="0" width="1000" height="470" fill="#140f28"/>` : "";
+    const tc = uv ? "#fff" : "#343b4a";
+    o += plate(300, 225, 185, res.spec, g, uv, "");
+    if (!d.st.grown) o += `<text x="300" y="220" class="t15 mid" style="fill:${uv ? "#fff" : "#5a6376"}">Not incubated yet</text><text x="300" y="242" class="t13 mid" style="fill:${uv ? "#fff" : "#5a6376"}">Tap "Incubate overnight"</text>`;
+    let y = 90;
+    o += `<text x="560" y="${y}" class="t18" style="fill:${tc}">${L.strains.find(x => x[0] === d.st.strain)[1]}</text>`; y += 34;
+    o += `<text x="560" y="${y}" class="t13" style="fill:${tc}">Plate contains:</text>`; y += 26;
+    const adds = ["LB agar (food)"].concat(L.adds.filter(a => d.st[a[0]]).map(a => a[1]));
+    adds.forEach(a => { o += `<circle cx="572" cy="${y - 5}" r="5" fill="${uv ? "#8dff78" : BLUE}"/><text x="586" y="${y}" class="t15" style="fill:${tc}">${a}</text>`; y += 26; });
+    if (d.kind === "pglo") o += `<text x="560" y="${y + 20}" class="t13" style="fill:${tc}">Viewing under: ${d.st.uv ? "UV light" : "normal room light"}</text>`;
+    return o;
+  }
+
+  function feedbackSVG(t, m){
+    const trp = m === "trp", prod = trp ? "tryptophan" : "product";
+    const T = 10.8, tt = t % T, act = Math.floor(tt / 1.8);
+    const N = [
+      {x:170, y:80, t1:"1. Gene ON", t2:trp ? "trp genes transcribed" : "RNA polymerase transcribes"},
+      {x:500, y:80, t1:"2. mRNA made", t2:"Transcription"},
+      {x:830, y:80, t1:"3. Enzymes made", t2:"Translation at ribosomes"},
+      {x:830, y:360, t1:`4. Enzymes build ${prod}`, t2:trp ? "Tryptophan piles up" : "Product piles up"},
+      {x:500, y:360, t1:"5. Corepressor", t2:`${trp ? "Tryptophan" : "Product"} activates the repressor`},
+      {x:170, y:360, t1:"6. Gene OFF", t2:"Stop sign on the operator"}
+    ];
+    let o = `<text x="500" y="222" class="t18 mid">Negative feedback loop</text><text x="500" y="246" class="t13 mid muted">The central dogma: DNA \u2192 mRNA \u2192 protein</text>`;
+    const arrow = (x1, y1, x2, y2, lbl, on, lx, ly) => `<path d="M${x1},${y1} L${x2},${y2}" stroke="${on ? BLUE : "#b7bfcc"}" stroke-width="${on ? 4 : 3}" marker-end="url(#fbAh${on ? 1 : 0})"/>` + (lbl ? `<text x="${lx}" y="${ly}" class="t12 mid ${on ? "blu" : "muted"}">${lbl}</text>` : "");
+    o += `<defs><marker id="fbAh0" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#b7bfcc"/></marker><marker id="fbAh1" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="${BLUE}"/></marker></defs>`;
+    o += arrow(292, 80, 372, 80, "", act === 0) + arrow(622, 80, 702, 80, "", act === 1);
+    o += arrow(830, 146, 830, 290, "", act === 2) + arrow(702, 360, 622, 360, "", act === 3) + arrow(372, 360, 292, 360, "", act === 4);
+    o += arrow(170, 290, 170, 150, "", act === 5) + `<text x="185" y="225" class="t12 ${act === 5 ? "blu" : "muted"}">${trp ? "Tryptophan used up:" : "Product used up:"}</text><text x="185" y="241" class="t12 ${act === 5 ? "blu" : "muted"}">gene turns back ON</text>`;
+    N.forEach((n, i) => {
+      const on = i === act;
+      o += `<rect x="${n.x - 120}" y="${n.y - 62}" width="240" height="124" rx="16" fill="${on ? "#eef0fd" : "#fff"}" stroke="${on ? BLUE : "#d9dee7"}" stroke-width="${on ? 3 : 2}"/>`;
+      o += `<text x="${n.x}" y="${n.y - 38}" class="t13 mid">${n.t1}</text><text x="${n.x}" y="${n.y + 52}" class="t12 mid muted">${n.t2}</text>`;
+      const cx = n.x, cy = n.y + 8;
+      if (i === 0) o += `<path d="M${cx - 90},${cy + 18}H${cx + 90}" stroke="#0f766e" stroke-width="4"/>` + car(cx - 40 + (on ? 70 * ((tt % 1.8) / 1.8) : 0), cy + 16, 1, 0).replace("translate(", "translate(").replace(/rotate\(0\.0\)"/, `rotate(0.0) scale(0.6)"`);
+      if (i === 1) o += mrna(cx - 70, cx + 70, cy + 4, 1);
+      if (i === 2){ o += `<ellipse cx="${cx - 50}" cy="${cy}" rx="22" ry="15" fill="#c97b4a"/><ellipse cx="${cx - 50}" cy="${cy + 16}" rx="18" ry="6" fill="#e3a877"/>`; for (let j = 0; j < 3; j++){ const px = cx + 5 + j * 30, py = cy + 6; o += `<path d="M${px},${py} L${px + 10},${py - 6} A12,12 0 1 0 ${px + 10},${py + 6} Z" fill="#c97b4a"/>`; } }
+      if (i === 3 || i === 4){ const k = i === 3 ? 6 : 2; for (let j = 0; j < k; j++){ const px = cx - 70 + (j % 6) * 28, py = cy - 4 + (j % 2) * 14; o += trp ? trpChip(px, py, 1) : `<polygon points="${hexPts(px, py, 9)}" fill="${GREEN}" stroke="#1b7f4e"/>`; } if (i === 4) o += stopSign(cx + 40, cy, 1, 1, .55); }
+      if (i === 5) o += `<path d="M${cx - 90},${cy + 18}H${cx + 90}" stroke="#0f766e" stroke-width="4"/>` + stopSign(cx + 10, cy - 2, 1, 1, .55);
+    });
+    return o;
+  }
+
+  function render(){
+    if (view === "home" || view === "pro" || (view === "build" && !bld.anim)) return;
+    const d = vis, t = frozen ? 0 : sceneT;
+    let o = "";
+    if (d.scene === "operon") o = opSVG(opCur, LAY[d.layout], d);
+    else if (d.scene === "genes") o = genesSVG(t);
+    else if (d.scene === "compare") o = compareSVG(t);
+    else if (d.scene === "chromatin") o = chromatinSVG(t);
+    else if (d.scene === "tf") o = tfSVG(t);
+    else if (d.scene === "enhancer") o = enhancerSVG(t);
+    else if (d.scene === "seesaw") o = seesawSVG(t, frozen);
+    else if (d.scene === "duo") o = duoSVG(t, d.mode, frozen);
+    else if (d.scene === "platepair") o = platePairSVG(t);
+    else if (d.scene === "feedback") o = feedbackSVG(t, d.mode);
+    else if (d.scene === "xgalchem") o = xgalChemSVG(t);
+    else if (d.scene === "plasmid") o = plasmidSVG(t);
+    else if (d.scene === "plateread") o = plateReadSVG(t);
+    else if (d.scene === "xvp") o = xvpSVG(t);
+    else if (d.scene === "platelab") o = plateLabSVG(d, sceneT);
+    svg.innerHTML = o;
+  }
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
+    stepOpTween(now); sceneT += dt; carT += dt;
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  /* ================= Answer checking ================= */
+  function lev(a, b){
+    const m = a.length, n = b.length, d = [];
+    for (let i = 0; i <= m; i++) d[i] = [i];
+    for (let j = 0; j <= n; j++) d[0][j] = j;
+    for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    return d[m][n];
+  }
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  function matches(id, val){
+    const b = BL[id], v = norm(val);
+    if (!v) return false;
+    return b.ans.some(a => a === v || (b.fuzzy && a.length >= 5 && lev(v, a) <= 1));
+  }
+
+  /* ================= Tables ================= */
+  function renderTable(spec){
+    const wrap = $("tableWrap");
+    if (!spec){ wrap.hidden = true; wrap.dataset.rows = ""; wrap.dataset.cap = ""; return; }
+    const D = spec.data, prev = wrap.dataset.cap === D.cap ? (wrap.dataset.rows || "").split(",") : null;
+    const rows = D.order.filter(r => spec.rows.includes(r));
+    let h = `<div class="cap">${D.cap}</div><table><thead><tr>${D.head.map(x => `<th>${x}</th>`).join("")}</tr></thead><tbody>`;
+    rows.forEach(k => {
+      const r = D.rows[k], cls = (k === spec.hl ? "hl " : "") + (prev && !prev.includes(k) ? "new" : "");
+      h += `<tr class="${cls}">` + r[0].map((c, j) => j === 0 ? `<td><b>${c}</b></td>` : `<td class="${j === r[0].length - 1 ? r[1] : ""}">${c}</td>`).join("") + `</tr>`;
+    });
+    wrap.innerHTML = h + `</tbody></table>`; wrap.hidden = false; wrap.dataset.rows = rows.join(","); wrap.dataset.cap = D.cap;
+  }
+  function trackTable(){
+    const S = steps(), i = idx();
+    let tb = S[i].table;
+    if (tb && !stepResolved(i)){ const p = S[i - 1]; tb = p && p.table && p.table.data === tb.data ? {data:tb.data, rows:p.table.rows} : null; }
+    renderTable(tb || null);
+  }
+
+  /* ================= Learn more ================= */
+  function openMore(key){
+    const m = MORE[key]; if (!m) return;
+    $("moreTitle").textContent = m.title; $("moreBody").innerHTML = m.html;
+    $("moreOverlay").hidden = false; $("moreClose").focus();
+  }
+  function closeMore(){ $("moreOverlay").hidden = true; }
+  function footHTML(moreKey, ctas, links){
+    let h = "";
+    if (links) h += `<a class="btn secondary" href="transcription.html">Transcription module</a><a class="btn secondary" href="translation.html">Translation module</a>`;
+    (ctas || []).forEach(c => { h += `<button class="btn primary" data-cta="${c.view}" data-lab="${c.lab || ""}">${c.label}</button>`; });
+    if (moreKey) h += `<button class="more-btn" data-more="${moreKey}">Learn more</button><span class="more-note">Extra deep-dive, not on the exam</span>`;
+    return h;
+  }
+  function wireFoot(){
+    const f = $("bubbleFoot");
+    f.querySelectorAll("[data-more]").forEach(b => b.addEventListener("click", () => openMore(b.dataset.more)));
+    f.querySelectorAll("[data-cta]").forEach(b => b.addEventListener("click", () => { if (b.dataset.lab) labOp = b.dataset.lab; setView(b.dataset.cta); }));
+  }
+
+  /* ================= Track UI ================= */
+  const termHTML = (id, cls) => `<strong class="term ${cls || ""}">${BL[id].show}</strong>`;
+  function termEl(id, cls){ const s = document.createElement("strong"); s.className = "term " + cls; s.textContent = BL[id].show; return s; }
+  function blankHTML(id){
+    if (mode === "learn") return termHTML(id);
+    if (bl[id]) return termHTML(id, bl[id]);
+    return `<input class="blank" data-id="${id}" size="${Math.max(3, BL[id].show.length + 1)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Fill in the blank">`;
+  }
+  function pop(){ bubble.classList.remove("pop"); void bubble.offsetWidth; bubble.classList.add("pop"); }
+  function renderBubble(){
+    const S = steps(), i = idx(), st = S[i];
+    const tn = TRACKS[view].name;
+    $("stepNo").textContent = `${PRO_TRACKS.includes(view) ? "Prokaryotes, " : ""}${tn}${st.part && st.part !== tn ? ": " + st.part : ""} (step ${i + 1} of ${S.length})`;
+    $("stepTitle").textContent = st.title;
+    textEl.innerHTML = st.text.replace(/\{\{(\w+)\}\}/g, (m, id) => blankHTML(id));
+    textEl.querySelectorAll("input.blank").forEach(inp => {
+      inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); check(); } });
+      inp.addEventListener("input", () => inp.classList.remove("wrong"));
+    });
+    $("labArea").innerHTML = "";
+    fb.textContent = ""; fb.className = "feedback";
+    showAfter(); updateButtons(); pop();
+    const first = textEl.querySelector("input.blank");
+    if (first && mode === "test") first.focus({preventScroll:true});
+  }
+  function showAfter(){
+    const S = steps(), i = idx(), st = S[i], res = stepResolved(i);
+    if (st.after && res){ afterEl.textContent = st.after; afterEl.hidden = false; } else afterEl.hidden = true;
+    $("bubbleFoot").innerHTML = footHTML(st.more, res ? st.cta : null, st.links); wireFoot();
+  }
+  function updateButtons(){
+    const open = mode === "test" && !!textEl.querySelector("input.blank");
+    checkRow.hidden = !open;
+    nextBtn.disabled = open;
+    backBtn.disabled = idx() === 0;
+    nextBtn.textContent = idx() === steps().length - 1 ? "Start over" : "Next";
+  }
+  function renderNav(){
+    const dots = $("dots"), S = steps(); dots.innerHTML = "";
+    S.forEach((st, i) => {
+      if (i > 0 && S[i - 1].part !== st.part){ const g = document.createElement("span"); g.className = "gap"; dots.appendChild(g); }
+      const b = document.createElement("button");
+      b.className = "dot" + (i === idx() ? " current" : (i < furthest[view] || i < idx() ? " seen" : ""));
+      b.textContent = i + 1; b.title = `${st.part}: ${st.title}`;
+      b.setAttribute("aria-label", `Go to step ${i + 1}: ${st.title}`);
+      b.disabled = mode === "test" && i > furthest[view];
+      b.addEventListener("click", () => goTo(i));
+      dots.appendChild(b);
+    });
+  }
+  function enterStep(i, force){
+    const changed = i !== idx() || force;
+    pos[view] = i;
+    const st = steps()[i], res = stepResolved(i);
+    if (res) furthest[view] = Math.max(furthest[view], i + 1);
+    if (changed) sceneT = 0;
+    if (res && st.pre && st.pre.scene === "operon" && changed){
+      if ("operon:" + st.pre.layout !== visKey) applyVisual(st.pre);
+      else { opCur = {...st.pre.s}; opTw = null; carMode = st.pre.car; }
+      applyVisual(st.v);
+    } else applyVisual(res ? st.v : preDef(i));
+    renderBubble(); renderNav(); trackTable();
+  }
+  const goTo = i => enterStep(clamp(i, 0, steps().length - 1));
+  function resolvedNow(){
+    furthest[view] = Math.max(furthest[view], idx() + 1);
+    updateButtons(); renderNav(); showAfter(); trackTable();
+    sceneT = 0; applyVisual(steps()[idx()].v);
+    nextBtn.focus({preventScroll:true});
+  }
+  function check(){
+    const inputs = [...textEl.querySelectorAll("input.blank")];
+    let wrong = 0, empty = 0;
+    inputs.forEach(inp => {
+      const id = inp.dataset.id;
+      if (!inp.value.trim()){ empty++; wrong++; return; }
+      if (matches(id, inp.value)){ bl[id] = "correct"; inp.replaceWith(termEl(id, "correct")); }
+      else { wrong++; inp.classList.remove("wrong"); void inp.offsetWidth; inp.classList.add("wrong"); }
+    });
+    if (wrong){
+      fb.className = "feedback bad";
+      fb.textContent = empty === wrong ? "Type an answer in each blank, or tap Move on to see it." : "Not quite yet. Give it another try, or tap Move on to see the answer.";
+      const n = textEl.querySelector("input.wrong") || textEl.querySelector("input.blank"); if (n) n.focus({preventScroll:true});
+      updateButtons();
+    } else {
+      const cheers = ["Correct!", "Nailed it!", "Yes! Great job.", "Exactly right!", "You've got it!"];
+      fb.className = "feedback good"; fb.textContent = cheers[idx() % cheers.length];
+      resolvedNow();
+    }
+  }
+  function moveOn(){
+    textEl.querySelectorAll("input.blank").forEach(inp => { const id = inp.dataset.id; bl[id] = "revealed"; inp.replaceWith(termEl(id, "revealed")); });
+    fb.className = "feedback warn"; fb.textContent = "Here's the answer. Read it over, then tap Next when you're ready.";
+    resolvedNow();
+  }
+  function replay(){
+    sceneT = 0; carT = 0;
+    const i = idx(), st = steps()[i];
+    if (st.v.scene === "operon" && stepResolved(i)){
+      const p = st.pre || preDef(i);
+      if (p.scene === "operon" && p.layout === st.v.layout){ opCur = {...p.s}; carMode = p.car; applyVisual(st.v); }
+    }
+  }
+
+  /* ================= Lab UI ================= */
+  function labSelector(){
+    let h = "";
+    LAB_GROUPS.forEach(gp => {
+      h += `<div class="labgroup">${gp[0]}</div><div class="opsel" role="group" aria-label="${gp[0]}">`;
+      gp[1].forEach(k => { const L = LABS[k] || PLATELABS[k]; h += `<button data-op="${k}" aria-pressed="${k === labOp}" ${labPending ? "disabled" : ""}>${L.name}${L.extra ? `<span class="x">extra example</span>` : ""}</button>`; });
+      h += `</div>`;
+    });
+    return h;
+  }
+  function renderPlateLab(){
+    const L = PLATELABS[labOp], st = plateState[labOp], res = L.out(st);
+    $("stepNo").textContent = "Operon Lab: plate experiments";
+    $("stepTitle").textContent = L.name;
+    textEl.textContent = L.intro;
+    afterEl.hidden = true; fb.textContent = ""; fb.className = "feedback"; checkRow.hidden = true;
+    let h = `<div class="lab">` + labSelector();
+    h += `<div class="note"><b>Don't mix them up:</b> X-gal plates use the <i>lac</i> operon (lacZ turns X-gal blue). The pGLO lab uses GFP switched on by arabinose (green glow under UV). Ampicillin selects for the plasmid in both. See the table below!</div>`;
+    const dis = labPending ? "disabled" : "";
+    h += `<div class="labrow"><span class="rowlbl">Bacteria</span><div class="radios">` + L.strains.map(x => `<button data-strain="${x[0]}" aria-pressed="${st.strain === x[0]}" ${dis}>${x[1]}</button>`).join("") + `</div></div>`;
+    h += `<div class="labrow"><span class="rowlbl">Add to the plate (LB agar is always there)</span><div class="toggles">` + L.adds.map(a => `<button class="tog" data-add="${a[0]}" aria-pressed="${!!st[a[0]]}" ${dis}><span class="sw"></span>${a[1]}</button>`).join("") + `</div></div>`;
+    h += `<div class="actions"><button class="btn primary" id="incBtn" ${dis}>${st.grown ? "Incubate a fresh plate" : "Incubate overnight"}</button>`;
+    if (labOp === "pglo") h += `<button class="btn secondary uvbtn" id="uvBtn" aria-pressed="${!!st.uv}">${st.uv ? "UV light: on" : "UV light: off"}</button>`;
+    h += `</div>`;
+    if (labPending){
+      h += `<div class="predict">${L.prompt} <input class="pred" id="predIn" size="8" autocomplete="off" aria-label="Your prediction"> <button class="btn primary" id="predCheck">Check</button> <button class="btn secondary" id="predMove">Move on</button><div class="feedback bad" id="predFb"></div></div>`;
+    } else if (st.grown){
+      h += `<div class="readout">${res.chips.map(c => `<span class="chip ${c[2]}">${c[0]}: ${c[1]}</span>`).join("")}</div>`;
+      h += `<p class="explain">${labMsg ? `<b>${labMsg}</b> ` : ""}${res.msg}</p>`;
+    } else h += `<p class="explain">Set up your plate, then tap Incubate overnight.</p>`;
+    $("labArea").innerHTML = h + `</div>`;
+    $("bubbleFoot").innerHTML = footHTML(L.more, null); wireFoot();
+    const A = $("labArea");
+    A.querySelectorAll("[data-op]").forEach(b => b.addEventListener("click", () => { labOp = b.dataset.op; labMsg = ""; enterLab(); }));
+    A.querySelectorAll("[data-strain]").forEach(b => b.addEventListener("click", () => { st.strain = b.dataset.strain; st.grown = false; labMsg = ""; renderPlateLab(); }));
+    A.querySelectorAll("[data-add]").forEach(b => b.addEventListener("click", () => { st[b.dataset.add] = !st[b.dataset.add]; st.grown = false; labMsg = ""; renderPlateLab(); }));
+    $("incBtn").addEventListener("click", () => {
+      if (mode === "test"){ st.grown = false; labPending = {plate:true}; renderPlateLab(); return; }
+      incubate("");
+    });
+    if ($("uvBtn")) $("uvBtn").addEventListener("click", () => { st.uv = !st.uv; renderPlateLab(); });
+    if (labPending){
+      const inp = $("predIn"); inp.focus({preventScroll:true});
+      inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); plateCheck(); } });
+      $("predCheck").addEventListener("click", plateCheck);
+      $("predMove").addEventListener("click", () => incubate("Here's what grew:"));
+    }
+    renderTable({data:XVP_TABLE, rows:XVP_TABLE.order});
+  }
+  function incubate(msg){ const st = plateState[labOp]; labPending = null; st.grown = true; labMsg = msg; sceneT = 0; renderPlateLab(); }
+  function plateCheck(){
+    const L = PLATELABS[labOp], v = norm($("predIn").value), g = L.guess[v];
+    if (!g){ $("predFb").textContent = "Try one of the words in the question, or tap Move on."; return; }
+    const actual = L.out(plateState[labOp]).cat;
+    incubate(g === actual ? "Great prediction!" : "Not quite this time. Here's what grew:");
+  }
+  function renderLabView(){
+    if (PLATELABS[labOp]) return renderPlateLab();
+    const L = LABS[labOp], s = labState[labOp];
+    $("stepNo").textContent = "Operon Lab";
+    $("stepTitle").textContent = `Explore the ${L.name}`;
+    textEl.textContent = L.intro;
+    afterEl.hidden = true; fb.textContent = ""; fb.className = "feedback"; checkRow.hidden = true;
+    const shown = labPending ? labPending.prev : s, next = labPending ? labPending.next : s;
+    const out = L.out(shown);
+    let h = `<div class="lab">` + labSelector();
+    if (L.extra) h += `<div class="xtag">Extra example: you are not responsible for knowing this operon. It's here to help you understand how operons work.</div>`;
+    h += `<div class="toggles">` + L.toggles.map(tg => `<button class="tog" data-key="${tg[0]}" aria-pressed="${!!next[tg[0]]}" ${labPending ? "disabled" : ""}><span class="sw"></span>${tg[1]}: ${next[tg[0]] ? "present" : "absent"}</button>`).join("") + `</div>`;
+    if (labPending){
+      h += `<div class="predict">Predict before you watch: will the ${L.name.split(" ")[0]} genes be ON, LOW, or OFF? <input class="pred" id="predIn" size="5" autocomplete="off" aria-label="Your prediction"> <button class="btn primary" id="predCheck">Check</button> <button class="btn secondary" id="predMove">Move on</button><div class="feedback bad" id="predFb"></div></div>`;
+    } else {
+      h += `<div class="readout">${out.chips.map(c => `<span class="chip ${c[2]}">${c[0]}: ${c[1]}</span>`).join("")}</div>`;
+      h += `<p class="explain">${labMsg ? `<b>${labMsg}</b> ` : ""}${out.msg}</p>`;
+    }
+    $("labArea").innerHTML = h + `</div>`;
+    $("bubbleFoot").innerHTML = footHTML(L.more, null); wireFoot();
+    $("labArea").querySelectorAll("[data-op]").forEach(b => b.addEventListener("click", () => { labOp = b.dataset.op; labMsg = ""; enterLab(); }));
+    $("labArea").querySelectorAll(".tog").forEach(b => b.addEventListener("click", () => labToggle(b.dataset.key)));
+    if (labPending){
+      const inp = $("predIn"); inp.focus({preventScroll:true});
+      inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); labCheck(); } });
+      $("predCheck").addEventListener("click", labCheck);
+      $("predMove").addEventListener("click", () => labApply("Here's what happens:"));
+    }
+    renderTable({data:L.table, rows:L.table.order, hl:labPending ? null : L.row(s)});
+  }
+  function enterLab(){
+    labPending = null;
+    if (PLATELABS[labOp]) applyVisual({scene:"platelab", kind:labOp, st:plateState[labOp]});
+    else applyVisual(LABS[labOp].def(labState[labOp]));
+    renderLabView(); pop();
+  }
+  function labToggle(key){
+    const cur = labState[labOp], next = {...cur, [key]: !cur[key]};
+    if (mode === "test"){ labPending = {prev:{...cur}, next}; labMsg = ""; renderLabView(); return; }
+    labState[labOp] = next; labMsg = ""; applyVisual(LABS[labOp].def(next)); renderLabView();
+  }
+  function labCheck(){
+    const v = norm($("predIn").value);
+    const map = {on:"on", yes:"on", high:"on", full:"on", transcribed:"on", off:"off", no:"off", none:"off", zero:"off", low:"low", little:"low", some:"low", trickle:"low", reduced:"low", weak:"low"};
+    const guess = map[v];
+    if (!guess){ $("predFb").textContent = "Type ON, LOW, or OFF, or tap Move on."; return; }
+    const actual = LABS[labOp].out(labPending.next).lv;
+    labApply(guess === actual ? "Great prediction!" : `Not quite: it's ${lvlName[actual]}. Watch what happens:`);
+  }
+  function labApply(msg){
+    labState[labOp] = labPending.next; labPending = null; labMsg = msg;
+    applyVisual(LABS[labOp].def(labState[labOp])); renderLabView();
+  }
+
+  /* ================= Views ================= */
+  function renderSubTabs(){
+    const el = $("subTabs");
+    if (!PRO_TRACKS.includes(view)){ el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = `<span class="lbl">Prokaryote modules:</span>` + PRO_TRACKS.map(k => `<button class="${TRACKS[k].bonus ? "bonus" : ""}" data-sub="${k}" aria-pressed="${k === view}">${TRACKS[k].short}</button>`).join("");
+    el.querySelectorAll("[data-sub]").forEach(b => b.addEventListener("click", () => setView(b.dataset.sub)));
+  }
+  function setView(v){
+    view = v;
+    const tabOf = PRO_TRACKS.includes(v) ? "pro" : v;
+    document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === tabOf));
+    const menu = v === "home" || v === "pro";
+    $("home").hidden = v !== "home";
+    $("proMenu").hidden = v !== "pro";
+    $("main").hidden = menu;
+    $("modeControls").hidden = menu;
+    $("stepNav").hidden = menu || v === "lab" || v === "build";
+    renderSubTabs();
+    if (menu){ renderTable(null); return; }
+    sceneT = 0;
+    if (v === "lab") enterLab();
+    else if (v === "build") enterBuild(false);
+    else enterStep(pos[v], true);
+    window.scrollTo({top:0});
+  }
+  function setMode(m){
+    mode = m;
+    $("learnBtn").setAttribute("aria-pressed", m === "learn");
+    $("testBtn").setAttribute("aria-pressed", m === "test");
+    $("modeHint").textContent = m === "learn"
+      ? "Learn mode: every term is filled in. Read each bubble, watch what happens, then tap Next."
+      : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer. In the Operon Lab, you'll predict before each change.";
+    labPending = null;
+    if (view === "lab") enterLab();
+    else if (view === "build"){ if (bld.sc) renderBuilderBubble(); }
+    else if (isTrack(view)){ visKey += "*"; enterStep(idx(), true); }
+  }
+  function restart(){
+    bl = {}; resetPos(); resetPlates();
+    LAB_ORDER.forEach(k => { labState[k] = {...LABS[k].start}; }); labPending = null; labMsg = "";
+    visKey = "";
+    if (view === "lab") enterLab(); else if (view === "build") enterBuild(true); else if (isTrack(view)) enterStep(0, true);
+  }
+
+  document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+  document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => setView(b.dataset.go)));
+  $("learnBtn").addEventListener("click", () => setMode("learn"));
+  $("testBtn").addEventListener("click", () => setMode("test"));
+  $("restartBtn").addEventListener("click", restart);
+  $("checkBtn").addEventListener("click", check);
+  $("moveOnBtn").addEventListener("click", moveOn);
+  backBtn.addEventListener("click", () => goTo(idx() - 1));
+  replayBtn.addEventListener("click", replay);
+  nextBtn.addEventListener("click", () => { if (idx() === steps().length - 1) enterStep(0); else goTo(idx() + 1); });
+  $("moreClose").addEventListener("click", closeMore);
+  $("moreOverlay").addEventListener("click", e => { if (e.target.id === "moreOverlay") closeMore(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !$("moreOverlay").hidden){ closeMore(); return; }
+    if (!isTrack(view)) return;
+    if (!$("moreOverlay").hidden || (e.target && e.target.tagName === "INPUT")) return;
+    if (e.key === "ArrowRight" && !nextBtn.disabled && idx() < steps().length - 1) goTo(idx() + 1);
+    if (e.key === "ArrowLeft" && idx() > 0) goTo(idx() - 1);
+  });
+
+  wireBuilder();
+  setMode("learn");
+  (function(){
+    const h = (location.hash || "").slice(1);
+    if (h.indexOf("lab") === 0){ const k = h.split("-")[1]; if (k && (LABS[k] || PLATELABS[k])) labOp = k; setView("lab"); }
+    else if (["euk","pro","basics","ind","xgal","rep","build"].includes(h)) setView(h);
+    else setView("home");
+  })();
+  requestAnimationFrame(frame);
+  window.__op = {setView, goTo, check, moveOn, setMode, labToggle, openMore, get view(){return view;}, get idx(){return idx();}, get bl(){return bl;}, TRACKS, LABS, PLATELABS, MORE, plateState, incubate, bld, BUILD, placePiece, builderCheck, builderLevel, builderShow, enterBuild, selectLab:k => { labOp = k; enterLab(); }};
+})();
+</script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const PAGE = (location.pathname.split("/").pop() || "index.html");
+  const testing = () => { const t = $("testBtn"); return t && t.getAttribute("aria-pressed") === "true"; };
+
+  /* Hint button: shows the first letter and length of each open blank, then more letters */
+  const row = $("checkRow"), moveOn = $("moveOnBtn");
+  if (row && moveOn && window.__BL){
+    const hb = document.createElement("button");
+    hb.className = "btn hint"; hb.id = "hintBtn"; hb.textContent = "Hint";
+    row.insertBefore(hb, moveOn);
+    hb.addEventListener("click", () => {
+      const ins = [...document.querySelectorAll("#stepText input.blank")];
+      ins.forEach(inp => {
+        const b = window.__BL[inp.dataset.id]; if (!b) return;
+        const w = b.show, lvl = Math.min((+inp.dataset.hint || 0) + 1, Math.max(1, Math.ceil(w.length / 2)));
+        inp.dataset.hint = lvl;
+        if (inp.classList.contains("wrong")) inp.value = "";
+        inp.placeholder = w.slice(0, lvl) + w.slice(lvl).replace(/[^\s-]/g, "_");
+        inp.size = Math.max(inp.size || 3, w.length + 1);
+      });
+      const fb = $("feedback");
+      if (fb && ins.length){ fb.className = "feedback warn"; fb.textContent = "Hint: the first letter" + (ins.some(i => +i.dataset.hint > 1) ? "s are" : " is") + " shown, and each dash is one letter. Tap Hint again for more."; }
+      const f = ins[0]; if (f) f.focus({preventScroll:true});
+    });
+  }
+
+  /* Bridge card on the last step */
+  let links = []; try { links = JSON.parse(document.body.dataset.next || "[]"); } catch (e) {}
+  const bubble = $("bubble");
+  let bridge = null;
+  if (links.length && bubble){
+    bridge = document.createElement("div"); bridge.className = "bridge"; bridge.hidden = true;
+    bridge.innerHTML = `<b>Where to next?</b>` + links.map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
+    bubble.insertAdjacentElement("afterend", bridge);
+  }
+
+  /* Completion: finishing every step in Test mode saves a checkmark for the hub */
+  const next = $("nextBtn");
+  let toasted = false;
+  function watch(){
+    if (!next) return;
+    const last = next.textContent.trim() === "Start over";
+    if (bridge) bridge.hidden = !last;
+    if (last && testing() && !next.disabled){
+      let was = false; try { was = localStorage.getItem("bio112-done:" + PAGE) === "1"; localStorage.setItem("bio112-done:" + PAGE, "1"); } catch (e) {}
+      if (!toasted && !was){
+        toasted = true;
+        const t = document.createElement("div"); t.className = "donetoast"; t.setAttribute("role", "status");
+        t.textContent = "Module complete! It now has a checkmark on the home page.";
+        document.body.appendChild(t); setTimeout(() => t.remove(), 3600);
+      }
+    }
+  }
+  if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
+})();
+</script>
+</body>
+</html>

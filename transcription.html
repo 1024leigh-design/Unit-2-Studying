@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transcription: DNA to mRNA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d2433; --muted:#5a6376; --page:#eef1f5; --card:#ffffff; --line:#d9dee7;
+    --accent:#3f4cc0; --accent-soft:#e7e9fb;
+    --good:#1b7f4e; --good-soft:#e1f3e8; --warn:#9a6212; --warn-soft:#fbefd9; --bad:#b83a34;
+    --font:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font)}
+  .wrap{max-width:1060px;margin:0 auto;padding:18px 16px 30px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px}
+  h1{font-size:1.55rem;line-height:1.15;margin:0;letter-spacing:-0.01em}
+  .sub{color:var(--muted);font-size:.92rem;margin-top:3px}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .seg{display:inline-flex;background:#dfe4ec;border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:700 .95rem var(--font);padding:8px 18px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(29,36,51,.18)}
+  .ghost{border:1px solid var(--line);background:var(--card);font:700 .9rem var(--font);padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--muted)}
+  .modehint{color:var(--muted);font-size:.92rem;margin:0 0 10px}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  svg{display:block;width:100%;height:auto;font-family:var(--font)}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 2px 0;font-size:.85rem;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;font-style:normal;font-weight:700;font-size:.78rem}
+
+  .bubble{position:relative;margin-top:18px;background:var(--card);border:2px solid var(--accent);border-radius:16px;padding:16px 20px 16px}
+  .bubble::before{content:"";position:absolute;top:-11px;left:52px;width:18px;height:18px;background:var(--card);border-left:2px solid var(--accent);border-top:2px solid var(--accent);transform:rotate(45deg)}
+  .bubble.pop{animation:pop .32s cubic-bezier(.2,.9,.3,1.25)}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .stepno{font-size:.88rem;color:var(--accent);font-weight:700}
+  .title{font-size:1.2rem;font-weight:700;margin:2px 0 8px}
+  .text{font-size:1.06rem;line-height:1.65;margin:0;max-width:78ch}
+  .after{margin:10px 0 0;font-weight:700;color:var(--accent)}
+  .term{background:var(--accent-soft);color:#2c3796;padding:1px 6px;border-radius:6px;white-space:nowrap}
+  .term.correct{background:var(--good-soft);color:var(--good)}
+  .term.revealed{background:var(--warn-soft);color:var(--warn)}
+  input.blank{font:700 1rem var(--font);border:0;border-bottom:2px solid var(--accent);background:#f3f4fd;padding:2px 6px;border-radius:6px 6px 0 0;color:var(--ink);min-width:3em;max-width:100%}
+  input.blank:focus{outline:2px solid var(--accent);outline-offset:1px;background:var(--accent-soft)}
+  input.blank.wrong{border-bottom-color:var(--bad);background:#fbe8e7;animation:shake .32s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .check-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+  .check-row[hidden]{display:none}
+  .btn{font:700 .96rem var(--font);border-radius:999px;padding:9px 20px;cursor:pointer;border:2px solid var(--accent)}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.secondary{background:#fff;color:var(--accent)}
+  .btn:disabled{opacity:.38;cursor:not-allowed}
+  .feedback{font-weight:700;font-size:.96rem;margin-top:10px;min-height:1.2em}
+  .feedback.good{color:var(--good)} .feedback.bad{color:var(--bad)} .feedback.warn{color:var(--warn)}
+  nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex:1}
+  .dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:#fff;font:700 .8rem var(--font);color:var(--muted);cursor:pointer;padding:0}
+  .dot.seen{border-color:var(--accent);color:var(--accent)}
+  .dot.current{background:var(--accent);border-color:var(--accent);color:#fff}
+  .dot:disabled{opacity:.35;cursor:not-allowed}
+  .navbtns{display:flex;gap:8px}
+  button:focus-visible{outline:3px solid #f2b134;outline-offset:2px}
+  @media (max-width:640px){
+    h1{font-size:1.3rem}
+    .dot{width:24px;height:24px;font-size:.7rem}
+    .text{font-size:1rem}
+    .bubble{padding:14px 14px}
+  }
+  @media (prefers-reduced-motion:reduce){ .bubble.pop,input.blank.wrong{animation:none} }
+
+  .backlink{display:inline-block;font-size:.88rem;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:4px}
+  .backlink::before{content:"\2190  "}
+
+  /* SVG text */
+  .bt{font-size:14px;font-weight:700;text-anchor:middle}
+  .band{font-size:12px;font-weight:700;text-anchor:middle;fill:#343b4a}
+  .prime{font-size:14px;font-weight:700;fill:#5a6376;text-anchor:middle}
+  .prime.rna{fill:#c4532f}
+  .slbl{font-size:12px;font-weight:700;fill:#64748b}
+  .slbl.tpl{fill:#0f766e}
+  .pill{font-size:13px;font-weight:700;fill:#fff;text-anchor:middle}
+  .lbl{font-size:13px;font-weight:700;fill:#343b4a}
+  .small{font-size:12px;font-weight:700;fill:#4a5263}
+  .mid{text-anchor:middle} .end{text-anchor:end}
+  .cap{font-size:14px;font-weight:700;fill:#5d7f50;text-anchor:middle}
+  .region{font-size:16px;font-weight:700;fill:#6b5a92;text-anchor:middle;font-style:italic}
+  .region.bac{fill:#5d7f50}
+
+  /* ===== Study helpers (hint, checkmarks, bridge) ===== */
+  input.blank{border:2px solid var(--accent);border-bottom-width:3px;background:#fff7d6;border-radius:8px;padding:3px 8px;animation:blankpulse 1.8s ease-in-out infinite}
+  input.blank:focus{animation:none;background:#fff}
+  input.blank::placeholder{color:#9a8a55;letter-spacing:.12em;font-weight:700}
+  @keyframes blankpulse{0%,100%{box-shadow:0 0 0 0 rgba(63,76,192,.0)}50%{box-shadow:0 0 0 5px rgba(63,76,192,.18)}}
+  .btn.hint{border-color:#e5c56a;background:#fff8e6;color:#8a5a00}
+  .dot{position:relative}
+  body:has(#testBtn[aria-pressed="true"]) .dot.seen::after{content:"\2713";position:absolute;right:-5px;top:-6px;width:14px;height:14px;border-radius:50%;background:var(--good);color:#fff;font-size:.56rem;line-height:14px;text-align:center;box-shadow:0 0 0 2px var(--page)}
+  .bridge{margin-top:14px;border:2px dashed #b9a6ee;background:var(--more-soft);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .bridge b{color:var(--more);margin-right:6px}
+  .bridge[hidden]{display:none}
+  .donetoast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:30}
+  @media (prefers-reduced-motion:reduce){ input.blank{animation:none} }
+
+  /* ===== Hands-on gates ===== */
+  .gate{margin-top:14px;border:2px solid #f0d99a;background:#fffbef;border-radius:14px;padding:12px 14px;display:grid;gap:10px}
+  .gate.done{border-color:#9fd3b5;background:var(--good-soft)}
+  .gate .gtitle{font-weight:700;color:#8a5a00}
+  .gate.done .gtitle{color:var(--good)}
+  .gate .gmsg{font-weight:700;min-height:1.2em;font-size:.95rem}
+  .gate .gmsg.bad{color:var(--bad)} .gate .gmsg.good{color:var(--good)}
+  .gb{display:inline-grid;place-items:center;width:30px;height:32px;border-radius:7px;color:#fff;font:700 1rem var(--font);border:0;padding:0}
+  .gbA{background:#2f9e63} .gbT{background:#d9534f} .gbG{background:#f2b134;color:#3b2a00} .gbC{background:#3b7dd8} .gbU{background:#8e5bd0}
+  .gslot{display:inline-grid;place-items:center;width:30px;height:32px;border-radius:7px;border:2px dashed #c9cfdb;background:#fff;color:#b3bac7;font-weight:700}
+  .gslot.cur{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .grow{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .grow .glbl{font-size:.82rem;font-weight:700;color:var(--muted);min-width:118px}
+  .gkeys{display:flex;gap:8px;flex-wrap:wrap}
+  .gkeys button{width:46px;height:44px;border-radius:10px;font-size:1.1rem;cursor:pointer}
+  .gkeys button:hover{filter:brightness(1.08)}
+  .shelf{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .trna{touch-action:none;user-select:none;cursor:grab;display:grid;justify-items:center;gap:0;padding:8px 10px 10px;border:2px solid var(--line);border-radius:14px;background:#fff;min-width:96px}
+  .trna:hover{border-color:var(--accent)}
+  .trna.drag{position:fixed;z-index:50;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.28);cursor:grabbing}
+  .trna.ghost{opacity:.3}
+  .trna.nope{animation:shake .32s;border-color:var(--bad)}
+  .trna .aab{border-radius:999px;background:#fdeee5;border:2px solid #e8744f;color:#a8461f;font-weight:700;font-size:.85rem;padding:3px 10px}
+  .trna .stem{width:8px;height:22px;background:#c7b3ee}
+  .trna .body{background:#efe7fb;border:2px solid #b9a6ee;border-radius:10px;padding:5px 6px;display:flex;gap:2px}
+  .trna .aclbl{font-size:.7rem;color:var(--muted);font-weight:700;margin-top:3px}
+  .dropzone{border:2px dashed var(--accent);border-radius:14px;padding:10px 14px;background:#f3f4fd;display:grid;gap:6px;justify-items:start;min-width:220px}
+  .dropzone.over{background:var(--accent-soft);box-shadow:0 0 0 4px var(--accent-soft)}
+  .dropzone.filled{border-style:solid;border-color:var(--good);background:var(--good-soft)}
+  .bondrow{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+  .aachip{border-radius:999px;font-weight:700;padding:6px 14px;border:2px solid #2f9e63;background:#e1f3e8;color:#1b7f4e}
+  .aachip.new{border-color:#e8744f;background:#fdeee5;color:#a8461f}
+  .bondgap{position:relative;width:70px;height:6px;margin:0 4px;background:repeating-linear-gradient(90deg,#c9cfdb 0 6px,transparent 6px 12px)}
+  .bondgap.made{background:#343b4a;height:5px}
+  .spark{position:absolute;left:50%;top:50%;width:46px;height:46px;transform:translate(-50%,-50%) scale(0);background:radial-gradient(circle,#fff6b0 0 25%,#f2b134 26% 45%,transparent 46%);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);animation:spark .7s ease-out}
+  @keyframes spark{0%{transform:translate(-50%,-50%) scale(0) rotate(0)}50%{transform:translate(-50%,-50%) scale(1.3) rotate(40deg)}100%{transform:translate(-50%,-50%) scale(0) rotate(80deg);opacity:0}}
+  @media (prefers-reduced-motion:reduce){ .spark{animation:none;display:none} .trna.nope{animation:none} }
+</style>
+</head>
+<body data-next-label="Want to see how this mRNA is regulated next?" data-next='[["Head to Post-Transcriptional Control", "posttranscriptional-control.html"], ["Translation", "translation.html"], ["Pre-transcriptional control", "pretranscriptional-control.html"]]'>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="backlink" href="index.html">All modules</a>
+      <h1>Transcription: DNA to mRNA</h1>
+      <div class="sub">BIOL 112 Microbiology, Chapter 8</div>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="learnBtn" aria-pressed="true">Learn</button>
+        <button id="testBtn" aria-pressed="false">Test</button>
+      </div>
+      <button class="ghost" id="restartBtn">Restart</button>
+    </div>
+  </header>
+  <p class="modehint" id="modeHint"></p>
+
+  <div class="stage">
+    <svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="Animated diagram of transcription"></svg>
+  </div>
+  <div class="legend" id="legend"></div>
+
+  <section class="bubble" id="bubble" aria-live="polite">
+    <div class="stepno" id="stepNo"></div>
+    <div class="title" id="stepTitle"></div>
+    <p class="text" id="stepText"></p>
+    <p class="after" id="stepAfter" hidden></p>
+    <div class="gate" id="gate" hidden></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="check-row" id="checkRow" hidden>
+      <button class="btn primary" id="checkBtn">Check</button>
+      <button class="btn secondary" id="moveOnBtn">Move on</button>
+    </div>
+  </section>
+
+  <nav>
+    <div class="navbtns"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="replayBtn">Replay</button></div>
+    <div class="dots" id="dots"></div>
+    <div class="navbtns"><button class="btn primary" id="nextBtn">Next</button></div>
+  </nav>
+</div>
+
+<script>
+(function(){
+  /* ---------- Sequence and layout ---------- */
+  const CODING = "C" + "TATAA" + "GTG" + "CA" + "ATGGCATTCGGATAA" + "GCGC" + "T";
+  const COMP = {A:"T", T:"A", G:"C", C:"G"};
+  const TEMPLATE = CODING.split("").map(b => COMP[b]).join("");
+  const N = CODING.length;
+  const GS = 11, GE = 25;              // gene start and end index
+  const X0 = 150, DX = 27;
+  const X = i => X0 + i * DX;
+  const rnaB = i => CODING[i] === "T" ? "U" : CODING[i];
+
+  const BASE = {A:["#2f9e63","#fff"], T:["#d9534f","#fff"], G:["#f2b134","#3b2a00"], C:["#3b7dd8","#fff"], U:["#8e5bd0","#fff"]};
+  const BEAD = ["#2f9e63","#f2b134","#3b7dd8","#d9534f","#8e5bd0"];
+  const REGIONS = [
+    {label:"Promoter", key:"promoter", from:1, to:5, fill:"#fbe3b5", stroke:"#e0b45c"},
+    {label:"Operator", from:6, to:8, fill:"#eef0f4", stroke:"#9aa3b5", dash:true},
+    {label:"Gene", from:11, to:25, fill:"#d6efdf", stroke:"#7cc19a"},
+    {label:"Terminator", key:"terminator", from:26, to:29, fill:"#f8d0cd", stroke:"#e08a84"}
+  ];
+
+  /* ---------- Helpers ---------- */
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t) => a + (b - a) * t;
+  const smooth = t => { t = clamp(t,0,1); return t * t * (3 - 2 * t); };
+  const seg = (t,a,b) => clamp((t - a) / (b - a), 0, 1);
+  const win = (t,a,b) => seg(t,a,a+0.3) * (1 - seg(t,b-0.3,b));
+  function prof(d){ if (d < -2.5) return smooth((d + 4) / 1.5); if (d > 2.5) return smooth((4 - d) / 1.5); return 1; }
+  const f1 = v => v.toFixed(1);
+  const f3 = v => v.toFixed(3);
+
+  /* ---------- Blanks ---------- */
+  const BL = window.__BL = {
+    promoter:  {show:"promoter", ans:["promoter","promotor"], fuzzy:true},
+    rnapol:    {show:"RNA polymerase", ans:["rnapolymerase","rnapol","rnap","rnapolymerases"], fuzzy:true},
+    hydrogen:  {show:"hydrogen", ans:["hydrogen","h","hbond","hbonds","hydrogenbond","hydrogenbonds"], fuzzy:true},
+    template:  {show:"template", ans:["template","templatestrand","antisense","noncoding"], fuzzy:true},
+    uracil:    {show:"uracil", ans:["uracil","u"], fuzzy:true},
+    aug:       {show:"AUG", ans:["aug"], seq:true},
+    five:      {show:"5'", ans:["5","five"]},
+    three:     {show:"3'", ans:["3","three"]},
+    terminator:{show:"terminator", ans:["terminator","terminatorsequence","terminatorregion"], fuzzy:true},
+    mrna:      {show:"mRNA", ans:["mrna","messengerrna","messenger"], fuzzy:true},
+    cytoplasm: {show:"cytoplasm", ans:["cytoplasm","cytosol"], fuzzy:true},
+    complete:  {show:"complete", ans:["complete","completed","finished","finish","done","over"], fuzzy:true},
+    nucleus:   {show:"nucleus", ans:["nucleus"], fuzzy:true},
+    introns:   {show:"introns", ans:["introns","intron"], fuzzy:true}
+  };
+
+  /* ---------- Scene states ---------- */
+  const B = {a:4.2, polShow:0, open:0, rnaOn:0, hl:0, arrow:0, polLeave:0, detach:0, zoom:0, strand:0, gene:1, bact:0, euk:0};
+  const S = [];
+  S[0]  = {...B};
+  S[1]  = {...B, a:4.2, polShow:1, zoom:1};
+  S[2]  = {...S[1], a:11, open:1};
+  S[3]  = {...S[2], hl:1, strand:1};
+  S[4]  = {...S[3], hl:0.35, rnaOn:1, a:14};
+  S[5]  = {...S[4], a:19, arrow:1};
+  S[6]  = {...S[5], a:24, arrow:0};
+  S[7]  = {...S[6], a:28};
+  S[8]  = {...S[7], open:0, polLeave:1, detach:1, zoom:0, hl:0};
+  S[9]  = {...S[8], gene:0, bact:1};
+  S[10] = {...S[9], bact:0, euk:1};
+
+  const STEPS = [
+    {title:"Meet the gene", state:S[0],
+     text:`This is a short stretch of bacterial DNA. The top strand runs 5' to 3' and the bottom strand runs 3' to 5', so the two strands are <b>antiparallel</b>. Look at the regions along the bottom. The {{promoter}} is the site where the enzyme that builds RNA binds to start transcription. Next is the <b>operator</b>. Nothing is bound to it right now, so the path into the gene is open. After the <b>gene</b> comes a stop signal you'll name later.`},
+    {title:"The enzyme arrives", state:S[1],
+     text:`The enzyme that builds RNA, {{rnapol}}, finds the promoter and binds to it. No repressor protein is sitting on the operator, so nothing blocks its path forward.`},
+    {title:"Opening the helix", state:S[2],
+     text:`RNA polymerase slides to the start of the gene and pulls the strands apart by breaking the {{hydrogen}} bonds between base pairs. This open section is the <b>transcription bubble</b>. RNA polymerase unwinds the DNA itself, so no helicase is needed.`},
+    {title:"Pick a strand", state:S[3],
+     text:`Only one DNA strand gets copied. The strand RNA polymerase reads is called the {{template}} strand. The other one is the <b>coding strand</b>. Its sequence matches the new RNA, except for one base you'll meet next.`},
+    {title:"Building RNA", state:S[4], gate:"build",
+     text:`RNA nucleotides pair with the template bases one at a time, following the base pairing rules. RNA has no thymine, so adenine on the DNA pairs with {{uracil}}. The first three template bases of this gene are 3'-TAC-5'. Build the matching RNA below!`},
+    {title:"Direction matters", state:S[5],
+     text:`RNA polymerase can only add new nucleotides to one end of the growing chain. That means RNA is always built in the {{five}} to {{three}} direction, while the template strand is read in the opposite direction.`},
+    {title:"The helix reforms", state:S[6],
+     text:`As RNA polymerase moves forward, the DNA behind it zips back together and the new RNA peels away. Only a small section of DNA is unwound at any moment.`},
+    {title:"Stop signal", state:S[7],
+     text:`RNA polymerase reaches the end of the gene. Transcription stops when RNA polymerase reaches the {{terminator}}.`},
+    {title:"Release", state:S[8],
+     text:`RNA polymerase lets go, the new RNA is released, and the DNA helix reforms. The finished product is {{mrna}}, a short-term copy of the gene that carries its instructions to the ribosome.`},
+    {title:"Bacteria: all at once", state:S[9], pre:S[9], scene:true,
+     text:`Bacteria have no nucleus, so transcription happens in the {{cytoplasm}}. Ribosomes can grab the mRNA and start translating before transcription is {{complete}}. This is called <b>coupled transcription and translation</b>, and bacterial mRNA needs no processing.`},
+    {title:"Eukaryotes: process first", state:S[10], pre:S[10], scene:true,
+     text:`In eukaryotes, transcription happens in the {{nucleus}}, and the pre-mRNA must be processed before it can leave. A <b>5' cap</b> and a <b>3' poly-A tail</b> are added, and <b>snRNPs</b> cut out the {{introns}} and splice the exons together. Only the mature mRNA exits to the cytoplasm for translation.`,
+     after:`INtrons are IN the way, EXons are EXpressed!`}
+  ];
+  const LAST = STEPS.length - 1;
+
+  /* ---------- App state ---------- */
+  let mode = "learn", idx = 0, furthest = 0;
+  let bl = {};                  // blank id -> "correct" | "revealed"
+  let cur = {...S[0]}, tw = null, dirty = true;
+  let sceneT = 0, playing = false;
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const $ = id => document.getElementById(id);
+  const svg = $("scene"), stage = svg.parentNode;
+  const textEl = $("stepText"), afterEl = $("stepAfter"), fb = $("feedback"), checkRow = $("checkRow");
+  const nextBtn = $("nextBtn"), backBtn = $("backBtn"), replayBtn = $("replayBtn"), bubble = $("bubble");
+
+  const resolved = id => mode === "learn" || !!bl[id];
+  const stepBlanks = i => (STEPS[i].text.match(/\{\{(\w+)\}\}/g) || []).map(m => m.slice(2, -2));
+  const stepResolved = i => (mode === "learn" || stepBlanks(i).every(id => bl[id])) && gateDone(i);
+  /* ================= Hands-on gates ================= */
+  const gates = {};
+  const gateDone = i => !STEPS[i].gate || !!gates[i];
+  function passGate(){ gates[idx] = true; renderGate(); if (stepResolved(idx)) resolvedNow(); else updateButtons(); }
+  function gateMsg(t, cls){ const m = document.getElementById("gateMsg"); if (m){ m.className = "gmsg " + (cls || ""); m.innerHTML = t; } }
+  function renderGate(){
+    const g = document.getElementById("gate"), st = STEPS[idx];
+    if (!g) return;
+    if (!st.gate){ g.hidden = true; g.innerHTML = ""; return; }
+    g.hidden = false;
+    const G = GATES[st.gate];
+    g.className = "gate" + (gates[idx] ? " done" : "");
+    if (gates[idx]){ g.innerHTML = `<div class="gtitle">\u2713 ${G.doneText}</div>`; return; }
+    g.innerHTML = `<div class="gtitle">${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
+    G.wire(g);
+  }
+  const GATES = {
+    build:{
+      title:"Your turn: build the first three RNA bases",
+      doneText:"You built 5'-AUG-3', the start codon!",
+      html:() => {
+        const got = GATES.build.got || "";
+        return `<div class="grow"><span class="glbl">DNA template 3'</span>${[..."TAC"].map(b => `<span class="gb gb${b}">${b}</span>`).join("")}<span class="glbl" style="min-width:0">&nbsp;5'</span></div>
+          <div class="grow"><span class="glbl">New RNA 5'</span>${[0,1,2].map(k => got[k] ? `<span class="gb gb${got[k]}">${got[k]}</span>` : `<span class="gslot${k === got.length ? " cur" : ""}">?</span>`).join("")}<span class="glbl" style="min-width:0">&nbsp;3'</span></div>
+          <div class="gkeys">${["A","U","G","C","T"].map(b => `<button class="gb gb${b}" data-nt="${b}" aria-label="Add ${b}">${b}</button>`).join("")}</div>`;
+      },
+      wire:g => {
+        const PAIR = {T:"A", A:"U", G:"C", C:"G"};
+        g.querySelectorAll("[data-nt]").forEach(b => b.addEventListener("click", () => {
+          const got = GATES.build.got || "", k = got.length, need = PAIR["TAC"[k]], nt = b.dataset.nt;
+          if (nt === need){
+            GATES.build.got = got + nt;
+            if (GATES.build.got.length === 3){ renderGate(); gateMsg("All three bases pair up. Watch RNA polymerase link them together!", "good"); setTimeout(() => { GATES.build.got = ""; passGate(); }, 1100); return; }
+            renderGate(); gateMsg(`Yes! ${"TAC"[k]} on the DNA pairs with ${nt}. Next base?`, "good"); return;
+          }
+          gateMsg(nt === "T" ? "RNA has no thymine (T)! It uses uracil (U) instead." : `${nt} doesn't pair with ${"TAC"[k]}. Rules: A pairs with U (in RNA), T pairs with A, G pairs with C.`, "bad");
+        }));
+        if (!(GATES.build.got || "").length) gateMsg("Tap the RNA base that pairs with each DNA template base, left to right.", "");
+      }
+    }
+  };
+
+  const prevState = i => STEPS[i].pre || (i > 0 ? STEPS[i-1].state : STEPS[i].state);
+
+  /* ---------- Tweening ---------- */
+  function durFor(from, to){
+    const da = Math.abs(to.a - from.a);
+    let d = 700;
+    d = Math.max(d, to.rnaOn > 0.5 ? da * 330 : da * 170);
+    if (Math.abs(to.gene - from.gene) > 0.5) d = Math.max(d, 900);
+    if (Math.abs(to.polShow - from.polShow) > 0.5) d = Math.max(d, 1200);
+    if (Math.abs(to.open - from.open) > 0.5) d = Math.max(d, 1400);
+    if (Math.abs(to.detach - from.detach) > 0.5) d = Math.max(d, 1900);
+    return reduced ? d * 0.35 : d;
+  }
+  function pf(k, p, from, to){
+    if (k === "open" && to.open > from.open) return smooth(seg(p, 0.5, 1));
+    if (k === "open" && to.open < from.open) return smooth(seg(p, 0, 0.5));
+    if (k === "rnaOn") return seg(p, 0, 0.12);
+    if (k === "a" && to.rnaOn > 0.5 && from.rnaOn > 0.05) return p;
+    if (k === "a" && to.rnaOn > 0.5) return p;
+    if (k === "polLeave") return smooth(seg(p, 0.2, 0.8));
+    if (k === "detach") return smooth(seg(p, 0.1, 0.9));
+    if (k === "zoom" && to.zoom < from.zoom) return smooth(seg(p, 0.4, 1));
+    return smooth(p);
+  }
+  function animateTo(target){
+    tw = {from:{...cur}, to:{...target}, t0:performance.now(), dur:durFor(cur, target)};
+  }
+  function stepTween(now){
+    if (!tw) return false;
+    const p = clamp((now - tw.t0) / tw.dur, 0, 1);
+    for (const k in tw.to) cur[k] = lerp(tw.from[k], tw.to[k], pf(k, p, tw.from, tw.to));
+    if (p >= 1) tw = null;
+    return true;
+  }
+
+  /* ---------- Drawing ---------- */
+  function tile(x, y, b, op){
+    const c = BASE[b];
+    const o = op === undefined ? "" : ` opacity="${f3(op)}"`;
+    return `<g${o}><rect x="${f1(x-11.5)}" y="${f1(y)}" width="23" height="26" rx="5" fill="${c[0]}"/><text x="${f1(x)}" y="${f1(y+18)}" class="bt" fill="${c[1]}">${b}</text></g>`;
+  }
+
+  function geneSVG(s){
+    const sep = u => s.open * prof(u - s.a);
+    const cTop = u => 292 - 42 * sep(u), tTop = u => 322 + 42 * sep(u);
+    const path = fn => { let d = ""; for (let u = -0.6; u <= N - 0.4; u += 0.2) d += (d ? "L" : "M") + f1(X0 + u * DX) + "," + f1(fn(u)); return d; };
+    let o = "";
+    for (const r of REGIONS){
+      const x1 = X(r.from) - 13, x2 = X(r.to) + 13;
+      const txt = (r.key && !resolved(r.key)) ? "?" : r.label;
+      o += `<rect x="${x1}" y="414" width="${x2-x1}" height="24" rx="6" fill="${r.fill}" stroke="${r.stroke}" stroke-width="1.5"${r.dash ? ' stroke-dasharray="4 3"' : ""}/><text x="${(x1+x2)/2}" y="430.5" class="band">${txt}</text>`;
+    }
+    const cB = u => cTop(u) - 2, tB = u => tTop(u) + 28;
+    if (s.hl > 0.01) o += `<path d="${path(tB)}" fill="none" stroke="#ffd23f" stroke-width="16" stroke-linecap="round" opacity="${f3(0.65*s.hl)}"/>`;
+    o += `<path d="${path(tB)}" fill="none" stroke="#0f766e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    for (let i = 0; i < N; i++) o += tile(X(i), tTop(i), TEMPLATE[i]);
+    o += "%%RNA%%";
+    o += `<path d="${path(cB)}" fill="none" stroke="#64748b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    for (let i = 0; i < N; i++) o += tile(X(i), cTop(i), CODING[i]);
+    o += `<text x="${X(0)-26}" y="${f1(cTop(0)+18)}" class="prime">5'</text><text x="${X(N-1)+26}" y="${f1(cTop(N-1)+18)}" class="prime">3'</text>`;
+    o += `<text x="${X(0)-26}" y="${f1(tTop(0)+18)}" class="prime">3'</text><text x="${X(N-1)+26}" y="${f1(tTop(N-1)+18)}" class="prime">5'</text>`;
+    if (s.strand > 0.01){
+      o += `<g opacity="${f3(s.strand)}"><text x="${X(0)-12}" y="${f1(cTop(0)-10)}" class="slbl">Coding strand</text><text x="${X(0)-12}" y="${f1(tTop(0)+46)}" class="slbl tpl">${resolved("template") ? "Template" : "?"} strand</text></g>`;
+    }
+    // RNA (drawn between the strands so it passes behind the coding strand)
+    let rn = "";
+    if (s.rnaOn > 0.01){
+      const pts = [];
+      for (let i = GS; i <= GE; i++){
+        const g = clamp(s.a - i, 0, 1), al = g * s.rnaOn;
+        if (al <= 0.001) continue;
+        const d = s.a - i;
+        const hyb = 294 + 42 * sep(i);
+        let top = lerp(hyb, 150, smooth((d - 2.5) / 2.5));
+        top = lerp(top, 146, s.detach);
+        top -= (1 - g) * 14;
+        pts.push({i, x:X(i), top, al});
+      }
+      if (pts.length){
+        const vis = pts.filter(p => p.al > 0.25);
+        if (vis.length > 1){
+          let d = ""; vis.forEach((p,k) => { d += (k ? "L" : "M") + f1(p.x) + "," + f1(p.top - 2); });
+          rn += `<path d="${d}" fill="none" stroke="#e8744f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="${f3(s.rnaOn)}"/>`;
+        }
+        pts.forEach(p => { rn += tile(p.x, p.top, rnaB(p.i), p.al); });
+        const f = pts[0], l = pts[pts.length - 1];
+        if (resolved("five")){
+          rn += `<g opacity="${f3(s.rnaOn)}"><text x="${f1(f.x-24)}" y="${f1(f.top+10)}" class="prime rna">5'</text>`;
+          if (pts.length > 1) rn += `<text x="${f1(l.x+24)}" y="${f1(l.top+10)}" class="prime rna">3'</text>`;
+          rn += `</g>`;
+        }
+        if (f.top < 200) rn += `<text x="${f1(f.x-12)}" y="${f1(f.top-12)}" class="lbl" opacity="${f3(s.rnaOn)}">${resolved("mrna") ? "mRNA" : "New RNA"}</text>`;
+      }
+    }
+    o = o.replace("%%RNA%%", () => rn);
+    // RNA polymerase
+    if (s.polShow > 0.01 && s.polLeave < 0.99){
+      const cx = X(s.a - 1.2) + s.polLeave * 300;
+      const cy = 322 - (1 - s.polShow) * 320 - s.polLeave * 330;
+      const op = s.polShow * (1 - s.polLeave);
+      const px = clamp(cx + 40, 90, 910);
+      o += `<g opacity="${f3(op)}"><ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="128" ry="104" fill="rgba(108,122,224,.2)" stroke="#3f4cc0" stroke-width="2.5"/>`;
+      o += `<rect x="${f1(px-78)}" y="${f1(cy-128)}" width="156" height="26" rx="13" fill="#3f4cc0"/><text x="${f1(px)}" y="${f1(cy-110)}" class="pill">${resolved("rnapol") ? "RNA polymerase" : "?"}</text></g>`;
+    }
+    // direction arrow
+    if (s.arrow > 0.01){
+      const x1 = X(s.a) - 6, x2 = x1 + 84;
+      o += `<g opacity="${f3(s.arrow)}"><line x1="${f1(x1)}" y1="403" x2="${f1(x2)}" y2="403" stroke="#e8744f" stroke-width="4" stroke-linecap="round" marker-end="url(#ah)"/><text x="${f1(x2+14)}" y="408" class="lbl">RNA grows 5' → 3'</text></g>`;
+    }
+    return o;
+  }
+
+  function bactSVG(t){
+    const T = 12, tt = t % T, first = t < T;
+    const A = Math.min(tt > 11.2 ? clamp((12 - tt) / 0.8, 0, 1) : 1, (!first && tt < 0.4) ? tt / 0.4 : 1);
+    const px = 190 + seg(tt, 0.3, 8.3) * 640;
+    let o = `<rect x="50" y="45" width="900" height="390" rx="160" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="6"/><rect x="61" y="56" width="878" height="368" rx="150" fill="none" stroke="#b5d3a8" stroke-width="2"/>`;
+    o += `<text x="500" y="98" class="cap">Bacterial cell: no nucleus</text>`;
+    o += `<text x="800" y="152" class="region bac">${resolved("cytoplasm") ? "Cytoplasm" : "?"}</text>`;
+    let r = ""; for (let x = 156; x < 850; x += 12) r += `M${x},340V356`;
+    o += `<path d="${r}" stroke="#9aa3b5" stroke-width="2"/><path d="M150,340H850M150,356H850" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/><text x="150" y="386" class="small">DNA</text>`;
+    let g = "";
+    if (px > 212){
+      const hx = Math.max(px - 60, 190);
+      g += `<path d="M190,250 L${f1(hx)},250 Q${f1(px-22)},250 ${f1(px-10)},328" fill="none" stroke="#e8744f" stroke-width="5" stroke-linecap="round"/>`;
+      let tk = ""; for (let x = 196; x < hx; x += 10) tk += `M${x},253V261`;
+      if (tk) g += `<path d="${tk}" stroke="#e8744f" stroke-width="2"/>`;
+      g += `<text x="182" y="256" class="small end">mRNA 5'</text>`;
+      let prev = 1e9; const ribs = [];
+      for (let k = 0; k < 4; k++){
+        const sk = 1.7 + k * 1.9;
+        if (tt < sk) break;
+        let rx = 208 + (tt - sk) * 60;
+        rx = Math.min(rx, hx - 26, prev - 60);
+        if (rx < 204) break;
+        prev = rx; ribs.push({rx, age:tt - sk});
+      }
+      ribs.forEach((rb, k) => {
+        const sc = smooth(rb.age / 0.5);
+        const n = clamp(Math.floor((rb.rx - 208) / 16) + 1, 1, 9);
+        let beads = "";
+        for (let j = 0; j < n; j++) beads += `<circle cx="${f1(rb.rx + (j % 2 ? 6 : -6) - j * 2)}" cy="${214 - j * 11}" r="5" fill="${BEAD[j % 5]}"/>`;
+        g += `<g opacity="${f3(sc)}">${sc > 0.6 ? beads : ""}<ellipse cx="${f1(rb.rx)}" cy="${f1(205 + 31 * sc)}" rx="25" ry="17" fill="#c97b4a"/><ellipse cx="${f1(rb.rx)}" cy="${f1(292 - 29 * sc)}" rx="21" ry="8" fill="#e3a877"/></g>`;
+        if (k === 0){
+          g += `<text x="${f1(rb.rx)}" y="294" class="small mid" opacity="${f3(sc)}">Ribosome</text>`;
+          if (n >= 3) g += `<text x="${f1(rb.rx + 16)}" y="${214 - (n - 1) * 11 + 4}" class="small">Polypeptide</text>`;
+        }
+      });
+    }
+    o += `<g opacity="${f3(A)}">${g}</g>`;
+    o += `<g opacity="${f3(A)}"><ellipse cx="${f1(px)}" cy="348" rx="34" ry="28" fill="rgba(108,122,224,.35)" stroke="#3f4cc0" stroke-width="2.5"/><text x="${f1(px)}" y="402" class="small mid">RNA polymerase</text></g>`;
+    return o;
+  }
+
+  function eukSVG(t){
+    const T = 15, tt = t % T, first = t < T;
+    const A = Math.min(tt > 14.2 ? clamp((15 - tt) / 0.8, 0, 1) : 1, (!first && tt < 0.3) ? tt / 0.3 : 1);
+    const px = 135 + smooth(seg(tt, 0.3, 2.8)) * 320;
+    const polA = 1 - seg(tt, 2.8, 3.3);
+    const lift = smooth(seg(tt, 2.9, 3.5)), cap = smooth(seg(tt, 3.5, 4.0));
+    const sn = smooth(seg(tt, 4.9, 5.5)), loop = smooth(seg(tt, 5.5, 6.2)), cut = smooth(seg(tt, 6.2, 6.8));
+    const join = smooth(seg(tt, 6.4, 7.2)), drop = smooth(seg(tt, 7.4, 8.0)), slide = smooth(seg(tt, 8.0, 9.6));
+    const rib = smooth(seg(tt, 9.8, 10.6));
+    const tailN = tt < 4 ? 0 : Math.min(4, Math.floor((tt - 4) / 0.25) + 1);
+    const ym = 300 - 95 * lift + 35 * drop, ox = 470 * slide;
+    const xv = tt < 2.9 ? px - 22 : 1e9;
+
+    let o = `<rect x="25" y="25" width="950" height="420" rx="36" fill="#f7f5fb" stroke="#8f7fb0" stroke-width="5"/>`;
+    o += `<text x="770" y="92" class="region">Cytoplasm</text>`;
+    const cx = 290, cy = 240, rx = 235, ry = 175;
+    const arc = (ax, ay) => { const a1 = 7 * Math.PI / 180; const x1 = cx + ax * Math.cos(a1), y1 = cy + ay * Math.sin(a1), y2 = cy - ay * Math.sin(a1); return `M${f1(x1)},${f1(y1)} A${ax},${ay} 0 1 1 ${f1(x1)},${f1(y2)}`; };
+    o += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#ebe4f5"/><path d="${arc(rx, ry)}" fill="none" stroke="#7e6aa8" stroke-width="4"/><path d="${arc(rx - 9, ry - 9)}" fill="none" stroke="#7e6aa8" stroke-width="2"/>`;
+    o += `<text x="${cx}" y="98" class="region">${resolved("nucleus") ? "Nucleus" : "?"}</text><text x="532" y="292" class="small">Nuclear pore</text>`;
+    let r = ""; for (let x = 126; x < 460; x += 12) r += `M${x},340V354`;
+    o += `<path d="${r}" stroke="#9aa3b5" stroke-width="2"/><path d="M120,340H460M120,354H460" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/><text x="468" y="351" class="small">DNA</text>`;
+
+    const SEGS = [
+      {x1:125, x2:200, e:true, sh:0,    c:162.5},
+      {x1:200, x2:255, e:false,         c:227.5},
+      {x1:255, x2:315, e:true, sh:-55,  c:285},
+      {x1:315, x2:370, e:false,         c:342.5},
+      {x1:370, x2:445, e:true, sh:-110, c:407.5}
+    ];
+    const L = (x, y, txt, op, cls) => op > 0.01 ? `<text x="${f1(x)}" y="${f1(y)}" class="${cls || "small mid"}" opacity="${f3(op)}">${txt}</text>` : "";
+    let m = "";
+    SEGS.forEach(sg => {
+      if (sg.x1 >= xv) return;
+      const x2 = Math.min(sg.x2, xv);
+      if (sg.e){
+        const a = sg.x1 + sg.sh * join + ox, b = x2 + sg.sh * join + ox;
+        m += `<line x1="${f1(a)}" y1="${f1(ym)}" x2="${f1(b)}" y2="${f1(ym)}" stroke="#e8744f" stroke-width="10"/>`;
+      } else if (cut < 1){
+        const h = 45 * loop, dy = -40 * cut;
+        m += `<path d="M${sg.x1},${f1(ym + dy)} Q${sg.c},${f1(ym + dy - 2 * h)} ${f1(x2)},${f1(ym + dy)}" fill="none" stroke="#a7a7b8" stroke-width="8" opacity="${f3(1 - cut)}"/>`;
+      }
+    });
+    if (cap > 0) m += `<g opacity="${f3(cap)}"><circle cx="${f1(112 + ox)}" cy="${f1(ym)}" r="${f1(11 * cap)}" fill="#f2b134"/><text x="${f1(112 + ox)}" y="${f1(ym + 4.5)}" class="small mid" fill="#3b2a00">G</text></g>`;
+    for (let j = 0; j < tailN; j++){
+      const x = 452 + j * 15 - 110 * join + ox;
+      m += `<circle cx="${f1(x)}" cy="${f1(ym)}" r="7" fill="#2f9e63"/><text x="${f1(x)}" y="${f1(ym + 3.5)}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">A</text>`;
+    }
+    if (sn > 0 && cut < 1){
+      [227.5, 342.5].forEach((c, k) => {
+        const y = lerp(130, ym - 16, sn) - 45 * loop - 40 * cut;
+        m += `<g opacity="${f3(sn * (1 - cut))}"><ellipse cx="${c}" cy="${f1(y)}" rx="17" ry="12" fill="#8e5bd0"/><circle cx="${c - 7}" cy="${f1(y - 4)}" r="4" fill="#c2a6ea"/></g>`;
+        if (k === 1) m += L(c + 24, y + 4, "snRNPs", win(tt, 5.0, 6.3), "small");
+      });
+    }
+    m += L(285, 176, "pre-mRNA", win(tt, 2.9, 4.8));
+    m += L(112, 182, "5' cap", win(tt, 3.6, 7.3));
+    m += L(468, 182, "poly-A tail", win(tt, 4.2, 7.3));
+    [162.5, 285, 407.5].forEach(x => { m += L(x, ym + 28, "Exon", win(tt, 3.6, 6.3)); });
+    [227.5, 342.5].forEach(x => { m += L(x, ym + 28, resolved("introns") ? "Intron" : "?", win(tt, 3.6, 6.3)); });
+    m += L(250 + ox, ym + 34, "Mature mRNA", win(tt, 7.4, 14.2));
+    if (rib > 0) m += `<g opacity="${f3(rib)}"><ellipse cx="650" cy="${f1(lerp(170, 222, rib))}" rx="30" ry="20" fill="#c97b4a"/><ellipse cx="650" cy="${f1(lerp(310, 252, rib))}" rx="26" ry="9" fill="#e3a877"/></g>`;
+    m += L(650, 188, "Ribosome", win(tt, 10.2, 14.2));
+
+    o += `<g opacity="${f3(A)}">${m}</g>`;
+    o += `<g opacity="${f3(A * polA)}"><ellipse cx="${f1(px)}" cy="347" rx="30" ry="24" fill="rgba(108,122,224,.35)" stroke="#3f4cc0" stroke-width="2.5"/><text x="${f1(px)}" y="392" class="small mid">RNA polymerase</text></g>`;
+    return o;
+  }
+
+  const DEFS = `<defs><marker id="ah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#e8744f"/></marker></defs>`;
+
+  function render(){
+    const narrow = stage.clientWidth > 0 && stage.clientWidth < 700;
+    const z = narrow ? cur.zoom : 0;
+    const w = 1000 - 360 * z, h = 470 - 169 * z, y0 = 140 * z;
+    const focus = X(cur.a - 1.2) + cur.polLeave * 300;
+    const x0 = clamp(focus - w / 2, 0, 1000 - w);
+    svg.setAttribute("viewBox", `${f1(x0)} ${f1(y0)} ${f1(w)} ${f1(h)}`);
+    let o = DEFS;
+    if (cur.gene > 0.01) o += `<g opacity="${f3(cur.gene)}">${geneSVG(cur)}</g>`;
+    if (cur.bact > 0.01) o += `<g opacity="${f3(cur.bact)}">${bactSVG(idx === 9 ? sceneT : 0)}</g>`;
+    if (cur.euk > 0.01) o += `<g opacity="${f3(cur.euk)}">${eukSVG(idx === 10 ? sceneT : 0)}</g>`;
+    svg.innerHTML = o;
+  }
+
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    if (stepTween(now)) dirty = true;
+    if (playing && (cur.bact > 0.02 || cur.euk > 0.02)){ sceneT += dt; dirty = true; }
+    if (dirty){ render(); dirty = false; }
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------- Answer checking ---------- */
+  function lev(a, b){
+    const m = a.length, n = b.length; const d = [];
+    for (let i = 0; i <= m; i++){ d[i] = [i]; }
+    for (let j = 0; j <= n; j++) d[0][j] = j;
+    for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+      d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    return d[m][n];
+  }
+  function norm(s, seqOnly){
+    s = s.toLowerCase().replace(/[\u2019\u2018\u2032`\u00b4]/g, "'").replace(/prime/g, "");
+    s = s.replace(/[^a-z0-9]/g, "");
+    if (seqOnly) s = s.replace(/[0-9]/g, "");
+    return s;
+  }
+  function matches(id, val){
+    const b = BL[id], v = norm(val, b.seq);
+    if (!v) return false;
+    return b.ans.some(a => a === v || (b.fuzzy && a.length >= 5 && lev(v, a) <= 1));
+  }
+
+  /* ---------- UI ---------- */
+  function termHTML(id, cls){ return `<strong class="term ${cls || ""}">${BL[id].show}</strong>`; }
+  function termEl(id, cls){ const s = document.createElement("strong"); s.className = "term " + cls; s.textContent = BL[id].show; return s; }
+  function blankHTML(id){
+    if (mode === "learn") return termHTML(id);
+    if (bl[id]) return termHTML(id, bl[id]);
+    const size = Math.max(3, BL[id].show.length + 1);
+    return `<input class="blank" data-id="${id}" size="${size}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Fill in the blank">`;
+  }
+
+  function renderLegend(){
+    const names = {A:"Adenine", T:"Thymine", G:"Guanine", C:"Cytosine", U: resolved("uracil") ? "Uracil" : "?"};
+    $("legend").innerHTML = ["A","T","G","C","U"].map(b => `<span><i style="background:${BASE[b][0]};color:${BASE[b][1]}">${b}</i>${names[b]}</span>`).join("");
+  }
+
+  function renderBubble(){
+    const st = STEPS[idx];
+    $("stepNo").textContent = `Step ${idx + 1} of ${STEPS.length}`;
+    $("stepTitle").textContent = st.title;
+    textEl.innerHTML = st.text.replace(/\{\{(\w+)\}\}/g, (m, id) => blankHTML(id));
+    textEl.querySelectorAll("input.blank").forEach(inp => {
+      inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); check(); } });
+      inp.addEventListener("input", () => inp.classList.remove("wrong"));
+    });
+    showAfter();
+    fb.textContent = ""; fb.className = "feedback";
+    updateButtons();
+    bubble.classList.remove("pop"); void bubble.offsetWidth; bubble.classList.add("pop");
+    const firstInput = textEl.querySelector("input.blank");
+    if (firstInput && mode === "test") firstInput.focus({preventScroll:true});
+  }
+  function showAfter(){
+    const st = STEPS[idx];
+    if (st.after && stepResolved(idx)){ afterEl.textContent = st.after; afterEl.hidden = false; }
+    else { afterEl.hidden = true; }
+  }
+
+  function updateButtons(){
+    const open = mode === "test" && !!textEl.querySelector("input.blank");
+    checkRow.hidden = !open;
+    nextBtn.disabled = open || !gateDone(idx);
+    backBtn.disabled = idx === 0;
+    replayBtn.disabled = idx === 0;
+    nextBtn.textContent = idx === LAST ? "Start over" : "Next";
+  }
+
+  function renderNav(){
+    const dots = $("dots"); dots.innerHTML = "";
+    STEPS.forEach((st, i) => {
+      const b = document.createElement("button");
+      b.className = "dot" + (i === idx ? " current" : (i < furthest || i < idx ? " seen" : ""));
+      b.textContent = i + 1;
+      b.setAttribute("aria-label", `Go to step ${i + 1}: ${st.title}`);
+      b.disabled = mode === "test" && i > furthest;
+      b.addEventListener("click", () => goTo(i));
+      dots.appendChild(b);
+    });
+    renderLegend();
+  }
+
+  function enterStep(i){
+    const changed = i !== idx;
+    idx = i;
+    const st = STEPS[i], res = stepResolved(i);
+    if (res) furthest = Math.max(furthest, i + 1);
+    if (changed && st.scene) sceneT = 0;
+    playing = res && !!st.scene;
+    animateTo(res ? st.state : prevState(i));
+    renderBubble(); renderNav(); renderGate(); dirty = true;
+  }
+  function goTo(i){ enterStep(clamp(i, 0, LAST)); }
+
+  function resolvedNow(){
+    if (!stepResolved(idx)){ updateButtons(); renderNav(); renderGate(); return; }
+    furthest = Math.max(furthest, idx + 1);
+    updateButtons(); renderNav(); showAfter();
+    animateTo(STEPS[idx].state);
+    if (STEPS[idx].scene){ sceneT = 0; playing = true; }
+    dirty = true;
+    nextBtn.focus({preventScroll:true});
+  }
+
+  function check(){
+    const inputs = [...textEl.querySelectorAll("input.blank")];
+    let wrong = 0, empty = 0;
+    inputs.forEach(inp => {
+      const id = inp.dataset.id;
+      if (!inp.value.trim()){ empty++; wrong++; return; }
+      if (matches(id, inp.value)){ bl[id] = "correct"; inp.replaceWith(termEl(id, "correct")); }
+      else { wrong++; inp.classList.remove("wrong"); void inp.offsetWidth; inp.classList.add("wrong"); }
+    });
+    if (wrong){
+      fb.className = "feedback bad";
+      fb.textContent = empty === wrong ? "Type an answer in each blank, or tap Move on to see it." : "Not quite. Try again, or tap Move on to see the answer.";
+      const nextInput = textEl.querySelector("input.blank.wrong") || textEl.querySelector("input.blank");
+      if (nextInput) nextInput.focus({preventScroll:true});
+      updateButtons();
+      if (!textEl.querySelector("input.blank")) resolvedNow();
+    } else {
+      fb.className = "feedback good"; fb.textContent = "Correct!";
+      resolvedNow();
+    }
+  }
+  function moveOn(){
+    textEl.querySelectorAll("input.blank").forEach(inp => { const id = inp.dataset.id; bl[id] = "revealed"; inp.replaceWith(termEl(id, "revealed")); });
+    fb.className = "feedback warn"; fb.textContent = "Here's the answer. Read it over, then tap Next.";
+    resolvedNow();
+  }
+
+  function setMode(m){
+    mode = m;
+    $("learnBtn").setAttribute("aria-pressed", m === "learn");
+    $("testBtn").setAttribute("aria-pressed", m === "test");
+    $("modeHint").textContent = m === "learn"
+      ? "Learn mode: every term is filled in. Read each bubble, watch what happens, then tap Next."
+      : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
+    if (m === "test") furthest = Math.max(furthest, 0);
+    enterStep(idx);
+  }
+  function restart(){
+    for (const k in gates) delete gates[k];
+    bl = {}; furthest = 0; idx = 0; sceneT = 0; playing = false;
+    cur = {...S[0]}; tw = null;
+    enterStep(0);
+  }
+  function replay(){
+    if (idx === 0) return;
+    cur = {...prevState(idx)};
+    if (stepResolved(idx)){ animateTo(STEPS[idx].state); if (STEPS[idx].scene){ sceneT = 0; playing = true; } }
+    dirty = true;
+  }
+
+  $("learnBtn").addEventListener("click", () => setMode("learn"));
+  $("testBtn").addEventListener("click", () => setMode("test"));
+  $("restartBtn").addEventListener("click", restart);
+  $("checkBtn").addEventListener("click", check);
+  $("moveOnBtn").addEventListener("click", moveOn);
+  backBtn.addEventListener("click", () => goTo(idx - 1));
+  replayBtn.addEventListener("click", replay);
+  nextBtn.addEventListener("click", () => { if (idx === LAST) restart(); else goTo(idx + 1); });
+  document.addEventListener("keydown", e => {
+    if (e.target && e.target.tagName === "INPUT") return;
+    if (e.key === "ArrowRight" && !nextBtn.disabled && idx < LAST) goTo(idx + 1);
+    if (e.key === "ArrowLeft" && idx > 0) goTo(idx - 1);
+  });
+  window.addEventListener("resize", () => { dirty = true; });
+
+  setMode("learn");
+  requestAnimationFrame(frame);
+
+  // exposed for testing only
+  window.__tx = {goTo, check, moveOn, setMode, get idx(){return idx;}, get cur(){return cur;}, get bl(){return bl;}, matches};
+})();
+</script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const PAGE = (location.pathname.split("/").pop() || "index.html");
+  const testing = () => { const t = $("testBtn"); return t && t.getAttribute("aria-pressed") === "true"; };
+
+  /* Hint button: shows the first letter and length of each open blank, then more letters */
+  const row = $("checkRow"), moveOn = $("moveOnBtn");
+  if (row && moveOn && window.__BL){
+    const hb = document.createElement("button");
+    hb.className = "btn hint"; hb.id = "hintBtn"; hb.textContent = "Hint";
+    row.insertBefore(hb, moveOn);
+    hb.addEventListener("click", () => {
+      const ins = [...document.querySelectorAll("#stepText input.blank")];
+      ins.forEach(inp => {
+        const b = window.__BL[inp.dataset.id]; if (!b) return;
+        const w = b.show, lvl = Math.min((+inp.dataset.hint || 0) + 1, Math.max(1, Math.ceil(w.length / 2)));
+        inp.dataset.hint = lvl;
+        if (inp.classList.contains("wrong")) inp.value = "";
+        inp.placeholder = w.slice(0, lvl) + w.slice(lvl).replace(/[^\s-]/g, "_");
+        inp.size = Math.max(inp.size || 3, w.length + 1);
+      });
+      const fb = $("feedback");
+      if (fb && ins.length){ fb.className = "feedback warn"; fb.textContent = "Hint: the first letter" + (ins.some(i => +i.dataset.hint > 1) ? "s are" : " is") + " shown, and each dash is one letter. Tap Hint again for more."; }
+      const f = ins[0]; if (f) f.focus({preventScroll:true});
+    });
+  }
+
+  /* Bridge card on the last step */
+  let links = []; try { links = JSON.parse(document.body.dataset.next || "[]"); } catch (e) {}
+  const bubble = $("bubble");
+  let bridge = null;
+  if (links.length && bubble){
+    bridge = document.createElement("div"); bridge.className = "bridge"; bridge.hidden = true;
+    bridge.innerHTML = `<b>${document.body.dataset.nextLabel || "Where to next?"}</b>` + links.map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
+    bubble.insertAdjacentElement("afterend", bridge);
+  }
+
+  /* Completion: finishing every step in Test mode saves a checkmark for the hub */
+  const next = $("nextBtn");
+  let toasted = false;
+  function watch(){
+    if (!next) return;
+    const last = next.textContent.trim() === "Start over";
+    if (bridge) bridge.hidden = !last;
+    if (last && testing() && !next.disabled){
+      let was = false; try { was = localStorage.getItem("bio112-done:" + PAGE) === "1"; localStorage.setItem("bio112-done:" + PAGE, "1"); } catch (e) {}
+      if (!toasted && !was){
+        toasted = true;
+        const t = document.createElement("div"); t.className = "donetoast"; t.setAttribute("role", "status");
+        t.textContent = "Module complete! It now has a checkmark on the home page.";
+        document.body.appendChild(t); setTimeout(() => t.remove(), 3600);
+      }
+    }
+  }
+  if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
+})();
+</script>
+</body>
+</html>

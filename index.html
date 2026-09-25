@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inside the Bacterial Cell: From DNA to Protein</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d2433; --muted:#5a6376; --page:#e9edf3; --card:#ffffff; --line:#d9dee7;
+    --accent:#3f4cc0; --teal:#0f766e; --orange:#d9622f; --brown:#8a4a24;
+    --more:#5b3fb0; --more-soft:#f3effd;
+    --font:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font)}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px 16px 40px}
+  header{text-align:center;margin-bottom:14px}
+  h1{font-size:1.7rem;line-height:1.15;margin:0;letter-spacing:-0.01em}
+  .sub{color:var(--muted);font-size:.98rem;margin-top:6px}
+  [hidden]{display:none !important}
+
+  .stagewrap{position:relative;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 6px 20px rgba(29,36,51,.07)}
+  #cell{display:block;width:100%;height:auto;font-family:var(--font);touch-action:manipulation}
+  .hint{text-align:center;color:var(--muted);font-size:.92rem;margin:10px 4px 0}
+
+  .hot{cursor:pointer}
+  .hot .ring{fill:none;stroke:rgba(242,177,52,0);stroke-width:14;transition:stroke .18s}
+  .hot:hover .ring,.hot:focus-visible .ring,.hot.sel .ring{stroke:rgba(242,177,52,.55)}
+  .hot:focus{outline:none}
+  .tag{cursor:pointer}
+  .tag:focus{outline:none}
+  .tag:hover .tagbg,.tag:focus-visible .tagbg{filter:brightness(1.08)}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  .tag .tagg{animation:bob 2.6s ease-in-out infinite;transform-box:fill-box}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+  .rnap{transform-box:fill-box;transform-origin:center;animation:pulse 1.8s ease-in-out infinite}
+  @media (prefers-reduced-motion:reduce){ .tag .tagg,.rnap{animation:none} }
+
+  .pop{position:absolute;width:min(430px,88%);max-height:calc(100% - 28px);overflow-y:auto;overscroll-behavior:contain;
+    background:var(--card);border-radius:18px;box-shadow:0 14px 40px rgba(20,26,40,.3);border-top:6px solid var(--accent);
+    padding:0 0 16px;z-index:5;animation:popin .22s cubic-bezier(.2,.9,.3,1.2)}
+  @keyframes popin{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+  .hero{background:#f4f6fb;border-bottom:1px solid var(--line)}
+  .hero svg{display:block;width:100%;height:auto}
+  .popbody{padding:12px 18px 0}
+  .pophead{padding-right:24px}
+  .pophead h2{margin:0;font-size:1.24rem}
+  .pophead .kick{font-size:.82rem;font-weight:700;color:var(--muted)}
+  .closeX{position:absolute;top:8px;right:10px;border:0;background:rgba(255,255,255,.88);font:700 1.25rem var(--font);color:var(--muted);cursor:pointer;line-height:1;padding:3px 9px;border-radius:999px;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.14)}
+  .closeX:hover{color:var(--ink)}
+
+  .facts{display:grid;gap:7px;margin:12px 0 4px}
+  .fact{display:flex;gap:9px;align-items:flex-start;background:#f5f7fb;border-radius:11px;padding:8px 11px;font-size:.92rem;line-height:1.42}
+  .fact b{color:var(--accent)}
+  .fact .em{flex:none;font-size:1rem;line-height:1.3}
+  #extraFacts{display:grid;gap:7px}
+  .morebtn{border:0;background:transparent;color:var(--accent);font:700 .88rem var(--font);cursor:pointer;padding:6px 0 0}
+
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+  .tile{display:flex;flex-direction:column;gap:5px;text-decoration:none;color:var(--ink);border:2px solid var(--line);border-radius:14px;padding:10px 11px;background:#fff;transition:transform .14s, border-color .14s, box-shadow .14s}
+  .tile:hover,.tile:focus-visible{transform:translateY(-2px);border-color:var(--tc,var(--accent));box-shadow:0 6px 16px rgba(29,36,51,.12);outline:none}
+  .tile svg{width:100%;height:38px}
+  .tile b{font-size:.93rem;line-height:1.2}
+  .donechk{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#1b7f4e;color:#fff;font-style:normal;font-size:.7rem;vertical-align:1px;margin-left:4px}
+  .tile span{font-size:.79rem;color:var(--muted);line-height:1.3}
+  .tile.wide{grid-column:span 2}
+  .tile.soon{border-style:dashed;background:#f7f8fb;cursor:default;opacity:.88}
+  .tile.soon:hover{transform:none;box-shadow:none;border-color:var(--line)}
+  .tile.soon b::after{content:" \00b7 coming soon";font-weight:400;color:var(--muted);font-size:.78rem}
+  .tile.fun{border-color:#cbbdf2;background:var(--more-soft);--tc:var(--more)}
+
+  .legend{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
+  .chip{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font:700 .88rem var(--font);color:var(--ink);cursor:pointer}
+  .chip:hover,.chip:focus-visible{border-color:#f2b134;outline:none}
+  .chip i{width:12px;height:12px;border-radius:50%;display:inline-block}
+
+  .scrim{position:absolute;inset:0;background:rgba(20,26,40,.16);z-index:4;animation:popin .2s}
+  @media (max-width:720px){
+    h1{font-size:1.32rem}
+    .pop{position:fixed;left:0;right:0;bottom:0;top:auto !important;width:100%;max-height:86vh;border-radius:20px 20px 0 0;z-index:30}
+    .scrim{position:fixed;z-index:29}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Inside the Bacterial Cell</h1>
+    <div class="sub">Click the DNA, the mRNA, a ribosome, or a protein to explore.</div>
+  </header>
+
+  <div class="stagewrap" id="stage">
+    <svg id="cell" viewBox="0 0 1000 560" role="img" aria-label="Interactive diagram of a bacterial cell"></svg>
+  </div>
+  <div class="legend" id="legend"></div>
+  <p class="hint">It all happens in one cell: DNA is transcribed into mRNA, and ribosomes translate mRNA into protein.</p>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const svg = $("cell"), stage = $("stage");
+  const f1 = v => (+v).toFixed(1);
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t) => a + (b - a) * t;
+  const smooth = t => { t = clamp(t,0,1); return t * t * (3 - 2 * t); };
+  const seg = (t,a,b) => clamp((t - a) / (b - a), 0, 1);
+  const TEAL = "#0f766e", ORANGE = "#d9622f", BROWN = "#8a4a24", RED = "#b83a34", PURPLE = "#8e5bd0", GREEN = "#2f9e63";
+  const BASE = {A:["#2f9e63","#fff"], T:["#d9534f","#fff"], U:["#8e5bd0","#fff"], G:["#f2b134","#3b2a00"], C:["#3b7dd8","#fff"]};
+
+  /* ================= Tile icons ================= */
+  const ICON = {
+    tx:`<svg viewBox="0 0 120 40"><path d="M6,30 H70 M6,22 H70" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/><rect x="28" y="13" width="28" height="15" rx="7" fill="#3f4cc0"/><path d="M58,11 q10,-6 20,0 q10,6 20,0" stroke="#d9622f" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M102,27 l8,-7 -8,-7" stroke="#5a6376" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`,
+    pre:`<svg viewBox="0 0 120 40"><path d="M6,32 H114" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/><rect x="14" y="24" width="28" height="12" rx="3" fill="#fbe3b5" stroke="#8b93a3"/><rect x="42" y="24" width="18" height="12" rx="3" fill="#fde2e0" stroke="#8b93a3"/><rect x="60" y="24" width="52" height="12" rx="3" fill="#d6efdf" stroke="#8b93a3"/><polygon points="51,4 57,4 61,8 61,15 57,19 51,19 47,15 47,8" fill="#d9443a"/><rect x="16" y="10" width="22" height="10" rx="5" fill="#3f4cc0"/></svg>`,
+    tl:`<svg viewBox="0 0 120 40"><path d="M4,32 q8,-5 16,0 q8,5 16,0 q8,-5 16,0 q8,5 16,0 q8,-5 16,0 q8,5 16,0" stroke="#d9622f" stroke-width="3.5" fill="none" stroke-linecap="round"/><ellipse cx="58" cy="21" rx="20" ry="13" fill="#c97b4a"/><ellipse cx="58" cy="32" rx="16" ry="6" fill="#e3a877"/><circle cx="78" cy="11" r="5" fill="#2f9e63"/><circle cx="90" cy="6" r="5" fill="#f2b134"/><circle cx="102" cy="11" r="5" fill="#3b7dd8"/></svg>`,
+    mut:`<svg viewBox="0 0 120 40"><path d="M6,13 H114 M6,29 H114" stroke="#0f766e" stroke-width="3.5"/><g stroke="#9aa3b5" stroke-width="2"><path d="M20,13 V29 M34,13 V29 M74,13 V29 M88,13 V29 M102,13 V29"/></g><rect x="48" y="7" width="16" height="28" rx="5" fill="#b83a34"/><text x="56" y="28" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">!</text></svg>`,
+    post:`<svg viewBox="0 0 120 40"><path d="M6,24 q9,-10 18,0 q9,10 18,0 q9,-10 18,0" stroke="#d9622f" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="78" cy="15" r="10" fill="#8e5bd0"/><circle cx="74" cy="11" r="3.5" fill="#c2a6ea"/><path d="M92,24 q9,-10 18,0" stroke="#d9622f" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M62,32 l18,0" stroke="#9aa3b5" stroke-width="2" stroke-dasharray="3 3"/></svg>`,
+    lab:`<svg viewBox="0 0 120 40"><circle cx="32" cy="20" r="17" fill="#f3e5b5" stroke="#c3c8d2" stroke-width="2.5"/><circle cx="26" cy="15" r="3.5" fill="#2f63c7"/><circle cx="39" cy="22" r="3.5" fill="#fff" stroke="#b9ae8c"/><circle cx="30" cy="28" r="3.5" fill="#2f63c7"/><rect x="62" y="11" width="48" height="18" rx="9" fill="#e1f3e8" stroke="#1b7f4e" stroke-width="2"/><circle cx="99" cy="20" r="6.5" fill="#1b7f4e"/></svg>`,
+    build:`<svg viewBox="0 0 120 40"><path d="M6,32 H114" stroke="#0f766e" stroke-width="4"/><rect x="70" y="22" width="26" height="14" rx="4" fill="none" stroke="#3f4cc0" stroke-width="2" stroke-dasharray="4 3"/><polygon points="26,5 34,5 40,11 40,20 34,26 26,26 20,20 20,11" fill="#d9443a"/><path d="M44,16 q16,-10 26,6" stroke="#5a6376" stroke-width="2" stroke-dasharray="4 3" fill="none"/></svg>`,
+    eterna:`<svg viewBox="0 0 120 40"><path d="M12,34 C12,10 42,10 42,22 C42,34 72,34 72,19 C72,7 98,7 108,17" stroke="#8e5bd0" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="12" cy="34" r="5" fill="#2f9e63"/><circle cx="42" cy="22" r="5" fill="#f2b134"/><circle cx="72" cy="19" r="5" fill="#3b7dd8"/><circle cx="108" cy="17" r="5" fill="#d9443a"/></svg>`,
+    enz:`<svg viewBox="0 0 120 40"><path d="M34,6 a16,16 0 1 0 0,28 l0,-9 a7,7 0 1 1 0,-10 z" fill="#c97b4a"/><circle cx="44" cy="20" r="6" fill="#2f9e63"/><path d="M62,20 h22" stroke="#5a6376" stroke-width="2.5" marker-end="url(#eA)"/><circle cx="98" cy="14" r="6" fill="#2f9e63"/><circle cx="104" cy="26" r="6" fill="#f2b134"/><defs><marker id="eA" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#5a6376"/></marker></defs></svg>`,
+    resp:`<svg viewBox="0 0 120 40"><rect x="6" y="16" width="108" height="9" rx="4" fill="#cfe0f5"/><circle cx="30" cy="20" r="9" fill="#3b7dd8"/><circle cx="58" cy="20" r="9" fill="#5aa0e0"/><circle cx="86" cy="20" r="9" fill="#7cb9ea"/><path d="M30,9 v-6 M58,9 v-6 M86,9 v-6" stroke="#f2b134" stroke-width="3" stroke-linecap="round"/><text x="104" y="12" font-size="11" font-weight="700" fill="#b0873a">ATP</text></svg>`
+  };
+  const MOD = {
+    transcription:{name:"Transcription", href:"transcription.html", desc:"RNA polymerase builds mRNA from DNA", icon:"tx", col:"#3f4cc0", wide:true},
+    pretx:{name:"Pre-transcriptional control", href:"pretranscriptional-control.html", desc:"Operons, stop signs, and gas", icon:"pre", col:"#b83a34", wide:true},
+    build:{name:"Operon Builder", href:"pretranscriptional-control.html#build", desc:"Drag the pieces into place", icon:"build", col:"#b83a34"},
+    lab:{name:"Operon Lab", href:"pretranscriptional-control.html#lab", desc:"Flip switches, grow plates", icon:"lab", col:"#1b7f4e"},
+    mutations:{name:"Mutations", href:"mutations.html", desc:"Silent, missense, nonsense, frameshift", icon:"mut", col:"#e8744f", wide:true},
+    editor:{name:"DNA Editor", href:"mutations.html#editor", desc:"Mutate a gene, watch the protein change", icon:"mut", col:"#e8744f"},
+    splice:{name:"Splice Lab", href:"posttranscriptional-control.html#splice", desc:"Be the snRNP, cut out introns", icon:"post", col:"#8e5bd0"},
+    translation:{name:"Translation", href:"translation.html", desc:"Ribosomes read codons and build protein", icon:"tl", col:"#1b7f4e", wide:true},
+    posttx:{name:"Post-transcriptional control", href:"posttranscriptional-control.html", desc:"Splicing, riboswitches, and miRNA", icon:"post", col:"#8e5bd0", wide:true},
+    eterna:{name:"Eterna: fold your own RNA", href:"eterna.html", fun:true, desc:"Design RNA in a real science game", icon:"eterna", wide:true},
+    enzymes:{name:"Enzymes and proteins", soon:true, desc:"Active sites, induced fit, allosteric control", icon:"enz", wide:true},
+    resp:{name:"Cellular respiration", soon:true, desc:"Electron transport in the plasma membrane", icon:"resp", wide:true}
+  };
+
+  /* ================= Panel content (from the Chapter 8 slides) ================= */
+  const PARTS = {
+    dna:{title:"The nucleoid (chromosome)", kick:"DNA", col:TEAL, side:"right", top:"12%", hero:"dna",
+      facts:[
+        ["\u{1F9EC}","Bacteria have <b>one circular chromosome</b>, called the <b>nucleoid</b>. There is no nuclear membrane around it."],
+        ["\u{1F9F1}","Each <b>nucleotide</b> is a nitrogenous base + a phosphate group + a <b>deoxyribose</b> sugar. Nucleotides are joined by <b>covalent</b> bonds."],
+        ["\u{1F517}","Base pairs: <b>A-T</b> and <b>C-G</b>, held together by <b>hydrogen</b> bonds."],
+        ["\u2194\uFE0F","The two strands are <b>antiparallel</b>: one runs 5' to 3', the other runs 3' to 5'. New strands are only built <b>5' to 3'</b>."],
+        ["\u{1F4BE}","DNA's job is to <b>store</b> genetic information. RNA transmits and copies it."]],
+      extra:[
+        ["\u2B55","Because the chromosome is circular, there is <b>one origin of replication</b>, one replication bubble, and two forks that travel around until the whole circle is copied."],
+        ["\u{1F4D6}","<b>Genome</b> = all the genetic material. <b>Chromosome</b> = one DNA molecule carrying many genes. <b>Gene</b> = a segment that codes for a product."],
+        ["\u{1F504}","DNA moves <b>vertically</b> (parent to offspring) and <b>horizontally</b> (transformation, conjugation, transduction)."]],
+      mods:["pretx","build","lab","transcription","mutations","editor"]},
+    mrna:{title:"Messenger RNA", kick:"mRNA", col:ORANGE, side:"left", top:"10%", hero:"mrna",
+      facts:[
+        ["\u{1F9F1}","An RNA nucleotide is a base + a phosphate group + a <b>ribose</b> sugar."],
+        ["\u{1F524}","RNA bases are A, <b>U</b>, C, and G. No thymine! Pairs are <b>A-U</b> and <b>G-C</b>."],
+        ["\u27A1\uFE0F","RNA is <b>single-stranded</b> and is transcribed <b>5' to 3'</b>."],
+        ["\u{1F4E8}","<b>mRNA</b> carries the message, <b>rRNA</b> builds ribosome structure, and <b>tRNA</b> matches codons to amino acids."],
+        ["\u26A1","In prokaryotes there is <b>no RNA processing</b>, and translation can begin before transcription is complete."]],
+      extra:[
+        ["\u{1F9EE}","mRNA is read in <b>codons</b>: three bases per amino acid."],
+        ["\u23F1\uFE0F","mRNA is a <b>short-term copy</b> of a gene, so the cell can stop making a protein quickly."]],
+      mods:["transcription","posttx","splice","eterna"]},
+    ribosome:{title:"Ribosomes", kick:"Site of protein synthesis", col:BROWN, side:"right", top:"10%", hero:"ribo",
+      facts:[
+        ["\u{1F3ED}","The ribosome is the <b>site of protein synthesis</b>."],
+        ["\u{1F9E9}","It has <b>two subunits</b> (one large, one small) that come together during translation."],
+        ["\u{1F9EC}","Ribosomes are made of <b>rRNA and proteins</b>."],
+        ["\u{1F3AF}","Three sites: <b>A</b> (incoming tRNA with its amino acid enters), <b>P</b> (holds the growing polypeptide), <b>E</b> (empty tRNA exits)."]],
+      extra:[
+        ["\u25B6\uFE0F","<b>Initiation</b> needs both subunits, the mRNA, and a tRNA with the anticodon <b>UAC</b> at the start codon <b>AUG</b>."],
+        ["\u{1F4CD}","In prokaryotes, translation happens in the cytoplasm, right alongside transcription."]],
+      mods:["translation"]},
+    protein:{title:"Proteins and enzymes", kick:"The end product", col:PURPLE, side:"left", top:"38%", hero:"prot",
+      facts:[
+        ["\u{1F9F5}","A protein is a chain of amino acids joined by <b>peptide bonds</b>, then folded into a 3D shape."],
+        ["\u26A1","<b>Enzymes</b> are biological catalysts (mostly proteins). They speed up reactions without being used up."],
+        ["\u{1F3AF}","Substrates bind at the <b>active site</b>. The site changes shape slightly to fit: the <b>induced fit</b> model."],
+        ["\u{1F39B}\uFE0F","Inhibitors and activators bind at a separate <b>allosteric site</b>. That's exactly how repressors and activators work in operons!"]],
+      mods:["enzymes","translation"]},
+    plasmid:{title:"Plasmids", kick:"Extra circular DNA", col:RED, side:"left", top:"44%", hero:"plasmid",
+      facts:[
+        ["\u267B\uFE0F","Small, circular, <b>self-replicating</b> DNA, separate from the chromosome."],
+        ["\u{1F48A}","They carry genes that are <b>not usually essential</b>: antibiotic resistance, toxins, metal resistance, conjugation factors."],
+        ["\u{1F91D}","Conjugative plasmids can transfer between bacteria, even between species."],
+        ["\u{1F9EB}","In biotech they are <b>vectors</b>: paste in a gene, then transform bacteria. pGLO is one!"]],
+      mods:["lab"]},
+    envelope:{title:"Cell envelope", kick:"Gram-negative", col:"#5d8a4f", side:"right", top:"48%", hero:"env",
+      facts:[
+        ["\u{1F9F1}","Outer membrane, then a thin peptidoglycan layer, then the plasma membrane."],
+        ["\u26A1","Bacteria have <b>no mitochondria</b>, so the electron transport chain runs in the <b>plasma membrane</b>."],
+        ["\u26A0\uFE0F","The outer membrane carries <b>LPS</b> (endotoxin)."],
+        ["\u{1F49C}","That thin peptidoglycan is why Gram-negative cells stain <b>pink</b>, not purple."]],
+      mods:["resp"]},
+    flagellum:{title:"Flagellum", kick:"How it swims", col:"#6b5f45", side:"left", top:"56%", hero:"flag",
+      facts:[
+        ["\u2699\uFE0F","A rotary motor powered by protons, spinning hundreds of times per second."],
+        ["\u{1F3C3}","Spin one way to run straight, reverse to tumble and pick a new direction (chemotaxis)."],
+        ["\u{1F524}","The protein is flagellin, the <b>H antigen</b>, as in E. coli O157:<b>H7</b>."]],
+      mods:[]}
+  };
+
+  /* ================= Cell shape ================= */
+  const CELL = {cx:500, cy:282, w:800, h:312};
+  function capsule(inset, pts){
+    const w = CELL.w - inset * 2, h = CELL.h - inset * 2, r = h / 2;
+    const L = CELL.cx - w / 2 + r, R = CELL.cx + w / 2 - r, T = CELL.cy - r, B = CELL.cy + r;
+    const out = [], TOT = 360;
+    const noise = u => { const a = u * Math.PI * 2; return 3.4 * Math.sin(3 * a + .7) + 2.1 * Math.sin(5 * a + 2.1) + 1.2 * Math.sin(7 * a + .3); };
+    const straightN = 110, arcN = 70, total = straightN * 2 + arcN * 2;
+    let idx = 0;
+    const push = (x, y, nx, ny) => { const d = noise(idx / total) * (1 - inset / 100); out.push([x + nx * d, y + ny * d]); idx++; };
+    for (let i = 0; i < straightN; i++) push(lerp(L, R, i / straightN), T, 0, -1);
+    for (let i = 0; i < arcN; i++){ const a = -Math.PI / 2 + i / arcN * Math.PI; push(R + r * Math.cos(a), CELL.cy + r * Math.sin(a), Math.cos(a), Math.sin(a)); }
+    for (let i = 0; i < straightN; i++) push(lerp(R, L, i / straightN), B, 0, 1);
+    for (let i = 0; i < arcN; i++){ const a = Math.PI / 2 + i / arcN * Math.PI; push(L + r * Math.cos(a), CELL.cy + r * Math.sin(a), Math.cos(a), Math.sin(a)); }
+    if (pts) return out;
+    return out.map((p, i) => (i ? "L" : "M") + f1(p[0]) + "," + f1(p[1])).join(" ") + "Z";
+  }
+  const OUTER = capsule(0, true);
+
+  const RIBOS = [[176,296],[198,350],[204,232],[244,404],[306,420],[378,424],[452,416],[540,410],[616,402],[690,392],[760,352],[800,286],[810,224],[722,180],[640,166],[556,174],[490,160],[416,156]];
+  const MP = [[556,272],[604,236],[652,240],[700,222],[748,204],[798,212],[820,252]];
+  const bez = (p0,p1,p2,p3,t) => { const u = 1 - t; return [u*u*u*p0[0]+3*u*u*t*p1[0]+3*u*t*t*p2[0]+t*t*t*p3[0], u*u*u*p0[1]+3*u*u*t*p1[1]+3*u*t*t*p2[1]+t*t*t*p3[1]]; };
+  const mPoint = t => t < .5 ? bez(MP[0],MP[1],MP[2],MP[3],t*2) : bez(MP[3],MP[4],MP[5],MP[6],(t-.5)*2);
+  const mPath = `M${MP[0][0]},${MP[0][1]} C${MP[1][0]},${MP[1][1]} ${MP[2][0]},${MP[2][1]} ${MP[3][0]},${MP[3][1]} C${MP[4][0]},${MP[4][1]} ${MP[5][0]},${MP[5][1]} ${MP[6][0]},${MP[6][1]}`;
+  const ribo = (x, y, s) => { s = s || 1;
+    return `<ellipse cx="${f1(x)}" cy="${f1(y - 4.5 * s)}" rx="${f1(11 * s)}" ry="${f1(7.5 * s)}" fill="url(#gRiboL)"/><ellipse cx="${f1(x)}" cy="${f1(y + 4.5 * s)}" rx="${f1(8.5 * s)}" ry="${f1(4 * s)}" fill="url(#gRiboS)"/><ellipse cx="${f1(x - 3 * s)}" cy="${f1(y - 7 * s)}" rx="${f1(3.5 * s)}" ry="${f1(2 * s)}" fill="#fff" opacity=".32"/>`; };
+  function protein(x, y, s, seed){
+    let d = "", sd = seed;
+    const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    const wob = [1 + rnd() * .3, 1 + rnd() * .3, 1 + rnd() * .3, 1 + rnd() * .3];
+    for (let i = 0; i <= 60; i++){ const a = i / 60 * Math.PI * 2;
+      const r = s * (1 + .22 * Math.sin(3 * a + wob[0]) + .13 * Math.sin(5 * a + wob[1]));
+      d += (i ? "L" : "M") + f1(x + r * Math.cos(a)) + "," + f1(y + r * .86 * Math.sin(a)); }
+    return `<path d="${d}Z" fill="url(#gProt)" stroke="#7a5bb0" stroke-width="2"/><ellipse cx="${f1(x - s * .3)}" cy="${f1(y - s * .42)}" rx="${f1(s * .3)}" ry="${f1(s * .18)}" fill="#fff" opacity=".3"/>`;
+  }
+  function plasmid(x, y, r, rot){
+    let d = ""; for (let i = 0; i <= 160; i++){ const a = i / 160 * Math.PI * 2, rr = r * (1 + .035 * Math.sin(4 * a + rot)); d += (i ? "L" : "M") + f1(x + rr * Math.cos(a)) + "," + f1(y + rr * .85 * Math.sin(a)); }
+    return `<path d="${d}Z" fill="none" stroke="#f0b3ae" stroke-width="6.5"/><path d="${d}Z" fill="none" stroke="${RED}" stroke-width="3.2"/>`;
+  }
+  function chromosome(){
+    const cx = 380, cy = 288, sq = 1.16;
+    const loop = (amp, k, ph, rr) => { let d = "";
+      for (let i = 0; i <= 420; i++){ const a = i / 420 * Math.PI * 2, r = rr + amp * Math.sin(k * a + ph) + 4 * Math.sin(2 * a + 1.1);
+        d += (i ? "L" : "M") + f1(cx + r * sq * Math.cos(a)) + "," + f1(cy + r * .72 * Math.sin(a)); }
+      return d + "Z"; };
+    const twist = (x, y, rr, rot) => { let d = "";
+      for (let i = 0; i <= 120; i++){ const a = i / 120 * Math.PI * 2; d += (i ? "L" : "M") + f1(x + rr * 1.25 * Math.cos(a + rot)) + "," + f1(y + rr * .85 * Math.sin(a + rot)); }
+      return d + "Z"; };
+    const main = loop(7, 11, .3, 122);
+    let o = `<ellipse cx="${cx}" cy="${cy}" rx="180" ry="118" fill="#dcefec" opacity=".7"/>`;
+    o += `<path d="${main}" fill="none" stroke="#9fd2cc" stroke-width="10" stroke-linejoin="round" opacity=".8"/>`;
+    o += `<path d="${main}" fill="none" stroke="${TEAL}" stroke-width="5" stroke-linejoin="round"/>`;
+    o += `<path d="${main}" fill="none" stroke="#c9e9e4" stroke-width="1.6" stroke-linejoin="round" stroke-dasharray="5 9"/>`;
+    [[272,258,15,.4],[452,236,14,2.1],[392,376,15,1.2]].forEach(q => {
+      o += `<path d="${twist(q[0], q[1], q[2], q[3])}" fill="none" stroke="#9fd2cc" stroke-width="10" stroke-linejoin="round"/>`;
+      o += `<path d="${twist(q[0], q[1], q[2], q[3])}" fill="none" stroke="${TEAL}" stroke-width="5" stroke-linejoin="round"/>`;
+    });
+    return o;
+  }
+  function flagellum(x0, y0, dx, dy, len, t){
+    const n = Math.hypot(dx, dy), ux = dx / n, uy = dy / n, px = -uy, py = ux;
+    let d = `M${x0},${y0}`;
+    for (let s = 0; s <= len; s += 5){ const amp = Math.min(1, s / 44) * 15, w = amp * Math.sin(s / 21 - t * 8.5); d += ` L${f1(x0 + ux * s + px * w)},${f1(y0 + uy * s + py * w)}`; }
+    return `<path d="${d}" fill="none" stroke="#c0b193" stroke-width="7" stroke-linecap="round" opacity=".5"/><path d="${d}" fill="none" stroke="#8a7a5a" stroke-width="3.2" stroke-linecap="round"/><circle cx="${x0}" cy="${y0}" r="8" fill="#6b5f45"/><circle cx="${x0}" cy="${y0}" r="3.5" fill="#bdae90"/>`;
+  }
+  function fimbriae(){
+    let o = "";
+    for (let i = 0; i < 22; i++){
+      const p = OUTER[Math.floor(i * OUTER.length / 22 + 4) % OUTER.length];
+      const nx = p[0] - CELL.cx, ny = (p[1] - CELL.cy) * 2.2, n = Math.hypot(nx, ny) || 1;
+      const ux = nx / n, uy = ny / n, len = 20 + 9 * Math.sin(i * 2.3);
+      const bend = (i % 2 ? 1 : -1) * 7;
+      o += `<path d="M${f1(p[0])},${f1(p[1])} q${f1(ux * len * .6 - uy * bend)},${f1(uy * len * .6 + ux * bend)} ${f1(ux * len)},${f1(uy * len)}" stroke="#8fb27f" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    }
+    return o;
+  }
+  function tagSVG(x, y, text, col, part, ax, ay){
+    const w = text.length * 9.4 + 30;
+    return `<g class="tag" tabindex="0" role="button" data-part="${part}" aria-label="${text}">`
+      + `<path d="M${x},${y} L${ax},${ay}" stroke="${col}" stroke-width="2.2" stroke-dasharray="5 4"/><circle cx="${ax}" cy="${ay}" r="5" fill="${col}"/><circle cx="${ax}" cy="${ay}" r="2" fill="#fff"/>`
+      + `<g class="tagg"><rect class="tagbg" x="${f1(x - w / 2)}" y="${f1(y - 18)}" width="${f1(w)}" height="36" rx="18" fill="${col}"/>`
+      + `<rect x="${f1(x - w / 2 + 4)}" y="${f1(y - 15)}" width="${f1(w - 8)}" height="14" rx="7" fill="#fff" opacity=".2"/>`
+      + `<text x="${f1(x)}" y="${f1(y + 6)}" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">${text}</text></g></g>`;
+  }
+
+  const DEFS = `<defs>
+    <radialGradient id="gCyto" cx="42%" cy="34%" r="78%"><stop offset="0%" stop-color="#fbfdf8"/><stop offset="62%" stop-color="#eef6e8"/><stop offset="100%" stop-color="#dbead1"/></radialGradient>
+    <linearGradient id="gWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#84b471"/><stop offset="55%" stop-color="#5d8a4f"/><stop offset="100%" stop-color="#3f6335"/></linearGradient>
+    <radialGradient id="gRiboL" cx="35%" cy="28%" r="75%"><stop offset="0%" stop-color="#e5a271"/><stop offset="100%" stop-color="#b96a3c"/></radialGradient>
+    <radialGradient id="gRiboS" cx="35%" cy="28%" r="75%"><stop offset="0%" stop-color="#f3c79f"/><stop offset="100%" stop-color="#d9976a"/></radialGradient>
+    <radialGradient id="gPol" cx="34%" cy="28%" r="75%"><stop offset="0%" stop-color="#96a1f3"/><stop offset="100%" stop-color="#4a57c9"/></radialGradient>
+    <radialGradient id="gProt" cx="34%" cy="26%" r="78%"><stop offset="0%" stop-color="#c7aae8"/><stop offset="100%" stop-color="#8e5bd0"/></radialGradient>
+    <filter id="soft" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#2b3a22" flood-opacity=".22"/></filter>
+    <pattern id="pepti" width="14" height="14" patternUnits="userSpaceOnUse"><path d="M0,7 H14 M7,0 V14" stroke="#d3e8c6" stroke-width="2.5"/></pattern>
+  </defs>`;
+
+  const waves = t => flagellum(902, 258, 1, .1, 158, t) + flagellum(132, 392, -.7, .82, 142, t + .6);
+  const PROTS = [[642,300,16,3],[716,244,13,11],[578,340,14,23],[186,250,12,37],[826,320,12,53]];
+  let open = null;
+
+  function draw(){
+    let o = DEFS;
+    o += `<g class="hot" tabindex="0" role="button" data-part="flagellum" aria-label="Flagellum"><g id="flagWaves">${waves(0)}</g>`
+       + `<path class="ring" d="M902,258 H996"/><path class="ring" d="M132,392 L38,500"/></g>`;
+    o += `<g class="hot" tabindex="0" role="button" data-part="envelope" aria-label="Cell envelope">` + fimbriae();
+    o += `<path d="${capsule(0)}" fill="url(#gWall)" filter="url(#soft)"/>`;
+    o += `<path d="${capsule(10)}" fill="#eaf4e3"/><path d="${capsule(10)}" fill="url(#pepti)"/>`;
+    o += `<path d="${capsule(18)}" fill="#6d9a5c"/>`;
+    o += `<path d="${capsule(26)}" fill="url(#gCyto)"/>`;
+    o += `<path d="M200,172 q150,-22 300,-6" stroke="#fff" stroke-width="11" stroke-linecap="round" fill="none" opacity=".45"/>`;
+    o += `<path class="ring" d="${capsule(9)}"/></g>`;
+    let sp = "", sd = 7; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 110; i++){ const x = 150 + rnd() * 700, y = 160 + rnd() * 244; sp += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(1 + rnd() * 2.2)}" fill="#8fae7d" opacity=".22"/>`; }
+    o += sp;
+    o += `<g class="hot" tabindex="0" role="button" data-part="dna" aria-label="Nucleoid, the chromosome">` + chromosome() + `<ellipse class="ring" cx="380" cy="288" rx="166" ry="102"/></g>`;
+    o += `<g class="hot" tabindex="0" role="button" data-part="plasmid" aria-label="Plasmids">` + plasmid(700, 348, 21, .4) + plasmid(786, 296, 15, 1.7) + plasmid(232, 390, 17, 2.6)
+       + `<circle class="ring" cx="700" cy="348" r="26"/><circle class="ring" cx="786" cy="296" r="20"/><circle class="ring" cx="232" cy="390" r="22"/></g>`;
+    o += `<g class="hot" tabindex="0" role="button" data-part="protein" aria-label="Proteins">`;
+    PROTS.forEach(p => { o += protein(p[0], p[1], p[2], p[3]); });
+    PROTS.forEach(p => { o += `<circle class="ring" cx="${p[0]}" cy="${p[1]}" r="${p[2] + 4}"/>`; });
+    o += `</g>`;
+    o += `<g class="hot" tabindex="0" role="button" data-part="ribosome" aria-label="Ribosomes">`;
+    RIBOS.forEach(p => { o += ribo(p[0], p[1]); });
+    RIBOS.forEach(p => { o += `<circle class="ring" cx="${p[0]}" cy="${p[1]}" r="13"/>`; });
+    o += `</g>`;
+    o += `<g class="hot" tabindex="0" role="button" data-part="mrna" aria-label="mRNA">`
+       + `<path d="${mPath}" fill="none" stroke="#f3b592" stroke-width="10" stroke-linecap="round" opacity=".55"/>`
+       + `<path d="${mPath}" fill="none" stroke="${ORANGE}" stroke-width="4.5" stroke-linecap="round"/>`
+       + `<path class="ring" d="${mPath}"/></g>`;
+    o += `<g class="hot" tabindex="0" role="button" data-part="ribosome" aria-label="Ribosomes on the mRNA">`;
+    [.18,.38,.58,.78].forEach((tt, k) => {
+      const p = mPoint(tt);
+      o += ribo(p[0], p[1] - 3, 1.3);
+      for (let j = 0; j < 1 + k * 2; j++) o += `<circle cx="${f1(p[0] - 5 + (j % 2) * 10)}" cy="${f1(p[1] - 21 - j * 8)}" r="4.2" fill="${["#2f9e63","#f2b134","#3b7dd8","#8e5bd0","#d9443a"][j % 5]}" stroke="#fff" stroke-width="1.2"/>`;
+      o += `<circle class="ring" cx="${f1(p[0])}" cy="${f1(p[1] - 4)}" r="15"/>`;
+    });
+    o += `</g>`;
+    o += `<g class="hot" tabindex="0" role="button" data-part="dna" aria-label="RNA polymerase"><ellipse class="rnap" cx="552" cy="276" rx="17" ry="13" fill="url(#gPol)" stroke="#39429f" stroke-width="2"/><circle class="ring" cx="552" cy="276" r="19"/></g>`;
+    o += tagSVG(330, 56, "DNA", TEAL, "dna", 352, 198);
+    o += tagSVG(846, 76, "mRNA", ORANGE, "mrna", 780, 206);
+    o += tagSVG(140, 96, "Ribosome", BROWN, "ribosome", 206, 222);
+    o += tagSVG(628, 500, "Protein", PURPLE, "protein", 640, 318);
+    svg.innerHTML = o;
+    markSel();
+  }
+  const markSel = () => svg.querySelectorAll(".hot").forEach(g => g.classList.toggle("sel", g.dataset.part === open));
+
+  /* ================= Hero animations ================= */
+  const W = 430, H = 150;
+  const wrapSvg = inner => `<svg viewBox="0 0 ${W} ${H}" role="img">${inner}</svg>`;
+  function tile(x, y, b, s){ s = s || 1; const c = BASE[b];
+    return `<g><rect x="${f1(x - 12 * s)}" y="${f1(y - 12 * s)}" width="${f1(24 * s)}" height="${f1(24 * s)}" rx="${f1(6 * s)}" fill="${c[0]}"/><text x="${f1(x)}" y="${f1(y + 5 * s)}" font-size="${f1(14 * s)}" font-weight="700" fill="${c[1]}" text-anchor="middle">${b}</text></g>`; }
+  const HERO = {
+    dna:t => {
+      const T = 9, tt = t % T;
+      const z = smooth(seg(tt, 2.2, 4.2)) * (1 - smooth(seg(tt, 7.6, 8.8)));
+      const cx = 215, cy = 75;
+      let o = `<rect width="${W}" height="${H}" fill="#f4f6fb"/>`;
+      // circular chromosome
+      const scale = 1 + z * 7;
+      let d = "";
+      for (let i = 0; i <= 260; i++){ const a = i / 260 * Math.PI * 2, r = 50 + 3.5 * Math.sin(11 * a + .3);
+        d += (i ? "L" : "M") + f1(cx + r * scale * Math.cos(a)) + "," + f1(cy + r * scale * .78 * Math.sin(a) - z * 210); }
+      o += `<g opacity="${f3o(1 - smooth(seg(tt, 3.4, 4.2)))}"><path d="${d}Z" fill="none" stroke="#9fd2cc" stroke-width="${f1(9 * (1 + z))}"/><path d="${d}Z" fill="none" stroke="${TEAL}" stroke-width="${f1(4.5 * (1 + z))}"/></g>`;
+      if (z < .3) o += `<text x="${cx}" y="${cy + 92}" font-size="13" font-weight="700" fill="${TEAL}" text-anchor="middle" opacity="${f3o(1 - z / .3)}">One circular chromosome</text>`;
+      // zoomed base pairs
+      const zz = smooth(seg(tt, 3.6, 5)) * (1 - smooth(seg(tt, 7.4, 8.4)));
+      if (zz > .01){
+        const pairs = [["A","T"],["G","C"],["T","A"],["C","G"],["A","T"],["G","C"]];
+        o += `<g opacity="${f3o(zz)}">`;
+        o += `<path d="M42,44 H392 M42,106 H392" stroke="#0f766e" stroke-width="5" stroke-linecap="round"/>`;
+        pairs.forEach((p, i) => { const x = 66 + i * 60;
+          const hb = p[0] === "A" || p[0] === "T" ? 2 : 3;
+          for (let k = 0; k < hb; k++) o += `<path d="M${f1(x - 6 + k * 6)},63 V87" stroke="#9aa3b5" stroke-width="2"/>`;
+          o += tile(x, 44, p[0], .95) + tile(x, 106, p[1], .95);
+        });
+        o += `<text x="26" y="34" font-size="12" font-weight="700" fill="#5a6376">5'</text><text x="400" y="34" font-size="12" font-weight="700" fill="#5a6376">3'</text>`;
+        o += `<text x="26" y="128" font-size="12" font-weight="700" fill="#5a6376">3'</text><text x="400" y="128" font-size="12" font-weight="700" fill="#5a6376">5'</text>`;
+        o += `<text x="215" y="140" font-size="12" font-weight="700" fill="#5a6376" text-anchor="middle">A-T (2 H bonds) and C-G (3 H bonds), antiparallel strands</text></g>`;
+      }
+      return wrapSvg(o);
+    },
+    ribo:t => {
+      const T = 8, tt = t % T;
+      const j = smooth(seg(tt, 1.2, 3)) * (1 - smooth(seg(tt, 6.6, 7.6)));
+      let o = `<rect width="${W}" height="${H}" fill="#f4f6fb"/>`;
+      const cx = 215, ly = lerp(20, 54, j), sy = lerp(132, 104, j);
+      o += `<path d="M40,96 q14,-9 28,0 q14,9 28,0" stroke="${ORANGE}" stroke-width="3.5" fill="none" opacity="${f3o(j)}"/>`;
+      o += `<path d="M40,96 H390" stroke="${ORANGE}" stroke-width="3.5" stroke-linecap="round" opacity="${f3o(j)}"/>`;
+      o += `<ellipse cx="${cx}" cy="${f1(ly + 30)}" rx="86" ry="52" fill="url(#hRiboL)"/>`;
+      o += `<ellipse cx="${cx}" cy="${f1(sy)}" rx="72" ry="24" fill="url(#hRiboS)"/>`;
+      if (j > .7){ const op = (j - .7) / .3;
+        [["E", cx - 46],["P", cx],["A", cx + 46]].forEach(q => { o += `<rect x="${f1(q[1] - 18)}" y="${f1(ly + 18)}" width="36" height="22" rx="11" fill="#fff" opacity="${f3o(op * .92)}"/><text x="${f1(q[1])}" y="${f1(ly + 34)}" font-size="13" font-weight="700" fill="#8a4a24" text-anchor="middle" opacity="${f3o(op)}">${q[0]}</text>`; });
+      }
+      o += `<text x="${cx + 96}" y="${f1(ly + 14)}" font-size="12" font-weight="700" fill="#8a4a24">Large subunit</text>`;
+      o += `<text x="${cx + 84}" y="${f1(sy + 20)}" font-size="12" font-weight="700" fill="#8a4a24">Small subunit</text>`;
+      o += `<text x="215" y="16" font-size="12" font-weight="700" fill="#5a6376" text-anchor="middle">${j > .8 ? "Subunits assemble on the mRNA: A, P, and E sites" : "Two subunits come together for translation"}</text>`;
+      o += `<defs><radialGradient id="hRiboL" cx="35%" cy="28%" r="75%"><stop offset="0%" stop-color="#e5a271"/><stop offset="100%" stop-color="#b96a3c"/></radialGradient><radialGradient id="hRiboS" cx="35%" cy="28%" r="75%"><stop offset="0%" stop-color="#f3c79f"/><stop offset="100%" stop-color="#d9976a"/></radialGradient></defs>`;
+      return wrapSvg(o);
+    },
+    mrna:t => {
+      const seqs = "AUGGCAUUCGGA";
+      let o = `<rect width="${W}" height="${H}" fill="#f4f6fb"/>`;
+      o += `<path d="M28,86 H402" stroke="${ORANGE}" stroke-width="4" stroke-linecap="round"/>`;
+      for (let i = 0; i < seqs.length; i++){
+        const x = 44 + i * 30, on = ((Math.floor(t * 1.6) % seqs.length) + seqs.length) % seqs.length === i;
+        o += tile(x, 86 - (on ? 5 : 0), seqs[i], .82);
+      }
+      const CD = [["Codon 1", 44, 104],["Codon 2", 134, 194],["Codon 3", 224, 284],["Codon 4", 314, 374]];
+      const k = ((Math.floor(t / 2.4) % CD.length) + CD.length) % CD.length;
+      const cd = CD[k] || CD[0];
+      o += `<path d="M${cd[1] - 15},112 v8 H${cd[2] + 15} v-8" fill="none" stroke="${ORANGE}" stroke-width="2.5"/><text x="${(cd[1] + cd[2]) / 2}" y="136" font-size="12" font-weight="700" fill="${ORANGE}" text-anchor="middle">${cd[0]}</text>`;
+      o += `<text x="20" y="62" font-size="12" font-weight="700" fill="#5a6376">5'</text><text x="404" y="62" font-size="12" font-weight="700" fill="#5a6376">3'</text>`;
+      o += `<text x="215" y="30" font-size="12" font-weight="700" fill="#5a6376" text-anchor="middle">Single-stranded, built 5' to 3', read in codons</text>`;
+      return wrapSvg(o);
+    },
+    prot:t => {
+      const T = 8, tt = t % T, fold = smooth(seg(tt, 1.4, 4)) * (1 - smooth(seg(tt, 6.8, 7.8)));
+      let o = `<rect width="${W}" height="${H}" fill="#f4f6fb"/>`;
+      const cols = ["#2f9e63","#f2b134","#3b7dd8","#8e5bd0","#d9443a","#0f9fb0"];
+      const n = 12;
+      const pts = [];
+      for (let i = 0; i < n; i++){
+        const lx = 70 + i * 26, ly = 92 + (i % 2 ? -7 : 7);
+        const a = i / n * Math.PI * 2 + .4, fx = 215 + 46 * Math.cos(a), fy = 84 + 30 * Math.sin(a);
+        pts.push([lerp(lx, fx, fold), lerp(ly, fy, fold)]);
+      }
+      if (fold > .5) o += `<ellipse cx="215" cy="84" rx="72" ry="52" fill="url(#gProt)" opacity="${f3o((fold - .5) * 1.6)}"/>`;
+      let d = ""; pts.forEach((p, i) => { d += (i ? "L" : "M") + f1(p[0]) + "," + f1(p[1]); });
+      o += `<path d="${d}" fill="none" stroke="#b9a0e0" stroke-width="4" stroke-linejoin="round"/>`;
+      pts.forEach((p, i) => { o += `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="8" fill="${cols[i % 6]}" stroke="#fff" stroke-width="1.6"/>`; });
+      if (fold > .8){ const op = (fold - .8) * 5;
+        o += `<path d="M176,66 a22,22 0 0 1 36,6" fill="none" stroke="#5a3f95" stroke-width="3" opacity="${f3o(op)}"/><text x="150" y="44" font-size="12" font-weight="700" fill="#5a3f95" opacity="${f3o(op)}">Active site</text>`; }
+      o += `<text x="215" y="140" font-size="12" font-weight="700" fill="#5a6376" text-anchor="middle">${fold > .7 ? "Folded protein: shape gives it its job" : "Amino acids joined by peptide bonds"}</text>`;
+      o += `<defs><radialGradient id="gProt" cx="34%" cy="26%" r="78%"><stop offset="0%" stop-color="#d9c6f2"/><stop offset="100%" stop-color="#a982dd"/></radialGradient></defs>`;
+      return wrapSvg(o);
+    },
+    plasmid:t => {
+      let o = `<rect width="${W}" height="${H}" fill="#f4f6fb"/>`;
+      const cx = 140, cy = 76;
+      o += `<ellipse cx="240" cy="76" rx="150" ry="52" fill="#eaf4e3" stroke="#5d8a4f" stroke-width="3"/>`;
+      let d = ""; for (let i = 0; i <= 200; i++){ const a = i / 200 * Math.PI * 2, r = 92 + 4 * Math.sin(9 * a); d += (i ? "L" : "M") + f1(240 + r * .88 * Math.cos(a)) + "," + f1(76 + r * .38 * Math.sin(a)); }
+      o += `<path d="${d}Z" fill="none" stroke="${TEAL}" stroke-width="4"/>`;
+      const rot = t * .6;
+      [[196,64,17],[280,88,14],[300,58,11]].forEach((p, i) => {
+        let pd = ""; for (let k = 0; k <= 90; k++){ const a = k / 90 * Math.PI * 2, r = p[2] * (1 + .04 * Math.sin(4 * a + rot + i)); pd += (k ? "L" : "M") + f1(p[0] + r * Math.cos(a)) + "," + f1(p[1] + r * .85 * Math.sin(a)); }
+        o += `<path d="${pd}Z" fill="none" stroke="#f0b3ae" stroke-width="6"/><path d="${pd}Z" fill="none" stroke="${RED}" stroke-width="3"/>`;
+      });
+      o += `<text x="240" y="140" font-size="12" font-weight="700" fill="#5a6376" text-anchor="middle">Small circular DNA, separate from the chromosome</text>`;
+      o += `<text x="72" y="40" font-size="12" font-weight="700" fill="${TEAL}">Chromosome</text><text x="332" y="122" font-size="12" font-weight="700" fill="${RED}">Plasmids</text>`;
+      return wrapSvg(o);
+    },
+    env:t => {
+      let o = `<rect width="${W}" height="${H}" fill="#f4f6fb"/>`;
+      const layers = [[30,"Outer membrane + LPS","#5d8a4f"],[58,"Peptidoglycan (thin)","#b5d3a8"],[86,"Plasma membrane","#7da86f"]];
+      layers.forEach(l => {
+        o += `<rect x="22" y="${l[0]}" width="190" height="15" rx="7" fill="${l[2]}"/>`;
+        o += `<text x="220" y="${l[0] + 12}" font-size="12" font-weight="700" fill="#3f6335">${l[1]}</text>`;
+      });
+      const k = (t * .8) % 4;
+      for (let i = 0; i < 4; i++){ const x = 42 + i * 44, on = Math.floor(k) === i;
+        o += `<circle cx="${x}" cy="118" r="${on ? 8 : 6.5}" fill="${on ? "#3b7dd8" : "#9dc0ea"}"/>`;
+        if (i < 3) o += `<path d="M${x + 10},118 H${x + 34}" stroke="#9aa3b5" stroke-width="2"/>`;
+      }
+      o += `<text x="228" y="123" font-size="12" font-weight="700" fill="#b0873a">\u2192 ATP</text>`;
+      o += `<text x="215" y="145" font-size="11.5" font-weight="700" fill="#5a6376" text-anchor="middle">No mitochondria: the electron transport chain runs here</text>`;
+      return wrapSvg(o);
+    },
+    flag:t => {
+      let o = `<rect width="${W}" height="${H}" fill="#f4f6fb"/>`;
+      o += `<rect x="20" y="52" width="70" height="52" rx="22" fill="#84b471"/>`;
+      let d = "M90,78";
+      for (let s = 0; s <= 300; s += 5){ const amp = Math.min(1, s / 50) * 17, w = amp * Math.sin(s / 24 - t * 7); d += ` L${f1(90 + s)},${f1(78 + w)}`; }
+      o += `<path d="${d}" fill="none" stroke="#c0b193" stroke-width="7" stroke-linecap="round" opacity=".5"/><path d="${d}" fill="none" stroke="#8a7a5a" stroke-width="3.4" stroke-linecap="round"/>`;
+      o += `<circle cx="92" cy="78" r="10" fill="#6b5f45"/><circle cx="92" cy="78" r="4" fill="#bdae90"/>`;
+      o += `<text x="215" y="134" font-size="12" font-weight="700" fill="#5a6376" text-anchor="middle">A rotary motor spins the filament like a propeller</text>`;
+      return wrapSvg(o);
+    }
+  };
+  const f3o = v => (+v).toFixed(3);
+
+  /* ================= Popup ================= */
+  const tileHTML = k => {
+    const m = MOD[k], ic = ICON[m.icon] || "";
+    const cls = `tile${m.wide ? " wide" : ""}${m.soon ? " soon" : ""}${m.fun ? " fun" : ""}`;
+    let doneMod = false; try { doneMod = !!(m.wide && m.href && localStorage.getItem("bio112-done:" + m.href.split("#")[0]) === "1"); } catch (e) {}
+    const inner = `${ic}<b>${m.name}${doneMod ? ' <i class="donechk" title="Test mode complete">\u2713</i>' : ""}</b><span>${m.desc}</span>`;
+    return m.soon ? `<div class="${cls}">${inner}</div>` : `<a class="${cls}" style="--tc:${m.col || "#5b3fb0"}" href="${m.href}">${inner}</a>`;
+  };
+  const factHTML = f => `<div class="fact"><span class="em">${f[0]}</span><span>${f[1]}</span></div>`;
+  let heroKey = null, heroT0 = 0;
+  function showPanel(key){
+    const P = PARTS[key];
+    if (!P) return;
+    closePop(true);
+    open = key; markSel();
+    const scrim = document.createElement("div");
+    scrim.className = "scrim"; scrim.id = "scrim";
+    scrim.addEventListener("click", () => closePop());
+    const el = document.createElement("div");
+    el.className = "pop"; el.id = "pop";
+    el.setAttribute("role", "dialog"); el.setAttribute("aria-label", P.title);
+    el.style.borderTopColor = P.col;
+    el.style.top = P.top;
+    el.style[P.side === "left" ? "left" : "right"] = "3%";
+    el.innerHTML = `<button class="closeX" id="popClose" aria-label="Close">\u00d7</button>`
+      + `<div class="hero" id="hero"></div>`
+      + `<div class="popbody"><div class="pophead"><div class="kick" style="color:${P.col}">${P.kick}</div><h2>${P.title}</h2></div>`
+      + `<div class="facts">${P.facts.map(factHTML).join("")}<div id="extraFacts" hidden>${(P.extra || []).map(factHTML).join("")}</div></div>`
+      + ((P.extra || []).length ? `<button class="morebtn" id="moreFacts">+ more facts</button>` : "")
+      + (P.mods.length ? `<div class="tiles">${P.mods.map(tileHTML).join("")}</div>` : "")
+      + `</div>`;
+    stage.appendChild(scrim); stage.appendChild(el);
+    heroKey = P.hero; heroT0 = performance.now();
+    $("popClose").addEventListener("click", () => closePop());
+    const mf = $("moreFacts");
+    if (mf) mf.addEventListener("click", () => { const x = $("extraFacts"); x.hidden = !x.hidden; mf.textContent = x.hidden ? "+ more facts" : "\u2212 fewer facts"; });
+    $("popClose").focus({preventScroll:true});
+  }
+  function closePop(quiet){
+    const p = $("pop"), s = $("scrim");
+    if (p) p.remove();
+    if (s) s.remove();
+    heroKey = null;
+    if (!quiet){ open = null; markSel(); }
+  }
+  const activate = el => { const g = el.closest("[data-part]"); if (g) showPanel(g.dataset.part); };
+  svg.addEventListener("click", e => activate(e.target));
+  svg.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.closest("[data-part]")){ e.preventDefault(); activate(e.target); } });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closePop(); });
+
+  const CHIPS = [["dna","DNA",TEAL],["mrna","mRNA",ORANGE],["ribosome","Ribosomes",BROWN],["protein","Proteins",PURPLE],["plasmid","Plasmids",RED],["envelope","Cell envelope","#5d8a4f"],["flagellum","Flagellum","#6b5f45"]];
+  $("legend").innerHTML = CHIPS.map(c => `<button class="chip" data-part="${c[0]}"><i style="background:${c[2]}"></i>${c[1]}</button>`).join("");
+  $("legend").querySelectorAll("[data-part]").forEach(b => b.addEventListener("click", () => showPanel(b.dataset.part)));
+
+  const t0 = performance.now();
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function frame(now){
+    const fw = $("flagWaves");
+    if (fw && !reduced) fw.innerHTML = waves((now - t0) / 1000);
+    const h = $("hero");
+    if (h && heroKey && HERO[heroKey]){
+      const ht = reduced ? 5 : ((now - heroT0) / 1000) % 600;
+      try { h.innerHTML = HERO[heroKey](ht >= 0 ? ht : 0); } catch (err){ heroKey = null; }
+    }
+    requestAnimationFrame(frame);
+  }
+  draw();
+  requestAnimationFrame(frame);
+  window.__hub = {showPanel, closePop, PARTS, MOD, HERO};
+})();
+</script>
+</body>
+</html>

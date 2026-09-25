@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Translation: mRNA to Protein</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d2433; --muted:#5a6376; --page:#eef1f5; --card:#ffffff; --line:#d9dee7;
+    --accent:#3f4cc0; --accent-soft:#e7e9fb;
+    --good:#1b7f4e; --good-soft:#e1f3e8; --warn:#9a6212; --warn-soft:#fbefd9; --bad:#b83a34; --bad-soft:#fbe8e7;
+    --more:#5b3fb0; --more-soft:#f3effd;
+    --font:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font)}
+  .wrap{max-width:1060px;margin:0 auto;padding:18px 16px 30px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+  h1{font-size:1.55rem;line-height:1.15;margin:0;letter-spacing:-0.01em}
+  .sub{color:var(--muted);font-size:.92rem;margin-top:3px}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .seg{display:inline-flex;background:#dfe4ec;border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:700 .95rem var(--font);padding:8px 18px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(29,36,51,.18)}
+  .ghost{border:1px solid var(--line);background:var(--card);font:700 .9rem var(--font);padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--muted)}
+
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--line);margin-bottom:14px}
+  .tabs button{border:0;background:transparent;font:700 1rem var(--font);color:var(--muted);padding:10px 16px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+  .tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+
+  .home h2{font-size:1.3rem;margin:6px 0 4px}
+  .home p.lead{color:var(--muted);margin:0 0 16px;font-size:1.02rem}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:18px;text-align:left;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:8px}
+  .card:hover{border-color:var(--accent)}
+  .card h3{margin:0;font-size:1.2rem}
+  .card p{margin:0;color:var(--muted);line-height:1.5}
+  .card .meta{font-weight:700;color:var(--accent);font-size:.9rem;margin-top:auto}
+  .card svg{width:100%;height:84px}
+
+  .modehint{color:var(--muted);font-size:.92rem;margin:0 0 10px}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  #scene{display:block;width:100%;height:auto;font-family:var(--font);transition:opacity .2s}
+
+  .tablewrap{margin-top:12px;overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+  .tablewrap[hidden]{display:none}
+  .tablewrap .cap{font-weight:700;font-size:.9rem;padding:10px 12px 4px;color:var(--muted)}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:640px}
+  th,td{text-align:left;padding:7px 10px;border-top:1px solid var(--line);vertical-align:top}
+  th{font-size:.8rem;color:var(--muted)}
+  tr.hl td{background:#fff6d6}
+  td.on{color:var(--good);font-weight:700} td.off{color:var(--bad);font-weight:700} td.low{color:var(--warn);font-weight:700}
+  tr.new td{animation:rowin .5s ease}
+  @keyframes rowin{from{background:#fde9a8}to{background:transparent}}
+
+  .bubble{position:relative;margin-top:18px;background:var(--card);border:2px solid var(--accent);border-radius:16px;padding:16px 20px}
+  .bubble::before{content:"";position:absolute;top:-11px;left:52px;width:18px;height:18px;background:var(--card);border-left:2px solid var(--accent);border-top:2px solid var(--accent);transform:rotate(45deg)}
+  .bubble.pop{animation:pop .32s cubic-bezier(.2,.9,.3,1.25)}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .stepno{font-size:.88rem;color:var(--accent);font-weight:700}
+  .title{font-size:1.2rem;font-weight:700;margin:2px 0 8px}
+  .text{font-size:1.06rem;line-height:1.65;margin:0;max-width:80ch}
+  .after{margin:10px 0 0;font-weight:700;color:var(--accent)}
+  .term{background:var(--accent-soft);color:#2c3796;padding:1px 6px;border-radius:6px;white-space:nowrap}
+  .term.correct{background:var(--good-soft);color:var(--good)}
+  .term.revealed{background:var(--warn-soft);color:var(--warn)}
+  input.blank,input.pred{font:700 1rem var(--font);border:0;border-bottom:2px solid var(--accent);background:#f3f4fd;padding:2px 6px;border-radius:6px 6px 0 0;color:var(--ink);min-width:3em;max-width:100%}
+  input.blank:focus,input.pred:focus{outline:2px solid var(--accent);outline-offset:1px;background:var(--accent-soft)}
+  input.wrong{border-bottom-color:var(--bad);background:var(--bad-soft);animation:shake .32s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .check-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+  .check-row[hidden]{display:none}
+  a.btn{text-decoration:none;display:inline-block}
+  .btn{font:700 .96rem var(--font);border-radius:999px;padding:9px 20px;cursor:pointer;border:2px solid var(--accent)}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.secondary{background:#fff;color:var(--accent)}
+  .btn:disabled{opacity:.38;cursor:not-allowed}
+  .feedback{font-weight:700;font-size:.96rem;margin-top:10px;min-height:1.2em}
+  .feedback:empty{min-height:0;margin:0}
+  .feedback.good{color:var(--good)} .feedback.bad{color:var(--bad)} .feedback.warn{color:var(--warn)}
+  .bubble-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+  .more-btn{font:700 .92rem var(--font);border-radius:999px;padding:7px 14px;cursor:pointer;border:2px solid #cbbdf2;background:var(--more-soft);color:var(--more)}
+  .more-note{font-size:.84rem;color:var(--muted)}
+
+  .overlay{position:fixed;inset:0;background:rgba(29,36,51,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+  .overlay[hidden]{display:none}
+  .panel{background:#fff;border-radius:18px;max-width:680px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;border-top:6px solid var(--more)}
+  .panel .ptag{display:inline-block;background:var(--more-soft);color:var(--more);font-weight:700;font-size:.85rem;border-radius:999px;padding:4px 12px}
+  .panel h2{margin:10px 0 8px;font-size:1.3rem}
+  .panel h3{font-size:1.02rem;margin:14px 0 4px;color:var(--more)}
+  .panel p{margin:0 0 8px;line-height:1.6}
+  .panel .close{margin-top:10px}
+
+  .lab{margin-top:4px;display:grid;gap:12px}
+  .opsel{display:flex;flex-wrap:wrap;gap:8px}
+  .opsel button{font:700 .95rem var(--font);border-radius:12px;padding:8px 14px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+  .opsel button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:#2c3796}
+  .opsel .x{display:block;font-size:.72rem;color:var(--more);font-weight:700}
+  .xtag{background:var(--more-soft);color:var(--more);border-radius:10px;padding:8px 12px;font-weight:700;font-size:.9rem}
+  .toggles{display:flex;flex-wrap:wrap;gap:10px}
+  .tog{display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:14px;padding:8px 12px;background:#fff;cursor:pointer;font:700 .98rem var(--font);color:var(--ink)}
+  .tog .sw{width:44px;height:24px;border-radius:12px;background:#cfd5df;position:relative;transition:background .2s}
+  .tog .sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+  .tog[aria-pressed="true"] .sw{background:var(--good)}
+  .tog[aria-pressed="true"] .sw::after{left:23px}
+  .tog:disabled{opacity:.5;cursor:not-allowed}
+  .readout{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border-radius:999px;padding:5px 12px;font-weight:700;font-size:.9rem;background:#eef1f5}
+  .chip.on{background:var(--good-soft);color:var(--good)} .chip.off{background:var(--bad-soft);color:var(--bad)} .chip.low{background:var(--warn-soft);color:var(--warn)}
+  .explain{font-size:1rem;line-height:1.55;margin:0}
+  .predict{background:#fff8e6;border:1px solid #f0d99a;border-radius:12px;padding:10px 12px;line-height:1.9}
+
+  nav.stepnav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .dots{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;flex:1;align-items:center}
+  .dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:#fff;font:700 .72rem var(--font);color:var(--muted);cursor:pointer;padding:0}
+  .dot.seen{border-color:var(--accent);color:var(--accent)}
+  .dot.current{background:var(--accent);border-color:var(--accent);color:#fff}
+  .dot:disabled{opacity:.35;cursor:not-allowed}
+  .gap{width:8px}
+  .navbtns{display:flex;gap:8px}
+  [hidden]{display:none !important}
+  button:focus-visible{outline:3px solid #f2b134;outline-offset:2px}
+  @media (max-width:640px){
+    h1{font-size:1.3rem}
+    .dot{width:22px;height:22px;font-size:.62rem}
+    .text{font-size:1rem}
+    .bubble{padding:14px}
+    .tabs button{padding:8px 10px;font-size:.92rem}
+  }
+  @media (prefers-reduced-motion:reduce){ .bubble.pop,input.wrong,tr.new td{animation:none} }
+
+  .subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;align-items:center}
+  .subtabs .lbl{font-size:.85rem;font-weight:700;color:var(--muted);margin-right:4px}
+  .subtabs button{font:700 .9rem var(--font);border-radius:999px;padding:6px 14px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+  .subtabs button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
+  .subtabs button.bonus{border-style:dashed;border-color:#b9a6ee;color:var(--more)}
+  .subtabs button.bonus[aria-pressed="true"]{background:var(--more);border-color:var(--more);color:#fff}
+  .labgroup{font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:-6px}
+  .card.bonus{border-style:dashed;border-color:#b9a6ee}
+  .card .tag{font-size:.8rem;font-weight:700;color:var(--more)}
+  .note{background:#eef6ff;border:1px solid #bcd6f5;border-radius:12px;padding:10px 12px;font-size:.95rem;line-height:1.5}
+  .radios{display:flex;flex-wrap:wrap;gap:8px}
+  .radios button{font:700 .9rem var(--font);border-radius:12px;padding:7px 12px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+  .radios button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:#2c3796}
+  .radios button:disabled,.opsel button:disabled{opacity:.5;cursor:not-allowed}
+  .rowlbl{font-size:.85rem;font-weight:700;color:var(--muted)}
+  .labrow{display:grid;gap:6px}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .uvbtn[aria-pressed="true"]{background:#2d2450;color:#b9ff9e;border-color:#2d2450}
+
+  table.codon{min-width:560px} table.codon td,table.codon th{vertical-align:top;padding:6px}
+  .cc{font-size:.84rem;padding:2px 5px;border-radius:5px;white-space:nowrap}
+  .cc.start{background:#e1f3e8} .cc.stopc{background:#fbe8e7} .cc.ours{outline:2px solid #3f4cc0}
+  .bt{font-size:14px;font-weight:700;text-anchor:middle}
+
+  .backlink{display:inline-block;font-size:.88rem;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:4px}
+  .backlink::before{content:"\2190  "}
+
+  /* SVG text */
+  .t12{font-size:12px;font-weight:700;fill:#343b4a}
+  .t13{font-size:13px;font-weight:700;fill:#343b4a}
+  .t15{font-size:15px;font-weight:700;fill:#343b4a}
+  .t18{font-size:18px;font-weight:700;fill:#343b4a}
+  .mid{text-anchor:middle} .end{text-anchor:end}
+  .muted{fill:#5a6376} .it{font-style:italic}
+  .wht{fill:#fff}
+  .grn{fill:#1b7f4e} .red{fill:#b83a34} .blu{fill:#3f4cc0} .pur{fill:#6b4bb8}
+
+  /* ===== Study helpers (hint, checkmarks, bridge) ===== */
+  input.blank{border:2px solid var(--accent);border-bottom-width:3px;background:#fff7d6;border-radius:8px;padding:3px 8px;animation:blankpulse 1.8s ease-in-out infinite}
+  input.blank:focus{animation:none;background:#fff}
+  input.blank::placeholder{color:#9a8a55;letter-spacing:.12em;font-weight:700}
+  @keyframes blankpulse{0%,100%{box-shadow:0 0 0 0 rgba(63,76,192,.0)}50%{box-shadow:0 0 0 5px rgba(63,76,192,.18)}}
+  .btn.hint{border-color:#e5c56a;background:#fff8e6;color:#8a5a00}
+  .dot{position:relative}
+  body:has(#testBtn[aria-pressed="true"]) .dot.seen::after{content:"\2713";position:absolute;right:-5px;top:-6px;width:14px;height:14px;border-radius:50%;background:var(--good);color:#fff;font-size:.56rem;line-height:14px;text-align:center;box-shadow:0 0 0 2px var(--page)}
+  .bridge{margin-top:14px;border:2px dashed #b9a6ee;background:var(--more-soft);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .bridge b{color:var(--more);margin-right:6px}
+  .bridge[hidden]{display:none}
+  .donetoast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:30}
+  @media (prefers-reduced-motion:reduce){ input.blank{animation:none} }
+
+  /* ===== Hands-on gates ===== */
+  .gate{margin-top:14px;border:2px solid #f0d99a;background:#fffbef;border-radius:14px;padding:12px 14px;display:grid;gap:10px}
+  .gate.done{border-color:#9fd3b5;background:var(--good-soft)}
+  .gate .gtitle{font-weight:700;color:#8a5a00}
+  .gate.done .gtitle{color:var(--good)}
+  .gate .gmsg{font-weight:700;min-height:1.2em;font-size:.95rem}
+  .gate .gmsg.bad{color:var(--bad)} .gate .gmsg.good{color:var(--good)}
+  .gb{display:inline-grid;place-items:center;width:30px;height:32px;border-radius:7px;color:#fff;font:700 1rem var(--font);border:0;padding:0}
+  .gbA{background:#2f9e63} .gbT{background:#d9534f} .gbG{background:#f2b134;color:#3b2a00} .gbC{background:#3b7dd8} .gbU{background:#8e5bd0}
+  .gslot{display:inline-grid;place-items:center;width:30px;height:32px;border-radius:7px;border:2px dashed #c9cfdb;background:#fff;color:#b3bac7;font-weight:700}
+  .gslot.cur{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .grow{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .grow .glbl{font-size:.82rem;font-weight:700;color:var(--muted);min-width:118px}
+  .gkeys{display:flex;gap:8px;flex-wrap:wrap}
+  .gkeys button{width:46px;height:44px;border-radius:10px;font-size:1.1rem;cursor:pointer}
+  .gkeys button:hover{filter:brightness(1.08)}
+  .shelf{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .trna{touch-action:none;user-select:none;cursor:grab;display:grid;justify-items:center;gap:0;padding:8px 10px 10px;border:2px solid var(--line);border-radius:14px;background:#fff;min-width:96px}
+  .trna:hover{border-color:var(--accent)}
+  .trna.drag{position:fixed;z-index:50;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.28);cursor:grabbing}
+  .trna.ghost{opacity:.3}
+  .trna.nope{animation:shake .32s;border-color:var(--bad)}
+  .trna .aab{border-radius:999px;background:#fdeee5;border:2px solid #e8744f;color:#a8461f;font-weight:700;font-size:.85rem;padding:3px 10px}
+  .trna .stem{width:8px;height:22px;background:#c7b3ee}
+  .trna .body{background:#efe7fb;border:2px solid #b9a6ee;border-radius:10px;padding:5px 6px;display:flex;gap:2px}
+  .trna .aclbl{font-size:.7rem;color:var(--muted);font-weight:700;margin-top:3px}
+  .dropzone{border:2px dashed var(--accent);border-radius:14px;padding:10px 14px;background:#f3f4fd;display:grid;gap:6px;justify-items:start;min-width:220px}
+  .dropzone.over{background:var(--accent-soft);box-shadow:0 0 0 4px var(--accent-soft)}
+  .dropzone.filled{border-style:solid;border-color:var(--good);background:var(--good-soft)}
+  .bondrow{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+  .aachip{border-radius:999px;font-weight:700;padding:6px 14px;border:2px solid #2f9e63;background:#e1f3e8;color:#1b7f4e}
+  .aachip.new{border-color:#e8744f;background:#fdeee5;color:#a8461f}
+  .bondgap{position:relative;width:70px;height:6px;margin:0 4px;background:repeating-linear-gradient(90deg,#c9cfdb 0 6px,transparent 6px 12px)}
+  .bondgap.made{background:#343b4a;height:5px}
+  .spark{position:absolute;left:50%;top:50%;width:46px;height:46px;transform:translate(-50%,-50%) scale(0);background:radial-gradient(circle,#fff6b0 0 25%,#f2b134 26% 45%,transparent 46%);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);animation:spark .7s ease-out}
+  @keyframes spark{0%{transform:translate(-50%,-50%) scale(0) rotate(0)}50%{transform:translate(-50%,-50%) scale(1.3) rotate(40deg)}100%{transform:translate(-50%,-50%) scale(0) rotate(80deg);opacity:0}}
+  @media (prefers-reduced-motion:reduce){ .spark{animation:none;display:none} .trna.nope{animation:none} }
+</style>
+</head>
+<body data-next='[["Mutations", "mutations.html"], ["Post-transcriptional control", "posttranscriptional-control.html"]]'>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="backlink" href="index.html">All modules</a>
+      <h1>Translation: mRNA to Protein</h1>
+      <div class="sub">BIOL 112 Microbiology, Chapter 8: how ribosomes read the genetic code</div>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="learnBtn" aria-pressed="true">Learn</button>
+        <button id="testBtn" aria-pressed="false">Test</button>
+      </div>
+      <button class="ghost" id="chartBtn">Codon chart</button>
+      <button class="ghost" id="restartBtn">Restart</button>
+    </div>
+  </header>
+  <p class="modehint" id="modeHint"></p>
+
+  <div class="stage">
+    <svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="Animated diagram of translation"></svg>
+  </div>
+  <div class="tablewrap" id="tableWrap" hidden></div>
+
+  <section class="bubble" id="bubble" aria-live="polite">
+    <div class="stepno" id="stepNo"></div>
+    <div class="title" id="stepTitle"></div>
+    <p class="text" id="stepText"></p>
+    <p class="after" id="stepAfter" hidden></p>
+    <div class="gate" id="gate" hidden></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="check-row" id="checkRow" hidden>
+      <button class="btn primary" id="checkBtn">Check</button>
+      <button class="btn secondary" id="moveOnBtn">Move on</button>
+    </div>
+    <div class="bubble-foot" id="bubbleFoot"></div>
+  </section>
+
+  <nav class="stepnav">
+    <div class="navbtns"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="replayBtn">Replay</button></div>
+    <div class="dots" id="dots"></div>
+    <div class="navbtns"><button class="btn primary" id="nextBtn">Next</button></div>
+  </nav>
+</div>
+
+<div class="overlay" id="moreOverlay" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
+    <span class="ptag" id="moreTag">Learn more: just for the curious, not on the exam</span>
+    <h2 id="moreTitle"></h2>
+    <div id="moreBody"></div>
+    <button class="btn primary close" id="moreClose">Back to the module</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ================= Helpers ================= */
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t) => a + (b - a) * t;
+  const smooth = t => { t = clamp(t,0,1); return t * t * (3 - 2 * t); };
+  const seg = (t,a,b) => clamp((t - a) / (b - a), 0, 1);
+  const f1 = v => (+v).toFixed(1);
+  const f3 = v => (+v).toFixed(3);
+  const BLUE = "#3f4cc0", RED = "#d9443a", GREEN = "#2f9e63", ORANGE = "#e8744f";
+  const BASE = {A:["#2f9e63","#fff"], U:["#8e5bd0","#fff"], G:["#f2b134","#3b2a00"], C:["#3b7dd8","#fff"], "?":["#c9cfdb","#343b4a"]};
+
+  /* ================= The genetic code ================= */
+  const B4 = "UCAG", ONE = "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG";
+  const THREE = {F:"Phe",L:"Leu",S:"Ser",Y:"Tyr","*":"Stop",C:"Cys",W:"Trp",P:"Pro",H:"His",Q:"Gln",R:"Arg",I:"Ile",M:"Met",T:"Thr",N:"Asn",K:"Lys",V:"Val",A:"Ala",D:"Asp",E:"Glu",G:"Gly"};
+  const CODE = {}; { let n = 0; for (const a of B4) for (const b of B4) for (const c of B4) CODE[a + b + c] = THREE[ONE[n++]]; }
+
+  /* ================= Our mRNA (same one built in the Transcription module) ================= */
+  const MRNA = "AUGGCAUUCGGAUAA";
+  const CODONS = [0,1,2,3,4].map(k => MRNA.substr(k * 3, 3));
+  const AAS = ["Met","Ala","Phe","Gly"];
+  const ANTI = ["UAC","CGU","AAG","CCU"];
+  const AACOL = {Met:"#f2b134", Ala:"#2f9e63", Phe:"#3b7dd8", Gly:"#8e5bd0"};
+  const BX = j => 190 + j * 36 + Math.floor(j / 3) * 12;
+  const CX = k => BX(3 * k + 1);
+
+  /* ================= Shapes ================= */
+  function tile(x, y, b, op){ const c = BASE[b] || BASE["?"]; return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - 15)}" y="${f1(y)}" width="30" height="30" rx="6" fill="${c[0]}"/><text x="${f1(x)}" y="${f1(y + 20)}" class="bt" fill="${c[1]}">${b}</text></g>`; }
+  function pill(x, y, text, fill, op){ const w = text.length * 7.2 + 18; return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - w/2)}" y="${f1(y - 14)}" width="${f1(w)}" height="24" rx="12" fill="${fill}"/><text x="${f1(x)}" y="${f1(y + 3)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">${text}</text></g>`; }
+  function bead(x, y, aa, op, r){ r = r || 15; return `<g opacity="${f3(op === undefined ? 1 : op)}"><circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="${AACOL[aa] || "#9aa3b5"}" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + r * .28)}" font-size="${r > 20 ? 14 : 10}" font-weight="700" fill="${aa === "Met" ? "#3b2a00" : "#fff"}" text-anchor="middle">${aa}</text></g>`; }
+  function trna(i, x, ty, op, showAA, antiShown){
+    const y = ty;
+    const anti = antiShown ? ANTI[i] : "???";
+    let o = `<g opacity="${f3(op)}">`;
+    o += `<path d="M${f1(x - 13)},${f1(300 + y)} V${f1(250 + y)} M${f1(x + 13)},${f1(300 + y)} V${f1(250 + y)}" stroke="#2c8f8a" stroke-width="5"/>`;
+    o += `<rect x="${f1(x - 13)}" y="${f1(196 + y)}" width="26" height="106" rx="10" fill="#4fb3ad"/>`;
+    o += `<circle cx="${f1(x - 32)}" cy="${f1(236 + y)}" r="15" fill="#4fb3ad"/><circle cx="${f1(x + 32)}" cy="${f1(236 + y)}" r="15" fill="#4fb3ad"/>`;
+    for (let j = 0; j < 3; j++) o += tile(x + (j - 1) * 36, 302 + y, anti[j]);
+    o += `</g>`;
+    if (showAA > .01) o += bead(x, 180 + y, AAS[i], op * showAA);
+    return o;
+  }
+  function mrnaStrip(){
+    let o = `<path d="M112,338 H840" stroke="${ORANGE}" stroke-width="4"/>`;
+    for (let j = 0; j < MRNA.length; j++) o += tile(BX(j), 340, MRNA[j]);
+    o += `<text x="100" y="360" class="t15 mid muted">5'</text><text x="858" y="360" class="t15 mid muted">3'</text><text x="22" y="362" class="t13 muted">mRNA</text>`;
+    return o;
+  }
+
+  /* ================= Blanks ================= */
+  const BL = window.__BL = {
+    complementary:{show:"complementary", ans:["complementary","complement","matching","complimentary"], fuzzy:true},
+    ribosome:{show:"ribosome", ans:["ribosome","ribosomes"], fuzzy:true},
+    codon:{show:"codon", ans:["codon","codons"], fuzzy:true},
+    start:{show:"AUG", ans:["aug"], seq:true},
+    nonsense:{show:"nonsense", ans:["nonsense"], fuzzy:true},
+    anticodon:{show:"anticodon", ans:["anticodon","anticodons"], fuzzy:true},
+    rrna:{show:"rRNA", ans:["rrna","ribosomalrna"], fuzzy:true},
+    asite:{show:"A", ans:["a","asite","aminoacyl","aminoacylsite","arrival"]},
+    uac:{show:"UAC", ans:["uac"], seq:true},
+    cgu:{show:"CGU", ans:["cgu"], seq:true},
+    peptide:{show:"peptide", ans:["peptide","peptidebond"], fuzzy:true},
+    esite:{show:"E", ans:["e","esite","exit","exitsite"]},
+    nterm:{show:"N", ans:["n","nterminus","nterminal","amino","aminoterminus"]},
+    stop:{show:"stop", ans:["stop","nonsense","stopcodon"], fuzzy:true},
+    complete:{show:"complete", ans:["complete","completed","finished","finish","done","over"], fuzzy:true}
+  };
+
+  /* ================= Scene states ================= */
+  const TKEYS = ["x","y","o","a"];
+  function S(spec){
+    spec = spec || {};
+    const st = {asmS:spec.asmS || 0, asmL:spec.asmL || 0, rp:spec.rp || 0, chainX:spec.chainX || CX(0), chainN:spec.chainN || 0, chainFree:spec.chainFree || 0, protein:spec.protein || 0, stopPill:spec.stopPill || 0};
+    for (let i = 0; i < 4; i++){
+      const m = (spec.t || {})[i];
+      let x = CX(i) + 170, y = -240, o = 0;
+      if (m === "dock" || m === "dock0"){ x = CX(i); y = 0; o = 1; }
+      if (m === "float"){ x = CX(i) + 20; y = -95; o = 1; }
+      if (m === "exit"){ x = CX(i) - 170; y = -240; o = 0; }
+      st["x" + i] = x; st["y" + i] = y; st["o" + i] = o; st["a" + i] = m === "dock0" ? 0 : 1;
+    }
+    return st;
+  }
+  const ASM = {asmS:1, asmL:1};
+  const F_OVER = S({});
+  const F_RIBO = S(ASM);
+  const F_TFLOAT = S({t:{0:"float"}});
+  const F_TDOCK = S({t:{0:"dock"}});
+  const F_INIT = S({...ASM, t:{0:"dock"}});
+  const F_ARRIVE = S({...ASM, t:{0:"dock", 1:"dock"}});
+  const F_BOND1 = S({...ASM, t:{0:"dock0", 1:"dock0"}, chainX:CX(1), chainN:2});
+  const F_MOVE1 = S({...ASM, rp:1, t:{0:"dock0", 1:"dock0"}, chainX:CX(1), chainN:2});
+  const F_EXIT1 = S({...ASM, rp:1, t:{0:"exit", 1:"dock0"}, chainX:CX(1), chainN:2});
+  const R = [
+    S({...ASM, rp:1, t:{1:"dock0", 2:"dock"}, chainX:CX(1), chainN:2}),
+    S({...ASM, rp:1, t:{1:"dock0", 2:"dock0"}, chainX:CX(2), chainN:3}),
+    S({...ASM, rp:2, t:{1:"dock0", 2:"dock0"}, chainX:CX(2), chainN:3}),
+    S({...ASM, rp:2, t:{1:"exit", 2:"dock0"}, chainX:CX(2), chainN:3}),
+    S({...ASM, rp:2, t:{2:"dock0", 3:"dock"}, chainX:CX(2), chainN:3}),
+    S({...ASM, rp:2, t:{2:"dock0", 3:"dock0"}, chainX:CX(3), chainN:4}),
+    S({...ASM, rp:3, t:{2:"dock0", 3:"dock0"}, chainX:CX(3), chainN:4}),
+    S({...ASM, rp:3, t:{2:"exit", 3:"dock0"}, chainX:CX(3), chainN:4})
+  ];
+  const TERM = [
+    S({...ASM, rp:3, t:{3:"dock0"}, chainX:CX(3), chainN:4, stopPill:1}),
+    S({...ASM, rp:3, t:{3:"exit"}, chainX:CX(3), chainN:4, chainFree:1, stopPill:1}),
+    S({rp:3, t:{3:"exit"}, chainX:CX(3), chainN:4, chainFree:1, protein:1})
+  ];
+  const M = (frames, flags, pre) => ({scene:"main", frames, flags:flags || {}, pre});
+  const TBL_CMP = {cap:"Translation in prokaryotes vs. eukaryotes", head:["Feature","Prokaryotes","Eukaryotes"], order:["a","b","c","d"], rows:{
+    a:["Location","Cytoplasm","Cytoplasm (after mRNA leaves the nucleus)"],
+    b:["Timing","Can begin before transcription is complete (coupled transcription and translation)","Begins only after transcription is complete and the mRNA is processed"],
+    c:["mRNA processing","No processing needed: mRNA is used directly","mRNA must be processed (introns removed, exons spliced) first"],
+    d:["Compartments","Transcription and translation happen in the same place","Transcription (nucleus) is separated from translation (cytoplasm)"]}};
+
+  /* ================= Learn more ================= */
+  const MORE = {
+    ribosome:{title:"Ribosomes, antibiotics, and a Nobel Prize", html:`<p>Bacterial ribosomes are 70S (a 30S small subunit plus a 50S large subunit). Eukaryotic ribosomes in the cytoplasm are 80S (40S plus 60S). The "S" is a Svedberg unit that measures how fast something sinks in a centrifuge, which is why 30 + 50 doesn't add up to 70!</p><p>That size difference is a gift to medicine. Many antibiotics hit the bacterial 70S ribosome but leave ours mostly alone: aminoglycosides like streptomycin and tetracyclines bind the 30S subunit, while macrolides like erythromycin and chloramphenicol bind the 50S. Venki Ramakrishnan, Thomas Steitz, and Ada Yonath won the 2009 Nobel Prize in Chemistry for revealing the ribosome's atomic structure.</p>`},
+    codon:{title:"How we cracked the code", html:`<p>In 1961, Crick and Brenner used frameshift mutations in a bacteriophage to show the code is read in non-overlapping groups of three. That same year, Marshall Nirenberg and Heinrich Matthaei fed an artificial mRNA made only of U's (UUUUUU...) to a cell-free extract and got a protein made only of phenylalanine. UUU = Phe was the first codon ever decoded.</p><p>Every mRNA has three possible reading frames depending on where you start counting. The start codon sets the frame, which is why insertions and deletions (frameshift mutations) scramble everything downstream.</p>`},
+    code:{title:"Exceptions to a (nearly) universal code", html:`<p>The genetic code is almost the same in every living thing, but not quite. In human mitochondria and in <i>Mycoplasma</i>, UGA codes for tryptophan instead of stop.</p><p>There are also two bonus amino acids. Selenocysteine (the 21st) is inserted at special UGA codons, and pyrrolysine (the 22nd, found in some archaea and bacteria) is inserted at UAG. Most of the code's redundancy sits in the third codon position, so many single-letter changes there are silent mutations.</p>`},
+    trna:{title:"The real translators: aminoacyl-tRNA synthetases", html:`<p>A tRNA is about 76 nucleotides long. On paper it's drawn as a cloverleaf, but in 3D it folds into an L shape with the anticodon at one end and the amino acid attachment site (the CCA end) at the other.</p><p>Enzymes called aminoacyl-tRNA synthetases load each tRNA with the correct amino acid, using ATP. There's roughly one synthetase per amino acid, and many can proofread and remove a wrong amino acid. The ribosome only checks codon-anticodon pairing, so if a synthetase makes a mistake, the wrong amino acid goes in!</p><p>Thanks to "wobble" pairing at the third codon position, cells get by with fewer tRNAs than the 61 amino acid codons.</p>`},
+    anatomy:{title:"What's a ribosome made of?", html:`<p>The E. coli 30S subunit has the 16S rRNA plus about 21 proteins. The 50S subunit has the 23S and 5S rRNAs plus about 33 proteins. About two-thirds of the ribosome's mass is RNA.</p><p>The growing protein threads out through a tunnel in the large subunit about 100 \u00c5 long, so the first 30 to 40 amino acids of a new protein are hidden inside the ribosome.</p>`},
+    init:{title:"How bacteria find the start codon", html:`<p>A few bases upstream of the start codon, bacterial mRNAs have a Shine-Dalgarno sequence (something like AGGAGG). It base-pairs with the 16S rRNA in the small subunit and lines the start codon up in the P site.</p><p>In bacteria, the first tRNA actually carries a modified methionine called formylmethionine (fMet). Proteins called initiation factors (IF1, IF2, and IF3) guide assembly, with IF2 using GTP for energy. Eukaryotes do it differently: the small subunit grabs the 5' cap and scans along the mRNA until it hits the first AUG.</p>`},
+    arrive:{title:"Accuracy at the A site", html:`<p>In bacteria, each incoming tRNA is escorted to the A site by a protein called EF-Tu, bound to GTP. The ribosome checks the codon-anticodon match before EF-Tu splits its GTP and lets go, which gives a chance to reject the wrong tRNA.</p><p>The result: ribosomes make roughly one mistake per 10,000 amino acids.</p>`},
+    bond:{title:"The ribosome is a ribozyme", html:`<p>The peptide bond is made by the peptidyl transferase center in the large subunit, and that active site is made of rRNA, not protein. The ribosome is an RNA enzyme (a ribozyme), a big clue that life may have started in an RNA world.</p><p>The antibiotic puromycin looks like the end of a loaded tRNA. The ribosome attaches it to the growing chain by mistake, and the unfinished protein falls off.</p>`},
+    move:{title:"Translocation and speed", html:`<p>Moving the ribosome one codon is powered by elongation factor G (EF-G) using GTP. The antibiotic fusidic acid works by trapping EF-G on the ribosome.</p><p>Bacterial ribosomes add about 15 to 20 amino acids per second. Eukaryotic ribosomes are slower, around 5 per second.</p>`},
+    repeat:{title:"Polysomes and protein folding", html:`<p>Many ribosomes can translate the same mRNA at once, spaced along it like beads on a string. This is called a polysome, and it lets one mRNA make lots of protein quickly.</p><p>As the new chain comes out of the ribosome, helper proteins called chaperones (like trigger factor and DnaK in E. coli) help it fold into the right 3D shape.</p>`},
+    term:{title:"Release factors: proteins that act like tRNAs", html:`<p>No tRNA reads a stop codon. Instead, proteins called release factors fit into the A site. In bacteria, RF1 recognizes UAA and UAG, and RF2 recognizes UAA and UGA. They trigger the ribosome to cut the finished protein loose.</p><p>A nonsense mutation creates an early stop codon and makes a shortened protein. Some drugs are being developed to help ribosomes read through early stop codons in genetic diseases.</p>`},
+    compare:{title:"The expressome", html:`<p>In E. coli, the first ribosome on a new mRNA can ride right behind RNA polymerase, and cryo-EM structures show the two machines can physically touch. Scientists call this combo the expressome.</p><p>Eukaryotes add quality control instead: mRNAs with early stop codons are often destroyed by nonsense-mediated decay before they can make shortened proteins.</p>`}
+  };
+
+  /* ================= Steps ================= */
+  const P1 = "The genetic code", P2 = "Initiation", P3 = "Elongation", P4 = "Termination and beyond";
+  const STEPS = [
+    {part:P1, title:"From mRNA to protein", v:M([F_OVER], {subLabels:true}), more:"ribosome", links:[["Transcription module","transcription.html"]],
+     text:`Translation is the process where the base sequence of an mRNA is used to build the amino acid sequence of a protein. It happens at the {{ribosome}}, a machine made of two subunits. This is the same mRNA you built in the Transcription module: 5'-AUG GCA UUC GGA UAA-3'. Let's read it!`},
+    {part:P1, title:"Reading in threes", v:M([F_OVER], {codons:true}), more:"codon",
+     text:`The ribosome reads mRNA three bases at a time. Each three-base sequence is called a {{codon}}, and each codon specifies one amino acid (or tells the ribosome to stop). mRNA is read from the 5' end to the 3' end.`},
+    {part:P1, title:"The genetic code", v:{scene:"code"}, more:"code",
+     text:`The genetic code is the relationship between DNA, mRNA codons, and amino acids. Translation always begins at the start codon, {{start}}, which codes for methionine (Met). Three codons, UAA, UAG, and UGA, don't code for any amino acid. These stop codons are also called {{nonsense}} codons. There are 64 codons but only 20 amino acids, so most amino acids have more than one codon. Tap "Codon chart" up top to see them all!`},
+    {part:P1, title:"Meet the ribosome", v:M([F_RIBO], {subLabels:true}), more:"anatomy",
+     text:`A ribosome has two subunits, one small and one large, that clamp around the mRNA. Both are made of {{rrna}} (ribosomal RNA) and proteins. Inside are three docking sites. New tRNAs carrying amino acids arrive at the {{asite}} site. The P site holds the tRNA with the growing polypeptide chain. The E site is where empty tRNAs exit.`},
+    {part:P1, title:"tRNA: the delivery driver", v:M([F_TFLOAT, F_TDOCK], {trnaLabels:true}), pre:M([F_TFLOAT], {trnaLabels:true}), more:"trna",
+     text:`Transfer RNA (tRNA) delivers amino acids to the ribosome. One end carries an amino acid. The other end has three bases called the {{anticodon}}, which pairs with a matching codon on the mRNA using base pairing rules (A with U, G with C). That's how the right amino acid lands in the right spot.`},
+    {part:P2, title:"Initiation: assembling at the start codon", v:M([S({asmS:1, t:{0:"dock"}}), F_INIT]), more:"init",
+     text:`Translation starts when the two ribosomal subunits, the mRNA, and the first tRNA come together. The start codon is AUG, so the first tRNA has the anticodon {{uac}} and carries methionine. The start codon is positioned properly in the P site, and the ribosome is ready to go!`},
+    {part:P3, title:"Elongation: a new tRNA arrives", v:M([F_ARRIVE]), more:"arrive", gate:"trna",
+     text:`The next codon, GCA, sits in the empty A site. Only a tRNA whose anticodon is {{complementary}} to the codon can pair with it. Look at the codon, then find the tRNA whose anticodon pairs with every base.`},
+    {part:P3, title:"Making a peptide bond", v:M([F_BOND1], {bond:true}), more:"bond", gate:"bond",
+     text:`Now the ribosome links methionine to alanine with a {{peptide}} bond. The growing chain (Met-Ala) is now attached to the tRNA in the A site, and the tRNA in the P site is empty.`},
+    {part:P3, title:"The ribosome moves", v:M([F_MOVE1, F_EXIT1]), more:"move",
+     text:`The ribosome slides one codon toward the 3' end of the mRNA. The tRNA holding the chain shifts into the P site, the empty tRNA shifts into the {{esite}} site and exits, and the A site opens up for the next codon.`},
+    {part:P3, title:"Repeat, repeat, repeat!", v:M(R, {ends:true}), more:"repeat",
+     text:`Elongation keeps cycling: a tRNA arrives, a peptide bond forms, and the ribosome moves. UUC brings phenylalanine (Phe) and GGA brings glycine (Gly). Proteins are built in one direction. Met, the first amino acid, is the {{nterm}}-terminus, and new amino acids are always added to the C-terminus end.`,
+     after:`mRNA is read 5' to 3'. Proteins are built N-terminus to C-terminus.`},
+    {part:P4, title:"Termination: the stop codon", v:M(TERM), more:"term",
+     text:`Finally, the stop codon UAA reaches the A site. No tRNA has an anticodon that matches a {{stop}} codon, so no new amino acid arrives. The finished polypeptide is released, the last tRNA leaves, and the two ribosomal subunits come apart. Your new protein: Met-Ala-Phe-Gly!`},
+    {part:P4, title:"Prokaryotes vs. eukaryotes", v:{scene:"compare"}, more:"compare", table:TBL_CMP, links:[["Transcription module","transcription.html"],["Pre-transcriptional control module","pretranscriptional-control.html"]],
+     text:`Bacteria have no nucleus, so transcription and translation happen in the same place, the cytoplasm. Ribosomes can hop onto an mRNA and start translating before transcription is even {{complete}}. In eukaryotes, the mRNA is made and processed in the nucleus first, then exported to ribosomes in the cytoplasm.`,
+     after:`You just went from DNA to protein. Amazing work!`}
+  ];
+  const LAST = STEPS.length - 1;
+
+  /* ================= State ================= */
+  let mode = "learn", idx = 0, furthest = 0, bl = {};
+  let vis = STEPS[0].v, visKey = "", frozen = false;
+  let cur = {...F_OVER}, queue = [], tw = null, sceneT = 0;
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = id => document.getElementById(id);
+  const svg = $("scene"), textEl = $("stepText"), afterEl = $("stepAfter"), fb = $("feedback"), checkRow = $("checkRow");
+  const nextBtn = $("nextBtn"), backBtn = $("backBtn"), bubble = $("bubble");
+  const resolved = id => mode === "learn" || !!bl[id];
+  const blanksOf = st => (st.text.match(/\{\{(\w+)\}\}/g) || []).map(m => m.slice(2, -2));
+  const stepResolved = i => (mode === "learn" || blanksOf(STEPS[i]).every(id => bl[id])) && gateDone(i);
+  /* ================= Hands-on gates ================= */
+  const gates = {};
+  const gateDone = i => !STEPS[i].gate || !!gates[i];
+  function passGate(){ gates[idx] = true; renderGate(); if (stepResolved(idx)) resolvedNow(); else updateButtons(); }
+  function gateMsg(t, cls){ const m = document.getElementById("gateMsg"); if (m){ m.className = "gmsg " + (cls || ""); m.innerHTML = t; } }
+  function renderGate(){
+    const g = document.getElementById("gate"), st = STEPS[idx];
+    if (!g) return;
+    if (!st.gate){ g.hidden = true; g.innerHTML = ""; return; }
+    g.hidden = false;
+    const G = GATES[st.gate];
+    g.className = "gate" + (gates[idx] ? " done" : "");
+    if (gates[idx]){ g.innerHTML = `<div class="gtitle">\u2713 ${G.doneText}</div>`; return; }
+    g.innerHTML = `<div class="gtitle">${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
+    G.wire(g);
+  }
+  const PAIR = {A:"U", U:"A", G:"C", C:"G"};
+  const gtile = (b) => `<span class="gb gb${b}">${b}</span>`;
+  const GATES = {
+    trna:{
+      title:"Your turn: drag the matching tRNA into the A site",
+      doneText:"Match! The tRNA with anticodon CGU pairs with GCA and brings alanine.",
+      html:() => {
+        const cards = [["AAG","Phe"],["CGU","Ala"],["CCU","Gly"]];
+        return `<div class="shelf">${cards.map(c => `<div class="trna" data-ac="${c[0]}" data-aa="${c[1]}" role="button" tabindex="0" aria-label="tRNA with anticodon ${c[0]} carrying ${c[1]}"><span class="aab">${c[1]}</span><span class="stem"></span><span class="body">${[...c[0]].map(gtile).join("")}</span><span class="aclbl">anticodon</span></div>`).join("")}
+          <div class="dropzone" id="dropZone"><div class="grow"><span class="glbl">A site codon (mRNA)</span>${[..."GCA"].map(gtile).join("")}</div><div class="grow"><span class="glbl">Anticodon needed</span><span class="gslot">?</span><span class="gslot">?</span><span class="gslot">?</span></div></div></div>`;
+      },
+      wire:g => {
+        const zone = g.querySelector("#dropZone");
+        const tryCard = card => {
+          const ac = card.dataset.ac, codon = "GCA";
+          const bad = [0,1,2].find(k => PAIR[codon[k]] !== ac[k]);
+          if (bad === undefined){ zone.classList.add("filled"); gateMsg("Every base pairs up: G with C, C with G, A with U.", "good"); setTimeout(passGate, 900); return; }
+          card.classList.remove("nope"); void card.offsetWidth; card.classList.add("nope");
+          gateMsg(`Not a match. Codon base ${bad + 1} is ${codon[bad]}, which needs ${PAIR[codon[bad]]}, but this tRNA has ${ac[bad]}. (That tRNA pairs with a different codon.)`, "bad");
+        };
+        g.querySelectorAll(".trna").forEach(card => {
+          card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); tryCard(card); } });
+          card.addEventListener("pointerdown", e => {
+            e.preventDefault();
+            const r = card.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+            let moved = false, clone = null;
+            const move = ev => {
+              if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6){ moved = true; clone = card.cloneNode(true); clone.classList.add("drag"); clone.style.width = r.width + "px"; document.body.appendChild(clone); card.classList.add("ghost"); }
+              if (clone){ clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px"; const z = zone.getBoundingClientRect(); zone.classList.toggle("over", ev.clientX > z.left && ev.clientX < z.right && ev.clientY > z.top && ev.clientY < z.bottom); }
+            };
+            const up = ev => {
+              document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up);
+              if (clone) clone.remove(); card.classList.remove("ghost");
+              const over = zone.classList.contains("over"); zone.classList.remove("over");
+              if (!moved || over) tryCard(card); else gateMsg("Drop it on the A site box.", "");
+            };
+            document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
+          });
+        });
+        gateMsg("Tip: the anticodon pairs with the codon: A with U, G with C. Drag a tRNA (or tap it).", "");
+      }
+    },
+    bond:{
+      title:"Your turn: form the peptide bond",
+      doneText:"Bond formed! Met-Ala is now attached to the tRNA in the A site.",
+      html:() => `<div class="bondrow"><span class="aachip">Met</span><span class="bondgap" id="bondGap"></span><span class="aachip new">Ala</span></div><div><button class="btn primary" id="bondBtn">Form peptide bond</button></div>`,
+      wire:g => {
+        g.querySelector("#bondBtn").addEventListener("click", e => {
+          e.target.disabled = true;
+          const gap = g.querySelector("#bondGap"); gap.classList.add("made"); gap.innerHTML = `<span class="spark"></span>`;
+          gateMsg("The rRNA in the large subunit links the amino acids together.", "good");
+          setTimeout(passGate, 1000);
+        });
+        gateMsg("Methionine (in the P site) is about to link to alanine (in the A site).", "");
+      }
+    }
+  };
+
+
+  /* ================= Tween with keyframes ================= */
+  function winFor(k, from, to){
+    if (k === "rp") return [0, .7];
+    if (k === "asmS") return [0, .6];
+    if (k === "asmL") return [.35, 1];
+    if (k === "chainX") return [.1, .9];
+    if (k === "chainFree" || k === "protein") return [0, 1];
+    const m = k.match(/^([xyoa])(\d)$/);
+    if (m){ const i = m[2]; if (to["o" + i] < from["o" + i]) return [.35, 1]; return [0, .85]; }
+    return [0, 1];
+  }
+  function startFrame(){
+    if (!queue.length){ tw = null; return; }
+    const to = queue.shift(), from = {...cur};
+    cur.chainN = to.chainN;
+    tw = {from, to, t0:performance.now(), dur:reduced ? 500 : 1500};
+  }
+  function playFrames(frames){ queue = frames.map(f => ({...f})); startFrame(); }
+  function stepTween(now){
+    if (!tw) return;
+    const p = clamp((now - tw.t0) / tw.dur, 0, 1);
+    for (const k in tw.to){ if (k === "chainN") continue; const w = winFor(k, tw.from, tw.to); cur[k] = lerp(tw.from[k], tw.to[k], smooth(seg(p, w[0], w[1]))); }
+    if (p >= 1) startFrame();
+  }
+  const lastFrame = v => v.frames[v.frames.length - 1];
+  function preDef(i){
+    const st = STEPS[i];
+    if (st.pre) return st.pre;
+    const p = STEPS[i - 1];
+    if (p && p.v.scene === "main" && st.v.scene === "main") return M([lastFrame(p.v)], p.v.flags);
+    return {...st.v, frozen:true};
+  }
+  function applyVisual(def, startFrom){
+    frozen = !!def.frozen;
+    const key = def.scene;
+    if (key !== visKey){
+      if (visKey){ svg.style.opacity = 0; setTimeout(() => { svg.style.opacity = 1; }, 200); }
+      visKey = key;
+      if (def.scene === "main"){ cur = {...(startFrom || def.frames[0])}; queue = []; tw = null; if (startFrom) playFrames(def.frames); }
+    } else if (def.scene === "main"){
+      if (startFrom){ cur = {...startFrom}; }
+      playFrames(def.frames);
+    }
+    vis = def;
+  }
+
+  /* ================= Main scene ================= */
+  function mainSVG(s, flags, t){
+    let o = "";
+    const xr = CX(s.rp);
+    // small subunit
+    const sy = 352 + (1 - s.asmS) * 58;
+    o += `<rect x="${f1(xr - 175 + (1 - s.asmS) * 110)}" y="${f1(sy)}" width="350" height="58" rx="28" fill="#e3a877" stroke="#c98c5a" stroke-width="2"/>`;
+    o += mrnaStrip();
+    if (flags.codons){
+      const hl = Math.floor(t / 1.2) % 5;
+      for (let k = 0; k < 5; k++){
+        const x1 = BX(3 * k) - 16, x2 = BX(3 * k + 2) + 16, on = k === hl;
+        o += `<path d="M${x1},378 v8 H${x2} v-8" fill="none" stroke="${on ? BLUE : "#9aa3b5"}" stroke-width="${on ? 3 : 2}"/><text x="${CX(k)}" y="${402}" class="t12 mid ${on ? "blu" : "muted"}">${resolved("codon") ? "Codon " + (k + 1) : "?"}</text>`;
+        if (on) o += `<rect x="${x1}" y="336" width="${x2 - x1}" height="38" rx="8" fill="none" stroke="${BLUE}" stroke-width="3"/>`;
+      }
+    }
+    // large subunit
+    const lx = xr - 185 + (1 - s.asmL) * 110, ly = 132 - (1 - s.asmL) * 126;
+    o += `<rect x="${f1(lx)}" y="${f1(ly)}" width="370" height="200" rx="70" fill="#d98a5a" fill-opacity=".2" stroke="#b8683c" stroke-width="3"/>`;
+    if (s.asmL > .8 && s.asmS > .8){
+      const sites = [["E", s.rp - 1], ["P", s.rp], ["A", s.rp + 1]];
+      sites.forEach(q => { const x = CX(q[1]); o += `<rect x="${f1(x - 40)}" y="420" width="80" height="24" rx="12" fill="#fff" stroke="#b8683c" opacity="${f3((s.asmL - .8) * 5)}"/><text x="${f1(x)}" y="437" class="t12 mid" opacity="${f3((s.asmL - .8) * 5)}">${q[0]} site</text>`; });
+    }
+    if (flags.subLabels){
+      o += `<text x="${f1(lx + 185)}" y="${f1(ly + (s.asmL > .8 ? 120 : 100))}" class="t15 mid" fill="#8a4a24" style="fill:#8a4a24">Large subunit</text>`;
+      o += `<text x="${f1(xr + (1 - s.asmS) * 110)}" y="${f1(sy + 40)}" class="t13 mid" style="fill:#7a4a24">Small subunit</text>`;
+    }
+    // tRNAs
+    for (let i = 0; i < 4; i++){
+      const op = s["o" + i]; if (op < .01) continue;
+      const shown = i >= 2 || (i === 0 ? resolved("uac") : resolved("cgu"));
+      o += trna(i, s["x" + i], s["y" + i], op, s["a" + i], shown);
+      if (s["y" + i] > -4 && op > .9) for (let j = 0; j < 3; j++){ const x = s["x" + i] + (j - 1) * 36; o += `<path d="M${f1(x - 5)},333 v6 M${f1(x + 5)},333 v6" stroke="#5a6376" stroke-width="2"/>`; }
+    }
+    if (flags.trnaLabels){
+      const x = s.x0, y = s.y0;
+      o += `<text x="${f1(x + 60)}" y="${f1(250 + y)}" class="t13">tRNA</text>`;
+      o += pill(x + 118, 318 + y, resolved("anticodon") ? "Anticodon" : "?", "#2c8f8a", 1);
+      o += `<text x="${f1(x + 26)}" y="${f1(184 + y)}" class="t13">Amino acid (Met)</text>`;
+      o += `<text x="${CX(0)}" y="402" class="t12 mid blu">Codon</text>`;
+    }
+    // chain
+    if (s.chainN > 0){
+      const n = Math.round(s.chainN), ax = s.chainX + s.chainFree * 150, ay = 180 - s.chainFree * 95;
+      for (let j = 0; j < n; j++){
+        const aa = AAS[n - 1 - j];
+        const lx2 = ax + (j % 2 ? 10 : -10), ly2 = ay - j * 26;
+        const ang = j / n * Math.PI * 2, px = ax + 22 * Math.cos(ang), py = ay - 40 + 22 * Math.sin(ang);
+        o += bead(lerp(lx2, px, s.protein), lerp(ly2, py, s.protein), aa);
+      }
+      if (flags.ends && s.protein < .1 && n >= 2){
+        o += `<text x="${f1(ax + 26)}" y="${f1(ay - (n - 1) * 26 + 4)}" class="t12">N-terminus</text><text x="${f1(ax + 26)}" y="${f1(ay + 4)}" class="t12">C-terminus</text>`;
+      }
+      if (flags.bond && n === 2) o += pill(ax - 100, ay - 30, "Peptide bond!", "#9a6212", clamp(t * 1.2, 0, 1));
+      if (s.protein > .5) o += `<text x="${f1(ax - 40)}" y="${f1(ay - 34)}" class="t15 end" fill="${GREEN}" style="fill:${GREEN}" opacity="${f3((s.protein - .5) * 2)}">New protein! Met-Ala-Phe-Gly</text>`;
+    }
+    if (s.stopPill > .01) o += pill(CX(4), 280, "Stop codon: no tRNA matches!", RED, s.stopPill * (1 - s.protein));
+    return o;
+  }
+
+  function codeSVG(t, still){
+    let o = `<text x="500" y="46" class="t18 mid">Decoding our mRNA</text>`;
+    for (let k = 0; k < 5; k++){
+      const x = 120 + k * 190, c = CODONS[k], aa = CODE[c];
+      const show = still ? 0 : smooth(seg(t % 8, .5 + k * .7, 1.0 + k * .7)) * (1 - smooth(seg(t % 8, 7.4, 8)));
+      o += `<rect x="${x - 70}" y="90" width="140" height="74" rx="14" fill="#fff" stroke="#d9dee7" stroke-width="2"/>`;
+      for (let j = 0; j < 3; j++) o += tile(x + (j - 1) * 36, 112, c[j]);
+      o += `<path d="M${x},172 V238" stroke="#9aa3b5" stroke-width="3" marker-end="url(#cdA)"/>`;
+      if (aa === "Stop") o += `<g opacity="${f3(show)}"><rect x="${x - 50}" y="252" width="100" height="44" rx="10" fill="${RED}"/><text x="${x}" y="280" class="t15 mid" style="fill:#fff">STOP</text></g>`;
+      else o += bead(x, 274, aa, show, 24);
+      if (k === 0) o += `<text x="${x}" y="330" class="t13 mid blu">${resolved("start") ? "Start codon" : "?"}</text>`;
+      if (k === 4) o += `<text x="${x}" y="330" class="t13 mid red" style="fill:#b83a34">Stop codon</text>`;
+    }
+    o += `<defs><marker id="cdA" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#9aa3b5"/></marker></defs>`;
+    o += `<text x="500" y="392" class="t13 mid muted">64 codons, 20 amino acids: most amino acids have more than one codon.</text><text x="500" y="414" class="t13 mid muted">Stop codons: UAA, UAG, UGA</text>`;
+    return o;
+  }
+
+  function compareSVG(t){
+    let o = `<rect x="20" y="30" width="465" height="410" rx="24" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="3"/><rect x="515" y="30" width="465" height="410" rx="24" fill="#f7f5fb" stroke="#8f7fb0" stroke-width="3"/>`;
+    o += `<text x="252" y="66" class="t18 mid">Prokaryote</text><text x="252" y="88" class="t13 mid muted">everything in the cytoplasm</text><text x="747" y="66" class="t18 mid">Eukaryote</text><text x="747" y="88" class="t13 mid muted">nucleus first, then cytoplasm</text>`;
+    // prokaryote: coupled
+    const p = (t % 6) / 6, px = 80 + p * 340;
+    o += `<path d="M50,330 H455" stroke="#0f766e" stroke-width="5"/><ellipse cx="${f1(px)}" cy="330" rx="26" ry="20" fill="rgba(108,122,224,.45)" stroke="${BLUE}" stroke-width="2"/>`;
+    const L = Math.max(0, px - 80);
+    if (L > 5) o += `<path d="M80,230 H${f1(Math.max(80, px - 40))} Q${f1(px - 14)},230 ${f1(px - 8)},312" fill="none" stroke="${ORANGE}" stroke-width="4"/>`;
+    for (let r = 0; r < 3; r++){ const rx = 110 + r * 90; if (rx < px - 60) o += `<ellipse cx="${rx}" cy="218" rx="20" ry="13" fill="#c97b4a"/><ellipse cx="${rx}" cy="240" rx="17" ry="6" fill="#e3a877"/><circle cx="${rx}" cy="196" r="6" fill="${GREEN}"/><circle cx="${rx + 6}" cy="184" r="6" fill="#f2b134"/>`; }
+    o += `<text x="252" y="380" class="t13 mid">Ribosomes translate while RNA polymerase transcribes</text>`;
+    // eukaryote
+    o += `<ellipse cx="660" cy="260" rx="120" ry="130" fill="#ebe4f5" stroke="#7e6aa8" stroke-width="3"/><text x="660" y="160" class="t13 mid pur">Nucleus</text><path d="M590,300 H730" stroke="#0f766e" stroke-width="5"/>`;
+    const q = (t % 6) / 6, mx = lerp(620, 860, smooth(seg(q, .3, .8)));
+    o += `<path d="M${f1(mx - 50)},240 H${f1(mx + 30)}" stroke="${ORANGE}" stroke-width="4"/>`;
+    if (q > .8) o += `<ellipse cx="880" cy="228" rx="20" ry="13" fill="#c97b4a"/><ellipse cx="880" cy="250" rx="17" ry="6" fill="#e3a877"/><circle cx="880" cy="204" r="6" fill="${GREEN}"/>`;
+    o += `<text x="747" y="410" class="t13 mid">mRNA is processed, exported, then translated</text>`;
+    return o;
+  }
+
+  function render(){
+    const d = vis, t = frozen ? 0 : sceneT;
+    let o = "";
+    if (d.scene === "main") o = mainSVG(cur, d.flags || {}, sceneT);
+    else if (d.scene === "code") o = codeSVG(t, frozen);
+    else if (d.scene === "compare") o = compareSVG(t);
+    svg.innerHTML = o;
+  }
+  let last = performance.now();
+  function frame(now){ const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; stepTween(now); sceneT += dt; render(); requestAnimationFrame(frame); }
+
+  /* ================= Answers ================= */
+  function lev(a, b){ const m = a.length, n = b.length, d = []; for (let i = 0; i <= m; i++) d[i] = [i]; for (let j = 0; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)); return d[m][n]; }
+  const norm = (s, seq) => { s = s.toLowerCase().replace(/[^a-z0-9]/g, ""); return seq ? s.replace(/[0-9]/g, "") : s; };
+  function matches(id, val){ const b = BL[id], v = norm(val, b.seq); if (!v) return false; return b.ans.some(a => a === v || (b.fuzzy && a.length >= 5 && lev(v, a) <= 1)); }
+
+  /* ================= Tables and panels ================= */
+  function renderTable(){
+    const st = STEPS[idx], wrap = $("tableWrap");
+    const D = st.table && stepResolved(idx) ? st.table : null;
+    if (!D){ wrap.hidden = true; return; }
+    wrap.innerHTML = `<div class="cap">${D.cap}</div><table><thead><tr>${D.head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>` + D.order.map(k => `<tr>${D.rows[k].map((c, j) => j ? `<td>${c}</td>` : `<td><b>${c}</b></td>`).join("")}</tr>`).join("") + `</tbody></table>`;
+    wrap.hidden = false;
+  }
+  function chartHTML(){
+    const ours = new Set(CODONS);
+    let h = `<p>Find the first base on the left, the second base across the top, and the third base in the box. Codons from our mRNA are highlighted.</p><div style="overflow-x:auto"><table class="codon"><thead><tr><th></th>${[...B4].map(b => `<th>${b}</th>`).join("")}</tr></thead><tbody>`;
+    for (const a of B4){
+      h += `<tr><th>${a}</th>`;
+      for (const b of B4){
+        h += `<td>` + [...B4].map(c => { const cd = a + b + c, aa = CODE[cd]; const cls = cd === "AUG" ? "start" : aa === "Stop" ? "stopc" : ""; return `<div class="cc ${cls}${ours.has(cd) ? " ours" : ""}"><b>${cd}</b> ${aa}${cd === "AUG" ? " (start)" : ""}</div>`; }).join("") + `</td>`;
+      }
+      h += `</tr>`;
+    }
+    return h + `</tbody></table></div>`;
+  }
+  function openPanel(tag, title, html){ $("moreTag").textContent = tag; $("moreTitle").textContent = title; $("moreBody").innerHTML = html; $("moreOverlay").hidden = false; $("moreClose").focus(); }
+  const openMore = k => openPanel("Learn more: just for the curious, not on the exam", MORE[k].title, MORE[k].html);
+  const closeMore = () => { $("moreOverlay").hidden = true; };
+
+  /* ================= Step UI ================= */
+  const termHTML = (id, cls) => `<strong class="term ${cls || ""}">${BL[id].show}</strong>`;
+  function termEl(id, cls){ const s = document.createElement("strong"); s.className = "term " + cls; s.textContent = BL[id].show; return s; }
+  function blankHTML(id){
+    if (mode === "learn") return termHTML(id);
+    if (bl[id]) return termHTML(id, bl[id]);
+    return `<input class="blank" data-id="${id}" size="${Math.max(3, BL[id].show.length + 1)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Fill in the blank">`;
+  }
+  function footer(){
+    const st = STEPS[idx];
+    let h = (st.links || []).map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
+    if (st.more) h += `<button class="more-btn" data-more="${st.more}">Learn more</button><span class="more-note">Extra deep-dive, not on the exam</span>`;
+    $("bubbleFoot").innerHTML = h;
+    $("bubbleFoot").querySelectorAll("[data-more]").forEach(b => b.addEventListener("click", () => openMore(b.dataset.more)));
+  }
+  function showAfter(){ const st = STEPS[idx]; if (st.after && stepResolved(idx)){ afterEl.textContent = st.after; afterEl.hidden = false; } else afterEl.hidden = true; }
+  function updateButtons(){
+    const open = mode === "test" && !!textEl.querySelector("input.blank");
+    checkRow.hidden = !open; nextBtn.disabled = open || !gateDone(idx); backBtn.disabled = idx === 0;
+    nextBtn.textContent = idx === LAST ? "Start over" : "Next";
+  }
+  function renderBubble(){
+    const st = STEPS[idx];
+    $("stepNo").textContent = `${st.part} (step ${idx + 1} of ${STEPS.length})`;
+    $("stepTitle").textContent = st.title;
+    textEl.innerHTML = st.text.replace(/\{\{(\w+)\}\}/g, (m, id) => blankHTML(id));
+    textEl.querySelectorAll("input.blank").forEach(inp => {
+      inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); check(); } });
+      inp.addEventListener("input", () => inp.classList.remove("wrong"));
+    });
+    fb.textContent = ""; fb.className = "feedback";
+    showAfter(); footer(); updateButtons();
+    bubble.classList.remove("pop"); void bubble.offsetWidth; bubble.classList.add("pop");
+    const first = textEl.querySelector("input.blank"); if (first && mode === "test") first.focus({preventScroll:true});
+  }
+  function renderNav(){
+    const dots = $("dots"); dots.innerHTML = "";
+    STEPS.forEach((st, i) => {
+      if (i > 0 && STEPS[i - 1].part !== st.part){ const g = document.createElement("span"); g.className = "gap"; dots.appendChild(g); }
+      const b = document.createElement("button");
+      b.className = "dot" + (i === idx ? " current" : (i < furthest || i < idx ? " seen" : ""));
+      b.textContent = i + 1; b.title = `${st.part}: ${st.title}`; b.setAttribute("aria-label", `Go to step ${i + 1}: ${st.title}`);
+      b.disabled = mode === "test" && i > furthest;
+      b.addEventListener("click", () => goTo(i));
+      dots.appendChild(b);
+    });
+  }
+  function enterStep(i, force){
+    const changed = i !== idx || force; idx = i;
+    const st = STEPS[i], res = stepResolved(i);
+    if (res) furthest = Math.max(furthest, i + 1);
+    if (changed) sceneT = 0;
+    if (res){
+      if (st.v.scene === "main"){ const pd = preDef(i); applyVisual(st.v, pd.scene === "main" ? lastFrame(pd) : undefined); }
+      else applyVisual(st.v);
+    } else {
+      const pd = preDef(i);
+      if (pd.scene === "main" && st.v.scene === "main") applyVisual({...st.v, frames:[lastFrame(pd)]}, lastFrame(pd));
+      else applyVisual(pd);
+    }
+    renderBubble(); renderNav(); renderTable(); renderGate();
+  }
+  const goTo = i => enterStep(clamp(i, 0, LAST));
+  function resolvedNow(){
+    if (!stepResolved(idx)){ updateButtons(); renderNav(); renderGate(); return; }
+    furthest = Math.max(furthest, idx + 1);
+    updateButtons(); renderNav(); showAfter(); renderTable();
+    sceneT = 0; frozen = false;
+    const st = STEPS[idx];
+    if (st.v.scene === "main") { vis = st.v; playFrames(st.v.frames); } else applyVisual(st.v);
+    nextBtn.focus({preventScroll:true});
+  }
+  function check(){
+    const inputs = [...textEl.querySelectorAll("input.blank")];
+    let wrong = 0, empty = 0;
+    inputs.forEach(inp => {
+      const id = inp.dataset.id;
+      if (!inp.value.trim()){ empty++; wrong++; return; }
+      if (matches(id, inp.value)){ bl[id] = "correct"; inp.replaceWith(termEl(id, "correct")); }
+      else { wrong++; inp.classList.remove("wrong"); void inp.offsetWidth; inp.classList.add("wrong"); }
+    });
+    if (wrong){
+      fb.className = "feedback bad";
+      fb.textContent = empty === wrong ? "Type an answer in each blank, or tap Move on to see it." : "Not quite yet. Give it another try, or tap Move on to see the answer.";
+      const n = textEl.querySelector("input.wrong") || textEl.querySelector("input.blank"); if (n) n.focus({preventScroll:true});
+      updateButtons();
+    } else {
+      const cheers = ["Correct!", "Nailed it!", "Yes! Great job.", "Exactly right!", "You've got it!"];
+      fb.className = "feedback good"; fb.textContent = cheers[idx % cheers.length];
+      resolvedNow();
+    }
+  }
+  function moveOn(){
+    textEl.querySelectorAll("input.blank").forEach(inp => { const id = inp.dataset.id; bl[id] = "revealed"; inp.replaceWith(termEl(id, "revealed")); });
+    fb.className = "feedback warn"; fb.textContent = "Here's the answer. Read it over, then tap Next when you're ready.";
+    resolvedNow();
+  }
+  function replay(){
+    sceneT = 0;
+    const st = STEPS[idx];
+    if (st.v.scene === "main" && stepResolved(idx)){ const pd = preDef(idx); cur = {...(pd.scene === "main" ? lastFrame(pd) : st.v.frames[0])}; playFrames(st.v.frames); }
+  }
+  function setMode(m){
+    mode = m;
+    $("learnBtn").setAttribute("aria-pressed", m === "learn");
+    $("testBtn").setAttribute("aria-pressed", m === "test");
+    $("modeHint").textContent = m === "learn"
+      ? "Learn mode: every term is filled in. Read each bubble, watch what happens, then tap Next."
+      : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
+    enterStep(idx, true);
+  }
+  function restart(){ bl = {}; furthest = 0; visKey = ""; for (const k in gates) delete gates[k]; enterStep(0, true); }
+
+  $("learnBtn").addEventListener("click", () => setMode("learn"));
+  $("testBtn").addEventListener("click", () => setMode("test"));
+  $("restartBtn").addEventListener("click", restart);
+  $("chartBtn").addEventListener("click", () => openPanel("Reference: the genetic code", "Codon chart", chartHTML()));
+  $("checkBtn").addEventListener("click", check);
+  $("moveOnBtn").addEventListener("click", moveOn);
+  backBtn.addEventListener("click", () => goTo(idx - 1));
+  $("replayBtn").addEventListener("click", replay);
+  nextBtn.addEventListener("click", () => { if (idx === LAST) restart(); else goTo(idx + 1); });
+  $("moreClose").addEventListener("click", closeMore);
+  $("moreOverlay").addEventListener("click", e => { if (e.target.id === "moreOverlay") closeMore(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !$("moreOverlay").hidden){ closeMore(); return; }
+    if (!$("moreOverlay").hidden || (e.target && e.target.tagName === "INPUT")) return;
+    if (e.key === "ArrowRight" && !nextBtn.disabled && idx < LAST) goTo(idx + 1);
+    if (e.key === "ArrowLeft" && idx > 0) goTo(idx - 1);
+  });
+
+  setMode("learn");
+  requestAnimationFrame(frame);
+  window.__tl = {goTo, check, moveOn, setMode, openMore, STEPS, CODE, get idx(){ return idx; }, get cur(){ return cur; }};
+})();
+</script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const PAGE = (location.pathname.split("/").pop() || "index.html");
+  const testing = () => { const t = $("testBtn"); return t && t.getAttribute("aria-pressed") === "true"; };
+
+  /* Hint button: shows the first letter and length of each open blank, then more letters */
+  const row = $("checkRow"), moveOn = $("moveOnBtn");
+  if (row && moveOn && window.__BL){
+    const hb = document.createElement("button");
+    hb.className = "btn hint"; hb.id = "hintBtn"; hb.textContent = "Hint";
+    row.insertBefore(hb, moveOn);
+    hb.addEventListener("click", () => {
+      const ins = [...document.querySelectorAll("#stepText input.blank")];
+      ins.forEach(inp => {
+        const b = window.__BL[inp.dataset.id]; if (!b) return;
+        const w = b.show, lvl = Math.min((+inp.dataset.hint || 0) + 1, Math.max(1, Math.ceil(w.length / 2)));
+        inp.dataset.hint = lvl;
+        if (inp.classList.contains("wrong")) inp.value = "";
+        inp.placeholder = w.slice(0, lvl) + w.slice(lvl).replace(/[^\s-]/g, "_");
+        inp.size = Math.max(inp.size || 3, w.length + 1);
+      });
+      const fb = $("feedback");
+      if (fb && ins.length){ fb.className = "feedback warn"; fb.textContent = "Hint: the first letter" + (ins.some(i => +i.dataset.hint > 1) ? "s are" : " is") + " shown, and each dash is one letter. Tap Hint again for more."; }
+      const f = ins[0]; if (f) f.focus({preventScroll:true});
+    });
+  }
+
+  /* Bridge card on the last step */
+  let links = []; try { links = JSON.parse(document.body.dataset.next || "[]"); } catch (e) {}
+  const bubble = $("bubble");
+  let bridge = null;
+  if (links.length && bubble){
+    bridge = document.createElement("div"); bridge.className = "bridge"; bridge.hidden = true;
+    bridge.innerHTML = `<b>${document.body.dataset.nextLabel || "Where to next?"}</b>` + links.map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
+    bubble.insertAdjacentElement("afterend", bridge);
+  }
+
+  /* Completion: finishing every step in Test mode saves a checkmark for the hub */
+  const next = $("nextBtn");
+  let toasted = false;
+  function watch(){
+    if (!next) return;
+    const last = next.textContent.trim() === "Start over";
+    if (bridge) bridge.hidden = !last;
+    if (last && testing() && !next.disabled){
+      let was = false; try { was = localStorage.getItem("bio112-done:" + PAGE) === "1"; localStorage.setItem("bio112-done:" + PAGE, "1"); } catch (e) {}
+      if (!toasted && !was){
+        toasted = true;
+        const t = document.createElement("div"); t.className = "donetoast"; t.setAttribute("role", "status");
+        t.textContent = "Module complete! It now has a checkmark on the home page.";
+        document.body.appendChild(t); setTimeout(() => t.remove(), 3600);
+      }
+    }
+  }
+  if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
+})();
+</script>
+</body>
+</html>

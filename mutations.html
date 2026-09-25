@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mutations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d2433; --muted:#5a6376; --page:#eef1f5; --card:#ffffff; --line:#d9dee7;
+    --accent:#3f4cc0; --accent-soft:#e7e9fb;
+    --good:#1b7f4e; --good-soft:#e1f3e8; --warn:#9a6212; --warn-soft:#fbefd9; --bad:#b83a34; --bad-soft:#fbe8e7;
+    --more:#5b3fb0; --more-soft:#f3effd;
+    --font:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font)}
+  .wrap{max-width:1060px;margin:0 auto;padding:18px 16px 30px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+  h1{font-size:1.55rem;line-height:1.15;margin:0;letter-spacing:-0.01em}
+  .sub{color:var(--muted);font-size:.92rem;margin-top:3px}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .seg{display:inline-flex;background:#dfe4ec;border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:700 .95rem var(--font);padding:8px 18px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(29,36,51,.18)}
+  .ghost{border:1px solid var(--line);background:var(--card);font:700 .9rem var(--font);padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--muted)}
+
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--line);margin-bottom:14px}
+  .tabs button{border:0;background:transparent;font:700 1rem var(--font);color:var(--muted);padding:10px 16px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+  .tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+
+  .home h2{font-size:1.3rem;margin:6px 0 4px}
+  .home p.lead{color:var(--muted);margin:0 0 16px;font-size:1.02rem}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:18px;text-align:left;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:8px}
+  .card:hover{border-color:var(--accent)}
+  .card h3{margin:0;font-size:1.2rem}
+  .card p{margin:0;color:var(--muted);line-height:1.5}
+  .card .meta{font-weight:700;color:var(--accent);font-size:.9rem;margin-top:auto}
+  .card svg{width:100%;height:84px}
+
+  .modehint{color:var(--muted);font-size:.92rem;margin:0 0 10px}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  #scene{display:block;width:100%;height:auto;font-family:var(--font);transition:opacity .2s}
+
+  .tablewrap{margin-top:12px;overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+  .tablewrap[hidden]{display:none}
+  .tablewrap .cap{font-weight:700;font-size:.9rem;padding:10px 12px 4px;color:var(--muted)}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:640px}
+  th,td{text-align:left;padding:7px 10px;border-top:1px solid var(--line);vertical-align:top}
+  th{font-size:.8rem;color:var(--muted)}
+  tr.hl td{background:#fff6d6}
+  td.on{color:var(--good);font-weight:700} td.off{color:var(--bad);font-weight:700} td.low{color:var(--warn);font-weight:700}
+  tr.new td{animation:rowin .5s ease}
+  @keyframes rowin{from{background:#fde9a8}to{background:transparent}}
+
+  .bubble{position:relative;margin-top:18px;background:var(--card);border:2px solid var(--accent);border-radius:16px;padding:16px 20px}
+  .bubble::before{content:"";position:absolute;top:-11px;left:52px;width:18px;height:18px;background:var(--card);border-left:2px solid var(--accent);border-top:2px solid var(--accent);transform:rotate(45deg)}
+  .bubble.pop{animation:pop .32s cubic-bezier(.2,.9,.3,1.25)}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .stepno{font-size:.88rem;color:var(--accent);font-weight:700}
+  .title{font-size:1.2rem;font-weight:700;margin:2px 0 8px}
+  .text{font-size:1.06rem;line-height:1.65;margin:0;max-width:80ch}
+  .after{margin:10px 0 0;font-weight:700;color:var(--accent)}
+  .term{background:var(--accent-soft);color:#2c3796;padding:1px 6px;border-radius:6px;white-space:nowrap}
+  .term.correct{background:var(--good-soft);color:var(--good)}
+  .term.revealed{background:var(--warn-soft);color:var(--warn)}
+  input.blank,input.pred{font:700 1rem var(--font);border:0;border-bottom:2px solid var(--accent);background:#f3f4fd;padding:2px 6px;border-radius:6px 6px 0 0;color:var(--ink);min-width:3em;max-width:100%}
+  input.blank:focus,input.pred:focus{outline:2px solid var(--accent);outline-offset:1px;background:var(--accent-soft)}
+  input.wrong{border-bottom-color:var(--bad);background:var(--bad-soft);animation:shake .32s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .check-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+  .check-row[hidden]{display:none}
+  a.btn{text-decoration:none;display:inline-block}
+  .btn{font:700 .96rem var(--font);border-radius:999px;padding:9px 20px;cursor:pointer;border:2px solid var(--accent)}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.secondary{background:#fff;color:var(--accent)}
+  .btn:disabled{opacity:.38;cursor:not-allowed}
+  .feedback{font-weight:700;font-size:.96rem;margin-top:10px;min-height:1.2em}
+  .feedback:empty{min-height:0;margin:0}
+  .feedback.good{color:var(--good)} .feedback.bad{color:var(--bad)} .feedback.warn{color:var(--warn)}
+  .bubble-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+  .more-btn{font:700 .92rem var(--font);border-radius:999px;padding:7px 14px;cursor:pointer;border:2px solid #cbbdf2;background:var(--more-soft);color:var(--more)}
+  .more-note{font-size:.84rem;color:var(--muted)}
+
+  .overlay{position:fixed;inset:0;background:rgba(29,36,51,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+  .overlay[hidden]{display:none}
+  .panel{background:#fff;border-radius:18px;max-width:680px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;border-top:6px solid var(--more)}
+  .panel .ptag{display:inline-block;background:var(--more-soft);color:var(--more);font-weight:700;font-size:.85rem;border-radius:999px;padding:4px 12px}
+  .panel h2{margin:10px 0 8px;font-size:1.3rem}
+  .panel h3{font-size:1.02rem;margin:14px 0 4px;color:var(--more)}
+  .panel p{margin:0 0 8px;line-height:1.6}
+  .panel .close{margin-top:10px}
+
+  .lab{margin-top:4px;display:grid;gap:12px}
+  .opsel{display:flex;flex-wrap:wrap;gap:8px}
+  .opsel button{font:700 .95rem var(--font);border-radius:12px;padding:8px 14px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+  .opsel button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:#2c3796}
+  .opsel .x{display:block;font-size:.72rem;color:var(--more);font-weight:700}
+  .xtag{background:var(--more-soft);color:var(--more);border-radius:10px;padding:8px 12px;font-weight:700;font-size:.9rem}
+  .toggles{display:flex;flex-wrap:wrap;gap:10px}
+  .tog{display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:14px;padding:8px 12px;background:#fff;cursor:pointer;font:700 .98rem var(--font);color:var(--ink)}
+  .tog .sw{width:44px;height:24px;border-radius:12px;background:#cfd5df;position:relative;transition:background .2s}
+  .tog .sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+  .tog[aria-pressed="true"] .sw{background:var(--good)}
+  .tog[aria-pressed="true"] .sw::after{left:23px}
+  .tog:disabled{opacity:.5;cursor:not-allowed}
+  .readout{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border-radius:999px;padding:5px 12px;font-weight:700;font-size:.9rem;background:#eef1f5}
+  .chip.on{background:var(--good-soft);color:var(--good)} .chip.off{background:var(--bad-soft);color:var(--bad)} .chip.low{background:var(--warn-soft);color:var(--warn)}
+  .explain{font-size:1rem;line-height:1.55;margin:0}
+  .predict{background:#fff8e6;border:1px solid #f0d99a;border-radius:12px;padding:10px 12px;line-height:1.9}
+
+  nav.stepnav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .dots{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;flex:1;align-items:center}
+  .dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:#fff;font:700 .72rem var(--font);color:var(--muted);cursor:pointer;padding:0}
+  .dot.seen{border-color:var(--accent);color:var(--accent)}
+  .dot.current{background:var(--accent);border-color:var(--accent);color:#fff}
+  .dot:disabled{opacity:.35;cursor:not-allowed}
+  .gap{width:8px}
+  .navbtns{display:flex;gap:8px}
+  [hidden]{display:none !important}
+  button:focus-visible{outline:3px solid #f2b134;outline-offset:2px}
+  @media (max-width:640px){
+    h1{font-size:1.3rem}
+    .dot{width:22px;height:22px;font-size:.62rem}
+    .text{font-size:1rem}
+    .bubble{padding:14px}
+    .tabs button{padding:8px 10px;font-size:.92rem}
+  }
+  @media (prefers-reduced-motion:reduce){ .bubble.pop,input.wrong,tr.new td{animation:none} }
+
+  .subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;align-items:center}
+  .subtabs .lbl{font-size:.85rem;font-weight:700;color:var(--muted);margin-right:4px}
+  .subtabs button{font:700 .9rem var(--font);border-radius:999px;padding:6px 14px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+  .subtabs button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
+  .subtabs button.bonus{border-style:dashed;border-color:#b9a6ee;color:var(--more)}
+  .subtabs button.bonus[aria-pressed="true"]{background:var(--more);border-color:var(--more);color:#fff}
+  .labgroup{font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:-6px}
+  .card.bonus{border-style:dashed;border-color:#b9a6ee}
+  .card .tag{font-size:.8rem;font-weight:700;color:var(--more)}
+  .note{background:#eef6ff;border:1px solid #bcd6f5;border-radius:12px;padding:10px 12px;font-size:.95rem;line-height:1.5}
+  .radios{display:flex;flex-wrap:wrap;gap:8px}
+  .radios button{font:700 .9rem var(--font);border-radius:12px;padding:7px 12px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+  .radios button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:#2c3796}
+  .radios button:disabled,.opsel button:disabled{opacity:.5;cursor:not-allowed}
+  .rowlbl{font-size:.85rem;font-weight:700;color:var(--muted)}
+  .labrow{display:grid;gap:6px}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .uvbtn[aria-pressed="true"]{background:#2d2450;color:#b9ff9e;border-color:#2d2450}
+
+  table.codon{min-width:560px} table.codon td,table.codon th{vertical-align:top;padding:6px}
+  .cc{font-size:.84rem;padding:2px 5px;border-radius:5px;white-space:nowrap}
+  .cc.start{background:#e1f3e8} .cc.stopc{background:#fbe8e7} .cc.ours{outline:2px solid #3f4cc0}
+  .bt{font-size:14px;font-weight:700;text-anchor:middle}
+
+  .backlink{display:inline-block;font-size:.88rem;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:4px}
+  .backlink::before{content:"\2190  "}
+
+  /* SVG text */
+  .t12{font-size:12px;font-weight:700;fill:#343b4a}
+  .t13{font-size:13px;font-weight:700;fill:#343b4a}
+  .t15{font-size:15px;font-weight:700;fill:#343b4a}
+  .t18{font-size:18px;font-weight:700;fill:#343b4a}
+  .mid{text-anchor:middle} .end{text-anchor:end}
+  .muted{fill:#5a6376} .it{font-style:italic}
+  .wht{fill:#fff}
+  .grn{fill:#1b7f4e} .red{fill:#b83a34} .blu{fill:#3f4cc0} .pur{fill:#6b4bb8}
+
+  /* ===== Tabs + labs ===== */
+  .tabs button:focus-visible{outline:3px solid #f2b134;outline-offset:2px}
+  .labwrap{display:grid;gap:14px}
+  .labhead h2{margin:0 0 4px;font-size:1.35rem}
+  .labhead p{margin:0;color:var(--muted);line-height:1.55;max-width:80ch}
+  .missions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .mprog{font-weight:700;color:var(--ink);font-size:.95rem;margin-right:4px}
+  .mission{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--line);background:#fff;border-radius:999px;padding:5px 13px 5px 5px;font:700 .9rem var(--font);color:var(--ink);cursor:pointer}
+  .mission .ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.8rem;line-height:1}
+  .mission.bonus{border-style:dashed;border-color:#b9a6ee;color:var(--more)}
+  .mission[aria-pressed="true"]{box-shadow:0 0 0 3px var(--accent-soft)}
+  .mission.done{border-color:var(--good);border-style:solid;background:var(--good-soft);color:var(--good)}
+  .mission.done .ck{background:var(--good);border-color:var(--good);color:#fff}
+  .hintbox{background:#fff8e6;border:1px solid #f0d99a;border-radius:12px;padding:9px 12px;line-height:1.5;font-size:.95rem}
+  .toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:20;max-width:92vw;text-align:center}
+  .toast.pop{animation:toastin .4s cubic-bezier(.2,.9,.3,1.3)}
+  @keyframes toastin{from{opacity:0;transform:translate(-50%,-16px) scale(.9)}to{opacity:1;transform:translate(-50%,0)}}
+
+  /* DNA editor */
+  .editor{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 12px}
+  .strip{display:flex;flex-wrap:wrap;gap:14px 8px}
+  .cod{display:grid;grid-template-rows:auto 32px 32px 32px;gap:6px;justify-items:center;padding:4px 4px 6px;border-radius:12px}
+  .cod.chg{background:#fff4ec}
+  .cod.after{opacity:.4}
+  .cod .cn{font-size:.72rem;font-weight:700;color:var(--muted)}
+  .cod.legend{justify-items:end;padding-right:6px}
+  .rl{font-size:.8rem;font-weight:700;text-align:right;line-height:1.05;align-self:center}
+  .rl small{display:block;font-size:.66rem;color:var(--muted)}
+  .bases{display:flex;gap:2px}
+  .b{width:26px;height:30px;border-radius:6px;display:grid;place-items:center;font:700 .95rem var(--font);color:#fff;border:0;padding:0}
+  button.b{cursor:pointer}
+  button.b:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .bA{background:#2f9e63} .bT{background:#d9534f} .bG{background:#f2b134;color:#3b2a00} .bC{background:#3b7dd8} .bU{background:#8e5bd0}
+  .b.mut{box-shadow:0 0 0 2px #fff,0 0 0 4px #e8744f}
+  .b.sel{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--ink);transform:translateY(-3px)}
+  .aa{min-width:60px;height:30px;border-radius:15px;display:grid;place-items:center;font-weight:700;font-size:.88rem;padding:0 8px;border:2px solid;align-self:center}
+  .aa.same{background:#e1f3e8;border-color:#2f9e63;color:#1b7f4e}
+  .aa.diff{background:#fdeee5;border-color:#e8744f;color:#a8461f}
+  .aa.stop{background:#fbe8e7;border-color:#b83a34;color:#b83a34}
+  .aa.none{background:#eef1f5;border-color:#dde2ea;color:var(--muted);font-size:.72rem}
+  .tools{display:grid;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .tools .selinfo{font-size:.95rem}
+  .bt-inline{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;color:#fff;font-size:.85rem}
+  .bt-inline.bG{color:#3b2a00}
+  .toolrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .toolrow .rowlbl{min-width:150px}
+  .tb{font:700 .95rem var(--font);border-radius:10px;min-width:40px;height:38px;padding:0 12px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+  .tb.base{color:#fff;border:0}
+  .tb.base.bA{background:#2f9e63} .tb.base.bT{background:#d9534f} .tb.base.bC{background:#3b7dd8}
+  .tb.base.bG{background:#f2b134;color:#3b2a00}
+  .tb:disabled{opacity:.3;cursor:not-allowed}
+  .tb.danger{border-color:#e6b2af;color:var(--bad)}
+  .tb.zap{border-color:#7fbf9c;color:var(--teal,#0f766e);background:#eef8f3}
+  .keyhint{font-size:.82rem;color:var(--muted)}
+  .verdict{border-radius:14px;padding:12px 16px;border:2px solid var(--line);background:#fff}
+  .verdict p{margin:6px 0 0;line-height:1.55;max-width:80ch}
+  .verdict .vnote{color:var(--muted);font-size:.93rem}
+  .vbadge{display:inline-block;font-weight:700;border-radius:999px;padding:4px 14px;background:#eef1f5}
+  .verdict.good{border-color:#9fd3b5} .verdict.good .vbadge{background:var(--good);color:#fff}
+  .verdict.warn{border-color:#f0c7a5} .verdict.warn .vbadge{background:#e8744f;color:#fff}
+  .verdict.bad{border-color:#e6b2af} .verdict.bad .vbadge{background:var(--bad);color:#fff}
+  .compare{display:grid;gap:8px;margin-top:10px}
+  .crow{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .clbl{font-size:.8rem;font-weight:700;color:var(--muted);width:118px}
+  .mchip{font-size:.78rem;font-weight:700;border-radius:999px;padding:3px 8px;border:1.5px solid}
+  .mchip.same{background:#e1f3e8;border-color:#2f9e63;color:#1b7f4e}
+  .mchip.diff{background:#fdeee5;border-color:#e8744f;color:#a8461f}
+  .mchip.stop{background:#fbe8e7;border-color:#b83a34;color:#b83a34}
+  .mchip.none{background:#eef1f5;border-color:#c9cfdb;color:var(--muted)}
+  @media (max-width:640px){
+    .toolrow .rowlbl{min-width:0;width:auto;font-size:.72rem;max-width:64px;line-height:1.1}
+    .tools{position:sticky;bottom:0;z-index:5;gap:6px;padding:8px 10px;box-shadow:0 -6px 16px rgba(29,36,51,.12)}
+    .tools .keyhint{display:none}
+    .tools .selinfo{font-size:.85rem}
+    .toolrow{gap:6px}
+    .tb{height:32px;min-width:32px;padding:0 8px;font-size:.84rem}
+    .strip{gap:10px 4px}
+    .clbl{width:100%}
+    .b{width:24px}
+  }
+  @media (prefers-reduced-motion:reduce){ .toast.pop{animation:none} button.b:hover,.b.sel{transform:none} }
+
+  /* ===== Study helpers (hint, checkmarks, bridge) ===== */
+  input.blank{border:2px solid var(--accent);border-bottom-width:3px;background:#fff7d6;border-radius:8px;padding:3px 8px;animation:blankpulse 1.8s ease-in-out infinite}
+  input.blank:focus{animation:none;background:#fff}
+  input.blank::placeholder{color:#9a8a55;letter-spacing:.12em;font-weight:700}
+  @keyframes blankpulse{0%,100%{box-shadow:0 0 0 0 rgba(63,76,192,.0)}50%{box-shadow:0 0 0 5px rgba(63,76,192,.18)}}
+  .btn.hint{border-color:#e5c56a;background:#fff8e6;color:#8a5a00}
+  .dot{position:relative}
+  body:has(#testBtn[aria-pressed="true"]) .dot.seen::after{content:"\2713";position:absolute;right:-5px;top:-6px;width:14px;height:14px;border-radius:50%;background:var(--good);color:#fff;font-size:.56rem;line-height:14px;text-align:center;box-shadow:0 0 0 2px var(--page)}
+  .bridge{margin-top:14px;border:2px dashed #b9a6ee;background:var(--more-soft);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .bridge b{color:var(--more);margin-right:6px}
+  .bridge[hidden]{display:none}
+  .donetoast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:30}
+  @media (prefers-reduced-motion:reduce){ input.blank{animation:none} }
+</style>
+</head>
+<body data-view="walk">
+<div class="wrap">
+  <header>
+    <div>
+      <a class="backlink" href="index.html">All modules</a>
+      <h1>Mutations</h1>
+      <div class="sub">BIOL 112 Microbiology, Chapter 8: when the DNA sequence changes</div>
+    </div>
+    <div class="controls" id="walkControls">
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="learnBtn" aria-pressed="true">Learn</button>
+        <button id="testBtn" aria-pressed="false">Test</button>
+      </div>
+      <button class="ghost" id="restartBtn">Restart</button>
+    </div>
+  </header>
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-view="walk" aria-selected="true">Walkthrough</button>
+    <button role="tab" data-view="lab" aria-selected="false">DNA Editor</button>
+  </div>
+
+  <div id="viewWalk">
+  <p class="modehint" id="modeHint"></p>
+  <div class="stage">
+    <svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="Animated diagram of mutations"></svg>
+  </div>
+  <div class="tablewrap" id="tableWrap" hidden></div>
+
+  <section class="bubble" id="bubble" aria-live="polite">
+    <div class="stepno" id="stepNo"></div>
+    <div class="title" id="stepTitle"></div>
+    <p class="text" id="stepText"></p>
+    <p class="after" id="stepAfter" hidden></p>
+    <div class="feedback" id="feedback"></div>
+    <div class="check-row" id="checkRow" hidden>
+      <button class="btn primary" id="checkBtn">Check</button>
+      <button class="btn secondary" id="moveOnBtn">Move on</button>
+    </div>
+    <div class="bubble-foot" id="bubbleFoot"></div>
+  </section>
+
+  <nav class="stepnav">
+    <div class="navbtns"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="replayBtn">Replay</button></div>
+    <div class="dots" id="dots"></div>
+    <div class="navbtns"><button class="btn primary" id="nextBtn">Next</button></div>
+  </nav>
+  </div>
+
+  <div id="viewLab" hidden>
+    <div class="labwrap">
+      <div class="labhead">
+        <h2>DNA Editor</h2>
+        <p>You're in charge of this gene! Tap any base on the DNA template strand, then swap it, insert a new base, or delete it. The mRNA and protein change right away, and the editor tells you what kind of mutation you made.</p>
+      </div>
+      <div class="missions" id="edMissions"></div>
+      <div class="hintbox" id="edHint" hidden></div>
+      <div class="editor"><div class="strip" id="edStrip"></div></div>
+      <div class="tools">
+        <div class="selinfo" id="edSel"></div>
+        <div class="toolrow"><span class="rowlbl">Swap it for</span>
+          <button class="tb base bA" data-swap="A">A</button><button class="tb base bT" data-swap="T">T</button><button class="tb base bG" data-swap="G">G</button><button class="tb base bC" data-swap="C">C</button>
+        </div>
+        <div class="toolrow"><span class="rowlbl">Insert a base after it</span>
+          <button class="tb base bA" data-ins="A" aria-label="Insert A">+A</button><button class="tb base bT" data-ins="T" aria-label="Insert T">+T</button><button class="tb base bG" data-ins="G" aria-label="Insert G">+G</button><button class="tb base bC" data-ins="C" aria-label="Insert C">+C</button>
+        </div>
+        <div class="toolrow"><span class="rowlbl">Other tools</span>
+          <button class="tb danger" id="edDel">Delete it</button>
+          <button class="tb zap" id="edZap">Zap with nitrous acid</button>
+          <button class="tb" id="edUndo">Undo</button>
+          <button class="tb" id="edReset">Reset gene</button>
+        </div>
+        <div class="keyhint">Keyboard: type A, T, G, or C to swap. Shift plus a letter inserts. Delete removes. Arrow keys move.</div>
+      </div>
+      <div class="verdict" id="edVerdict" aria-live="polite"></div>
+      <div class="compare" id="edCompare"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="edToast" role="status" hidden></div>
+
+<div class="overlay" id="moreOverlay" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
+    <span class="ptag">Learn more: just for the curious, not on the exam</span>
+    <h2 id="moreTitle"></h2>
+    <div id="moreBody"></div>
+    <button class="btn primary close" id="moreClose">Back to the module</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t) => a + (b - a) * t;
+  const smooth = t => { t = clamp(t,0,1); return t * t * (3 - 2 * t); };
+  const seg = (t,a,b) => clamp((t - a) / (b - a), 0, 1);
+  const f1 = v => (+v).toFixed(1);
+  const f3 = v => (+v).toFixed(3);
+  const ORANGE = "#e8744f", PURPLE = "#8e5bd0", GREEN = "#2f9e63", RED = "#b83a34", BLUE = "#3f4cc0", GOLD = "#f2b134", TEAL = "#0f766e";
+
+  /* ================= Shared bits ================= */
+  const BASE = {A:["#2f9e63","#fff"], T:["#d9534f","#fff"], G:["#f2b134","#3b2a00"], C:["#3b7dd8","#fff"], U:["#8e5bd0","#fff"], X:["#343b4a","#fff"], "?":["#c9cfdb","#343b4a"]};
+  const B4 = "UCAG", ONE = "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG";
+  const THREE = {F:"Phe",L:"Leu",S:"Ser",Y:"Tyr","*":"Stop",C:"Cys",W:"Trp",P:"Pro",H:"His",Q:"Gln",R:"Arg",I:"Ile",M:"Met",T:"Thr",N:"Asn",K:"Lys",V:"Val",A:"Ala",D:"Asp",E:"Glu",G:"Gly"};
+  const CODE = {}; { let n = 0; for (const a of B4) for (const b of B4) for (const c of B4) CODE[a + b + c] = THREE[ONE[n++]]; }
+  const TODNA = {A:"T", U:"A", G:"C", C:"G"};
+  function tile(x, y, b, op, ring){
+    const c = BASE[b] || BASE["?"];
+    let o = `<g opacity="${f3(op === undefined ? 1 : op)}">`;
+    if (ring) o += `<rect x="${f1(x - 19)}" y="${f1(y - 4)}" width="38" height="38" rx="9" fill="none" stroke="${ring}" stroke-width="3"/>`;
+    o += `<rect x="${f1(x - 15)}" y="${f1(y)}" width="30" height="30" rx="6" fill="${c[0]}"/><text x="${f1(x)}" y="${f1(y + 20)}" class="bt" fill="${c[1]}">${b}</text></g>`;
+    return o;
+  }
+  function aaChip(x, y, aa, state, op){
+    const fill = state === "stop" ? "#fbe8e7" : state === "diff" ? "#fdeee5" : state === "none" ? "#eef1f5" : "#e1f3e8";
+    const stroke = state === "stop" ? RED : state === "diff" ? ORANGE : state === "none" ? "#c9cfdb" : GREEN;
+    const col = state === "stop" ? RED : state === "diff" ? "#a8461f" : state === "none" ? "#5a6376" : "#1b7f4e";
+    return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - 36)}" y="${f1(y - 17)}" width="72" height="34" rx="17" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/><text x="${f1(x)}" y="${f1(y + 5)}" font-size="15" font-weight="700" fill="${col}" text-anchor="middle">${aa}</text></g>`;
+  }
+  function pill(x, y, text, fill, op){ const w = text.length * 8.3 + 30; return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - w/2)}" y="${f1(y - 15)}" width="${f1(w)}" height="28" rx="14" fill="${fill}"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">${text}</text></g>`; }
+  const arrow = (x1, y1, x2, y2, op) => `<g opacity="${f3(op === undefined ? 1 : op)}"><path d="M${f1(x1)},${f1(y1)} L${f1(x2)},${f1(y2)}" stroke="#7a8292" stroke-width="3" stroke-linecap="round"/><path d="M${f1(x2)},${f1(y2)} l-10,-6 l0,12 z" fill="#7a8292" transform="rotate(${f1(Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI)} ${f1(x2)} ${f1(y2)})"/></g>`;
+  const translate = m => { const out = []; for (let i = 0; i + 3 <= m.length; i += 3){ const a = CODE[m.substr(i, 3)]; out.push(a); if (a === "Stop") break; } return out; };
+
+  /* ================= Blanks ================= */
+  const BL = window.__BL = {
+    mutation:{show:"mutation", ans:["mutation","mutations"], fuzzy:true},
+    dna:{show:"DNA", ans:["dna","deoxyribonucleicacid"]},
+    rate:{show:"rate", ans:["rate","mutationrate"], fuzzy:true},
+    analogs:{show:"analogs", ans:["analogs","analog","analogues","analogue"], fuzzy:true},
+    basemod:{show:"Base-modifying", ans:["basemodifying","basemodifyingagents","modifying"], fuzzy:true},
+    revertants:{show:"revertants", ans:["revertants","revertant","reversions","reverts"], fuzzy:true},
+    substitution:{show:"substitution", ans:["substitution","substitutions","basesubstitution","point"], fuzzy:true},
+    silent:{show:"silent", ans:["silent"], fuzzy:true},
+    missense:{show:"missense", ans:["missense"], fuzzy:true},
+    stop:{show:"stop", ans:["stop","termination","nonsense"], fuzzy:true},
+    nonsense:{show:"nonsense", ans:["nonsense"], fuzzy:true},
+    frame:{show:"frame", ans:["frame","readingframe"], fuzzy:true},
+    frameshift:{show:"frameshift", ans:["frameshift","frameshifts","frameshiftmutation"], fuzzy:true},
+    downstream:{show:"downstream", ans:["downstream","after","afterit"], fuzzy:true},
+    mutagens:{show:"mutagens", ans:["mutagens","mutagen"], fuzzy:true},
+    physical:{show:"physical", ans:["physical","radiation"], fuzzy:true},
+    cytosine:{show:"cytosine", ans:["cytosine","c"], fuzzy:true},
+    gc:{show:"G-C", ans:["gc","cg","guaninecytosine","cytosineguanine"]},
+    dimer:{show:"dimer", ans:["dimer","dimers"], fuzzy:true},
+    ionizing:{show:"Ionizing", ans:["ionizing","ionising","ionization"], fuzzy:true},
+    histidine:{show:"histidine", ans:["histidine","his"], fuzzy:true},
+    carcinogens:{show:"carcinogens", ans:["carcinogens","carcinogen","carcinogenic","cancercausing"], fuzzy:true}
+  };
+
+  /* ================= Learn more ================= */
+  const MORE = {
+    rate:{title:"How often do mutations happen?", html:`<p>DNA polymerase is an amazing copier. With proofreading, it makes roughly one mistake for every billion (10<sup>9</sup>) bases it copies. That sounds tiny, but a bacterial culture can hold billions of cells, so a flask of <i>E. coli</i> contains mutants for almost every gene.</p><p>Mutagens can raise that rate 10 to 1,000 times. And because bacteria divide so fast, a rare helpful mutation, like one that makes an antibiotic stop working, can take over a population in days.</p>`},
+    code:{title:"Why so many silent mutations?", html:`<p>There are 64 codons but only 20 amino acids, so most amino acids have several codons. The extras usually differ only in the third base. Alanine, for example, is GCU, GCC, GCA, and GCG: the third base doesn't matter at all!</p><p>This "wobble" in the third position means a lot of random substitutions there change nothing about the protein. It's like a built-in cushion against mistakes.</p>`},
+    sickle:{title:"One letter, one disease: sickle cell", html:`<p>In sickle cell disease, one base in the hemoglobin gene changes, turning the codon GAG into GUG. That swaps glutamic acid for valine at one spot in the protein.</p><p>Valine is oily (hydrophobic), so the altered hemoglobin molecules stick together into long fibers when oxygen is low. The red blood cells bend into a sickle shape and can block small blood vessels. One missense mutation, huge effect!</p><p>Not every missense mutation is harmful, though. If the new amino acid is similar to the old one, or sits in an unimportant part of the protein, the protein may work just fine.</p>`},
+    nmd:{title:"What happens to a nonsense mRNA?", html:`<p>A premature stop codon gives a shortened (truncated) protein. The closer the stop is to the start, the less of the protein gets made.</p><p>Eukaryotic cells also have a clean-up crew called nonsense-mediated decay that spots mRNAs with early stops and destroys them. Many cases of Duchenne muscular dystrophy and some cases of cystic fibrosis come from nonsense mutations, and researchers are testing drugs that coax the ribosome to read past the early stop.</p>`},
+    crick:{title:"How we learned codons are triplets", html:`<p>In 1961, Francis Crick and Sydney Brenner used frameshift mutations in a bacteriophage. One inserted base wrecked the gene. Two insertions still wrecked it. But three insertions close together, or one insertion plus one deletion, brought the protein back!</p><p>The only explanation: the code is read in groups of three, starting from a fixed point. You can recreate their trick in the DNA Editor with the "Rescue the frame" mission.</p>`},
+    indel:{title:"Not every insertion is a frameshift", html:`<p>If exactly 3 bases (or 6, or 9...) are inserted or deleted, a whole codon is added or removed and the reading frame stays the same. The protein just gains or loses an amino acid.</p><p>The most common cystic fibrosis mutation, called delta F508, is exactly this: three bases are deleted, so the CFTR protein is missing one phenylalanine. The protein still folds poorly, which shows that even one missing amino acid can matter.</p>`},
+    mutagen:{title:"Bacteria under stress", html:`<p>When bacterial DNA is badly damaged, <i>E. coli</i> switches on the SOS response. It brings in sloppy "error-prone" DNA polymerases that can copy right over damage, making lots of mutations in the process.</p><p>That's risky for any single cell but good for the population: a few of those mutants may survive whatever is causing the stress. Some antibiotics actually trigger the SOS response, which can speed up the evolution of resistance.</p>`},
+    chem:{title:"More chemical mutagens", html:`<p><b>Base analogs</b> look like normal bases but pair incorrectly. 5-bromouracil sneaks in where thymine belongs but often pairs with guanine. 2-aminopurine mimics adenine but can pair with cytosine.</p><p>Some antiviral drugs, like AZT for HIV and acyclovir for herpes, are nucleoside analogs. They jam the virus's copying enzymes, which are far more likely to grab them than our own polymerases are.</p><p><b>Frameshift mutagens</b> are flat molecules that slip between stacked bases. Benzopyrene (in smoke and charred food), aflatoxin (made by the mold <i>Aspergillus flavus</i>), and acridine dyes all cause insertions and deletions this way.</p>`},
+    uv:{title:"Repairing UV damage", html:`<p>DNA absorbs UV light most strongly around 260 nm, which is why UV lamps are used to sterilize lab benches and water.</p><p>Many bacteria fix thymine dimers with <b>photolyases</b>, enzymes that use the energy of visible light to split the dimer (light repair). Another system, <b>nucleotide excision repair</b>, cuts out the damaged stretch and fills in the gap using the other strand as a template.</p><p>People with the genetic condition xeroderma pigmentosum can't do excision repair well, so even small amounts of sun cause skin damage and a very high risk of skin cancer.</p>`},
+    ames:{title:"Why add activation enzymes?", html:`<p>Bruce Ames designed this test in the 1970s. Many chemicals are harmless as they are, but our liver enzymes change them into forms that damage DNA. The activation enzymes (usually an extract from rat liver) let the test catch those chemicals too.</p><p>The test is fast, cheap, and uses bacteria instead of animals, so it's a standard first screen for new drugs, food additives, and cosmetics. That's why a positive result is taken so seriously.</p>`},
+    review:{title:"Are mutations always bad?", html:`<p>Nope! Mutations are the raw material for evolution. Antibiotic resistance, bacteria that can digest new food sources, and the huge variety of life all started as mutations.</p><p>Scientists also make mutations on purpose to study genes: break a gene and watch what stops working. That's how many of the genes in this unit were discovered.</p>`}
+  };
+
+  /* ================= Scenes ================= */
+  const resolved = id => window.__resolvedRef ? window.__resolvedRef(id) : true;
+  const GENE = "AUGGCAUUCGGAUAA";
+  const L_Y = {dna:118, rna:210, aa:318};
+  function rowLabels(x){
+    return `<text x="${x}" y="${L_Y.dna + 14}" class="t13 end">DNA template</text><text x="${x}" y="${L_Y.dna + 30}" class="t12 end muted">3' to 5'</text>`
+      + `<text x="${x}" y="${L_Y.rna + 14}" class="t13 end">mRNA</text><text x="${x}" y="${L_Y.rna + 30}" class="t12 end muted">5' to 3'</text>`
+      + `<text x="${x}" y="${L_Y.aa + 5}" class="t13 end">Protein</text>`;
+  }
+  /* strip of codons. m = mRNA string, hi = set of changed base indexes, aaState(k) */
+  function strip(m, o){
+    o = o || {};
+    const n = Math.ceil(m.length / 3), sp = 118, x0 = o.x0 || (560 - (n - 1) * sp / 2);
+    const ops = o.op === undefined ? 1 : o.op;
+    let s = `<g opacity="${f3(ops)}">`;
+    const aas = translate(o.aaM || m), dm = o.dnaM || m;
+    let stopped = false;
+    for (let k = 0; k < n; k++){
+      const cx = x0 + k * sp, cod = m.substr(k * 3, 3);
+      for (let j = 0; j < cod.length; j++){
+        const i = k * 3 + j, x = cx + (j - 1) * 33, ring = o.hi && o.hi.has(i) ? ORANGE : null;
+        s += tile(x, L_Y.dna, TODNA[dm[i]], 1, ring) + tile(x, L_Y.rna, cod[j], o.rnaOp === undefined ? 1 : o.rnaOp, ring);
+        s += `<path d="M${f1(x)},${L_Y.dna + 34} V${L_Y.rna - 4}" stroke="#c9cfdb" stroke-width="2" stroke-dasharray="3 4"/>`;
+      }
+      if (cod.length === 3){
+        const aa = aas[k];
+        if (aa && !stopped){
+          const st = aa === "Stop" ? "stop" : (o.aaState ? o.aaState(k, aa) : "same");
+          s += `<path d="M${f1(cx)},${L_Y.rna + 36} V${L_Y.aa - 22}" stroke="#c9cfdb" stroke-width="2"/>`;
+          s += aaChip(cx, L_Y.aa, aa, st, o.aaOp === undefined ? 1 : o.aaOp);
+          if (aa === "Stop") stopped = true;
+        }
+      } else s += `<text x="${f1(cx)}" y="${L_Y.aa + 5}" class="t12 mid muted">leftover</text>`;
+    }
+    return s + `</g>`;
+  }
+  function subScene(t, k, j, newBase, verdict, vcol){
+    const T = 10, tt = t % T;
+    const lift = smooth(seg(tt, 1.2, 2.2)), rna = smooth(seg(tt, 2.6, 3.4)), aa = smooth(seg(tt, 3.8, 4.6)), v = smooth(seg(tt, 4.8, 5.4));
+    const i = k * 3 + j, m1 = GENE.slice(0, i) + newBase + GENE.slice(i + 1);
+    const orig = translate(GENE);
+    let s = rowLabels(200) + `<text x="560" y="58" class="t18 mid">One base changes in codon ${k + 1}</text>`;
+    const x0 = 560 - 2 * 118, bx = x0 + k * 118 + (j - 1) * 33;
+    const showRna = rna >= 1 ? m1 : GENE;
+    /* base rows drawn from the mRNA, with the swapped tile animated */
+    s += strip(showRna, {x0, dnaM:lift >= 1 ? m1 : GENE, aaM:aa >= 1 ? m1 : GENE, hi:new Set(lift >= 1 ? [i] : []), aaOp:1, aaState:(kk, a) => (aa >= 1 && a !== orig[kk]) ? "diff" : "same"});
+    if (lift < 1){
+      s += `<rect x="${f1(bx - 17)}" y="${L_Y.dna - 2}" width="34" height="34" fill="#fff"/>`;
+      s += tile(bx, L_Y.dna - 60 * lift, TODNA[GENE[i]], 1 - lift) + tile(bx, L_Y.dna - 60 * (1 - lift), TODNA[newBase], lift, ORANGE);
+    }
+    if (lift >= 1 && rna < 1){
+      s += `<rect x="${f1(bx - 17)}" y="${L_Y.rna - 2}" width="34" height="34" fill="#fff"/>`;
+      s += tile(bx, L_Y.rna, GENE[i], 1 - rna) + tile(bx, L_Y.rna, newBase, rna, ORANGE);
+    }
+    if (lift > 0 && lift < 1) s += `<text x="${f1(bx)}" y="${L_Y.dna - 70}" class="t13 mid" opacity="${f3(Math.sin(lift * Math.PI))}">One base swapped</text>`;
+    s += pill(560, 410, verdict, vcol, v);
+    return s;
+  }
+  const SC = {
+    intro:t => {
+      const T = 9, tt = t % T, flip = smooth(seg(tt, 1.6, 2.6)), pass = smooth(seg(tt, 3.6, 4.4));
+      const top = "ATGCCATTAG", bot = "TACGGTAATC", mi = 5;
+      let s = `<text x="500" y="56" class="t18 mid">${resolved("mutation") ? "A mutation" : "A ?"} is a permanent change in the base sequence</text>`;
+      s += `<path d="M190,170 H810 M190,300 H810" stroke="#9aa3b5" stroke-width="6" stroke-linecap="round"/>`;
+      for (let i = 0; i < 10; i++){
+        const x = 230 + i * 60;
+        let a = top[i], b = bot[i];
+        const hot = i === mi;
+        if (hot && flip > .5){ a = "G"; b = "C"; }
+        s += `<path d="M${x},204 V${266}" stroke="#c9cfdb" stroke-width="3"/>`;
+        if (hot && flip > 0 && flip < 1){
+          const w = Math.abs(Math.cos(flip * Math.PI));
+          s += `<g transform="translate(${x} 0) scale(${f3(Math.max(.05, w))} 1) translate(${-x} 0)">${tile(x, 176, a, 1)}${tile(x, 264, b, 1)}</g>`;
+        } else s += tile(x, 176, a, 1, hot && flip >= 1 ? ORANGE : null) + tile(x, 264, b, 1, hot && flip >= 1 ? ORANGE : null);
+      }
+      s += `<text x="500" y="352" class="t13 mid muted" opacity="${f3(flip)}">An A-T pair became a G-C pair</text>`;
+      s += pill(500, 410, "Copied into every daughter cell from now on", BLUE, pass);
+      return s;
+    },
+    subs3:t => {
+      const EX = [["silent","Silent","GCA","GCG","Ala","Ala",GREEN],["missense","Missense","UUC","UCC","Phe","Ser",ORANGE],["nonsense","Nonsense","GGA","UGA","Gly","Stop",RED]];
+      const on = Math.floor((t / 2.2) % 3);
+      let s = `<text x="500" y="52" class="t18 mid">One ${resolved("substitution") ? "substitution" : "?"}, three possible outcomes</text>`;
+      EX.forEach((e, p) => {
+        const cx = 180 + p * 320, hot = p === on;
+        s += `<rect x="${cx - 150}" y="84" width="300" height="320" rx="20" fill="${hot ? "#f7f8ff" : "#fafbfd"}" stroke="${hot ? e[6] : "#dde2ea"}" stroke-width="${hot ? 3 : 1.5}"/>`;
+        s += `<text x="${cx}" y="122" class="t18 mid">${resolved(e[0]) ? e[1] : "?"}</text>`;
+        s += `<text x="${cx}" y="160" class="t12 mid muted">mRNA codon</text>`;
+        for (let j = 0; j < 3; j++){
+          s += tile(cx - 75 + (j - 1) * 30, 176, e[2][j], 1);
+          s += tile(cx + 75 + (j - 1) * 30, 176, e[3][j], 1, e[2][j] !== e[3][j] ? e[6] : null);
+        }
+        s += arrow(cx - 20, 191, cx + 20, 191);
+        s += `<text x="${cx}" y="258" class="t12 mid muted">amino acid</text>`;
+        s += aaChip(cx - 75, 292, e[4], "same") + aaChip(cx + 75, 292, e[5], e[5] === "Stop" ? "stop" : e[4] === e[5] ? "same" : "diff");
+        s += arrow(cx - 30, 292, cx + 30, 292);
+        s += `<text x="${cx}" y="362" class="t13 mid" fill="${e[6]}">${p === 0 ? "Same protein" : p === 1 ? "One amino acid swapped" : "Protein cut short"}</text>`;
+      });
+      return s;
+    },
+    silent:t => subScene(t, 1, 2, "G", "Silent: GCA and GCG both code for Ala", GREEN),
+    missense:t => subScene(t, 2, 1, "C", "Missense: Phe became Ser", ORANGE),
+    nonsense:t => subScene(t, 3, 0, "U", "Nonsense: an early stop codon", RED),
+    frame:t => {
+      const T = 9, tt = t % T, ins = smooth(seg(tt, 2, 3.2)), re = smooth(seg(tt, 3.4, 4.2));
+      const W = 30, G = 18;
+      const pos = (i, x0) => x0 + i * W + Math.floor(i / 3) * G;
+      const orig = "THECATATETHERAT", neu = "THEXCATATETHERAT";
+      let s = `<text x="500" y="52" class="t18 mid">Reading in threes: the reading ${resolved("frame") ? "frame" : "?"}</text>`;
+      s += `<text x="230" y="138" class="t15 end">Original</text>`;
+      const x1 = 280;
+      for (let g = 0; g < 5; g++) s += `<rect x="${f1(pos(g * 3, x1) - 15)}" y="112" width="${3 * W}" height="40" rx="10" fill="#e1f3e8" stroke="${GREEN}" stroke-width="2"/>`;
+      for (let i = 0; i < orig.length; i++) s += `<text x="${f1(pos(i, x1))}" y="140" font-size="22" font-weight="700" fill="#1d2433" text-anchor="middle">${orig[i]}</text>`;
+      s += `<text x="230" y="268" class="t15 end">One letter added</text>`;
+      const x2 = 280, y2 = 270;
+      if (re > 0){
+        for (let g = 0; g < 6; g++){
+          const len = g === 5 ? 1 : 3, bad = g > 0;
+          s += `<rect x="${f1(pos(g * 3, x2) - 15)}" y="${y2 - 28}" width="${len * W}" height="40" rx="10" fill="${bad ? "#fdeee5" : "#e1f3e8"}" stroke="${bad ? ORANGE : GREEN}" stroke-width="2" opacity="${f3(re)}"/>`;
+        }
+      }
+      for (let i = 0; i < orig.length; i++){
+        const ni = i >= 3 ? i + 1 : i;
+        const x = lerp(pos(i, x2), pos(ni, x2), ins);
+        s += `<text x="${f1(x)}" y="${y2}" font-size="22" font-weight="700" fill="#1d2433" text-anchor="middle">${orig[i]}</text>`;
+      }
+      if (ins > 0) s += `<text x="${f1(pos(3, x2))}" y="${f1(lerp(y2 - 90, y2, ins))}" font-size="22" font-weight="700" fill="${ORANGE}" text-anchor="middle" opacity="${f3(ins)}">X</text>`;
+      s += pill(500, 370, "THE XCA TAT ETH ERA T: nonsense after the change!", ORANGE, re);
+      s += `<text x="500" y="430" class="t13 mid muted">Every group after the insertion is read wrong.</text>`;
+      return s;
+    },
+    indel:t => {
+      const T = 16, tt = t % T, half = tt < 8, u = half ? tt : tt - 8;
+      const drop = smooth(seg(u, 1.2, 2.4)), show = smooth(seg(u, 2.6, 3.4)), v = smooth(seg(u, 3.8, 4.4));
+      const orig = translate(GENE);
+      const m1 = half ? GENE.slice(0, 3) + "G" + GENE.slice(3) : GENE.slice(0, 6) + GENE.slice(7);
+      const hiIdx = half ? 3 : -1;
+      let s = rowLabels(170) + `<text x="500" y="50" class="t18 mid">${half ? "Insertion: one extra base" : "Deletion: one missing base"}</text>`;
+      s += strip(GENE, {op:1 - show, aaState:() => "same"});
+      if (half && drop < 1 && drop > 0){
+        const x = 560 - 2 * 118 + 59;
+        s += tile(x, lerp(L_Y.dna - 70, L_Y.dna - 38, drop), "C", drop, ORANGE);
+      }
+      if (!half && drop > 0 && show < 1){
+        const x = 560 - 2 * 118 + 2 * 118 - 33;
+        s += `<g opacity="${f3(1 - show)}"><rect x="${f1(x - 18)}" y="${L_Y.dna - 5}" width="36" height="${L_Y.rna - L_Y.dna + 40}" rx="8" fill="none" stroke="${RED}" stroke-width="3" stroke-dasharray="6 5"/></g>`;
+      }
+      s += strip(m1, {op:show, hi:new Set(hiIdx >= 0 ? [hiIdx] : []), aaState:(k, a) => a !== orig[k] ? "diff" : "same"});
+      s += pill(560, 412, half ? "Met stays, then every amino acid changes" : "Met and Ala stay, then everything changes", ORANGE, v);
+      return s;
+    },
+    mutagens:t => {
+      let s = `<text x="500" y="52" class="t18 mid">${resolved("mutagens") ? "Mutagens" : "?"}: things that cause mutations</text>`;
+      s += `<rect x="60" y="84" width="420" height="330" rx="22" fill="#fff8e6" stroke="#e5c56a" stroke-width="2.5"/><rect x="520" y="84" width="420" height="330" rx="22" fill="#eef8f3" stroke="#7fbf9c" stroke-width="2.5"/>`;
+      s += `<text x="270" y="122" class="t18 mid">${resolved("physical") ? "Physical" : "?"}</text><text x="730" y="122" class="t18 mid">Chemical</text>`;
+      const pulse = .5 + .5 * Math.sin(t * 3);
+      s += `<circle cx="190" cy="210" r="34" fill="${GOLD}"/>`;
+      for (let i = 0; i < 10; i++){ const a = i * Math.PI / 5; s += `<path d="M${f1(190 + 44 * Math.cos(a))},${f1(210 + 44 * Math.sin(a))} L${f1(190 + (54 + 8 * pulse) * Math.cos(a))},${f1(210 + (54 + 8 * pulse) * Math.sin(a))}" stroke="${GOLD}" stroke-width="4" stroke-linecap="round"/>`; }
+      s += `<text x="190" y="300" class="t15 mid">UV (nonionizing)</text>`;
+      s += `<path d="M330,180 l20,20 l-14,4 l22,26" fill="none" stroke="${PURPLE}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="${f3(.5 + .5 * pulse)}"/><path d="M362,176 l20,20 l-14,4 l22,26" fill="none" stroke="${PURPLE}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="${f3(1 - .5 * pulse)}"/>`;
+      s += `<text x="360" y="300" class="t15 mid">Ionizing radiation</text>`;
+      s += `<text x="270" y="364" class="t13 mid muted">Radiation damages the DNA directly</text>`;
+      s += `<path d="M708,160 v40 l-34,64 a10,10 0 0 0 9,14 h94 a10,10 0 0 0 9,-14 l-34,-64 v-40 z" fill="#d6efe2" stroke="${TEAL}" stroke-width="3"/><path d="M690,240 h80 l16,30 a8,8 0 0 1 -7,11 h-98 a8,8 0 0 1 -7,-11 z" fill="${GREEN}" opacity=".75"/>`;
+      for (let i = 0; i < 3; i++){ const bt = (t * .7 + i / 3) % 1; s += `<circle cx="${720 + (i - 1) * 16}" cy="${f1(262 - bt * 120)}" r="${f1(5 + i)}" fill="none" stroke="${TEAL}" stroke-width="2" opacity="${f3(1 - bt)}"/>`; }
+      s += `<text x="730" y="312" class="t15 mid">Nucleoside analogs</text><text x="730" y="334" class="t15 mid">Base-modifying agents</text><text x="730" y="356" class="t15 mid">Frameshift mutagens</text>`;
+      s += `<text x="730" y="392" class="t13 mid muted">Swap, change, or add bases</text>`;
+      return s;
+    },
+    nitrous:t => {
+      const T = 11, tt = t % T;
+      const come = smooth(seg(tt, .8, 2)), mod = smooth(seg(tt, 2, 2.8)), s2 = smooth(seg(tt, 3.4, 4.4)), s3 = smooth(seg(tt, 5.4, 6.4)), v = smooth(seg(tt, 7, 7.6));
+      let s = `<text x="500" y="52" class="t18 mid">A base-modifying agent (nitrous acid) turns A-T into G-C</text>`;
+      const X = [190, 500, 810];
+      s += `<text x="${X[0]}" y="112" class="t15 mid">1. Normal pair</text>`;
+      s += tile(X[0], 170, "A", 1, mod > .5 ? ORANGE : null);
+      if (mod > .5) s += `<circle cx="${X[0] + 13}" cy="172" r="7" fill="${ORANGE}" stroke="#fff" stroke-width="2"/>`;
+      s += `<path d="M${X[0]},204 V234" stroke="#9aa3b5" stroke-width="3"/>` + tile(X[0], 238, "T", 1);
+      const hx = lerp(X[0] + 110, X[0] + 34, come), hy = lerp(120, 160, come);
+      s += `<g opacity="${f3(come * (1 - mod))}"><circle cx="${f1(hx)}" cy="${f1(hy)}" r="24" fill="#d6efe2" stroke="${TEAL}" stroke-width="2"/><text x="${f1(hx)}" y="${f1(hy + 5)}" class="t12 mid">HNO\u2082</text></g>`;
+      s += `<text x="${X[0]}" y="310" class="t13 mid" opacity="${f3(mod)}">A is chemically changed</text>`;
+      s += arrow(X[0] + 80, 220, X[1] - 80, 220, s2);
+      s += `<g opacity="${f3(s2)}"><text x="${X[1]}" y="112" class="t15 mid">2. Replication</text>`;
+      s += tile(X[1], 170, "A", 1, ORANGE) + `<circle cx="${X[1] + 13}" cy="172" r="7" fill="${ORANGE}" stroke="#fff" stroke-width="2"/>`;
+      s += `<path d="M${X[1]},204 V234" stroke="${ORANGE}" stroke-width="3"/>` + tile(X[1], 238, "C", 1, ORANGE);
+      s += `<text x="${X[1]}" y="310" class="t13 mid">Changed A pairs with ${resolved("cytosine") ? "C" : "?"}, not T</text></g>`;
+      s += arrow(X[1] + 80, 220, X[2] - 80, 220, s3);
+      s += `<g opacity="${f3(s3)}"><text x="${X[2]}" y="112" class="t15 mid">3. Next replication</text>`;
+      s += tile(X[2], 170, "G", 1, ORANGE) + `<path d="M${X[2]},204 V234" stroke="#9aa3b5" stroke-width="3"/>` + tile(X[2], 238, "C", 1, ORANGE);
+      s += `<text x="${X[2]}" y="310" class="t13 mid">The C gets a G partner</text></g>`;
+      s += pill(500, 400, "A-T became G-C: a permanent substitution", TEAL, v);
+      return s;
+    },
+    uv:t => {
+      const T = 10, tt = t % T;
+      const rays = seg(tt, .8, 3), bond = smooth(seg(tt, 3, 3.8)), v = smooth(seg(tt, 4.4, 5));
+      const seq = "ACTTGACG";
+      let s = `<text x="500" y="52" class="t18 mid">UV light glues neighboring thymines together</text>`;
+      s += `<circle cx="120" cy="110" r="30" fill="${GOLD}"/>`;
+      for (let i = 0; i < 8; i++){ const a = i * Math.PI / 4; s += `<path d="M${f1(120 + 38 * Math.cos(a))},${f1(110 + 38 * Math.sin(a))} L${f1(120 + 48 * Math.cos(a))},${f1(110 + 48 * Math.sin(a))}" stroke="${GOLD}" stroke-width="4" stroke-linecap="round"/>`; }
+      s += `<text x="120" y="176" class="t13 mid">UV</text>`;
+      if (rays > 0 && rays < 1){
+        for (let r = 0; r < 3; r++){
+          const p = (rays * 2 + r / 3) % 1, x = lerp(170, 440, p), y = lerp(130, 250, p);
+          s += `<path d="M${f1(x - 30)},${f1(y - 14)} l10,-6 l6,12 l10,-6 l6,12" fill="none" stroke="${PURPLE}" stroke-width="3" stroke-linecap="round" opacity="${f3(1 - p * .4)}"/>`;
+        }
+      }
+      s += `<path d="M230,296 H770" stroke="#9aa3b5" stroke-width="6" stroke-linecap="round"/>`;
+      for (let i = 0; i < seq.length; i++){
+        let x = 260 + i * 68;
+        const dim = i === 2 || i === 3;
+        if (dim) x += (i === 2 ? 1 : -1) * 5 * bond;
+        const y = dim ? 250 - 14 * bond : 250;
+        s += `<path d="M${f1(x)},${f1(y + 32)} L${260 + i * 68},296" stroke="#9aa3b5" stroke-width="3"/>`;
+        s += tile(x, y, seq[i], 1, dim && bond > .5 ? ORANGE : null);
+      }
+      if (bond > 0) s += `<path d="M${f1(396 + 5 * bond + 15)},${f1(250 - 14 * bond + 10)} H${f1(464 - 5 * bond - 15)} M${f1(396 + 5 * bond + 15)},${f1(250 - 14 * bond + 20)} H${f1(464 - 5 * bond - 15)}" stroke="${ORANGE}" stroke-width="4" opacity="${f3(bond)}"/>`;
+      s += `<text x="430" y="200" class="t15 mid" opacity="${f3(bond)}">Thymine ${resolved("dimer") ? "dimer" : "?"} (a pyrimidine dimer)</text>`;
+      s += pill(560, 380, "The kink blocks replication until it's repaired", PURPLE, v);
+      s += `<text x="560" y="430" class="t13 mid muted" opacity="${f3(v)}">Ionizing radiation works differently: it makes free radicals that attack DNA</text>`;
+      return s;
+    },
+    ames:t => {
+      const T = 10, tt = t % T, grow = seg(tt, 1, 5), v = smooth(seg(tt, 5.4, 6));
+      let s = `<text x="500" y="46" class="t18 mid">The Ames test: count the comeback colonies</text>`;
+      const P = [[290,"Control: no chemical",5],[710,"Chemical + activation enzymes",46]];
+      let seed = 7; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      P.forEach(p => {
+        const cx = p[0], cy = 240;
+        s += `<text x="${cx}" y="94" class="t15 mid">${p[1]}</text>`;
+        s += `<circle cx="${cx}" cy="${cy}" r="126" fill="#f6ecd2" stroke="#b8b0a0" stroke-width="5"/><circle cx="${cx}" cy="${cy}" r="116" fill="none" stroke="#e6dcc2" stroke-width="2"/>`;
+        for (let i = 0; i < p[2]; i++){
+          const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 100, when = rnd();
+          const g = smooth(clamp((grow - when * .7) * 3, 0, 1));
+          if (g > 0) s += `<circle cx="${f1(cx + r * Math.cos(a))}" cy="${f1(cy + r * Math.sin(a))}" r="${f1(6 * g)}" fill="#f4f1e6" stroke="#b9a877" stroke-width="1.5"/>`;
+        }
+      });
+      s += `<text x="500" y="394" class="t13 mid muted">Both plates: <tspan class="it">Salmonella</tspan> his⁻ on medium without ${resolved("histidine") ? "histidine" : "?"}</text>`;
+      s += pill(500, 430, "More revertants = more mutagenic = possibly carcinogenic", BLUE, v);
+      return s;
+    },
+    review:t => {
+      const R = [["Silent", ["Met","Ala","Phe","Gly"], [0,0,0,0], GREEN],
+                 ["Missense", ["Met","Ala","Ser","Gly"], [0,0,1,0], ORANGE],
+                 ["Nonsense", ["Met","Ala","Phe","Stop"], [0,0,0,2], RED],
+                 [resolved("frameshift") ? "Frameshift" : "?", ["Met","Gly","Ile","Arg"], [0,1,1,1], PURPLE]];
+      const on = Math.floor((t / 1.8) % 4);
+      let s = `<text x="500" y="50" class="t18 mid">Same gene, four kinds of change</text>`;
+      R.forEach((r, i) => {
+        const y = 110 + i * 82, hot = i === on;
+        s += `<rect x="90" y="${y - 32}" width="820" height="64" rx="16" fill="${hot ? "#f7f8ff" : "#fafbfd"}" stroke="${hot ? r[3] : "#dde2ea"}" stroke-width="${hot ? 3 : 1.5}"/>`;
+        s += `<text x="130" y="${y + 6}" class="t18">${r[0]}</text>`;
+        r[1].forEach((a, j) => s += aaChip(430 + j * 100, y, a, r[2][j] === 2 ? "stop" : r[2][j] ? "diff" : "same"));
+      });
+      s += `<text x="500" y="440" class="t13 mid muted">Original protein: Met, Ala, Phe, Gly, then stop</text>`;
+      return s;
+    }
+  };
+
+  /* ================= Steps ================= */
+  const P1 = "The basics", P2 = "Base substitutions", P3 = "Frameshifts", P4 = "Mutagens", P5 = "Testing and review";
+  const ED = ["Try it in the DNA Editor", "#editor"];
+  const TABLE = {cap:"Types of mutations at a glance", head:["Mutation","What changes in the DNA","Effect on the protein"], order:["a","b","c","d"], rows:{
+    a:["Silent","One base substituted","None: the new codon codes for the same amino acid"],
+    b:["Missense","One base substituted","One amino acid is swapped for a different one"],
+    c:["Nonsense","One base substituted","A stop codon appears early, so the protein is cut short"],
+    d:["Frameshift","One or a few bases inserted or deleted","The reading frame shifts, so every amino acid downstream changes"]}};
+  const STEPS = [
+    {part:P1, title:"What is a mutation?", v:"intro", more:"rate",
+     text:`A {{mutation}} is a permanent change in the base sequence of {{dna}}. Mutations can happen spontaneously or be induced by mutagens. The mutation {{rate}} is the probability that a gene will mutate when a cell divides, written as 10 to a negative power. A low spontaneous rate is actually a good thing: it provides the genetic diversity needed for evolution. Many mutations are neutral (no effect), some are harmful, and some are beneficial.`},
+    {part:P2, title:"Base substitutions", v:"subs3", more:"code",
+     text:`The most common mutation is a base {{substitution}}, also called a point mutation: one base pair is swapped for a different one. When that gene is transcribed and translated, the change can end three different ways. Let's look at each one!`},
+    {part:P2, title:"Silent mutations", v:"silent", more:"code", links:[ED],
+     text:`Here the third base of codon 2 changes, so the mRNA codon GCA becomes GCG. Both codons code for alanine! This is a {{silent}} mutation: the DNA changed, but the protein is exactly the same. It works because most amino acids have more than one codon.`,
+     after:`Same protein, no harm done.`},
+    {part:P2, title:"Missense mutations", v:"missense", more:"sickle", links:[ED],
+     text:`Now codon 3 changes from UUC to UCC, which codes for serine instead of phenylalanine. One amino acid is swapped for another: a {{missense}} mutation. The protein might still work, work less well, or not work at all, depending on where the change lands.`},
+    {part:P2, title:"Nonsense mutations", v:"nonsense", more:"nmd", links:[ED],
+     text:`This time codon 4 changes from GGA to UGA, which is a {{stop}} codon. Translation ends early, so the protein is cut short. That's a {{nonsense}} mutation, and the shortened protein usually can't do its job.`},
+    {part:P3, title:"The reading frame", v:"frame", more:"crick",
+     text:`The ribosome reads codons three bases at a time, starting at the start codon. That grouping is called the reading {{frame}}. Insert or delete one letter and every group after it shifts, just like adding one letter to this sentence.`},
+    {part:P3, title:"Insertions and deletions", v:"indel", more:"indel", links:[ED],
+     text:`A {{frameshift}} mutation happens when nucleotides are inserted or deleted, which shifts the reading frame of codons. Every codon {{downstream}} of the change is read in the wrong groups, so the amino acids after it are all different. This usually wrecks the protein, which is why frameshifts are so damaging.`,
+     after:`Try it yourself in the DNA Editor tab!`},
+    {part:P4, title:"Mutagens", v:"mutagens", more:"mutagen",
+     text:`{{mutagens}} are agents in the environment that cause permanent changes in DNA. They raise the mutation rate above the spontaneous rate. There are two types: {{physical}} mutagens, which are forms of radiation, and chemical mutagens.`},
+    {part:P4, title:"Chemical mutagens", v:"nitrous", more:"chem",
+     text:`There are three kinds of chemical mutagens. Nucleoside {{analogs}} are incorporated into DNA in place of normal bases. {{basemod}} agents alter existing bases: nitrous acid, for example, makes adenine pair with {{cytosine}} instead of thymine, so after replication an A-T pair becomes a G-C pair. Frameshift mutagens cause insertions or deletions.`},
+    {part:P4, title:"Physical mutagens: radiation", v:"uv", more:"uv",
+     text:`{{ionizing}} radiation, like X-rays and gamma rays, causes the formation of ions and free radicals that react with DNA. UV radiation is nonionizing: it causes bonding between adjacent thymines, forming a pyrimidine {{dimer}}. The kink blocks replication until the cell repairs it.`},
+    {part:P5, title:"The Ames test", v:"ames", more:"ames",
+     text:`The Ames test is a rapid, inexpensive way to identify potential chemical carcinogens. It uses <i>Salmonella</i> his⁻ mutants, which cannot make {{histidine}}. Mix the bacteria with the chemical plus activation enzymes, then plate them on medium without histidine. Only cells that mutate back to normal can grow, and these colonies are called {{revertants}}. A higher reversion rate means more mutagenic and possibly carcinogenic: 90% of substances mutagenic in the Ames test are also {{carcinogens}} in animals.`},
+    {part:P5, title:"Putting it together", v:"review", more:"review", table:TABLE, links:[ED,["Translation module","translation.html"]],
+     text:`Awesome work! Substitutions change one base and can be silent, missense, or nonsense. Frameshifts insert or delete bases and scramble everything downstream. Head to the DNA Editor to make each kind yourself and complete the missions.`,
+     after:`You're a mutation expert now!`}
+  ];
+  const LAST = STEPS.length - 1;
+
+  /* ================= State ================= */
+  let mode = "learn", idx = 0, furthest = 0, bl = {};
+  let scene = STEPS[0].v, frozen = false, sceneT = 0;
+  const $ = id => document.getElementById(id);
+  const svg = $("scene"), textEl = $("stepText"), afterEl = $("stepAfter"), fb = $("feedback"), checkRow = $("checkRow");
+  const nextBtn = $("nextBtn"), backBtn = $("backBtn"), bubble = $("bubble");
+  window.__resolvedRef = id => mode === "learn" || !!bl[id];
+  const blanksOf = st => (st.text.match(/\{\{(\w+)\}\}/g) || []).map(m => m.slice(2, -2));
+  const stepResolved = i => mode === "learn" || blanksOf(STEPS[i]).every(id => bl[id]);
+
+  function render(){ svg.innerHTML = SC[scene] ? SC[scene](frozen ? 0 : sceneT) : ""; }
+  let last = performance.now();
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function frame(now){ const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; if (!frozen && !reduced) sceneT += dt; render(); requestAnimationFrame(frame); }
+
+  /* ================= Answers ================= */
+  function lev(a, b){ const m = a.length, n = b.length, d = []; for (let i = 0; i <= m; i++) d[i] = [i]; for (let j = 0; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)); return d[m][n]; }
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  function matches(id, val){ const b = BL[id], v = norm(val); if (!v) return false; return b.ans.some(a => a === v || (b.fuzzy && a.length >= 5 && lev(v, a) <= 1)); }
+
+  /* ================= UI ================= */
+  const termHTML = (id, cls) => `<strong class="term ${cls || ""}">${BL[id].show}</strong>`;
+  function termEl(id, cls){ const s = document.createElement("strong"); s.className = "term " + cls; s.textContent = BL[id].show; return s; }
+  function blankHTML(id){
+    if (mode === "learn") return termHTML(id);
+    if (bl[id]) return termHTML(id, bl[id]);
+    return `<input class="blank" data-id="${id}" size="${Math.max(3, BL[id].show.length + 1)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Fill in the blank">`;
+  }
+  function renderTable(){
+    const st = STEPS[idx], wrap = $("tableWrap");
+    const D = st.table && stepResolved(idx) ? st.table : null;
+    if (!D){ wrap.hidden = true; return; }
+    wrap.innerHTML = `<div class="cap">${D.cap}</div><table><thead><tr>${D.head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>`
+      + D.order.map(k => `<tr>${D.rows[k].map((c, j) => j ? `<td>${c}</td>` : `<td><b>${c}</b></td>`).join("")}</tr>`).join("") + `</tbody></table>`;
+    wrap.hidden = false;
+  }
+  function openMore(k){ const m = MORE[k]; $("moreTitle").textContent = m.title; $("moreBody").innerHTML = m.html; $("moreOverlay").hidden = false; $("moreClose").focus(); }
+  const closeMore = () => { $("moreOverlay").hidden = true; };
+  function footer(){
+    const st = STEPS[idx];
+    let h = (st.links || []).map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
+    if (st.more) h += `<button class="more-btn" data-more="${st.more}">Learn more</button><span class="more-note">Extra deep-dive, not on the exam</span>`;
+    $("bubbleFoot").innerHTML = h;
+    $("bubbleFoot").querySelectorAll("[data-more]").forEach(b => b.addEventListener("click", () => openMore(b.dataset.more)));
+  }
+  function showAfter(){ const st = STEPS[idx]; if (st.after && stepResolved(idx)){ afterEl.textContent = st.after; afterEl.hidden = false; } else afterEl.hidden = true; }
+  function updateButtons(){
+    const openB = mode === "test" && !!textEl.querySelector("input.blank");
+    checkRow.hidden = !openB; nextBtn.disabled = openB; backBtn.disabled = idx === 0;
+    nextBtn.textContent = idx === LAST ? "Start over" : "Next";
+  }
+  function renderBubble(){
+    const st = STEPS[idx];
+    $("stepNo").textContent = `${st.part} (step ${idx + 1} of ${STEPS.length})`;
+    $("stepTitle").textContent = st.title;
+    textEl.innerHTML = st.text.replace(/\{\{(\w+)\}\}/g, (m, id) => blankHTML(id));
+    textEl.querySelectorAll("input.blank").forEach(inp => {
+      inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); check(); } });
+      inp.addEventListener("input", () => inp.classList.remove("wrong"));
+    });
+    fb.textContent = ""; fb.className = "feedback";
+    showAfter(); footer(); updateButtons();
+    bubble.classList.remove("pop"); void bubble.offsetWidth; bubble.classList.add("pop");
+    const first = textEl.querySelector("input.blank"); if (first && mode === "test") first.focus({preventScroll:true});
+  }
+  function renderNav(){
+    const dots = $("dots"); dots.innerHTML = "";
+    STEPS.forEach((st, i) => {
+      if (i > 0 && STEPS[i - 1].part !== st.part){ const g = document.createElement("span"); g.className = "gap"; dots.appendChild(g); }
+      const b = document.createElement("button");
+      b.className = "dot" + (i === idx ? " current" : (i < furthest || i < idx ? " seen" : ""));
+      b.textContent = i + 1; b.title = `${st.part}: ${st.title}`; b.setAttribute("aria-label", `Go to step ${i + 1}: ${st.title}`);
+      b.disabled = mode === "test" && i > furthest;
+      b.addEventListener("click", () => goTo(i));
+      dots.appendChild(b);
+    });
+  }
+  function enterStep(i, force){
+    const changed = i !== idx || force; idx = i;
+    const st = STEPS[i], res = stepResolved(i);
+    if (res) furthest = Math.max(furthest, i + 1);
+    if (changed) sceneT = 0;
+    scene = st.v; frozen = !res;
+    renderBubble(); renderNav(); renderTable(); render();
+  }
+  const goTo = i => enterStep(clamp(i, 0, LAST));
+  function resolvedNow(){
+    furthest = Math.max(furthest, idx + 1);
+    updateButtons(); renderNav(); showAfter(); renderTable();
+    sceneT = 0; frozen = false;
+    nextBtn.focus({preventScroll:true});
+  }
+  function check(){
+    const inputs = [...textEl.querySelectorAll("input.blank")];
+    let wrong = 0, empty = 0;
+    inputs.forEach(inp => {
+      const id = inp.dataset.id;
+      if (!inp.value.trim()){ empty++; wrong++; return; }
+      if (matches(id, inp.value)){ bl[id] = "correct"; inp.replaceWith(termEl(id, "correct")); }
+      else { wrong++; inp.classList.remove("wrong"); void inp.offsetWidth; inp.classList.add("wrong"); }
+    });
+    if (wrong){
+      fb.className = "feedback bad";
+      fb.textContent = empty === wrong ? "Type an answer in each blank, or tap Move on to see it." : "Not quite yet. Give it another try, or tap Move on to see the answer.";
+      const n = textEl.querySelector("input.wrong") || textEl.querySelector("input.blank"); if (n) n.focus({preventScroll:true});
+      updateButtons();
+    } else {
+      const cheers = ["Correct!", "Nailed it!", "Yes! Great job.", "Exactly right!", "You've got it!"];
+      fb.className = "feedback good"; fb.textContent = cheers[idx % cheers.length];
+      resolvedNow();
+    }
+  }
+  function moveOn(){
+    textEl.querySelectorAll("input.blank").forEach(inp => { const id = inp.dataset.id; bl[id] = "revealed"; inp.replaceWith(termEl(id, "revealed")); });
+    fb.className = "feedback warn"; fb.textContent = "Here's the answer. Read it over, then tap Next when you're ready.";
+    resolvedNow();
+  }
+  function setMode(m){
+    mode = m;
+    $("learnBtn").setAttribute("aria-pressed", m === "learn");
+    $("testBtn").setAttribute("aria-pressed", m === "test");
+    $("modeHint").textContent = m === "learn"
+      ? "Learn mode: every term is filled in. Read each bubble, watch what happens, then tap Next."
+      : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
+    enterStep(idx, true);
+  }
+  function restart(){ bl = {}; furthest = 0; enterStep(0, true); }
+
+  $("learnBtn").addEventListener("click", () => setMode("learn"));
+  $("testBtn").addEventListener("click", () => setMode("test"));
+  $("restartBtn").addEventListener("click", restart);
+  $("checkBtn").addEventListener("click", check);
+  $("moveOnBtn").addEventListener("click", moveOn);
+  backBtn.addEventListener("click", () => goTo(idx - 1));
+  $("replayBtn").addEventListener("click", () => { sceneT = 0; });
+  nextBtn.addEventListener("click", () => { if (idx === LAST) restart(); else goTo(idx + 1); });
+  $("moreClose").addEventListener("click", closeMore);
+  $("moreOverlay").addEventListener("click", e => { if (e.target.id === "moreOverlay") closeMore(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !$("moreOverlay").hidden){ closeMore(); return; }
+    if (document.body.dataset.view === "lab") return;
+    if (!$("moreOverlay").hidden || (e.target && e.target.tagName === "INPUT")) return;
+    if (e.key === "ArrowRight" && !nextBtn.disabled && idx < LAST) goTo(idx + 1);
+    if (e.key === "ArrowLeft" && idx > 0) goTo(idx - 1);
+  });
+
+  setMode("learn");
+  requestAnimationFrame(frame);
+  window.__mu = {goTo, check, moveOn, setMode, openMore, STEPS, SC, get idx(){ return idx; }};
+})();
+</script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const B4 = "UCAG", ONE = "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG";
+  const THREE = {F:"Phe",L:"Leu",S:"Ser",Y:"Tyr","*":"Stop",C:"Cys",W:"Trp",P:"Pro",H:"His",Q:"Gln",R:"Arg",I:"Ile",M:"Met",T:"Thr",N:"Asn",K:"Lys",V:"Val",A:"Ala",D:"Asp",E:"Glu",G:"Gly"};
+  const CODE = {}; { let n = 0; for (const a of B4) for (const b of B4) for (const c of B4) CODE[a + b + c] = THREE[ONE[n++]]; }
+  const TORNA = {A:"U", T:"A", G:"C", C:"G"}, TODNA = {A:"T", U:"A", G:"C", C:"G"};
+
+  /* The gene starts just like the one in Transcription and Translation (Met, Ala, Phe, Gly), then keeps going.
+     The bases after the stop codon are "downstream" DNA that is not normally read. */
+  const GENE_MRNA = "AUGGCAUUCGGAAAAUGGCUGGAGUACCGUCAUUAA" + "AUAAAUAA";
+  const ORIG = [...GENE_MRNA].map(b => TODNA[b]).join("");
+  const translate = m => { const out = []; for (let i = 0; i + 3 <= m.length; i += 3){ const a = CODE[m.substr(i, 3)]; out.push(a); if (a === "Stop") break; } return out; };
+  const ORIG_P = translate(GENE_MRNA);
+
+  let bases, sel, hist, stats, note = "", done = {};
+  const MISSIONS = [
+    {id:"silent", label:"Silent", hint:"Change the third base of a codon. The Ala (GCA) and Gly (GGA) codons are good places to start."},
+    {id:"missense", label:"Missense", hint:"Change the first or second base of a codon and watch one amino acid swap."},
+    {id:"nonsense", label:"Nonsense", hint:"Aim for a stop codon (UAA, UAG, or UGA) in the mRNA. Lys (AAA) and Trp (UGG) are one base away!"},
+    {id:"fsins", label:"Frameshift: insertion", hint:"Select a base near the start, then insert one new base after it."},
+    {id:"fsdel", label:"Frameshift: deletion", hint:"Select a base near the start and delete it."},
+    {id:"rescue", label:"Bonus: rescue the frame", bonus:true, hint:"Insert one base, then delete a different base a few spots later. The protein after the second change comes back! Tap Reset first if you already have other changes."}
+  ];
+  let hintFor = null;
+
+  function reset(){ bases = [...ORIG].map(b => ({b, o:b})); sel = 3; hist = []; stats = {ins:0, del:0, sub:0}; note = ""; render(); }
+  const snap = () => { hist.push({bases:bases.map(x => ({...x})), sel, stats:{...stats}}); if (hist.length > 60) hist.shift(); };
+  function undo(){ const h = hist.pop(); if (!h) return; bases = h.bases; sel = h.sel; stats = h.stats; note = ""; render(); }
+  const dnaStr = () => bases.map(x => x.b).join("");
+  const mrnaStr = () => bases.map(x => TORNA[x.b]).join("");
+
+  function swap(b){ if (sel == null || bases[sel].b === b) return; snap(); bases[sel].b = b; stats.sub++; note = ""; render(); }
+  function insert(b){ if (sel == null) return; snap(); bases.splice(sel + 1, 0, {b, o:null}); sel = sel + 1; stats.ins++; note = ""; render(); }
+  function del(){ if (sel == null || bases.length < 4) return; snap(); bases.splice(sel, 1); sel = Math.min(sel, bases.length - 1); stats.del++; note = ""; render(); }
+  function zap(){
+    const as = bases.map((x, i) => x.b === "A" && i > 2 && i < 33 ? i : -1).filter(i => i >= 0);
+    if (!as.length){ note = "No A's left in the gene for nitrous acid to change!"; render(); return; }
+    snap();
+    const i = as[Math.floor(Math.random() * as.length)];
+    bases[i].b = "G"; sel = i; stats.sub++;
+    note = `Nitrous acid changed base ${i + 1} from A to G. After replication, that A-T pair is now a G-C pair.`;
+    render();
+  }
+
+  function classify(){
+    const m = mrnaStr(), d = bases.length - ORIG.length, P = translate(m);
+    const res = {P, d, type:"none"};
+    if (m === GENE_MRNA){ res.type = stats.ins + stats.del + stats.sub ? "back" : "none"; return res; }
+    let fc = 0; while (fc < m.length && fc < GENE_MRNA.length && m[fc] === GENE_MRNA[fc]) fc++;
+    res.pos = Math.min(fc, m.length - 1);
+    res.codon = Math.floor(res.pos / 3);
+    if (P[0] !== "Met"){ res.type = "start"; return res; }
+    if (d % 3 !== 0){ res.type = d > 0 ? "fsins" : "fsdel"; }
+    else if (d !== 0){ res.type = "inframe"; }
+    else if (stats.ins > 0 && stats.del > 0 && bases.some(x => x.o === null)){ res.type = "rescue"; }
+    else {
+      const stop0 = ORIG_P.length - 1, stop1 = P.indexOf("Stop");
+      if (P.join() === ORIG_P.join()) res.type = "silent";
+      else if (stop1 >= 0 && stop1 < stop0) res.type = "nonsense";
+      else if (stop1 < 0 || stop1 > stop0) res.type = "stoplost";
+      else res.type = "missense";
+    }
+    res.diff = P.reduce((n, a, k) => n + (a !== ORIG_P[k] ? 1 : 0), 0);
+    return res;
+  }
+
+  const TYPE = {
+    none:["No mutations yet", "neutral"], back:["Back to the original!", "good"],
+    silent:["Silent mutation", "good"], missense:["Missense mutation", "warn"], nonsense:["Nonsense mutation", "bad"],
+    fsins:["Frameshift: insertion", "bad"], fsdel:["Frameshift: deletion", "bad"], inframe:["In-frame insertion or deletion", "warn"],
+    rescue:["Frame rescued!", "good"], stoplost:["Stop codon lost", "warn"], start:["Start codon lost", "bad"]
+  };
+  function explain(r){
+    const k = r.codon + 1, cod0 = GENE_MRNA.substr(r.codon * 3, 3), cod1 = mrnaStr().substr(r.codon * 3, 3);
+    const a0 = ORIG_P[r.codon], a1 = r.P[r.codon];
+    const len = r.P.includes("Stop") ? r.P.length - 1 : r.P.length, len0 = ORIG_P.length - 1;
+    const n = Math.abs(r.d), bb = n === 1 ? "base" : "bases";
+    switch (r.type){
+      case "none": return "Tap any DNA base to select it, then use the tools below to swap, insert, or delete a base. The mRNA and protein update instantly.";
+      case "back": return "Your changes cancel out, so the sequence matches the original gene again. Try a new mission!";
+      case "silent": return `Codon ${k} changed from ${cod0} to ${cod1}, but both code for ${a1}. The protein is exactly the same! Most amino acids have backup codons, so many third-base changes are silent.`;
+      case "missense": return `Codon ${k} changed from ${cod0} to ${cod1}, so ${a0} became ${a1}. One amino acid swapped. The protein may still work, work less well, or not work, depending on the spot.`;
+      case "nonsense": return `A stop codon showed up early, so translation ends after ${len} amino acids instead of ${len0}. A protein this short usually can't do its job.`;
+      case "fsins": case "fsdel": {
+        const verb = r.type === "fsins" ? `inserted ${n} ${bb}` : `deleted ${n} ${bb}`;
+        const stopTxt = r.P.includes("Stop") ? (len < len0 ? `A stop codon shows up early, so the protein is only ${len} amino acids long.` : `The ribosome reads right past where the gene used to end, making a protein ${len} amino acids long.`) : "There's no stop codon in the new frame at all!";
+        return `You ${verb}, so every codon from codon ${k} on is read in a new frame. ${r.diff} amino acid${r.diff === 1 ? "" : "s"} changed. ${stopTxt} That's why frameshifts do so much damage.`;
+      }
+      case "inframe": return `You ${r.d > 0 ? "inserted" : "deleted"} ${n} bases: ${n / 3 === 1 ? "one whole codon" : (n / 3) + " whole codons"}. The reading frame stays the same, so the protein just ${r.d > 0 ? "gains" : "loses"} amino acids instead of scrambling. Frameshifts only happen when the number isn't a multiple of 3.`;
+      case "rescue": return `Your insertion and deletion cancel out! Only the ${r.diff} amino acid${r.diff === 1 ? "" : "s"} between them changed, and the rest of the protein is back to normal. Crick and Brenner used this exact trick in 1961 to prove codons are read in threes.`;
+      case "stoplost": return `The stop codon changed into a codon for an amino acid, so the ribosome keeps reading past the end of the gene. The protein gets extra amino acids tacked on.`;
+      case "start": return `The start codon (AUG) is gone! Without it, the ribosome doesn't know where to begin, so this protein isn't made at all.`;
+    }
+  }
+
+  function toast(msg){ const t = $("edToast"); t.textContent = msg; t.hidden = false; t.classList.remove("pop"); void t.offsetWidth; t.classList.add("pop"); clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 3200); }
+
+  function render(){
+    const m = mrnaStr(), P = translate(m), stopK = P.indexOf("Stop");
+    const n = Math.ceil(bases.length / 3);
+    let h = `<div class="cod legend" aria-hidden="true"><div class="cn">&nbsp;</div><div class="rl">DNA<small>3' to 5'</small></div><div class="rl">mRNA<small>5' to 3'</small></div><div class="rl">Protein</div></div>`;
+    for (let k = 0; k < n; k++){
+      const after = stopK >= 0 && k > stopK;
+      const idxs = [k * 3, k * 3 + 1, k * 3 + 2].filter(i => i < bases.length);
+      const chg = idxs.some(i => bases[i].o === null || bases[i].b !== bases[i].o);
+      h += `<div class="cod${after ? " after" : ""}${chg ? " chg" : ""}"><div class="cn">${k + 1}</div><div class="bases">`;
+      idxs.forEach(i => { const x = bases[i], mut = x.o === null || x.b !== x.o;
+        h += `<button class="b b${x.b}${mut ? " mut" : ""}${i === sel ? " sel" : ""}" data-i="${i}" aria-label="DNA base ${i + 1}: ${x.b}${mut ? ", mutated" : ""}">${x.b}</button>`; });
+      h += `</div><div class="bases">`;
+      idxs.forEach(i => { const u = TORNA[bases[i].b]; h += `<span class="b b${u}${bases[i].o === null || bases[i].b !== bases[i].o ? " mut" : ""}">${u}</span>`; });
+      h += `</div>`;
+      if (idxs.length === 3 && !after && P[k] !== undefined){
+        const a = P[k], st = a === "Stop" ? "stop" : a !== ORIG_P[k] ? "diff" : "same";
+        h += `<div class="aa ${st}">${a}</div>`;
+      } else h += `<div class="aa none">${after ? "not read" : idxs.length < 3 ? "leftover" : "no stop"}</div>`;
+      h += `</div>`;
+    }
+    $("edStrip").innerHTML = h;
+    $("edStrip").querySelectorAll("button.b").forEach(b => b.addEventListener("click", () => { sel = +b.dataset.i; render(); }));
+
+    /* tools */
+    const cur = sel != null ? bases[sel] : null;
+    $("edSel").innerHTML = cur ? `Selected: base ${sel + 1} (<b class="bt-inline b${cur.b}">${cur.b}</b> on the DNA, codon ${Math.floor(sel / 3) + 1})` : "Tap a DNA base to select it.";
+    document.querySelectorAll("[data-swap]").forEach(b => { b.disabled = !cur || cur.b === b.dataset.swap; });
+    document.querySelectorAll("[data-ins]").forEach(b => { b.disabled = !cur; });
+    $("edDel").disabled = !cur || bases.length < 4;
+    $("edUndo").disabled = !hist.length;
+
+    /* verdict */
+    const r = classify(), T = TYPE[r.type];
+    const v = $("edVerdict"); v.className = "verdict " + T[1];
+    v.innerHTML = `<div class="vbadge">${T[0]}</div>${note ? `<p class="vnote">${note}</p>` : ""}<p>${explain(r)}</p>`;
+    const chips = (arr, ref) => arr.map((a, k) => `<span class="mchip ${a === "Stop" ? "stop" : ref && a !== ref[k] ? "diff" : "same"}">${a}</span>`).join("");
+    $("edCompare").innerHTML = `<div class="crow"><span class="clbl">Original protein</span>${chips(ORIG_P)}</div><div class="crow"><span class="clbl">Your protein</span>${chips(P, ORIG_P)}${P.includes("Stop") ? "" : `<span class="mchip none">no stop</span>`}</div>`;
+
+    /* missions */
+    if (MISSIONS.some(x => x.id === r.type) && !done[r.type]){
+      done[r.type] = true;
+      const left = MISSIONS.filter(x => !done[x.id]).length;
+      toast(left ? `Mission complete: ${MISSIONS.find(x => x.id === r.type).label}! ${left} to go.` : "All missions complete! You're a mutation master!");
+    }
+    renderMissions();
+  }
+  function renderMissions(){
+    const got = MISSIONS.filter(x => done[x.id]).length;
+    $("edMissions").innerHTML = `<span class="mprog">Missions: ${got} of ${MISSIONS.length}</span>` + MISSIONS.map(x =>
+      `<button class="mission${done[x.id] ? " done" : ""}${x.bonus ? " bonus" : ""}" data-m="${x.id}" aria-pressed="${hintFor === x.id}"><span class="ck">${done[x.id] ? "\u2713" : ""}</span>${x.label}</button>`).join("");
+    $("edMissions").querySelectorAll("[data-m]").forEach(b => b.addEventListener("click", () => { hintFor = hintFor === b.dataset.m ? null : b.dataset.m; renderMissions(); }));
+    const hm = MISSIONS.find(x => x.id === hintFor);
+    $("edHint").hidden = !hm; if (hm) $("edHint").innerHTML = `<b>Hint:</b> ${hm.hint}`;
+  }
+
+  document.querySelectorAll("[data-swap]").forEach(b => b.addEventListener("click", () => swap(b.dataset.swap)));
+  document.querySelectorAll("[data-ins]").forEach(b => b.addEventListener("click", () => insert(b.dataset.ins)));
+  $("edDel").addEventListener("click", del);
+  $("edUndo").addEventListener("click", undo);
+  $("edReset").addEventListener("click", reset);
+  $("edZap").addEventListener("click", zap);
+  document.addEventListener("keydown", e => {
+    if (document.body.dataset.view !== "lab" || (e.target && e.target.tagName === "INPUT") || !$("moreOverlay").hidden) return;
+    const k = e.key.toUpperCase();
+    if ("ATGC".includes(k) && k.length === 1 && !e.ctrlKey && !e.metaKey){ e.preventDefault(); if (e.shiftKey) insert(k); else swap(k); }
+    else if (e.key === "Delete" || e.key === "Backspace"){ e.preventDefault(); del(); }
+    else if (e.key === "ArrowRight" && sel != null){ e.preventDefault(); sel = Math.min(bases.length - 1, sel + 1); render(); }
+    else if (e.key === "ArrowLeft" && sel != null){ e.preventDefault(); sel = Math.max(0, sel - 1); render(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z"){ e.preventDefault(); undo(); }
+  });
+
+  reset();
+  window.__ed = {swap, insert, del, undo, reset, zap, classify, select:i => { sel = i; render(); }, get done(){ return done; }, mrna:mrnaStr};
+})();
+</script>
+<script>
+(function(){
+  const LABHASH = "editor";
+  const tabs = [...document.querySelectorAll(".tabs [data-view]")];
+  function setView(v, push){
+    const lab = v === "lab";
+    document.body.dataset.view = lab ? "lab" : "walk";
+    tabs.forEach(b => b.setAttribute("aria-selected", String(b.dataset.view === v)));
+    document.getElementById("viewWalk").hidden = lab;
+    document.getElementById("viewLab").hidden = !lab;
+    document.getElementById("walkControls").hidden = lab;
+    if (push && history.replaceState) history.replaceState(null, "", lab ? "#" + LABHASH : location.pathname + location.search);
+  }
+  tabs.forEach(b => b.addEventListener("click", () => setView(b.dataset.view, true)));
+  function fromHash(){ setView(location.hash === "#" + LABHASH ? "lab" : "walk"); if (location.hash === "#" + LABHASH) window.scrollTo(0, 0); }
+  window.addEventListener("hashchange", fromHash);
+  fromHash();
+})();
+</script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const PAGE = (location.pathname.split("/").pop() || "index.html");
+  const testing = () => { const t = $("testBtn"); return t && t.getAttribute("aria-pressed") === "true"; };
+
+  /* Hint button: shows the first letter and length of each open blank, then more letters */
+  const row = $("checkRow"), moveOn = $("moveOnBtn");
+  if (row && moveOn && window.__BL){
+    const hb = document.createElement("button");
+    hb.className = "btn hint"; hb.id = "hintBtn"; hb.textContent = "Hint";
+    row.insertBefore(hb, moveOn);
+    hb.addEventListener("click", () => {
+      const ins = [...document.querySelectorAll("#stepText input.blank")];
+      ins.forEach(inp => {
+        const b = window.__BL[inp.dataset.id]; if (!b) return;
+        const w = b.show, lvl = Math.min((+inp.dataset.hint || 0) + 1, Math.max(1, Math.ceil(w.length / 2)));
+        inp.dataset.hint = lvl;
+        if (inp.classList.contains("wrong")) inp.value = "";
+        inp.placeholder = w.slice(0, lvl) + w.slice(lvl).replace(/[^\s-]/g, "_");
+        inp.size = Math.max(inp.size || 3, w.length + 1);
+      });
+      const fb = $("feedback");
+      if (fb && ins.length){ fb.className = "feedback warn"; fb.textContent = "Hint: the first letter" + (ins.some(i => +i.dataset.hint > 1) ? "s are" : " is") + " shown, and each dash is one letter. Tap Hint again for more."; }
+      const f = ins[0]; if (f) f.focus({preventScroll:true});
+    });
+  }
+
+  /* Bridge card on the last step */
+  let links = []; try { links = JSON.parse(document.body.dataset.next || "[]"); } catch (e) {}
+  const bubble = $("bubble");
+  let bridge = null;
+  if (links.length && bubble){
+    bridge = document.createElement("div"); bridge.className = "bridge"; bridge.hidden = true;
+    bridge.innerHTML = `<b>Where to next?</b>` + links.map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
+    bubble.insertAdjacentElement("afterend", bridge);
+  }
+
+  /* Completion: finishing every step in Test mode saves a checkmark for the hub */
+  const next = $("nextBtn");
+  let toasted = false;
+  function watch(){
+    if (!next) return;
+    const last = next.textContent.trim() === "Start over";
+    if (bridge) bridge.hidden = !last;
+    if (last && testing() && !next.disabled){
+      let was = false; try { was = localStorage.getItem("bio112-done:" + PAGE) === "1"; localStorage.setItem("bio112-done:" + PAGE, "1"); } catch (e) {}
+      if (!toasted && !was){
+        toasted = true;
+        const t = document.createElement("div"); t.className = "donetoast"; t.setAttribute("role", "status");
+        t.textContent = "Module complete! It now has a checkmark on the home page.";
+        document.body.appendChild(t); setTimeout(() => t.remove(), 3600);
+      }
+    }
+  }
+  if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
+})();
+</script>
+</body>
+</html>

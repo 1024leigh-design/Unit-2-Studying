@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Post-Transcriptional Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d2433; --muted:#5a6376; --page:#eef1f5; --card:#ffffff; --line:#d9dee7;
+    --accent:#3f4cc0; --accent-soft:#e7e9fb;
+    --good:#1b7f4e; --good-soft:#e1f3e8; --warn:#9a6212; --warn-soft:#fbefd9; --bad:#b83a34; --bad-soft:#fbe8e7;
+    --more:#5b3fb0; --more-soft:#f3effd;
+    --font:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font)}
+  .wrap{max-width:1060px;margin:0 auto;padding:18px 16px 30px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+  h1{font-size:1.55rem;line-height:1.15;margin:0;letter-spacing:-0.01em}
+  .sub{color:var(--muted);font-size:.92rem;margin-top:3px}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .seg{display:inline-flex;background:#dfe4ec;border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:700 .95rem var(--font);padding:8px 18px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(29,36,51,.18)}
+  .ghost{border:1px solid var(--line);background:var(--card);font:700 .9rem var(--font);padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--muted)}
+
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--line);margin-bottom:14px}
+  .tabs button{border:0;background:transparent;font:700 1rem var(--font);color:var(--muted);padding:10px 16px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+  .tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+
+  .home h2{font-size:1.3rem;margin:6px 0 4px}
+  .home p.lead{color:var(--muted);margin:0 0 16px;font-size:1.02rem}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:18px;text-align:left;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:8px}
+  .card:hover{border-color:var(--accent)}
+  .card h3{margin:0;font-size:1.2rem}
+  .card p{margin:0;color:var(--muted);line-height:1.5}
+  .card .meta{font-weight:700;color:var(--accent);font-size:.9rem;margin-top:auto}
+  .card svg{width:100%;height:84px}
+
+  .modehint{color:var(--muted);font-size:.92rem;margin:0 0 10px}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  #scene{display:block;width:100%;height:auto;font-family:var(--font);transition:opacity .2s}
+
+  .tablewrap{margin-top:12px;overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+  .tablewrap[hidden]{display:none}
+  .tablewrap .cap{font-weight:700;font-size:.9rem;padding:10px 12px 4px;color:var(--muted)}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:640px}
+  th,td{text-align:left;padding:7px 10px;border-top:1px solid var(--line);vertical-align:top}
+  th{font-size:.8rem;color:var(--muted)}
+  tr.hl td{background:#fff6d6}
+  td.on{color:var(--good);font-weight:700} td.off{color:var(--bad);font-weight:700} td.low{color:var(--warn);font-weight:700}
+  tr.new td{animation:rowin .5s ease}
+  @keyframes rowin{from{background:#fde9a8}to{background:transparent}}
+
+  .bubble{position:relative;margin-top:18px;background:var(--card);border:2px solid var(--accent);border-radius:16px;padding:16px 20px}
+  .bubble::before{content:"";position:absolute;top:-11px;left:52px;width:18px;height:18px;background:var(--card);border-left:2px solid var(--accent);border-top:2px solid var(--accent);transform:rotate(45deg)}
+  .bubble.pop{animation:pop .32s cubic-bezier(.2,.9,.3,1.25)}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .stepno{font-size:.88rem;color:var(--accent);font-weight:700}
+  .title{font-size:1.2rem;font-weight:700;margin:2px 0 8px}
+  .text{font-size:1.06rem;line-height:1.65;margin:0;max-width:80ch}
+  .after{margin:10px 0 0;font-weight:700;color:var(--accent)}
+  .term{background:var(--accent-soft);color:#2c3796;padding:1px 6px;border-radius:6px;white-space:nowrap}
+  .term.correct{background:var(--good-soft);color:var(--good)}
+  .term.revealed{background:var(--warn-soft);color:var(--warn)}
+  input.blank,input.pred{font:700 1rem var(--font);border:0;border-bottom:2px solid var(--accent);background:#f3f4fd;padding:2px 6px;border-radius:6px 6px 0 0;color:var(--ink);min-width:3em;max-width:100%}
+  input.blank:focus,input.pred:focus{outline:2px solid var(--accent);outline-offset:1px;background:var(--accent-soft)}
+  input.wrong{border-bottom-color:var(--bad);background:var(--bad-soft);animation:shake .32s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .check-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+  .check-row[hidden]{display:none}
+  a.btn{text-decoration:none;display:inline-block}
+  .btn{font:700 .96rem var(--font);border-radius:999px;padding:9px 20px;cursor:pointer;border:2px solid var(--accent)}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.secondary{background:#fff;color:var(--accent)}
+  .btn:disabled{opacity:.38;cursor:not-allowed}
+  .feedback{font-weight:700;font-size:.96rem;margin-top:10px;min-height:1.2em}
+  .feedback:empty{min-height:0;margin:0}
+  .feedback.good{color:var(--good)} .feedback.bad{color:var(--bad)} .feedback.warn{color:var(--warn)}
+  .bubble-foot{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+  .more-btn{font:700 .92rem var(--font);border-radius:999px;padding:7px 14px;cursor:pointer;border:2px solid #cbbdf2;background:var(--more-soft);color:var(--more)}
+  .more-note{font-size:.84rem;color:var(--muted)}
+
+  .overlay{position:fixed;inset:0;background:rgba(29,36,51,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+  .overlay[hidden]{display:none}
+  .panel{background:#fff;border-radius:18px;max-width:680px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;border-top:6px solid var(--more)}
+  .panel .ptag{display:inline-block;background:var(--more-soft);color:var(--more);font-weight:700;font-size:.85rem;border-radius:999px;padding:4px 12px}
+  .panel h2{margin:10px 0 8px;font-size:1.3rem}
+  .panel h3{font-size:1.02rem;margin:14px 0 4px;color:var(--more)}
+  .panel p{margin:0 0 8px;line-height:1.6}
+  .panel .close{margin-top:10px}
+
+  .lab{margin-top:4px;display:grid;gap:12px}
+  .opsel{display:flex;flex-wrap:wrap;gap:8px}
+  .opsel button{font:700 .95rem var(--font);border-radius:12px;padding:8px 14px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+  .opsel button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:#2c3796}
+  .opsel .x{display:block;font-size:.72rem;color:var(--more);font-weight:700}
+  .xtag{background:var(--more-soft);color:var(--more);border-radius:10px;padding:8px 12px;font-weight:700;font-size:.9rem}
+  .toggles{display:flex;flex-wrap:wrap;gap:10px}
+  .tog{display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:14px;padding:8px 12px;background:#fff;cursor:pointer;font:700 .98rem var(--font);color:var(--ink)}
+  .tog .sw{width:44px;height:24px;border-radius:12px;background:#cfd5df;position:relative;transition:background .2s}
+  .tog .sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+  .tog[aria-pressed="true"] .sw{background:var(--good)}
+  .tog[aria-pressed="true"] .sw::after{left:23px}
+  .tog:disabled{opacity:.5;cursor:not-allowed}
+  .readout{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border-radius:999px;padding:5px 12px;font-weight:700;font-size:.9rem;background:#eef1f5}
+  .chip.on{background:var(--good-soft);color:var(--good)} .chip.off{background:var(--bad-soft);color:var(--bad)} .chip.low{background:var(--warn-soft);color:var(--warn)}
+  .explain{font-size:1rem;line-height:1.55;margin:0}
+  .predict{background:#fff8e6;border:1px solid #f0d99a;border-radius:12px;padding:10px 12px;line-height:1.9}
+
+  nav.stepnav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .dots{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;flex:1;align-items:center}
+  .dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:#fff;font:700 .72rem var(--font);color:var(--muted);cursor:pointer;padding:0}
+  .dot.seen{border-color:var(--accent);color:var(--accent)}
+  .dot.current{background:var(--accent);border-color:var(--accent);color:#fff}
+  .dot:disabled{opacity:.35;cursor:not-allowed}
+  .gap{width:8px}
+  .navbtns{display:flex;gap:8px}
+  [hidden]{display:none !important}
+  button:focus-visible{outline:3px solid #f2b134;outline-offset:2px}
+  @media (max-width:640px){
+    h1{font-size:1.3rem}
+    .dot{width:22px;height:22px;font-size:.62rem}
+    .text{font-size:1rem}
+    .bubble{padding:14px}
+    .tabs button{padding:8px 10px;font-size:.92rem}
+  }
+  @media (prefers-reduced-motion:reduce){ .bubble.pop,input.wrong,tr.new td{animation:none} }
+
+  .subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;align-items:center}
+  .subtabs .lbl{font-size:.85rem;font-weight:700;color:var(--muted);margin-right:4px}
+  .subtabs button{font:700 .9rem var(--font);border-radius:999px;padding:6px 14px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+  .subtabs button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
+  .subtabs button.bonus{border-style:dashed;border-color:#b9a6ee;color:var(--more)}
+  .subtabs button.bonus[aria-pressed="true"]{background:var(--more);border-color:var(--more);color:#fff}
+  .labgroup{font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:-6px}
+  .card.bonus{border-style:dashed;border-color:#b9a6ee}
+  .card .tag{font-size:.8rem;font-weight:700;color:var(--more)}
+  .note{background:#eef6ff;border:1px solid #bcd6f5;border-radius:12px;padding:10px 12px;font-size:.95rem;line-height:1.5}
+  .radios{display:flex;flex-wrap:wrap;gap:8px}
+  .radios button{font:700 .9rem var(--font);border-radius:12px;padding:7px 12px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+  .radios button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:#2c3796}
+  .radios button:disabled,.opsel button:disabled{opacity:.5;cursor:not-allowed}
+  .rowlbl{font-size:.85rem;font-weight:700;color:var(--muted)}
+  .labrow{display:grid;gap:6px}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .uvbtn[aria-pressed="true"]{background:#2d2450;color:#b9ff9e;border-color:#2d2450}
+
+  table.codon{min-width:560px} table.codon td,table.codon th{vertical-align:top;padding:6px}
+  .cc{font-size:.84rem;padding:2px 5px;border-radius:5px;white-space:nowrap}
+  .cc.start{background:#e1f3e8} .cc.stopc{background:#fbe8e7} .cc.ours{outline:2px solid #3f4cc0}
+  .bt{font-size:14px;font-weight:700;text-anchor:middle}
+
+  .backlink{display:inline-block;font-size:.88rem;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:4px}
+  .backlink::before{content:"\2190  "}
+
+  /* SVG text */
+  .t12{font-size:12px;font-weight:700;fill:#343b4a}
+  .t13{font-size:13px;font-weight:700;fill:#343b4a}
+  .t15{font-size:15px;font-weight:700;fill:#343b4a}
+  .t18{font-size:18px;font-weight:700;fill:#343b4a}
+  .mid{text-anchor:middle} .end{text-anchor:end}
+  .muted{fill:#5a6376} .it{font-style:italic}
+  .wht{fill:#fff}
+  .grn{fill:#1b7f4e} .red{fill:#b83a34} .blu{fill:#3f4cc0} .pur{fill:#6b4bb8}
+
+  /* ===== Tabs + labs ===== */
+  .tabs button:focus-visible{outline:3px solid #f2b134;outline-offset:2px}
+  .labwrap{display:grid;gap:14px}
+  .labhead h2{margin:0 0 4px;font-size:1.35rem}
+  .labhead p{margin:0;color:var(--muted);line-height:1.55;max-width:80ch}
+  .missions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .mprog{font-weight:700;color:var(--ink);font-size:.95rem;margin-right:4px}
+  .mission{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--line);background:#fff;border-radius:999px;padding:5px 13px 5px 5px;font:700 .9rem var(--font);color:var(--ink);cursor:pointer}
+  .mission .ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.8rem;line-height:1}
+  .mission.bonus{border-style:dashed;border-color:#b9a6ee;color:var(--more)}
+  .mission[aria-pressed="true"]{box-shadow:0 0 0 3px var(--accent-soft)}
+  .mission.done{border-color:var(--good);border-style:solid;background:var(--good-soft);color:var(--good)}
+  .mission.done .ck{background:var(--good);border-color:var(--good);color:#fff}
+  .hintbox{background:#fff8e6;border:1px solid #f0d99a;border-radius:12px;padding:9px 12px;line-height:1.5;font-size:.95rem}
+  .toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:20;max-width:92vw;text-align:center}
+  .toast.pop{animation:toastin .4s cubic-bezier(.2,.9,.3,1.3)}
+  @keyframes toastin{from{opacity:0;transform:translate(-50%,-16px) scale(.9)}to{opacity:1;transform:translate(-50%,0)}}
+
+  /* DNA editor */
+  .editor{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 12px}
+  .strip{display:flex;flex-wrap:wrap;gap:14px 8px}
+  .cod{display:grid;grid-template-rows:auto 32px 32px 32px;gap:6px;justify-items:center;padding:4px 4px 6px;border-radius:12px}
+  .cod.chg{background:#fff4ec}
+  .cod.after{opacity:.4}
+  .cod .cn{font-size:.72rem;font-weight:700;color:var(--muted)}
+  .cod.legend{justify-items:end;padding-right:6px}
+  .rl{font-size:.8rem;font-weight:700;text-align:right;line-height:1.05;align-self:center}
+  .rl small{display:block;font-size:.66rem;color:var(--muted)}
+  .bases{display:flex;gap:2px}
+  .b{width:26px;height:30px;border-radius:6px;display:grid;place-items:center;font:700 .95rem var(--font);color:#fff;border:0;padding:0}
+  button.b{cursor:pointer}
+  button.b:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .bA{background:#2f9e63} .bT{background:#d9534f} .bG{background:#f2b134;color:#3b2a00} .bC{background:#3b7dd8} .bU{background:#8e5bd0}
+  .b.mut{box-shadow:0 0 0 2px #fff,0 0 0 4px #e8744f}
+  .b.sel{box-shadow:0 0 0 2px #fff,0 0 0 5px var(--ink);transform:translateY(-3px)}
+  .aa{min-width:60px;height:30px;border-radius:15px;display:grid;place-items:center;font-weight:700;font-size:.88rem;padding:0 8px;border:2px solid;align-self:center}
+  .aa.same{background:#e1f3e8;border-color:#2f9e63;color:#1b7f4e}
+  .aa.diff{background:#fdeee5;border-color:#e8744f;color:#a8461f}
+  .aa.stop{background:#fbe8e7;border-color:#b83a34;color:#b83a34}
+  .aa.none{background:#eef1f5;border-color:#dde2ea;color:var(--muted);font-size:.72rem}
+  .tools{display:grid;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .tools .selinfo{font-size:.95rem}
+  .bt-inline{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;color:#fff;font-size:.85rem}
+  .bt-inline.bG{color:#3b2a00}
+  .toolrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .toolrow .rowlbl{min-width:150px}
+  .tb{font:700 .95rem var(--font);border-radius:10px;min-width:40px;height:38px;padding:0 12px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+  .tb.base{color:#fff;border:0}
+  .tb.base.bA{background:#2f9e63} .tb.base.bT{background:#d9534f} .tb.base.bC{background:#3b7dd8}
+  .tb.base.bG{background:#f2b134;color:#3b2a00}
+  .tb:disabled{opacity:.3;cursor:not-allowed}
+  .tb.danger{border-color:#e6b2af;color:var(--bad)}
+  .tb.zap{border-color:#7fbf9c;color:var(--teal,#0f766e);background:#eef8f3}
+  .keyhint{font-size:.82rem;color:var(--muted)}
+  .verdict{border-radius:14px;padding:12px 16px;border:2px solid var(--line);background:#fff}
+  .verdict p{margin:6px 0 0;line-height:1.55;max-width:80ch}
+  .verdict .vnote{color:var(--muted);font-size:.93rem}
+  .vbadge{display:inline-block;font-weight:700;border-radius:999px;padding:4px 14px;background:#eef1f5}
+  .verdict.good{border-color:#9fd3b5} .verdict.good .vbadge{background:var(--good);color:#fff}
+  .verdict.warn{border-color:#f0c7a5} .verdict.warn .vbadge{background:#e8744f;color:#fff}
+  .verdict.bad{border-color:#e6b2af} .verdict.bad .vbadge{background:var(--bad);color:#fff}
+  .compare{display:grid;gap:8px;margin-top:10px}
+  .crow{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .clbl{font-size:.8rem;font-weight:700;color:var(--muted);width:118px}
+  .mchip{font-size:.78rem;font-weight:700;border-radius:999px;padding:3px 8px;border:1.5px solid}
+  .mchip.same{background:#e1f3e8;border-color:#2f9e63;color:#1b7f4e}
+  .mchip.diff{background:#fdeee5;border-color:#e8744f;color:#a8461f}
+  .mchip.stop{background:#fbe8e7;border-color:#b83a34;color:#b83a34}
+  .mchip.none{background:#eef1f5;border-color:#c9cfdb;color:var(--muted)}
+  @media (max-width:640px){
+    .toolrow .rowlbl{min-width:0;width:100%;font-size:.75rem}
+    .tools{position:sticky;bottom:0;z-index:5;gap:6px;padding:8px 10px;box-shadow:0 -6px 16px rgba(29,36,51,.12)}
+    .tools .keyhint{display:none}
+    .tools .selinfo{font-size:.85rem}
+    .toolrow{gap:6px}
+    .tb{height:34px;min-width:36px;padding:0 9px;font-size:.88rem}
+    .strip{gap:10px 4px}
+    .clbl{width:100%}
+    .b{width:24px}
+  }
+  @media (prefers-reduced-motion:reduce){ .toast.pop{animation:none} button.b:hover,.b.sel{transform:none} }
+
+  /* Splice lab */
+  .hintbox.warn{background:#fbe8e7;border-color:#e6b2af}
+  .hintbox.good{background:var(--good-soft);border-color:#9fd3b5}
+  .sptrackwrap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px 18px;overflow-x:auto}
+  .spstage{font-weight:700;color:var(--muted);font-size:.9rem;margin-bottom:6px}
+  .sptrack{position:relative;display:flex;align-items:center;min-width:620px;padding-top:44px}
+  .sgm{flex:0 0 auto;transition:flex-basis .6s ease,transform .6s ease,opacity .6s ease,border-radius .6s ease,margin .6s ease}
+  .sgm.exon{height:46px;border:0;border-radius:10px;background:var(--c);color:var(--ink);font:700 .92rem var(--font);cursor:pointer;padding:0 6px}
+  .sgm.intron{flex-basis:150px;height:30px;display:flex;align-items:center;gap:3px;background:#e3e6ee;border-radius:8px;padding:0 3px;margin:0 2px}
+  .sgm.intron.pend{background:#efe7fb;box-shadow:0 0 0 3px #b9a6ee}
+  .ss{font:700 .74rem var(--font);border-radius:6px;border:2px solid #8e5bd0;background:#fff;color:#6b4bb8;cursor:pointer;padding:2px 5px;line-height:1.1}
+  .ss.on{background:#8e5bd0;color:#fff}
+  .ibody{flex:1;min-width:0;border:0;background:transparent;font:700 .78rem var(--font);color:#7a8292;cursor:pointer;height:100%;border-radius:6px;white-space:nowrap}
+  .ibody:hover{background:#d5d9e3;color:var(--ink)}
+  .sgm.looping{flex-basis:0 !important;transform:translateY(-40px) scale(.3) rotate(25deg);opacity:0;border-radius:50%;margin:0;overflow:hidden}
+  .cap5{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#f2b134;color:#3b2a00;font-weight:700;display:grid;place-items:center;margin-right:4px;opacity:.15;transition:opacity .5s,transform .5s;transform:scale(.6)}
+  .tail3{flex:0 0 auto;display:flex;gap:2px;margin-left:4px;opacity:.15;transition:opacity .5s .2s}
+  .tail3 span{width:20px;height:20px;border-radius:50%;background:#2f9e63;color:#fff;font-size:.66rem;font-weight:700;display:grid;place-items:center}
+  .cap5.on,.tail3.on{opacity:1;transform:none}
+  .snrnp{position:absolute;top:0;transform:translateX(-50%);background:#8e5bd0;color:#fff;font-weight:700;font-size:.78rem;border-radius:18px 18px 14px 14px;padding:8px 12px;animation:snip .65s ease}
+  @keyframes snip{0%{transform:translate(-50%,-10px);opacity:0}30%{transform:translate(-50%,6px);opacity:1}100%{transform:translate(-50%,-8px);opacity:0}}
+  .made{display:flex;flex-wrap:wrap;align-items:center;gap:16px;background:var(--card);border:2px solid #9fd3b5;border-radius:14px;padding:12px 16px}
+  .muted-s{color:var(--muted);font-size:.93rem;margin-top:2px;max-width:60ch;line-height:1.5}
+  .spcollect{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .spcount{font-weight:700;margin-bottom:10px}
+  .spgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .slot{min-height:74px;border:2px dashed var(--line);border-radius:12px;display:grid;place-items:center;color:#b3bac7;font-weight:700;font-size:1.3rem;padding:6px}
+  .slot.got{border-style:solid;border-color:#9fd3b5;background:#f5fbf7;color:var(--ink);font-size:.8rem;gap:2px}
+  @media (prefers-reduced-motion:reduce){ .sgm,.cap5,.tail3{transition:none} .snrnp{animation:none} }
+
+  /* ===== Study helpers (hint, checkmarks, bridge) ===== */
+  input.blank{border:2px solid var(--accent);border-bottom-width:3px;background:#fff7d6;border-radius:8px;padding:3px 8px;animation:blankpulse 1.8s ease-in-out infinite}
+  input.blank:focus{animation:none;background:#fff}
+  input.blank::placeholder{color:#9a8a55;letter-spacing:.12em;font-weight:700}
+  @keyframes blankpulse{0%,100%{box-shadow:0 0 0 0 rgba(63,76,192,.0)}50%{box-shadow:0 0 0 5px rgba(63,76,192,.18)}}
+  .btn.hint{border-color:#e5c56a;background:#fff8e6;color:#8a5a00}
+  .dot{position:relative}
+  body:has(#testBtn[aria-pressed="true"]) .dot.seen::after{content:"\2713";position:absolute;right:-5px;top:-6px;width:14px;height:14px;border-radius:50%;background:var(--good);color:#fff;font-size:.56rem;line-height:14px;text-align:center;box-shadow:0 0 0 2px var(--page)}
+  .bridge{margin-top:14px;border:2px dashed #b9a6ee;background:var(--more-soft);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .bridge b{color:var(--more);margin-right:6px}
+  .bridge[hidden]{display:none}
+  .donetoast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:30}
+  @media (prefers-reduced-motion:reduce){ input.blank{animation:none} }
+
+  /* ===== Hands-on gates ===== */
+  .gate{margin-top:14px;border:2px solid #f0d99a;background:#fffbef;border-radius:14px;padding:12px 14px;display:grid;gap:10px}
+  .gate.done{border-color:#9fd3b5;background:var(--good-soft)}
+  .gate .gtitle{font-weight:700;color:#8a5a00}
+  .gate.done .gtitle{color:var(--good)}
+  .gate .gmsg{font-weight:700;min-height:1.2em;font-size:.95rem}
+  .gate .gmsg.bad{color:var(--bad)} .gate .gmsg.good{color:var(--good)}
+  .gb{display:inline-grid;place-items:center;width:30px;height:32px;border-radius:7px;color:#fff;font:700 1rem var(--font);border:0;padding:0}
+  .gbA{background:#2f9e63} .gbT{background:#d9534f} .gbG{background:#f2b134;color:#3b2a00} .gbC{background:#3b7dd8} .gbU{background:#8e5bd0}
+  .gslot{display:inline-grid;place-items:center;width:30px;height:32px;border-radius:7px;border:2px dashed #c9cfdb;background:#fff;color:#b3bac7;font-weight:700}
+  .gslot.cur{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .grow{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .grow .glbl{font-size:.82rem;font-weight:700;color:var(--muted);min-width:118px}
+  .gkeys{display:flex;gap:8px;flex-wrap:wrap}
+  .gkeys button{width:46px;height:44px;border-radius:10px;font-size:1.1rem;cursor:pointer}
+  .gkeys button:hover{filter:brightness(1.08)}
+  .shelf{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .trna{touch-action:none;user-select:none;cursor:grab;display:grid;justify-items:center;gap:0;padding:8px 10px 10px;border:2px solid var(--line);border-radius:14px;background:#fff;min-width:96px}
+  .trna:hover{border-color:var(--accent)}
+  .trna.drag{position:fixed;z-index:50;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.28);cursor:grabbing}
+  .trna.ghost{opacity:.3}
+  .trna.nope{animation:shake .32s;border-color:var(--bad)}
+  .trna .aab{border-radius:999px;background:#fdeee5;border:2px solid #e8744f;color:#a8461f;font-weight:700;font-size:.85rem;padding:3px 10px}
+  .trna .stem{width:8px;height:22px;background:#c7b3ee}
+  .trna .body{background:#efe7fb;border:2px solid #b9a6ee;border-radius:10px;padding:5px 6px;display:flex;gap:2px}
+  .trna .aclbl{font-size:.7rem;color:var(--muted);font-weight:700;margin-top:3px}
+  .dropzone{border:2px dashed var(--accent);border-radius:14px;padding:10px 14px;background:#f3f4fd;display:grid;gap:6px;justify-items:start;min-width:220px}
+  .dropzone.over{background:var(--accent-soft);box-shadow:0 0 0 4px var(--accent-soft)}
+  .dropzone.filled{border-style:solid;border-color:var(--good);background:var(--good-soft)}
+  .bondrow{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+  .aachip{border-radius:999px;font-weight:700;padding:6px 14px;border:2px solid #2f9e63;background:#e1f3e8;color:#1b7f4e}
+  .aachip.new{border-color:#e8744f;background:#fdeee5;color:#a8461f}
+  .bondgap{position:relative;width:70px;height:6px;margin:0 4px;background:repeating-linear-gradient(90deg,#c9cfdb 0 6px,transparent 6px 12px)}
+  .bondgap.made{background:#343b4a;height:5px}
+  .spark{position:absolute;left:50%;top:50%;width:46px;height:46px;transform:translate(-50%,-50%) scale(0);background:radial-gradient(circle,#fff6b0 0 25%,#f2b134 26% 45%,transparent 46%);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);animation:spark .7s ease-out}
+  @keyframes spark{0%{transform:translate(-50%,-50%) scale(0) rotate(0)}50%{transform:translate(-50%,-50%) scale(1.3) rotate(40deg)}100%{transform:translate(-50%,-50%) scale(0) rotate(80deg);opacity:0}}
+  @media (prefers-reduced-motion:reduce){ .spark{animation:none;display:none} .trna.nope{animation:none} }
+</style>
+</head>
+<body data-view="walk">
+<div class="wrap">
+  <header>
+    <div>
+      <a class="backlink" href="index.html">All modules</a>
+      <h1>Post-Transcriptional Control</h1>
+      <div class="sub">BIOL 112 Microbiology, Chapter 8: controlling the mRNA after it is made</div>
+    </div>
+    <div class="controls" id="walkControls">
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="learnBtn" aria-pressed="true">Learn</button>
+        <button id="testBtn" aria-pressed="false">Test</button>
+      </div>
+      <button class="ghost" id="restartBtn">Restart</button>
+    </div>
+  </header>
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-view="walk" aria-selected="true">Walkthrough</button>
+    <button role="tab" data-view="lab" aria-selected="false">Splice Lab</button>
+  </div>
+
+  <div id="viewWalk">
+  <p class="modehint" id="modeHint"></p>
+
+  <div class="stage">
+    <svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="Animated diagram of post-transcriptional control"></svg>
+  </div>
+  <div class="tablewrap" id="tableWrap" hidden></div>
+
+  <section class="bubble" id="bubble" aria-live="polite">
+    <div class="stepno" id="stepNo"></div>
+    <div class="title" id="stepTitle"></div>
+    <p class="text" id="stepText"></p>
+    <p class="after" id="stepAfter" hidden></p>
+    <div class="gate" id="gate" hidden></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="check-row" id="checkRow" hidden>
+      <button class="btn primary" id="checkBtn">Check</button>
+      <button class="btn secondary" id="moveOnBtn">Move on</button>
+    </div>
+    <div class="bubble-foot" id="bubbleFoot"></div>
+  </section>
+
+  <nav class="stepnav">
+    <div class="navbtns"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="replayBtn">Replay</button></div>
+    <div class="dots" id="dots"></div>
+    <div class="navbtns"><button class="btn primary" id="nextBtn">Next</button></div>
+  </nav>
+  </div>
+
+  <div id="viewLab" hidden>
+    <div class="labwrap">
+      <div class="labhead">
+        <h2>Splice Lab</h2>
+        <p>This pre-mRNA has 4 exons and 3 introns. Be the snRNP: cut out the introns, and try skipping exons 2 or 3 too. Each combination makes a different protein from the very same gene. Can you find all 4?</p>
+      </div>
+      <div class="hintbox" id="spPrompt" aria-live="polite"></div>
+      <div class="sptrackwrap"><div class="spstage" id="spStage"></div><div class="sptrack" id="spTrack"></div></div>
+      <div class="actions"><button class="btn primary" id="spGo">Send it to the ribosome</button><button class="btn secondary" id="spNew">New pre-mRNA</button></div>
+      <div id="spOut"></div>
+      <div class="spcollect"><div class="spcount" id="spCount"></div><div class="spgrid" id="spGrid"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="spToast" role="status" hidden></div>
+
+<div class="overlay" id="moreOverlay" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
+    <span class="ptag">Learn more: just for the curious, not on the exam</span>
+    <h2 id="moreTitle"></h2>
+    <div id="moreBody"></div>
+    <button class="btn primary close" id="moreClose">Back to the module</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t) => a + (b - a) * t;
+  const smooth = t => { t = clamp(t,0,1); return t * t * (3 - 2 * t); };
+  const seg = (t,a,b) => clamp((t - a) / (b - a), 0, 1);
+  const f1 = v => (+v).toFixed(1);
+  const f3 = v => (+v).toFixed(3);
+  const ORANGE = "#e8744f", PURPLE = "#8e5bd0", GREEN = "#2f9e63", RED = "#b83a34", BLUE = "#3f4cc0", GOLD = "#f2b134", TEAL = "#0f766e";
+
+  /* ================= Shared bits ================= */
+  function mrnaLine(x1, x2, y, w){ let d = `M${f1(x1)},${f1(y)}`; for (let x = x1; x < x2; x += 16) d += ` q4,-5 8,0 q4,5 8,0`; return `<path d="${d}" fill="none" stroke="${ORANGE}" stroke-width="${w || 4}" stroke-linecap="round"/>`; }
+  function ribo(x, y, s, op){ s = s || 1;
+    return `<g opacity="${f3(op === undefined ? 1 : op)}"><ellipse cx="${f1(x)}" cy="${f1(y - 8 * s)}" rx="${f1(24 * s)}" ry="${f1(16 * s)}" fill="#c97b4a"/><ellipse cx="${f1(x)}" cy="${f1(y + 10 * s)}" rx="${f1(20 * s)}" ry="${f1(8 * s)}" fill="#e3a877"/></g>`; }
+  function snrnp(x, y, op){ return `<g opacity="${f3(op)}"><ellipse cx="${f1(x)}" cy="${f1(y)}" rx="19" ry="14" fill="${PURPLE}"/><circle cx="${f1(x - 7)}" cy="${f1(y - 5)}" r="5" fill="#c2a6ea"/></g>`; }
+  function pill(x, y, text, fill, op){ const w = text.length * 7.4 + 20; return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - w/2)}" y="${f1(y - 14)}" width="${f1(w)}" height="26" rx="13" fill="${fill}"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">${text}</text></g>`; }
+  function capG(x, y, op, r){ r = r || 12; return `<g opacity="${f3(op)}"><circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r)}" fill="${GOLD}" stroke="#a8760f" stroke-width="1.5"/><text x="${f1(x)}" y="${f1(y + 5)}" font-size="13" font-weight="700" fill="#3b2a00" text-anchor="middle">G</text></g>`; }
+  function polyA(x, y, n, op, gap){ let o = ""; gap = gap || 17; for (let i = 0; i < n; i++) o += `<g opacity="${f3(op)}"><circle cx="${f1(x + i * gap)}" cy="${f1(y)}" r="8" fill="${GREEN}"/><text x="${f1(x + i * gap)}" y="${f1(y + 4)}" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">A</text></g>`; return o; }
+  function nucleus(cx, cy, rx, ry, label){
+    const a1 = 9 * Math.PI / 180;
+    const P = a => [cx + rx * Math.cos(a), cy + ry * Math.sin(a)];
+    const p0 = P(a1), p1 = P(-a1);
+    const arc = (RX, RY) => { const q0 = [cx + RX * Math.cos(a1), cy + RY * Math.sin(a1)], q1 = [cx + RX * Math.cos(-a1), cy + RY * Math.sin(-a1)]; return `M${f1(q0[0])},${f1(q0[1])} A${RX},${RY} 0 1 1 ${f1(q1[0])},${f1(q1[1])}`; };
+    let o = `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#ece5f6"/>`;
+    o += `<path d="${arc(rx, ry)}" fill="none" stroke="#7e6aa8" stroke-width="4"/><path d="${arc(rx - 9, ry - 9)}" fill="none" stroke="#7e6aa8" stroke-width="2"/>`;
+    if (label) o += `<text x="${cx}" y="${f1(cy - ry + 34)}" class="t15 mid pur">${label}</text>`;
+    return o;
+  }
+
+  /* ================= Blanks ================= */
+  const BL = window.__BL = {
+    transcription:{show:"transcription", ans:["transcription"], fuzzy:true},
+    energy:{show:"energy", ans:["energy","atp","time","effort"], fuzzy:true},
+    introns:{show:"introns", ans:["introns","intron"], fuzzy:true},
+    exons:{show:"exons", ans:["exons","exon"], fuzzy:true},
+    snrnps:{show:"snRNPs", ans:["snrnps","snrnp","snurps","snurp"], fuzzy:true},
+    ribozymes:{show:"ribozymes", ans:["ribozymes","ribozyme"], fuzzy:true},
+    cap:{show:"cap", ans:["cap","5cap","fiveprimecap","5primecap"], fuzzy:true},
+    polya:{show:"poly-A", ans:["polya","polyatail","poly","atail","polyadenine"], fuzzy:true},
+    mature:{show:"mature", ans:["mature","matured","processed","finished"], fuzzy:true},
+    riboswitch:{show:"riboswitch", ans:["riboswitch","riboswitches"], fuzzy:true},
+    structure:{show:"structure", ans:["structure","shape","fold","folding","conformation"], fuzzy:true},
+    both:{show:"both", ans:["both","prokaryotesandeukaryotes","all"], fuzzy:true},
+    mirna:{show:"microRNA", ans:["microrna","mirna","micro"], fuzzy:true},
+    six:{show:"6", ans:["6","six"]},
+    degraded:{show:"degraded", ans:["degraded","destroyed","degrade","broken","brokendown","destroy"], fuzzy:true}
+  };
+
+  /* ================= Learn more ================= */
+  const MORE = {
+    why:{title:"Layers of control, from DNA to protein", html:`<p>Cells can regulate at every step: whether the DNA is even reachable (chromatin), whether transcription starts (operons, enhancers), what happens to the mRNA after it's made (this module), how fast it's translated, and whether the finished protein gets activated or destroyed.</p><p>Controlling transcription saves the most energy, but post-transcriptional control is faster. If conditions change suddenly, a cell can silence mRNAs it has already made instead of waiting for them to run out.</p>`},
+    introns:{title:"Why do introns exist at all?", html:`<p>Introns were discovered in 1977 by Phillip Sharp and Richard Roberts, who shared the 1993 Nobel Prize for it. Human genes average about 8 introns each, and introns make up far more of a gene than exons do. The dystrophin gene is 2.2 million bases long, but its mature mRNA is only about 14,000 bases.</p><p>One big payoff is <b>alternative splicing</b>: by keeping different combinations of exons, one gene can make many different proteins. Roughly 95% of human multi-exon genes are alternatively spliced, which is how about 20,000 genes make a far larger number of proteins.</p><p>Bacteria almost never have introns in their protein-coding genes, which is part of why their mRNA is ready to translate immediately.</p>`},
+    snrnps:{title:"Inside the spliceosome", html:`<p>snRNPs (small nuclear ribonucleoproteins, said "snurps") each contain a small nuclear RNA plus proteins. Five of them, U1, U2, U4, U5, and U6, assemble into the <b>spliceosome</b>, one of the largest machines in the cell.</p><p>U1 recognizes the start of the intron and U2 binds a branch point inside it. The intron is looped out into a shape called a lariat, cut free, and broken down. Like the ribosome, the spliceosome's catalytic core is RNA, not protein.</p><p>In the autoimmune disease lupus, patients often make antibodies against snRNPs. Those "anti-Sm" antibodies were actually the tool used to discover them.</p>`},
+    self:{title:"Self-splicing introns", html:`<p>Some introns need no spliceosome at all. Thomas Cech found that an intron in <i>Tetrahymena</i> rRNA splices itself out, proving RNA can act as an enzyme. He and Sidney Altman won the 1989 Nobel Prize for discovering ribozymes.</p><p>Group I and group II self-splicing introns show up in some bacteria, mitochondria, and chloroplasts. Group II introns are thought to be the ancestors of the spliceosome.</p>`},
+    capTail:{title:"What the cap and tail actually do", html:`<p>The 5' cap is a modified guanine (7-methylguanosine) attached backwards through an unusual 5'-to-5' linkage, which is exactly why enzymes that chew RNA from the 5' end can't grab it. It's also the handle the small ribosomal subunit uses to load onto the mRNA.</p><p>The poly-A tail is 100 to 250 adenines long. It slowly gets trimmed in the cytoplasm, so the tail works like a countdown timer for how long the mRNA survives. Both features are added while transcription is still going.</p><p>mRNA vaccines are built with a cap and a poly-A tail for the same reasons: stability and efficient translation.</p>`},
+    exit:{title:"Quality control at the nuclear pore", html:`<p>Only properly processed mRNAs get exported. Unspliced or damaged transcripts are held back and destroyed by an RNA-degrading complex called the exosome.</p><p>Once in the cytoplasm, a surveillance system called nonsense-mediated decay checks for premature stop codons and destroys those mRNAs before they can make shortened proteins.</p>`},
+    ribo:{title:"Riboswitches in medicine and engineering", html:`<p>Riboswitches sit in the untranslated region of an mRNA and bind small molecules directly: no protein needed. Known ones sense thiamine (vitamin B1), riboflavin, vitamin B12, glycine, purines, and more. Usually the cell's own product turns its synthesis genes off, a neat form of feedback.</p><p>Because they're common in bacteria and rare in us, riboswitches are being explored as antibiotic targets. Synthetic biologists also build custom riboswitches to switch engineered genes on with a chosen chemical.</p><p>The trp operon's attenuator works on the same principle: an mRNA that folds two different ways.</p>`},
+    mirna:{title:"RNA interference", html:`<p>miRNAs are cut out of longer hairpin transcripts by enzymes called Drosha and Dicer, then loaded into a protein complex called RISC. RISC uses the miRNA as a guide to find matching mRNAs. A close match gets the mRNA cut and destroyed; a loose match mostly just blocks translation.</p><p>Humans have over 2,000 miRNAs, and a single one can regulate hundreds of mRNAs. Andrew Fire and Craig Mello won the 2006 Nobel Prize for discovering RNA interference in <i>C. elegans</i>.</p><p>This is now a drug class: siRNA medicines like patisiran silence a disease-causing mRNA in patients.</p>`},
+    compare:{title:"How bacteria do it instead", html:`<p>Bacteria have no nucleus and no splicing, so their post-transcriptional control works differently: riboswitches, attenuation, and <b>small RNAs (sRNAs)</b> that pair with target mRNAs with help from a protein called Hfq. Some sRNAs hide the ribosome binding site and block translation; others open up a folded mRNA and turn translation on.</p><p>Bacterial mRNAs are also destroyed quickly by RNase E, so simply stopping transcription is already a fast off switch.</p>`}
+  };
+
+  /* ================= Scenes ================= */
+  const resolved = id => window.__resolvedRef ? window.__resolvedRef(id) : true;
+  const GENE = [[110,215,"ex"],[215,300,"in"],[300,420,"ex"],[420,505,"in"],[505,610,"ex"],[610,695,"in"],[695,820,"ex"]];
+  function preMRNA(y, t, showLabels){
+    let o = "";
+    GENE.forEach(g => {
+      o += `<rect x="${g[0]}" y="${y - 9}" width="${g[1] - g[0]}" height="18" rx="6" fill="${g[2] === "ex" ? ORANGE : "#a7a7b8"}"/>`;
+      if (showLabels) o += `<text x="${(g[0] + g[1]) / 2}" y="${y + 34}" class="t12 mid">${g[2] === "ex" ? (resolved("exons") ? "Exon" : "?") : (resolved("introns") ? "Intron" : "?")}</text>`;
+    });
+    return o;
+  }
+  /* ---------- compartments ---------- */
+  function eukCell(dim){
+    /* dim: "cyto" dims the nucleus, "nuc" dims the cytoplasm side */
+    let o = `<rect x="12" y="66" width="976" height="394" rx="34" fill="#fbf9ff" stroke="#c9b9ee" stroke-width="3"/>`;
+    o += `<text x="964" y="92" class="t12 end muted">Eukaryotic cell</text>`;
+    o += `<rect x="36" y="96" width="572" height="340" rx="60" fill="#efe7fb" stroke="#8e5bd0" stroke-width="3" opacity="${dim === "cyto" ? .55 : 1}"/><rect x="44" y="104" width="556" height="324" rx="54" fill="none" stroke="#b9a6ee" stroke-width="1.5" opacity="${dim === "cyto" ? .55 : 1}"/>`;
+    [200, 300].forEach(py => { o += `<rect x="598" y="${py - 14}" width="16" height="28" fill="#fbf9ff"/><path d="M598,${py - 14} h16 M598,${py + 14} h16" stroke="#8e5bd0" stroke-width="4" stroke-linecap="round"/>`; });
+    o += `<text x="72" y="132" class="t15 pur">Nucleus</text><text x="800" y="132" class="t15 mid pur">Cytoplasm</text>`;
+    if (dim === "nuc") o += `<rect x="620" y="100" width="350" height="340" fill="#fbf9ff" opacity=".0"/>`;
+    return o;
+  }
+  const inNucleus = body => `<g transform="translate(-26 96) scale(0.74)">${body}</g>`;
+  function bactCell(){
+    let o = `<rect x="40" y="86" width="920" height="352" rx="176" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="7"/><rect x="52" y="98" width="896" height="328" rx="164" fill="none" stroke="#9cc28b" stroke-width="2"/>`;
+    o += `<text x="500" y="124" class="t13 mid" fill="#4d7a3d">Bacterial cell: no nucleus, so mRNA sits right in the cytoplasm</text>`;
+    return o;
+  }
+  const SC = {
+    layers:t => {
+      const rows = [["DNA \u2192 can it be reached?", "Chromatin and packaging", "#9a88c2", 0],
+        ["Transcription \u2192 should it start?", "Operons, enhancers, silencers", "#b83a34", 1],
+        ["mRNA \u2192 keep it or kill it?", "You are here: post-transcriptional control", ORANGE, 2],
+        ["Protein \u2192 turn it on or off?", "Activation and breakdown", PURPLE, 3]];
+      let o = `<text x="500" y="52" class="t18 mid">A cell can pull the brakes at every step</text>`;
+      rows.forEach((r, i) => {
+        const y = 106 + i * 82, on = Math.floor((t / 1.6) % 4) === i, hero = i === 2;
+        o += `<rect x="150" y="${y - 30}" width="700" height="62" rx="16" fill="${hero ? "#fdf0e8" : "#f5f7fb"}" stroke="${on || hero ? r[2] : "#dde2ea"}" stroke-width="${hero ? 3 : on ? 3 : 1.5}"/>`;
+        o += `<circle cx="188" cy="${y}" r="11" fill="${r[2]}" opacity="${hero || on ? 1 : .45}"/>`;
+        o += `<text x="214" y="${y - 4}" class="t15">${r[0]}</text><text x="214" y="${y + 18}" class="t12 muted">${r[1]}</text>`;
+      });
+      return o;
+    },
+    premrna:t => {
+      let o = `<text x="500" y="44" class="t18 mid">Eukaryotic genes are interrupted</text>` + eukCell("nuc");
+      let b = `<text x="465" y="120" class="t18 mid">Pre-mRNA, fresh from transcription</text>` + preMRNA(214, t, true);
+      b += `<path d="M110,262 H820" stroke="none"/><text x="465" y="330" class="t15 mid muted">Exons (orange) code for the protein. Introns (gray) do not.</text>`;
+      o += inNucleus(b);
+      o += `<text x="800" y="250" class="t13 mid muted">Nothing leaves until</text><text x="800" y="270" class="t13 mid muted">the introns are out</text>`;
+      return o;
+    },
+    splice:t => {
+      const T = 11, tt = t % T;
+      const arrive = smooth(seg(tt, .8, 2)), loop = smooth(seg(tt, 2.2, 4)), cut = smooth(seg(tt, 4.2, 5.4)), join = smooth(seg(tt, 4.6, 6.4)), fade = 1 - smooth(seg(tt, 10.2, 11));
+      let o = `<g opacity="${f3(fade)}">`;
+      const y = 214, shift = [0, 0, -85, 0, -170, 0, -255];
+      GENE.forEach((g, i) => {
+        const isEx = g[2] === "ex";
+        if (isEx){
+          const a = g[0] + shift[i] * join, b = g[1] + shift[i] * join;
+          o += `<rect x="${f1(a)}" y="${y - 9}" width="${f1(b - a)}" height="18" rx="6" fill="${ORANGE}"/>`;
+          o += `<text x="${f1((a + b) / 2)}" y="${y + 36}" class="t12 mid" opacity="${f3(1 - cut * .4)}">${resolved("exons") ? "Exon" : "?"}</text>`;
+        } else if (cut < 1){
+          const h = 46 * loop, dy = -70 * cut, op = 1 - cut;
+          o += `<path d="M${g[0]},${f1(y + dy)} Q${(g[0] + g[1]) / 2},${f1(y + dy - 2 * h)} ${g[1]},${f1(y + dy)}" fill="none" stroke="#a7a7b8" stroke-width="15" stroke-linecap="round" opacity="${f3(op)}"/>`;
+          if (loop > .5) o += `<text x="${(g[0] + g[1]) / 2}" y="${f1(y + dy - h - 12)}" class="t12 mid" opacity="${f3(op * loop)}">${resolved("introns") ? "Intron" : "?"}</text>`;
+        }
+      });
+      GENE.forEach(g => { if (g[2] !== "in" || cut >= 1) return;
+        const cx = (g[0] + g[1]) / 2, sy = lerp(80, y - 46 * loop - 70 * cut, arrive);
+        o += snrnp(cx, sy, arrive * (1 - cut));
+      });
+      if (arrive > .6 && cut < .6) o += `<text x="262" y="96" class="t13 pur" opacity="${f3(arrive * (1 - cut))}">${resolved("snrnps") ? "snRNPs (\u201csnurps\u201d)" : "?"}</text>`;
+      if (join > .8) o += pill(500, 330, "Mature mRNA: exons only", GREEN, (join - .8) * 5);
+      o += `</g>`;
+      o += `<text x="465" y="410" class="t15 mid muted">INtrons are IN the way. EXons are EXpressed.</text>`;
+      return `<text x="500" y="44" class="t18 mid">snRNPs cut out the introns and splice the exons</text>` + eukCell("nuc") + inNucleus(o) + `<text x="800" y="250" class="t13 mid muted">Still waiting in the</text><text x="800" y="270" class="t13 mid muted">nucleus...</text>`;
+    },
+    capTail:t => {
+      const T = 9, tt = t % T;
+      const cap = smooth(seg(tt, .8, 2.2)), tail = smooth(seg(tt, 2.6, 4.6)), fade = 1 - smooth(seg(tt, 8.2, 9));
+      let o = `<g opacity="${f3(fade)}">`;
+      o += `<rect x="150" y="196" width="700" height="18" rx="9" fill="${ORANGE}"/>`;
+      o += capG(lerp(150, 138, cap), lerp(110, 205, cap), cap, 15);
+      const n = Math.min(6, Math.floor(tail * 7));
+      o += polyA(862, 205, n, tail, 20);
+      o += `<text x="138" y="252" class="t13 mid" opacity="${f3(cap)}">5' ${resolved("cap") ? "cap" : "?"}</text>`;
+      o += `<text x="920" y="252" class="t13 mid" opacity="${f3(tail)}">3' ${resolved("polya") ? "poly-A tail" : "?"}</text>`;
+      if (cap > .9) o += `<text x="330" y="140" class="t13 mid" opacity="${f3(seg(tt, 2.2, 2.8))}">Protects the end and helps the ribosome bind</text>`;
+      if (tail > .9) o += `<text x="640" y="300" class="t13 mid" opacity="${f3(seg(tt, 4.6, 5.2))}">Adds stability and helps the mRNA leave the nucleus</text>`;
+      o += `</g>`;
+      return `<text x="500" y="44" class="t18 mid">Two more changes, both eukaryotes only</text>` + eukCell("nuc") + `<g transform="translate(-44 100) scale(0.66)">${o}</g>`;
+    },
+    riboswitch:t => {
+      const T = 10, tt = t % T;
+      const bind = smooth(seg(tt, 2, 3.4)), flip = smooth(seg(tt, 3.4, 4.8)), back = smooth(seg(tt, 8, 9.4));
+      const on = clamp(bind - back, 0, 1), sh = clamp(flip - back, 0, 1);
+      let o = `<text x="500" y="44" class="t18 mid">A riboswitch: the mRNA is its own sensor</text>` + bactCell();
+      const y = 250, hx = 300;
+      o += `<path d="M120,${y} H${hx - 40}" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
+      const h = lerp(52, 96, sh), wdt = lerp(58, 30, sh);
+      o += `<path d="M${hx - 40},${y} C${hx - 40},${f1(y - h)} ${f1(hx - 40 + wdt)},${f1(y - h)} ${f1(hx - 40 + wdt)},${y}" fill="none" stroke="${ORANGE}" stroke-width="5"/>`;
+      o += `<path d="M${f1(hx - 40 + wdt)},${y} H720" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
+      o += `<text x="${f1(hx - 40 + wdt / 2)}" y="${f1(y - h - 14)}" class="t12 mid">${resolved("riboswitch") ? "Riboswitch" : "?"}</text>`;
+      const mx = lerp(660, hx - 40 + wdt / 2, on), my = lerp(120, y - h + 16, on);
+      o += `<g opacity="${f3(Math.max(on, smooth(seg(tt, .6, 1.4)) * (1 - back)))}"><polygon points="${[0,1,2,3,4,5].map(i => { const a = Math.PI / 6 + i * Math.PI / 3; return f1(mx + 12 * Math.cos(a)) + "," + f1(my + 12 * Math.sin(a)); }).join(" ")}" fill="${TEAL}" stroke="#0a6e7a" stroke-width="1.5"/></g>`;
+      if (on < .9) o += `<text x="${f1(mx + 22)}" y="${f1(my + 5)}" class="t12" opacity="${f3(1 - on)}">Substrate molecule</text>`;
+      const blocked = sh > .5;
+      o += ribo(560, y - 22, 1.15, 1);
+      if (blocked) o += pill(560, y - 84, "Translation blocked", RED, (sh - .5) * 2);
+      else o += pill(560, y - 84, "Translation goes ahead", GREEN, 1 - sh * 2);
+      o += `<text x="500" y="392" class="t15 mid muted">Binding a substrate changes the mRNA's shape, which can stop OR start translation.</text><text x="500" y="414" class="t12 mid muted">(Riboswitches work in eukaryotes too.)</text>`;
+      return o;
+    },
+    exit:t => {
+      const T = 9, tt = t % T;
+      const proc = smooth(seg(tt, .3, 1.2)), move = smooth(seg(tt, 1.6, 4.4)), rib = smooth(seg(tt, 4.6, 5.6));
+      let o = `<text x="500" y="44" class="t18 mid">Only mature mRNA leaves the nucleus</text>` + eukCell();
+      const x = lerp(320, 800, move), y = 300;
+      o += `<rect x="${f1(x - 80)}" y="${y - 9}" width="160" height="18" rx="9" fill="${ORANGE}"/>` + capG(x - 92, y, 1, 11) + polyA(x + 94, y, 4, 1, 15);
+      o += `<text x="${f1(x)}" y="${y + 40}" class="t13 mid">${resolved("mature") ? "Mature mRNA" : "? mRNA"}</text>`;
+      if (move < .15) o += pill(320, 230, "Processing finished", GREEN, proc * (1 - move * 6));
+      o += `<text x="606" y="342" class="t12 mid muted">Nuclear pore</text>`;
+      o += ribo(800, 262, 1, rib);
+      if (rib > .5) o += pill(800, 400, "Translated in the cytoplasm", BLUE, (rib - .5) * 2);
+      return o;
+    },
+    mirna:t => {
+      const T = 13, tt = t % T;
+      const out = smooth(seg(tt, 1.6, 3.6)), trim = smooth(seg(tt, 3.8, 4.8)), load = smooth(seg(tt, 4.8, 5.8)), go = smooth(seg(tt, 6, 7.6)), pair = smooth(seg(tt, 7.6, 8.4)), cut = smooth(seg(tt, 9, 10.4));
+      let o = `<text x="500" y="44" class="t18 mid">${resolved("mirna") ? "microRNA" : "?"}: from hairpin to mRNA destroyer</text>` + eukCell();
+      /* target mRNA in the cytoplasm */
+      const my = 390, gap = 26 * cut;
+      o += `<g opacity="${f3(1 - smooth(seg(tt, 10.6, 11.6)))}"><path d="M652,${my} H${f1(806 - gap)}" stroke="${ORANGE}" stroke-width="7" stroke-linecap="round"/><path d="M${f1(806 + gap)},${my} H960" stroke="${ORANGE}" stroke-width="7" stroke-linecap="round" transform="rotate(${f1(12 * cut)} ${f1(806 + gap)} ${my})"/></g>`;
+      o += `<text x="652" y="${my + 30}" class="t12 muted">Target mRNA</text>`;
+      /* hairpin -> duplex -> RISC */
+      const hx = lerp(lerp(300, 610, out), 760, smooth(seg(tt, 3.2, 4))), hy = lerp(260, 200, out);
+      const rx = lerp(hx, 806, go), ry = lerp(hy, my - 34, go);
+      if (load < 1){
+        let h = `<g opacity="${f3(1 - load)}">`;
+        h += `<path d="M${f1(hx - 70)},${f1(hy - 8)} H${f1(hx + 40)} M${f1(hx - 70)},${f1(hy + 8)} H${f1(hx + 40)}" stroke="${PURPLE}" stroke-width="4" stroke-linecap="round"/>`;
+        for (let i = 0; i < 9; i++) h += `<path d="M${f1(hx - 62 + i * 12)},${f1(hy - 6)} V${f1(hy + 6)}" stroke="#c2a6ea" stroke-width="2"/>`;
+        h += `<path d="M${f1(hx + 40)},${f1(hy - 8)} a14,14 0 1 1 0,16" fill="none" stroke="${PURPLE}" stroke-width="4" opacity="${f3(1 - trim)}"/>`;
+        h += `<text x="${f1(hx - 16)}" y="${f1(hy - 22)}" class="t12 mid pur">${trim < .5 ? "miRNA hairpin (stem-loop)" : "Loop trimmed off"}</text></g>`;
+        o += h;
+      }
+      if (load > 0){
+        o += `<g opacity="${f3(load * (1 - smooth(seg(tt, 10.6, 11.6))))}"><ellipse cx="${f1(rx)}" cy="${f1(ry - 10)}" rx="62" ry="26" fill="#e3d8f8" stroke="${PURPLE}" stroke-width="2.5"/>`;
+        o += `<path d="M${f1(rx - 48)},${f1(ry + 6)} H${f1(rx + 48)}" stroke="${PURPLE}" stroke-width="4" stroke-linecap="round"/>`;
+        for (let i = 0; i < 7; i++) o += `<path d="M${f1(rx - 42 + i * 14)},${f1(ry + 8)} V${f1(ry + 8 + 18 * pair)}" stroke="#9aa3b5" stroke-width="2"/>`;
+        o += `<text x="${f1(rx)}" y="${f1(ry - 12)}" class="t12 mid pur">RISC + miRNA</text></g>`;
+      }
+      if (out > .2 && out < 1) o += `<text x="606" y="178" class="t12 mid muted" opacity="${f3(Math.sin(out * Math.PI))}">Exported</text>`;
+      if (pair > .5 && cut < .2) o += pill(806, 150, "6+ bases pair", PURPLE, (pair - .5) * 2);
+      if (cut > .2) o += pill(806, 150, "mRNA cut and degraded", "#7a8292", Math.min(1, cut * 2));
+      return o;
+    },
+    compare:t => {
+      let o = `<rect x="20" y="30" width="465" height="410" rx="24" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="3"/><rect x="515" y="30" width="465" height="410" rx="24" fill="#f7f5fb" stroke="#8f7fb0" stroke-width="3"/>`;
+      o += `<text x="252" y="70" class="t18 mid">Prokaryotes</text><text x="747" y="70" class="t18 mid">Eukaryotes</text>`;
+      const L = [["No nucleus, no splicing", true], ["mRNA used right away", true], ["Riboswitches", true], ["Small RNAs (sRNAs)", true]];
+      const R = [["Introns removed, exons spliced", true], ["5' cap and poly-A tail added", true], ["Riboswitches", true], ["microRNA (miRNA)", true]];
+      const row = (arr, x, i) => { const y = 130 + i * 70, on = Math.floor((t / 1.5) % 4) === i;
+        return `<rect x="${x - 200}" y="${y - 26}" width="400" height="52" rx="14" fill="#fff" stroke="${on ? BLUE : "#dde2ea"}" stroke-width="${on ? 3 : 1.5}"/><text x="${x}" y="${y + 6}" class="t15 mid">${arr[i][0]}</text>`; };
+      for (let i = 0; i < 4; i++) o += row(L, 252, i) + row(R, 747, i);
+      o += `<text x="500" y="424" class="t13 mid muted">Riboswitches work in both. Splicing, caps, tails, and miRNA are eukaryote features.</text>`;
+      return o;
+    }
+  };
+
+  /* ================= Steps ================= */
+  const P1 = "The idea", P2 = "RNA processing", P3 = "Switches and silencers";
+  const TABLE = {cap:"Post-transcriptional control at a glance", head:["Mechanism","What it does","Where"], order:["a","b","c","d"], rows:{
+    a:["RNA processing (splicing)","snRNPs remove introns and splice exons into mature mRNA","Eukaryotes only"],
+    b:["5' cap and 3' poly-A tail","Protection, ribosome binding, stability, and export","Eukaryotes only"],
+    c:["Riboswitches","Part of the mRNA binds a substrate and changes shape, starting or stopping translation","Prokaryotes and eukaryotes"],
+    d:["microRNA (miRNA)","Binds a target mRNA so the double-stranded RNA gets degraded","Eukaryotes (bacteria use sRNAs)"]}};
+  const STEPS = [
+    {part:P1, title:"Why control after transcription?", v:"layers", more:"why", links:[["Pre-transcriptional control","pretranscriptional-control.html"]],
+     text:`Pre-transcriptional control decides whether an mRNA gets made at all. Post-transcriptional control is everything that happens <i>after</i> {{transcription}}, while the mRNA still exists. Why bother? It lets the cell fine-tune gene expression after the mRNA is made, and it's a fast way to respond when conditions change. Stopping transcription in the first place saves more {{energy}}, but this is the quicker brake.`},
+    {part:P2, title:"Introns and exons", v:"premrna", more:"introns",
+     text:`Eukaryotic genes are interrupted. The noncoding regions are {{introns}} and they get removed. The coding regions are {{exons}} and they get spliced together to form the mature mRNA. Bacteria skip all of this: their mRNA is ready to translate the moment it's made.`,
+     after:`INtrons are IN the way. EXons are EXpressed.`, links:[["Try the Splice Lab","#splice"]]},
+    {part:P2, title:"snRNPs do the cutting", v:"splice", more:"snrnps", links:[["Try the Splice Lab","#splice"]],
+     text:`The splicing is done by {{snrnps}}, said "snurps." They are RNA and protein complexes that recognize the splice sites at the ends of each intron, loop the intron out, cut it free, and join the exons. In some organisms the introns act as {{ribozymes}} and catalyze their own removal, with no snRNPs needed.`},
+    {part:P2, title:"Cap and tail", v:"capTail", more:"capTail",
+     text:`Two more changes, also eukaryotes only. A 5' {{cap}} is added to the front for protection and to help the ribosome bind. A 3' {{polya}} tail is added to the back for stability and to help the mRNA get exported.`},
+    {part:P2, title:"Out to the cytoplasm", v:"exit", more:"exit", links:[["Translation module","translation.html"]],
+     text:`Only after processing is finished does the {{mature}} mRNA travel out of the nucleus to the cytoplasm, where ribosomes translate it. The final mature mRNA contains only exon sequences.`},
+    {part:P3, title:"Riboswitches", v:"riboswitch", more:"ribo",
+     text:`A {{riboswitch}} is a part of an mRNA that binds a small substrate molecule directly. When the substrate binds, the mRNA's {{structure}} changes, and that can either start OR stop translation. No regulatory protein is needed! Riboswitches are used by {{both}} prokaryotes and eukaryotes.`},
+    {part:P3, title:"microRNA", v:"mirna", gate:"mirna", more:"mirna",
+     text:`{{mirna}} molecules are small RNAs that regulate gene expression. Each one starts as a hairpin (a stem-loop) made in the nucleus. It gets trimmed, exported, and loaded into a protein complex called RISC in the cytoplasm. The miRNA base-pairs with a target mRNA, which needs at least {{six}} complementary bases. The cell treats that double-stranded RNA as a problem, so the mRNA gets {{degraded}} and never becomes protein.`},
+    {part:P3, title:"Putting it together", v:"compare", more:"compare", table:TABLE, links:[["Splice Lab","#splice"],["Mutations module","mutations.html"],["Translation module","translation.html"]],
+     text:`Nice work! Splicing, caps, and tails happen in the nucleus of eukaryotes, before the mRNA ever reaches a ribosome. Riboswitches and miRNA work on mRNA that already exists. Every one of these is a chance to stop a protein from being made without touching the DNA at all.`,
+     after:`You've now seen control before transcription and after it!`}
+  ];
+  const LAST = STEPS.length - 1;
+
+  /* ================= State ================= */
+  let mode = "learn", idx = 0, furthest = 0, bl = {};
+  let scene = "layers", frozen = false, sceneT = 0;
+  const $ = id => document.getElementById(id);
+  const svg = $("scene"), textEl = $("stepText"), afterEl = $("stepAfter"), fb = $("feedback"), checkRow = $("checkRow");
+  const nextBtn = $("nextBtn"), backBtn = $("backBtn"), bubble = $("bubble");
+  window.__resolvedRef = id => mode === "learn" || !!bl[id];
+  const blanksOf = st => (st.text.match(/\{\{(\w+)\}\}/g) || []).map(m => m.slice(2, -2));
+  const stepResolved = i => (mode === "learn" || blanksOf(STEPS[i]).every(id => bl[id])) && gateDone(i);
+  /* ================= Hands-on gates ================= */
+  const gates = {};
+  const gateDone = i => !STEPS[i].gate || !!gates[i];
+  function passGate(){ gates[idx] = true; renderGate(); if (stepResolved(idx)) resolvedNow(); else updateButtons(); }
+  function gateMsg(t, cls){ const m = document.getElementById("gateMsg"); if (m){ m.className = "gmsg " + (cls || ""); m.innerHTML = t; } }
+  function renderGate(){
+    const g = document.getElementById("gate"), st = STEPS[idx];
+    if (!g) return;
+    if (!st.gate){ g.hidden = true; g.innerHTML = ""; return; }
+    g.hidden = false;
+    const G = GATES[st.gate];
+    g.className = "gate" + (gates[idx] ? " done" : "");
+    if (gates[idx]){ g.innerHTML = `<div class="gtitle">\u2713 ${G.doneText}</div>`; return; }
+    g.innerHTML = `<div class="gtitle">${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
+    G.wire(g);
+  }
+  const PAIRM = {A:"U", U:"A", G:"C", C:"G"};
+  const MIR = "UCGUAAG"; /* written 3' to 5' */
+  const TARGETS = [["mRNA 1","GAUCCAGCAUGAA"],["mRNA 2","UUGGACGGAUCAC"],["mRNA 3","CCGUAGCAUUCAG"]];
+  function bestRun(t){
+    let best = 0, at = 0;
+    for (let o = 0; o + MIR.length <= t.length; o++){
+      let run = 0;
+      for (let k = 0; k < MIR.length; k++){ if (PAIRM[MIR[k]] === t[o + k]){ run++; if (run > best){ best = run; at = o + k - run + 1; } } else run = 0; }
+    }
+    return {best, at};
+  }
+  const gt = (b, cls) => `<span class="gb gb${b}${cls ? " " + cls : ""}">${b}</span>`;
+  const GATES = {
+    mirna:{
+      title:"Your turn: drag the miRNA (loaded in RISC) onto its target mRNA",
+      doneText:"Cleaved! That mRNA will be degraded and never made into protein.",
+      html:() => `<div class="shelf" style="align-items:flex-start">
+          <div class="trna risc" role="button" tabindex="0" aria-label="RISC carrying miRNA 3' UCGUAAG 5'"><span class="aab" style="background:#efe7fb;border-color:#8e5bd0;color:#5b3fb0">RISC + miRNA</span><span class="body">${[...MIR].map(b => gt(b)).join("")}</span><span class="aclbl">miRNA (3' to 5')</span></div>
+          <div style="display:grid;gap:8px">${TARGETS.map((x, i) => `<div class="dropzone tz" data-t="${i}"><div class="grow"><span class="glbl">${x[0]} (5' to 3')</span>${[...x[1]].map(b => gt(b)).join("")}</div></div>`).join("")}</div></div>
+          <div><button class="btn primary" id="cleaveBtn" hidden>Cleave</button></div>`,
+      wire:g => {
+        const zones = [...g.querySelectorAll(".tz")], card = g.querySelector(".risc");
+        let chosen = null;
+        const tryZone = z => {
+          zones.forEach(q => q.classList.remove("filled"));
+          const t = TARGETS[+z.dataset.t][1], r = bestRun(t);
+          const tiles = z.querySelectorAll(".gb");
+          tiles.forEach((el, k) => el.style.outline = (k >= r.at && k < r.at + r.best) ? "3px solid #8e5bd0" : "");
+          if (r.best >= 6){ z.classList.add("filled"); chosen = z; g.querySelector("#cleaveBtn").hidden = false; gateMsg(`${r.best} bases in a row pair up. That's enough to bind! Now tap Cleave.`, "good"); }
+          else { chosen = null; g.querySelector("#cleaveBtn").hidden = true; card.classList.remove("nope"); void card.offsetWidth; card.classList.add("nope"); gateMsg(`Only ${r.best} bases in a row pair up. A miRNA needs at least 6. Try another mRNA.`, "bad"); }
+        };
+        let pick = null;
+        card.addEventListener("click", () => { pick = true; gateMsg("Now tap the mRNA you think it matches (or drag the RISC onto it).", ""); });
+        zones.forEach(z => z.addEventListener("click", () => { if (pick) tryZone(z); }));
+        card.addEventListener("pointerdown", e => {
+          e.preventDefault();
+          const r = card.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+          let moved = false, clone = null, over = null;
+          const move = ev => {
+            if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6){ moved = true; clone = card.cloneNode(true); clone.classList.add("drag"); clone.style.width = r.width + "px"; document.body.appendChild(clone); card.classList.add("ghost"); }
+            if (clone){ clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px";
+              over = zones.find(z => { const q = z.getBoundingClientRect(); return ev.clientX > q.left && ev.clientX < q.right && ev.clientY > q.top && ev.clientY < q.bottom; }) || null;
+              zones.forEach(z => z.classList.toggle("over", z === over)); }
+          };
+          const up = () => {
+            document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up);
+            if (clone) clone.remove(); card.classList.remove("ghost"); zones.forEach(z => z.classList.remove("over"));
+            if (!moved){ pick = true; gateMsg("Now tap the mRNA you think it matches (or drag the RISC onto it).", ""); return; }
+            if (over) tryZone(over);
+          };
+          document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
+        });
+        g.querySelector("#cleaveBtn").addEventListener("click", e => {
+          if (!chosen) return; e.target.disabled = true;
+          chosen.style.transition = "opacity .8s, transform .8s"; chosen.style.opacity = ".25"; chosen.style.transform = "scale(.96)";
+          gateMsg("Snip! The double-stranded RNA is cut up.", "good");
+          setTimeout(passGate, 900);
+        });
+        gateMsg("Remember: A pairs with U and G pairs with C. Look for 6 or more bases in a row that pair with the miRNA.", "");
+      }
+    }
+  };
+
+
+  function render(){ svg.innerHTML = SC[scene] ? SC[scene](frozen ? 0 : sceneT) : ""; }
+  let last = performance.now();
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function frame(now){ const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; if (!frozen && !reduced) sceneT += dt; render(); requestAnimationFrame(frame); }
+
+  /* ================= Answers ================= */
+  function lev(a, b){ const m = a.length, n = b.length, d = []; for (let i = 0; i <= m; i++) d[i] = [i]; for (let j = 0; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)); return d[m][n]; }
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  function matches(id, val){ const b = BL[id], v = norm(val); if (!v) return false; return b.ans.some(a => a === v || (b.fuzzy && a.length >= 5 && lev(v, a) <= 1)); }
+
+  /* ================= UI ================= */
+  const termHTML = (id, cls) => `<strong class="term ${cls || ""}">${BL[id].show}</strong>`;
+  function termEl(id, cls){ const s = document.createElement("strong"); s.className = "term " + cls; s.textContent = BL[id].show; return s; }
+  function blankHTML(id){
+    if (mode === "learn") return termHTML(id);
+    if (bl[id]) return termHTML(id, bl[id]);
+    return `<input class="blank" data-id="${id}" size="${Math.max(3, BL[id].show.length + 1)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Fill in the blank">`;
+  }
+  function renderTable(){
+    const st = STEPS[idx], wrap = $("tableWrap");
+    const D = st.table && stepResolved(idx) ? st.table : null;
+    if (!D){ wrap.hidden = true; return; }
+    wrap.innerHTML = `<div class="cap">${D.cap}</div><table><thead><tr>${D.head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>`
+      + D.order.map(k => `<tr>${D.rows[k].map((c, j) => j ? `<td>${c}</td>` : `<td><b>${c}</b></td>`).join("")}</tr>`).join("") + `</tbody></table>`;
+    wrap.hidden = false;
+  }
+  function openMore(k){ const m = MORE[k]; $("moreTitle").textContent = m.title; $("moreBody").innerHTML = m.html; $("moreOverlay").hidden = false; $("moreClose").focus(); }
+  const closeMore = () => { $("moreOverlay").hidden = true; };
+  function footer(){
+    const st = STEPS[idx];
+    let h = (st.links || []).map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
+    if (st.more) h += `<button class="more-btn" data-more="${st.more}">Learn more</button><span class="more-note">Extra deep-dive, not on the exam</span>`;
+    $("bubbleFoot").innerHTML = h;
+    $("bubbleFoot").querySelectorAll("[data-more]").forEach(b => b.addEventListener("click", () => openMore(b.dataset.more)));
+  }
+  function showAfter(){ const st = STEPS[idx]; if (st.after && stepResolved(idx)){ afterEl.textContent = st.after; afterEl.hidden = false; } else afterEl.hidden = true; }
+  function updateButtons(){
+    const openB = mode === "test" && !!textEl.querySelector("input.blank");
+    checkRow.hidden = !openB; nextBtn.disabled = openB || !gateDone(idx); backBtn.disabled = idx === 0;
+    nextBtn.textContent = idx === LAST ? "Start over" : "Next";
+  }
+  function renderBubble(){
+    const st = STEPS[idx];
+    $("stepNo").textContent = `${st.part} (step ${idx + 1} of ${STEPS.length})`;
+    $("stepTitle").textContent = st.title;
+    textEl.innerHTML = st.text.replace(/\{\{(\w+)\}\}/g, (m, id) => blankHTML(id));
+    textEl.querySelectorAll("input.blank").forEach(inp => {
+      inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); check(); } });
+      inp.addEventListener("input", () => inp.classList.remove("wrong"));
+    });
+    fb.textContent = ""; fb.className = "feedback";
+    showAfter(); footer(); updateButtons();
+    bubble.classList.remove("pop"); void bubble.offsetWidth; bubble.classList.add("pop");
+    const first = textEl.querySelector("input.blank"); if (first && mode === "test") first.focus({preventScroll:true});
+  }
+  function renderNav(){
+    const dots = $("dots"); dots.innerHTML = "";
+    STEPS.forEach((st, i) => {
+      if (i > 0 && STEPS[i - 1].part !== st.part){ const g = document.createElement("span"); g.className = "gap"; dots.appendChild(g); }
+      const b = document.createElement("button");
+      b.className = "dot" + (i === idx ? " current" : (i < furthest || i < idx ? " seen" : ""));
+      b.textContent = i + 1; b.title = `${st.part}: ${st.title}`; b.setAttribute("aria-label", `Go to step ${i + 1}: ${st.title}`);
+      b.disabled = mode === "test" && i > furthest;
+      b.addEventListener("click", () => goTo(i));
+      dots.appendChild(b);
+    });
+  }
+  function enterStep(i, force){
+    const changed = i !== idx || force; idx = i;
+    const st = STEPS[i], res = stepResolved(i);
+    if (res) furthest = Math.max(furthest, i + 1);
+    if (changed) sceneT = 0;
+    scene = st.v; frozen = !res;
+    renderBubble(); renderNav(); renderTable(); render(); renderGate();
+  }
+  const goTo = i => enterStep(clamp(i, 0, LAST));
+  function resolvedNow(){
+    if (!stepResolved(idx)){ updateButtons(); renderNav(); renderGate(); return; }
+    furthest = Math.max(furthest, idx + 1);
+    updateButtons(); renderNav(); showAfter(); renderTable();
+    sceneT = 0; frozen = false;
+    nextBtn.focus({preventScroll:true});
+  }
+  function check(){
+    const inputs = [...textEl.querySelectorAll("input.blank")];
+    let wrong = 0, empty = 0;
+    inputs.forEach(inp => {
+      const id = inp.dataset.id;
+      if (!inp.value.trim()){ empty++; wrong++; return; }
+      if (matches(id, inp.value)){ bl[id] = "correct"; inp.replaceWith(termEl(id, "correct")); }
+      else { wrong++; inp.classList.remove("wrong"); void inp.offsetWidth; inp.classList.add("wrong"); }
+    });
+    if (wrong){
+      fb.className = "feedback bad";
+      fb.textContent = empty === wrong ? "Type an answer in each blank, or tap Move on to see it." : "Not quite yet. Give it another try, or tap Move on to see the answer.";
+      const n = textEl.querySelector("input.wrong") || textEl.querySelector("input.blank"); if (n) n.focus({preventScroll:true});
+      updateButtons();
+    } else {
+      const cheers = ["Correct!", "Nailed it!", "Yes! Great job.", "Exactly right!", "You've got it!"];
+      fb.className = "feedback good"; fb.textContent = cheers[idx % cheers.length];
+      resolvedNow();
+    }
+  }
+  function moveOn(){
+    textEl.querySelectorAll("input.blank").forEach(inp => { const id = inp.dataset.id; bl[id] = "revealed"; inp.replaceWith(termEl(id, "revealed")); });
+    fb.className = "feedback warn"; fb.textContent = "Here's the answer. Read it over, then tap Next when you're ready.";
+    resolvedNow();
+  }
+  function setMode(m){
+    mode = m;
+    $("learnBtn").setAttribute("aria-pressed", m === "learn");
+    $("testBtn").setAttribute("aria-pressed", m === "test");
+    $("modeHint").textContent = m === "learn"
+      ? "Learn mode: every term is filled in. Read each bubble, watch what happens, then tap Next."
+      : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
+    enterStep(idx, true);
+  }
+  function restart(){ bl = {}; furthest = 0; for (const k in gates) delete gates[k]; enterStep(0, true); }
+
+  $("learnBtn").addEventListener("click", () => setMode("learn"));
+  $("testBtn").addEventListener("click", () => setMode("test"));
+  $("restartBtn").addEventListener("click", restart);
+  $("checkBtn").addEventListener("click", check);
+  $("moveOnBtn").addEventListener("click", moveOn);
+  backBtn.addEventListener("click", () => goTo(idx - 1));
+  $("replayBtn").addEventListener("click", () => { sceneT = 0; });
+  nextBtn.addEventListener("click", () => { if (idx === LAST) restart(); else goTo(idx + 1); });
+  $("moreClose").addEventListener("click", closeMore);
+  $("moreOverlay").addEventListener("click", e => { if (e.target.id === "moreOverlay") closeMore(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !$("moreOverlay").hidden){ closeMore(); return; }
+    if (document.body.dataset.view === "lab") return;
+    if (!$("moreOverlay").hidden || (e.target && e.target.tagName === "INPUT")) return;
+    if (e.key === "ArrowRight" && !nextBtn.disabled && idx < LAST) goTo(idx + 1);
+    if (e.key === "ArrowLeft" && idx > 0) goTo(idx - 1);
+  });
+
+  setMode("learn");
+  requestAnimationFrame(frame);
+  window.__pt = {goTo, check, moveOn, setMode, openMore, STEPS, SC, get idx(){ return idx; }};
+})();
+</script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const EX = {
+    E1:{n:1, col:"#f2b134", ink:"#3b2a00", part:"start", w:78},
+    E2:{n:2, col:"#3b7dd8", ink:"#fff", part:"square", w:70},
+    E3:{n:3, col:"#2f9e63", ink:"#fff", part:"triangle", w:70},
+    E4:{n:4, col:"#d9534f", ink:"#fff", part:"end", w:78}
+
+  };
+  const START = ["E1","I1","E2","I2","E3","I3","E4"];
+  let segs, pending, busy, made, found = [];
+
+  function reset(){ segs = START.slice(); pending = null; busy = false; made = false; say(); render(); }
+  const introns = () => segs.filter(s => s[0] === "I");
+  const exonsLeft = () => segs.filter(s => s[0] === "E");
+  const key = () => exonsLeft().map(e => EX[e].n).join("-");
+
+  function say(msg, cls){
+    const p = $("spPrompt");
+    if (msg){ p.innerHTML = msg; p.className = "hintbox " + (cls || ""); return; }
+    if (made) p.innerHTML = `Nice splicing! Tap <b>New pre-mRNA</b> to try a different combination of exons.`;
+    else if (!introns().length) p.innerHTML = `All introns are out! The 5' cap and poly-A tail are on, so this mature mRNA is ready to leave the nucleus. Send it to the ribosome!`;
+    else if (pending) p.innerHTML = `Loop started at the <b>GU</b> of intron ${pending.slice(1)}. Now tap an <b>AG</b> at or to the right of it to close the loop. (Tap the same GU again to cancel.)`;
+    else p.innerHTML = `You're the snRNP! Tap an intron to cut it out. To skip an exon, tap a <b>GU</b> splice site, then an <b>AG</b> splice site farther right: everything in between loops out.`;
+    p.className = "hintbox";
+  }
+
+  function cut(a, b){
+    const i = segs.indexOf(a), j = segs.indexOf(b);
+    const gone = segs.slice(i, j + 1);
+    busy = true; pending = null;
+    gone.forEach(id => { const el = document.querySelector(`[data-seg="${id}"]`); if (el) el.classList.add("looping"); });
+    const snrnp = $("spSnrnp"); snrnp.hidden = false;
+    const r1 = document.querySelector(`[data-seg="${a}"]`).getBoundingClientRect(), r2 = document.querySelector(`[data-seg="${b}"]`).getBoundingClientRect(), rt = $("spTrack").getBoundingClientRect();
+    snrnp.style.left = ((r1.left + r2.right) / 2 - rt.left) + "px";
+    const skipped = gone.filter(s => s[0] === "E").map(e => EX[e].n);
+    setTimeout(() => {
+      segs = segs.filter(s => !gone.includes(s)); busy = false; snrnp.hidden = true;
+      if (skipped.length) say(`Exon${skipped.length > 1 ? "s" : ""} ${skipped.join(" and ")} looped out with the introns around ${skipped.length > 1 ? "them" : "it"}. That's alternative splicing!`, "good");
+      else say();
+      if (skipped.length) setTimeout(() => { if (!busy) say(); }, 2600);
+      render();
+    }, 650);
+  }
+
+  function clickGU(id){ if (busy || made) return; pending = pending === id ? null : id; say(); render(); }
+  function clickAG(id){
+    if (busy || made) return;
+    if (!pending){ say(`Start the loop at a <b>GU</b> first. GU marks the beginning (5' end) of every intron, and AG marks the end (3' end).`, "warn"); return; }
+    if (segs.indexOf(id) < segs.indexOf(pending)){ say(`That AG is to the left of your GU. The loop runs from a GU to an AG on its right.`, "warn"); return; }
+    cut(pending, id);
+  }
+  function clickIntron(id){ if (busy || made) return; cut(id, id); }
+  function clickExon(id){
+    if (busy || made) return;
+    const n = EX[id].n;
+    if (n === 1 || n === 4) say(`Exon ${n} holds the ${n === 1 ? "start" : "stop"} codon, so every version of this protein keeps it.`, "warn");
+    else say(`snRNPs don't cut in the middle of exons. They cut at splice sites. To skip exon ${n}, tap the GU just before it, then the AG just after it.`, "warn");
+  }
+
+  function translate(){
+    if (busy || introns().length || made) return;
+    made = true;
+    const k = key();
+    const isNew = !found.includes(k);
+    if (isNew) found.push(k);
+    const all = found.length === 4;
+    toast(isNew ? (all ? "You found all 4 proteins from one gene. Splicing superstar!" : found.length === 1 ? "Your first protein! Can you make a different one from the same gene?" : `New protein discovered! ${found.length} of 4.`) : "You already made this one. Try skipping different exons!", isNew);
+    say(); render();
+  }
+
+  function protein(k, big){
+    const ids = k.split("-").map(n => "E" + n);
+    const sz = big ? 26 : 16, gap = big ? 50 : 30, W = ids.length * gap + 20, H = sz * 2 + 10, y = H / 2;
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="${big ? W : W * .9}" height="${big ? H : H * .9}" aria-hidden="true"><path d="M${10 + gap / 2},${y} H${W - 10 - gap / 2}" stroke="#9aa3b5" stroke-width="${big ? 4 : 3}"/>`;
+    ids.forEach((id, i) => {
+      const e = EX[id], x = 10 + gap / 2 + i * gap, r = sz * .72;
+      if (e.part === "start" || e.part === "end") s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${e.col}"/>`;
+      else if (e.part === "square") s += `<rect x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" rx="${r * .25}" fill="${e.col}"/>`;
+      else if (e.part === "triangle") s += `<polygon points="${x},${y - r * 1.1} ${x + r * 1.1},${y + r * .85} ${x - r * 1.1},${y + r * .85}" fill="${e.col}"/>`;
+      else s += `<polygon points="${[0,1,2,3,4,5].map(j => { const a = Math.PI / 6 + j * Math.PI / 3; return (x + r * 1.1 * Math.cos(a)).toFixed(1) + "," + (y + r * 1.1 * Math.sin(a)).toFixed(1); }).join(" ")}" fill="${e.col}"/>`;
+    });
+    return s + `</svg>`;
+  }
+
+  function toast(msg, good){ const t = $("spToast"); t.textContent = msg; t.style.background = good ? "" : "#5a6376"; t.hidden = false; t.classList.remove("pop"); void t.offsetWidth; t.classList.add("pop"); clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 3200); }
+
+  function render(){
+    const mature = !introns().length;
+    let h = `<div class="cap5${mature ? " on" : ""}" title="5' cap">G</div>`;
+    segs.forEach(id => {
+      if (id[0] === "E"){
+        const e = EX[id];
+        h += `<button class="sgm exon" data-seg="${id}" style="--c:${e.col};--ink:${e.ink};flex-basis:${e.w}px" aria-label="Exon ${e.n}">Exon ${e.n}</button>`;
+      } else {
+        const n = id.slice(1), pend = pending === id;
+        h += `<div class="sgm intron${pend ? " pend" : ""}" data-seg="${id}"><button class="ss gu${pend ? " on" : ""}" data-gu="${id}" aria-label="GU splice site of intron ${n}">GU</button><button class="ibody" data-in="${id}" aria-label="Cut out intron ${n}">intron ${n}</button><button class="ss ag" data-ag="${id}" aria-label="AG splice site of intron ${n}">AG</button></div>`;
+      }
+    });
+    h += `<div class="tail3${mature ? " on" : ""}" title="poly-A tail"><span>A</span><span>A</span><span>A</span><span>A</span></div>`;
+    $("spTrack").innerHTML = h + `<div class="snrnp" id="spSnrnp" hidden>snRNP</div>`;
+    $("spTrack").querySelectorAll("[data-gu]").forEach(b => b.addEventListener("click", () => clickGU(b.dataset.gu)));
+    $("spTrack").querySelectorAll("[data-ag]").forEach(b => b.addEventListener("click", () => clickAG(b.dataset.ag)));
+    $("spTrack").querySelectorAll("[data-in]").forEach(b => b.addEventListener("click", () => clickIntron(b.dataset.in)));
+    $("spTrack").querySelectorAll(".sgm.exon").forEach(b => b.addEventListener("click", () => clickExon(b.dataset.seg)));
+    $("spStage").textContent = mature ? "Mature mRNA: exons only, plus cap and tail" : "Pre-mRNA (in the nucleus)";
+    $("spGo").disabled = !mature || made;
+    $("spOut").innerHTML = made ? `<div class="made">${protein(key(), true)}<div><b>Built from exons ${key().split("-").join(", ")}</b><div class="muted-s">${exonsLeft().length === 4 ? "The full-length protein, with every piece." : `Missing the ${[2,3].filter(n => !key().split("-").includes(String(n))).map(n => "exon " + n).join(" and ")} piece${4 - exonsLeft().length > 1 ? "s" : ""}, so this protein has a different shape and maybe a different job.`}</div></div></div>` : "";
+    $("spCount").textContent = `Proteins discovered: ${found.length} of 4`;
+    let g = "";
+    for (let i = 0; i < 4; i++){
+      const k = found[i];
+      g += k ? `<div class="slot got">${protein(k)}<span>Exons ${k.split("-").join(", ")}</span></div>` : `<div class="slot">?</div>`;
+    }
+    $("spGrid").innerHTML = g;
+  }
+
+  $("spGo").addEventListener("click", translate);
+  $("spNew").addEventListener("click", reset);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && pending && document.body.dataset.view === "lab"){ pending = null; say(); render(); } });
+  reset();
+  window.__sp = {cut, clickGU, clickAG, clickIntron, clickExon, translate, reset, get found(){ return found; }, get segs(){ return segs; }};
+})();
+</script>
+<script>
+(function(){
+  const LABHASH = "splice";
+  const tabs = [...document.querySelectorAll(".tabs [data-view]")];
+  function setView(v, push){
+    const lab = v === "lab";
+    document.body.dataset.view = lab ? "lab" : "walk";
+    tabs.forEach(b => b.setAttribute("aria-selected", String(b.dataset.view === v)));
+    document.getElementById("viewWalk").hidden = lab;
+    document.getElementById("viewLab").hidden = !lab;
+    document.getElementById("walkControls").hidden = lab;
+    if (push && history.replaceState) history.replaceState(null, "", lab ? "#" + LABHASH : location.pathname + location.search);
+  }
+  tabs.forEach(b => b.addEventListener("click", () => setView(b.dataset.view, true)));
+  function fromHash(){ setView(location.hash === "#" + LABHASH ? "lab" : "walk"); if (location.hash === "#" + LABHASH) window.scrollTo(0, 0); }
+  window.addEventListener("hashchange", fromHash);
+  fromHash();
+})();
+</script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const PAGE = (location.pathname.split("/").pop() || "index.html");
+  const testing = () => { const t = $("testBtn"); return t && t.getAttribute("aria-pressed") === "true"; };
+
+  /* Hint button: shows the first letter and length of each open blank, then more letters */
+  const row = $("checkRow"), moveOn = $("moveOnBtn");
+  if (row && moveOn && window.__BL){
+    const hb = document.createElement("button");
+    hb.className = "btn hint"; hb.id = "hintBtn"; hb.textContent = "Hint";
+    row.insertBefore(hb, moveOn);
+    hb.addEventListener("click", () => {
+      const ins = [...document.querySelectorAll("#stepText input.blank")];
+      ins.forEach(inp => {
+        const b = window.__BL[inp.dataset.id]; if (!b) return;
+        const w = b.show, lvl = Math.min((+inp.dataset.hint || 0) + 1, Math.max(1, Math.ceil(w.length / 2)));
+        inp.dataset.hint = lvl;
+        if (inp.classList.contains("wrong")) inp.value = "";
+        inp.placeholder = w.slice(0, lvl) + w.slice(lvl).replace(/[^\s-]/g, "_");
+        inp.size = Math.max(inp.size || 3, w.length + 1);
+      });
+      const fb = $("feedback");
+      if (fb && ins.length){ fb.className = "feedback warn"; fb.textContent = "Hint: the first letter" + (ins.some(i => +i.dataset.hint > 1) ? "s are" : " is") + " shown, and each dash is one letter. Tap Hint again for more."; }
+      const f = ins[0]; if (f) f.focus({preventScroll:true});
+    });
+  }
+
+  /* Bridge card on the last step */
+  let links = []; try { links = JSON.parse(document.body.dataset.next || "[]"); } catch (e) {}
+  const bubble = $("bubble");
+  let bridge = null;
+  if (links.length && bubble){
+    bridge = document.createElement("div"); bridge.className = "bridge"; bridge.hidden = true;
+    bridge.innerHTML = `<b>${document.body.dataset.nextLabel || "Where to next?"}</b>` + links.map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
+    bubble.insertAdjacentElement("afterend", bridge);
+  }
+
+  /* Completion: finishing every step in Test mode saves a checkmark for the hub */
+  const next = $("nextBtn");
+  let toasted = false;
+  function watch(){
+    if (!next) return;
+    const last = next.textContent.trim() === "Start over";
+    if (bridge) bridge.hidden = !last;
+    if (last && testing() && !next.disabled){
+      let was = false; try { was = localStorage.getItem("bio112-done:" + PAGE) === "1"; localStorage.setItem("bio112-done:" + PAGE, "1"); } catch (e) {}
+      if (!toasted && !was){
+        toasted = true;
+        const t = document.createElement("div"); t.className = "donetoast"; t.setAttribute("role", "status");
+        t.textContent = "Module complete! It now has a checkmark on the home page.";
+        document.body.appendChild(t); setTimeout(() => t.remove(), 3600);
+      }
+    }
+  }
+  if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
+})();
+</script>
+</body>
+</html>
