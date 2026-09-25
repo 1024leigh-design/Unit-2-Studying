@@ -332,6 +332,23 @@
   .spark{position:absolute;left:50%;top:50%;width:46px;height:46px;transform:translate(-50%,-50%) scale(0);background:radial-gradient(circle,#fff6b0 0 25%,#f2b134 26% 45%,transparent 46%);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);animation:spark .7s ease-out}
   @keyframes spark{0%{transform:translate(-50%,-50%) scale(0) rotate(0)}50%{transform:translate(-50%,-50%) scale(1.3) rotate(40deg)}100%{transform:translate(-50%,-50%) scale(0) rotate(80deg);opacity:0}}
   @media (prefers-reduced-motion:reduce){ .spark{animation:none;display:none} .trna.nope{animation:none} }
+
+  /* Nucleus frame for the Splice Lab */
+  .nucbox{border:3px solid #8e5bd0;background:#efe7fb;border-radius:28px;padding:12px 14px 14px;display:grid;gap:10px}
+  .nuctag{font-size:.88rem;font-weight:700;color:var(--more);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .nuctag span{background:#8e5bd0;color:#fff;border-radius:999px;padding:3px 12px}
+  .sntray{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .sntoken{touch-action:none;user-select:none;cursor:grab;background:#8e5bd0;color:#fff;font-weight:700;border-radius:22px 22px 16px 16px;padding:10px 16px;box-shadow:0 3px 0 #5b3fb0}
+  .sntoken.lifted{opacity:.35}
+  .sntoken.dragging{position:fixed;z-index:50;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.3)}
+  .sphot{outline:3px solid #f2b134;outline-offset:2px}
+  /* miRNA processing steps */
+  .msteps{display:flex;flex-wrap:wrap;gap:6px}
+  .mstep{font-size:.8rem;font-weight:700;border-radius:999px;padding:4px 10px;background:#eef1f5;color:var(--muted)}
+  .mstep.cur{background:var(--more);color:#fff}
+  .mstep.done{background:var(--good-soft);color:var(--good)}
+  .hpwrap{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;justify-self:start;max-width:100%}
+  .modehint:empty{display:none}
 </style>
 </head>
 <body data-view="walk">
@@ -340,7 +357,6 @@
     <div>
       <a class="backlink" href="index.html">All modules</a>
       <h1>Post-Transcriptional Control</h1>
-      <div class="sub">BIOL 112 Microbiology, Chapter 8: controlling the mRNA after it is made</div>
     </div>
     <div class="controls" id="walkControls">
       <div class="seg" role="group" aria-label="Mode">
@@ -391,8 +407,12 @@
         <p>This pre-mRNA has 4 exons and 3 introns. Be the snRNP: cut out the introns, and try skipping exons 2 or 3 too. Each combination makes a different protein from the very same gene. Can you find all 4?</p>
       </div>
       <div class="hintbox" id="spPrompt" aria-live="polite"></div>
-      <div class="sptrackwrap"><div class="spstage" id="spStage"></div><div class="sptrack" id="spTrack"></div></div>
-      <div class="actions"><button class="btn primary" id="spGo">Send it to the ribosome</button><button class="btn secondary" id="spNew">New pre-mRNA</button></div>
+      <div class="nucbox">
+        <div class="nuctag"><span>Nucleus</span> Eukaryotes only: splicing happens here, before the mRNA can leave</div>
+        <div class="sntray"><span class="sntoken" id="spToken" role="button" tabindex="0" aria-label="snRNP: drag onto an intron to cut it out">snRNP</span><span class="muted-s">Drag the snRNP onto an intron to cut it out. To skip an exon, drop it on a <b>GU</b>, then on an <b>AG</b> farther right. (Tapping works too.)</span></div>
+        <div class="sptrackwrap"><div class="spstage" id="spStage"></div><div class="sptrack" id="spTrack"></div></div>
+      </div>
+      <div class="actions"><button class="btn primary" id="spGo">Export it to the cytoplasm and translate</button><button class="btn secondary" id="spNew">New pre-mRNA</button></div>
       <div id="spOut"></div>
       <div class="spcollect"><div class="spcount" id="spCount"></div><div class="spgrid" id="spGrid"></div></div>
     </div>
@@ -418,6 +438,7 @@
   const seg = (t,a,b) => clamp((t - a) / (b - a), 0, 1);
   const f1 = v => (+v).toFixed(1);
   const f3 = v => (+v).toFixed(3);
+  const BCOL = {A:"#2f9e63", U:"#8e5bd0", G:"#f2b134", C:"#3b7dd8"};
   const ORANGE = "#e8744f", PURPLE = "#8e5bd0", GREEN = "#2f9e63", RED = "#b83a34", BLUE = "#3f4cc0", GOLD = "#f2b134", TEAL = "#0f766e";
 
   /* ================= Shared bits ================= */
@@ -425,7 +446,7 @@
   function ribo(x, y, s, op){ s = s || 1;
     return `<g opacity="${f3(op === undefined ? 1 : op)}"><ellipse cx="${f1(x)}" cy="${f1(y - 8 * s)}" rx="${f1(24 * s)}" ry="${f1(16 * s)}" fill="#c97b4a"/><ellipse cx="${f1(x)}" cy="${f1(y + 10 * s)}" rx="${f1(20 * s)}" ry="${f1(8 * s)}" fill="#e3a877"/></g>`; }
   function snrnp(x, y, op){ return `<g opacity="${f3(op)}"><ellipse cx="${f1(x)}" cy="${f1(y)}" rx="19" ry="14" fill="${PURPLE}"/><circle cx="${f1(x - 7)}" cy="${f1(y - 5)}" r="5" fill="#c2a6ea"/></g>`; }
-  function pill(x, y, text, fill, op){ const w = text.length * 7.4 + 20; return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - w/2)}" y="${f1(y - 14)}" width="${f1(w)}" height="26" rx="13" fill="${fill}"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">${text}</text></g>`; }
+  function pill(x, y, text, fill, op){ const w = text.length * 8 + 24; return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - w/2)}" y="${f1(y - 14)}" width="${f1(w)}" height="26" rx="13" fill="${fill}"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">${text}</text></g>`; }
   function capG(x, y, op, r){ r = r || 12; return `<g opacity="${f3(op)}"><circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r)}" fill="${GOLD}" stroke="#a8760f" stroke-width="1.5"/><text x="${f1(x)}" y="${f1(y + 5)}" font-size="13" font-weight="700" fill="#3b2a00" text-anchor="middle">G</text></g>`; }
   function polyA(x, y, n, op, gap){ let o = ""; gap = gap || 17; for (let i = 0; i < n; i++) o += `<g opacity="${f3(op)}"><circle cx="${f1(x + i * gap)}" cy="${f1(y)}" r="8" fill="${GREEN}"/><text x="${f1(x + i * gap)}" y="${f1(y + 4)}" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">A</text></g>`; return o; }
   function nucleus(cx, cy, rx, ry, label){
@@ -483,21 +504,34 @@
     return o;
   }
   /* ---------- compartments ---------- */
+  /* Corner badge so eukaryote-only and prokaryote scenes can't be confused */
+  function badge(text, fill, x){ x = x || 18; const w = text.length * 8.7 + 30; return `<g><rect x="${x}" y="14" width="${f1(w)}" height="26" rx="13" fill="${fill}"/><text x="${f1(x + w / 2)}" y="31.5" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing=".5">${text}</text></g>`; }
+  const EUK_ONLY = () => badge("EUKARYOTES ONLY", "#6b4bb8");
   function eukCell(dim){
-    /* dim: "cyto" dims the nucleus, "nuc" dims the cytoplasm side */
+    /* dim: "cyto" dims the nucleus */
+    const nd = dim === "cyto" ? .55 : 1;
     let o = `<rect x="12" y="66" width="976" height="394" rx="34" fill="#fbf9ff" stroke="#c9b9ee" stroke-width="3"/>`;
-    o += `<text x="964" y="92" class="t12 end muted">Eukaryotic cell</text>`;
-    o += `<rect x="36" y="96" width="572" height="340" rx="60" fill="#efe7fb" stroke="#8e5bd0" stroke-width="3" opacity="${dim === "cyto" ? .55 : 1}"/><rect x="44" y="104" width="556" height="324" rx="54" fill="none" stroke="#b9a6ee" stroke-width="1.5" opacity="${dim === "cyto" ? .55 : 1}"/>`;
+    o += `<text x="964" y="88" class="t12 end muted">Eukaryotic cell (plasma membrane, no cell wall)</text>`;
+    o += `<rect x="620" y="98" width="356" height="350" rx="26" fill="#fff7f1" opacity=".9"/>`;
+    o += `<rect x="36" y="96" width="572" height="340" rx="60" fill="#efe7fb" stroke="#8e5bd0" stroke-width="3" opacity="${nd}"/><rect x="44" y="104" width="556" height="324" rx="54" fill="none" stroke="#b9a6ee" stroke-width="1.5" opacity="${nd}"/>`;
     [200, 300].forEach(py => { o += `<rect x="598" y="${py - 14}" width="16" height="28" fill="#fbf9ff"/><path d="M598,${py - 14} h16 M598,${py + 14} h16" stroke="#8e5bd0" stroke-width="4" stroke-linecap="round"/>`; });
-    o += `<text x="72" y="132" class="t15 pur">Nucleus</text><text x="800" y="132" class="t15 mid pur">Cytoplasm</text>`;
-    if (dim === "nuc") o += `<rect x="620" y="100" width="350" height="340" fill="#fbf9ff" opacity=".0"/>`;
-    return o;
+    o += `<rect x="58" y="112" width="112" height="28" rx="14" fill="#8e5bd0"/><text x="114" y="131" class="t15 mid wht">Nucleus</text>`;
+    o += `<rect x="736" y="112" width="128" height="28" rx="14" fill="#c4532f"/><text x="800" y="131" class="t15 mid wht">Cytoplasm</text>`;
+    o += `<text x="624" y="334" class="t12 muted">◀ Nuclear pore</text>`;
+    return o + EUK_ONLY();
   }
   const inNucleus = body => `<g transform="translate(-26 96) scale(0.74)">${body}</g>`;
-  function bactCell(){
-    let o = `<rect x="40" y="86" width="920" height="352" rx="176" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="7"/><rect x="52" y="98" width="896" height="328" rx="164" fill="none" stroke="#9cc28b" stroke-width="2"/>`;
-    o += `<text x="500" y="124" class="t13 mid" fill="#4d7a3d">Bacterial cell: no nucleus, so mRNA sits right in the cytoplasm</text>`;
-    return o;
+  /* Bacterial cell: thick peptidoglycan cell wall + plasma membrane, DNA loose in a nucleoid */
+  function bactCell(tag){
+    let o = `<defs><pattern id="pgWall" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#b9d3a6"/><path d="M0,6 H12 M6,0 V12" stroke="#7fa468" stroke-width="2"/></pattern></defs>`;
+    o += `<rect x="34" y="80" width="932" height="364" rx="182" fill="url(#pgWall)" stroke="#5f8a4f" stroke-width="2.5"/>`;
+    o += `<rect x="50" y="96" width="900" height="332" rx="166" fill="#f1f7ec" stroke="#c9a15a" stroke-width="3"/><rect x="56" y="102" width="888" height="320" rx="160" fill="none" stroke="#e3c98f" stroke-width="1.5"/>`;
+    o += `<path d="M880,88 L922,64" stroke="#5f8a4f" stroke-width="2"/><text x="990" y="60" class="t12 end" style="fill:#4d7a3d">Cell wall</text>`;
+    o += `<path d="M905,396 L940,452" stroke="#a88338" stroke-width="2"/><text x="936" y="466" class="t12 end" style="fill:#8a6a24">Plasma membrane</text>`;
+    o += `<path d="M760,300 C790,262 860,270 860,300 C860,336 792,340 772,318 C760,304 802,290 826,304" fill="none" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/>`;
+    o += `<text x="810" y="356" class="t12 mid" style="fill:#0f766e">Nucleoid: DNA, no nucleus</text>`;
+    o += `<text x="500" y="126" class="t13 mid" fill="#4d7a3d" style="fill:#4d7a3d">Bacterial cell: no nucleus, so mRNA sits right in the cytoplasm</text>`;
+    return o + badge(tag || "PROKARYOTE", "#4d7a3d");
   }
   const SC = {
     layers:t => {
@@ -568,16 +602,16 @@
       const T = 10, tt = t % T;
       const bind = smooth(seg(tt, 2, 3.4)), flip = smooth(seg(tt, 3.4, 4.8)), back = smooth(seg(tt, 8, 9.4));
       const on = clamp(bind - back, 0, 1), sh = clamp(flip - back, 0, 1);
-      let o = `<text x="500" y="44" class="t18 mid">A riboswitch: the mRNA is its own sensor</text>` + bactCell();
+      let o = bactCell("BACTERIAL EXAMPLE (ALSO IN EUKARYOTES)") + `<text x="500" y="62" class="t18 mid">A riboswitch: the mRNA is its own sensor</text>`;
       const y = 250, hx = 300;
       o += `<path d="M120,${y} H${hx - 40}" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
       const h = lerp(52, 96, sh), wdt = lerp(58, 30, sh);
       o += `<path d="M${hx - 40},${y} C${hx - 40},${f1(y - h)} ${f1(hx - 40 + wdt)},${f1(y - h)} ${f1(hx - 40 + wdt)},${y}" fill="none" stroke="${ORANGE}" stroke-width="5"/>`;
       o += `<path d="M${f1(hx - 40 + wdt)},${y} H720" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
       o += `<text x="${f1(hx - 40 + wdt / 2)}" y="${f1(y - h - 14)}" class="t12 mid">${resolved("riboswitch") ? "Riboswitch" : "?"}</text>`;
-      const mx = lerp(660, hx - 40 + wdt / 2, on), my = lerp(120, y - h + 16, on);
+      const mx = lerp(840, hx - 40 + wdt / 2, on), my = lerp(170, y - h + 16, on);
       o += `<g opacity="${f3(Math.max(on, smooth(seg(tt, .6, 1.4)) * (1 - back)))}"><polygon points="${[0,1,2,3,4,5].map(i => { const a = Math.PI / 6 + i * Math.PI / 3; return f1(mx + 12 * Math.cos(a)) + "," + f1(my + 12 * Math.sin(a)); }).join(" ")}" fill="${TEAL}" stroke="#0a6e7a" stroke-width="1.5"/></g>`;
-      if (on < .9) o += `<text x="${f1(mx + 22)}" y="${f1(my + 5)}" class="t12" opacity="${f3(1 - on)}">Substrate molecule</text>`;
+      if (on < .9) o += `<text x="${f1(mx - 20)}" y="${f1(my + 5)}" class="t12 end" opacity="${f3(1 - on)}">Substrate molecule</text>`;
       const blocked = sh > .5;
       o += ribo(560, y - 22, 1.15, 1);
       if (blocked) o += pill(560, y - 84, "Translation blocked", RED, (sh - .5) * 2);
@@ -593,50 +627,82 @@
       o += `<rect x="${f1(x - 80)}" y="${y - 9}" width="160" height="18" rx="9" fill="${ORANGE}"/>` + capG(x - 92, y, 1, 11) + polyA(x + 94, y, 4, 1, 15);
       o += `<text x="${f1(x)}" y="${y + 40}" class="t13 mid">${resolved("mature") ? "Mature mRNA" : "? mRNA"}</text>`;
       if (move < .15) o += pill(320, 230, "Processing finished", GREEN, proc * (1 - move * 6));
-      o += `<text x="606" y="342" class="t12 mid muted">Nuclear pore</text>`;
       o += ribo(800, 262, 1, rib);
       if (rib > .5) o += pill(800, 400, "Translated in the cytoplasm", BLUE, (rib - .5) * 2);
       return o;
     },
     mirna:t => {
-      const T = 13, tt = t % T;
-      const out = smooth(seg(tt, 1.6, 3.6)), trim = smooth(seg(tt, 3.8, 4.8)), load = smooth(seg(tt, 4.8, 5.8)), go = smooth(seg(tt, 6, 7.6)), pair = smooth(seg(tt, 7.6, 8.4)), cut = smooth(seg(tt, 9, 10.4));
+      /* pri-miRNA hairpin (nucleus) -> Drosha trims -> export -> Dicer cuts loop -> guide strand into RISC -> pairs with target -> cleave */
+      const T = 17, tt = t % T;
+      const drosha = smooth(seg(tt, 1.0, 2.4)), out = smooth(seg(tt, 2.8, 4.6)), dicer = smooth(seg(tt, 5.0, 6.2)), load = smooth(seg(tt, 6.6, 7.8));
+      const go = smooth(seg(tt, 8.2, 9.8)), pair = smooth(seg(tt, 9.8, 10.8)), cut = smooth(seg(tt, 11.4, 12.8)), gone = smooth(seg(tt, 13.2, 14.4)), fade = 1 - smooth(seg(tt, 16.2, 17));
       let o = `<text x="500" y="44" class="t18 mid">${resolved("mirna") ? "microRNA" : "?"}: from hairpin to mRNA destroyer</text>` + eukCell();
-      /* target mRNA in the cytoplasm */
-      const my = 390, gap = 26 * cut;
-      o += `<g opacity="${f3(1 - smooth(seg(tt, 10.6, 11.6)))}"><path d="M652,${my} H${f1(806 - gap)}" stroke="${ORANGE}" stroke-width="7" stroke-linecap="round"/><path d="M${f1(806 + gap)},${my} H960" stroke="${ORANGE}" stroke-width="7" stroke-linecap="round" transform="rotate(${f1(12 * cut)} ${f1(806 + gap)} ${my})"/></g>`;
-      o += `<text x="652" y="${my + 30}" class="t12 muted">Target mRNA</text>`;
-      /* hairpin -> duplex -> RISC */
-      const hx = lerp(lerp(300, 610, out), 760, smooth(seg(tt, 3.2, 4))), hy = lerp(260, 200, out);
-      const rx = lerp(hx, 806, go), ry = lerp(hy, my - 34, go);
+      const TOP = "AGCAUUC", BOT = "UCGUAAG", LOOP = "GUAAUCA", N = 7, DX = 17;
+      const nt = (x, y, b, op, r) => `<g opacity="${f3(op)}"><rect x="${f1(x - (r || 7))}" y="${f1(y - (r || 7))}" width="${2 * (r || 7)}" height="${2 * (r || 7)}" rx="3" fill="${BCOL[b]}"/></g>`;
+      /* hairpin position: nucleus -> pore (y 300) -> cytoplasm */
+      const hx = out < .5 ? lerp(210, 470, out * 2) : lerp(470, 660, (out - .5) * 2), hy = out < .5 ? lerp(250, 300, out * 2) : lerp(300, 210, (out - .5) * 2);
+      let h = "";
       if (load < 1){
-        let h = `<g opacity="${f3(1 - load)}">`;
-        h += `<path d="M${f1(hx - 70)},${f1(hy - 8)} H${f1(hx + 40)} M${f1(hx - 70)},${f1(hy + 8)} H${f1(hx + 40)}" stroke="${PURPLE}" stroke-width="4" stroke-linecap="round"/>`;
-        for (let i = 0; i < 9; i++) h += `<path d="M${f1(hx - 62 + i * 12)},${f1(hy - 6)} V${f1(hy + 6)}" stroke="#c2a6ea" stroke-width="2"/>`;
-        h += `<path d="M${f1(hx + 40)},${f1(hy - 8)} a14,14 0 1 1 0,16" fill="none" stroke="${PURPLE}" stroke-width="4" opacity="${f3(1 - trim)}"/>`;
-        h += `<text x="${f1(hx - 16)}" y="${f1(hy - 22)}" class="t12 mid pur">${trim < .5 ? "miRNA hairpin (stem-loop)" : "Loop trimmed off"}</text></g>`;
-        o += h;
+        const sep = 4 * dicer, pass = 1 - load;
+        /* flanking single-stranded tails (removed by Drosha) */
+        if (drosha < 1){ const w = 70 * (1 - drosha); h += `<path d="M${f1(hx - w)},${f1(hy - 20)} q-10,-12 -26,-10 M${f1(hx - w)},${f1(hy + 20)} q-10,12 -26,10" fill="none" stroke="#a88fd6" stroke-width="4" stroke-linecap="round" opacity="${f3(1 - drosha)}"/><path d="M${f1(hx - w)},${f1(hy - 11)} H${hx} M${f1(hx - w)},${f1(hy + 11)} H${hx}" stroke="#a88fd6" stroke-width="4" opacity="${f3(1 - drosha)}"/>`; }
+        /* stem: two strands, H-bond rungs */
+        for (let k = 0; k < N; k++){
+          const x = hx + 8 + k * DX;
+          h += `<path d="M${f1(x)},${f1(hy - 3 - sep)} V${f1(hy + 3 + sep)}" stroke="#9aa3b5" stroke-width="2" opacity="${f3(1 - dicer * .6)}"/>`;
+          h += nt(x, hy - 11 - sep, TOP[k], pass);
+          h += nt(x, hy + 11 + sep + 53 * load, BOT[k], 1);
+        }
+        /* loop: unpaired bases on an arc, cut away by Dicer */
+        const lx = hx + 8 + N * DX + 2;
+        if (dicer < 1) for (let k = 0; k < LOOP.length; k++){ const a = -Math.PI / 2 + (k + .5) * Math.PI / LOOP.length; h += nt(lx + 22 * Math.cos(a) + 14 * dicer, hy + 22 * Math.sin(a) - 10 * dicer, LOOP[k], 1 - dicer, 6); }
+        const lbl = drosha < 1 && out < .05 ? "pri-miRNA hairpin (stem-loop)" : out < 1 ? "pre-miRNA hairpin" : dicer < .5 ? "pre-miRNA hairpin" : load > .05 ? "Passenger strand is discarded" : "miRNA duplex (loop cut off)";
+        h += `<text x="${f1(hx + 60)}" y="${f1(hy - 32)}" class="t12 mid pur">${lbl}</text>`;
+        o += `<g opacity="${f3(fade)}">${h}</g>`;
       }
+      /* enzymes as labeled blobs */
+      const blob = (x, y, name, op, col) => op > .02 ? `<g opacity="${f3(op)}"><ellipse cx="${f1(x)}" cy="${f1(y)}" rx="34" ry="20" fill="${col}"/><text x="${f1(x)}" y="${f1(y + 4)}" class="t12 mid wht">${name}</text></g>` : "";
+      o += blob(160, lerp(170, 236, smooth(seg(tt, .4, 1))), "Drosha", smooth(seg(tt, .4, 1)) * (1 - smooth(seg(tt, 2.4, 2.9))), "#7a5cc0");
+      o += blob(860, lerp(150, 196, smooth(seg(tt, 4.4, 5))), "Dicer", smooth(seg(tt, 4.4, 5)) * (1 - smooth(seg(tt, 6.2, 6.7))), "#c4532f");
+      if (out > .2 && out < .95) o += `<text x="606" y="362" class="t12 mid muted" opacity="${f3(Math.sin(out * Math.PI))}">Exported</text>`;
+      /* target mRNA in the cytoplasm */
+      const my = 392, TGT = "GAUCCAGCAUUCAG", tx0 = 648, gap = 22 * cut;
+      let m = "";
+      for (let k = 0; k < TGT.length; k++){ const x = tx0 + k * 22 + (k >= 8 ? gap : 0), y = my + (k >= 8 ? 10 * cut : 0); m += nt(x, y, TGT[k], 1, 8); }
+      m += `<path d="M${tx0 - 12},${my + 12} H${f1(tx0 + 7 * 22 + 10)} M${f1(tx0 + 8 * 22 - 10 + gap)},${f1(my + 12 + 10 * cut)} H${f1(tx0 + 13 * 22 + 12 + gap)}" stroke="${ORANGE}" stroke-width="4" stroke-linecap="round"/>`;
+      o += `<g opacity="${f3(fade * (1 - gone))}">${m}<text x="${tx0 - 12}" y="${my + 36}" class="t12 muted">Target mRNA 5'→3'</text></g>`;
+      /* RISC carrying the guide strand */
       if (load > 0){
-        o += `<g opacity="${f3(load * (1 - smooth(seg(tt, 10.6, 11.6))))}"><ellipse cx="${f1(rx)}" cy="${f1(ry - 10)}" rx="62" ry="26" fill="#e3d8f8" stroke="${PURPLE}" stroke-width="2.5"/>`;
-        o += `<path d="M${f1(rx - 48)},${f1(ry + 6)} H${f1(rx + 48)}" stroke="${PURPLE}" stroke-width="4" stroke-linecap="round"/>`;
-        for (let i = 0; i < 7; i++) o += `<path d="M${f1(rx - 42 + i * 14)},${f1(ry + 8)} V${f1(ry + 8 + 18 * pair)}" stroke="#9aa3b5" stroke-width="2"/>`;
-        o += `<text x="${f1(rx)}" y="${f1(ry - 12)}" class="t12 mid pur">RISC + miRNA</text></g>`;
+        const rx = lerp(hx + 59, tx0 + 176, go), ry = lerp(hy + 58, my - 44, go), sp = lerp(17, 22, go);
+        let r = `<ellipse cx="${f1(rx)}" cy="${f1(ry - 8)}" rx="84" ry="30" fill="#e3d8f8" stroke="${PURPLE}" stroke-width="2.5"/><text x="${f1(rx)}" y="${f1(ry - 14)}" class="t12 mid pur">RISC + guide miRNA</text>`;
+        for (let k = 0; k < N; k++){ const x = rx - 3 * sp + k * sp; r += nt(x, ry + 10, BOT[k], 1); if (pair > 0) r += `<path d="M${f1(x)},${f1(ry + 18)} V${f1(ry + 18 + 14 * pair)}" stroke="#343b4a" stroke-width="2"/>`; }
+        o += `<g opacity="${f3(load * fade * (1 - gone * .6))}">${r}</g>`;
       }
-      if (out > .2 && out < 1) o += `<text x="606" y="178" class="t12 mid muted" opacity="${f3(Math.sin(out * Math.PI))}">Exported</text>`;
-      if (pair > .5 && cut < .2) o += pill(806, 150, "6+ bases pair", PURPLE, (pair - .5) * 2);
-      if (cut > .2) o += pill(806, 150, "mRNA cut and degraded", "#7a8292", Math.min(1, cut * 2));
+      if (pair > .5 && cut < .2) o += pill(810, 282, "6+ bases pair: a match!", PURPLE, (pair - .5) * 2);
+      if (cut > .2) o += pill(810, 282, "mRNA cut and degraded", "#7a8292", Math.min(1, cut * 2) * fade);
       return o;
     },
     compare:t => {
-      let o = `<rect x="20" y="30" width="465" height="410" rx="24" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="3"/><rect x="515" y="30" width="465" height="410" rx="24" fill="#f7f5fb" stroke="#8f7fb0" stroke-width="3"/>`;
-      o += `<text x="252" y="70" class="t18 mid">Prokaryotes</text><text x="747" y="70" class="t18 mid">Eukaryotes</text>`;
-      const L = [["No nucleus, no splicing", true], ["mRNA used right away", true], ["Riboswitches", true], ["Small RNAs (sRNAs)", true]];
-      const R = [["Introns removed, exons spliced", true], ["5' cap and poly-A tail added", true], ["Riboswitches", true], ["microRNA (miRNA)", true]];
-      const row = (arr, x, i) => { const y = 130 + i * 70, on = Math.floor((t / 1.5) % 4) === i;
-        return `<rect x="${x - 200}" y="${y - 26}" width="400" height="52" rx="14" fill="#fff" stroke="${on ? BLUE : "#dde2ea"}" stroke-width="${on ? 3 : 1.5}"/><text x="${x}" y="${y + 6}" class="t15 mid">${arr[i][0]}</text>`; };
-      for (let i = 0; i < 4; i++) o += row(L, 252, i) + row(R, 747, i);
-      o += `<text x="500" y="424" class="t13 mid muted">Riboswitches work in both. Splicing, caps, tails, and miRNA are eukaryote features.</text>`;
+      const on = Math.floor((t / 1.6) % 4);
+      const chip = (x, y, w, txt, k, col) => `<rect x="${x - w / 2}" y="${y - 19}" width="${w}" height="38" rx="12" fill="#fff" stroke="${k === on ? BLUE : col}" stroke-width="${k === on ? 3 : 1.5}"/><text x="${x}" y="${y + 5}" class="t13 mid">${txt}</text>`;
+      /* prokaryote: wall + membrane, one compartment */
+      let o = `<defs><pattern id="pgWall2" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#b9d3a6"/><path d="M0,5 H10 M5,0 V10" stroke="#7fa468" stroke-width="2"/></pattern></defs>`;
+      o += `<text x="245" y="44" class="t18 mid">Prokaryote</text><text x="745" y="44" class="t18 mid">Eukaryote</text>`;
+      o += `<rect x="20" y="64" width="450" height="380" rx="120" fill="url(#pgWall2)" stroke="#5f8a4f" stroke-width="2"/><rect x="33" y="77" width="424" height="354" rx="108" fill="#f1f7ec" stroke="#c9a15a" stroke-width="3"/>`;
+      o += `<text x="245" y="110" class="t12 mid" style="fill:#4d7a3d">Cell wall + membrane, ONE compartment</text>`;
+      [["No nucleus, no splicing", 0], ["mRNA used right away", 1], ["Riboswitches", 2], ["Small RNAs (sRNAs)", 3]].forEach((r, i) => { o += chip(245, 160 + i * 66, 250, r[0], r[1], "#9cc28b"); });
+      /* eukaryote: nucleus + cytoplasm */
+      o += `<rect x="500" y="64" width="485" height="380" rx="30" fill="#fbf9ff" stroke="#c9b9ee" stroke-width="3"/>`;
+      o += `<rect x="514" y="96" width="250" height="334" rx="40" fill="#efe7fb" stroke="#8e5bd0" stroke-width="3"/>`;
+      [210, 330].forEach(py => { o += `<rect x="756" y="${py - 12}" width="16" height="24" fill="#fbf9ff"/><path d="M756,${py - 12} h16 M756,${py + 12} h16" stroke="#8e5bd0" stroke-width="4" stroke-linecap="round"/>`; });
+      o += `<rect x="578" y="106" width="122" height="26" rx="13" fill="#8e5bd0"/><text x="639" y="124" class="t13 mid wht">Nucleus</text>`;
+      o += `<rect x="810" y="106" width="130" height="26" rx="13" fill="#c4532f"/><text x="875" y="124" class="t13 mid wht">Cytoplasm</text>`;
+      o += chip(639, 170, 222, "Introns spliced out", 0, "#b9a6ee") + chip(639, 236, 222, "5' cap + poly-A tail", 1, "#b9a6ee");
+      o += `<path d="M700,300 H790" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round" marker-end="url(#cmpA)"/><text x="639" y="305" class="t12 mid muted">then export</text>`;
+      o += chip(875, 236, 190, "Riboswitches", 2, "#e8b89a") + chip(875, 302, 190, "microRNA + RISC", 3, "#e8b89a");
+      o += `<defs><marker id="cmpA" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="${ORANGE}"/></marker></defs>`;
+      o += `<text x="745" y="410" class="t12 mid muted">Processing happens in the nucleus, before export</text>`;
+      o += `<text x="500" y="462" class="t13 mid muted">Riboswitches work in both. Splicing, caps, tails, and miRNA are eukaryote features.</text>`;
       return o;
     }
   };
@@ -706,16 +772,52 @@
     }
     return {best, at};
   }
+  /* Readable stem-loop for the gate: passenger arm on top (5'->3'), guide arm on the bottom (3'->5'), loop at the right */
+  function hairpinSVG(st){
+    const TOP = "AGCAUUC", LOOP = "GUAAUCA", DX = 34, W = st ? 300 : 360;
+    const tl = (x, y, b) => `<rect x="${x - 13}" y="${y - 13}" width="26" height="26" rx="5" fill="${BCOL[b]}"/><text x="${x}" y="${y + 5}" font-size="14" font-weight="700" fill="${b === "G" ? "#3b2a00" : "#fff"}" text-anchor="middle">${b}</text>`;
+    let o = `<svg viewBox="0 0 ${W} 150" width="${W}" style="max-width:100%;height:auto" role="img" aria-label="${st ? "miRNA duplex after Dicer" : "pre-miRNA hairpin"}">`;
+    const sep = st ? 6 : 0;
+    o += `<text x="10" y="${40 - sep}" font-size="12" font-weight="700" fill="#5a6376">5'</text><text x="10" y="${116 + sep}" font-size="12" font-weight="700" fill="#5a6376">3'</text>`;
+    for (let k = 0; k < 7; k++){
+      const x = 40 + k * DX;
+      o += `<path d="M${x},${50 - sep} V${96 + sep}" stroke="#9aa3b5" stroke-width="2" stroke-dasharray="3 3"/>`;
+      o += tl(x, 36 - sep, TOP[k]) + tl(x, 110 + sep, MIR[k]);
+    }
+    if (!st){
+      const lx = 40 + 6 * DX + 26;
+      o += `<path d="M${lx - 12},36 C${lx + 60},10 ${lx + 60},136 ${lx - 12},110" fill="none" stroke="#c2a6ea" stroke-width="3"/>`;
+      [...LOOP].forEach((b, k) => { const a = -Math.PI * .42 + k * Math.PI * .84 / 6; o += `<circle cx="${f1(lx + 16 + 36 * Math.cos(a))}" cy="${f1(73 + 44 * Math.sin(a))}" r="9" fill="${BCOL[b]}"/>`; });
+      o += `<text x="${lx + 20}" y="146" font-size="11" font-weight="700" fill="#6b4bb8" text-anchor="middle">loop (unpaired)</text>`;
+    } else o += `<text x="${40 + 6 * DX + 22}" y="${36 - sep + 4}" font-size="11" font-weight="700" fill="#5a6376">passenger</text><text x="${40 + 6 * DX + 22}" y="${110 + sep + 4}" font-size="11" font-weight="700" fill="#6b4bb8">guide</text>`;
+    o += `<text x="${40 + 3 * DX}" y="${st ? 146 : 146}" font-size="11" font-weight="700" fill="#5a6376" text-anchor="middle">${st ? "" : "stem (paired bases)"}</text>`;
+    return o + `</svg>`;
+  }
   const gt = (b, cls) => `<span class="gb gb${b}${cls ? " " + cls : ""}">${b}</span>`;
   const GATES = {
     mirna:{
-      title:"Your turn: drag the miRNA (loaded in RISC) onto its target mRNA",
+      title:"Your turn: process the miRNA hairpin, then send RISC after its target",
       doneText:"Cleaved! That mRNA will be degraded and never made into protein.",
-      html:() => `<div class="shelf" style="align-items:flex-start">
-          <div class="trna risc" role="button" tabindex="0" aria-label="RISC carrying miRNA 3' UCGUAAG 5'"><span class="aab" style="background:#efe7fb;border-color:#8e5bd0;color:#5b3fb0">RISC + miRNA</span><span class="body">${[...MIR].map(b => gt(b)).join("")}</span><span class="aclbl">miRNA (3' to 5')</span></div>
+      html:() => {
+        const st = GATES.mirna.stage || 0;
+        const steps = ["1. Dicer cuts the loop", "2. Load RISC", "3. Find the target", "4. Cleave"].map((x, i) => `<span class="mstep${i < st ? " done" : i === st ? " cur" : ""}">${x}</span>`).join("");
+        if (st < 2) return `<div class="msteps">${steps}</div><div class="hpwrap">${hairpinSVG(st)}</div>
+          <div class="actions"><button class="btn primary" id="mirBtn">${st === 0 ? "✂ Dicer: snip off the loop" : "Load the guide strand into RISC"}</button></div>`;
+        return `<div class="msteps">${steps}</div><div class="shelf" style="align-items:flex-start">
+          <div class="trna risc" role="button" tabindex="0" aria-label="RISC carrying miRNA 3' UCGUAAG 5'"><span class="aab" style="background:#efe7fb;border-color:#8e5bd0;color:#5b3fb0">RISC + miRNA</span><span class="body">${[...MIR].map(b => gt(b)).join("")}</span><span class="aclbl">guide strand (3' to 5')</span></div>
           <div style="display:grid;gap:8px">${TARGETS.map((x, i) => `<div class="dropzone tz" data-t="${i}"><div class="grow"><span class="glbl">${x[0]} (5' to 3')</span>${[...x[1]].map(b => gt(b)).join("")}</div></div>`).join("")}</div></div>
-          <div><button class="btn primary" id="cleaveBtn" hidden>Cleave</button></div>`,
+          <div><button class="btn primary" id="cleaveBtn" hidden>✂ Cleave</button></div>`;
+      },
       wire:g => {
+        const G = GATES.mirna;
+        if ((G.stage || 0) < 2){
+          g.querySelector("#mirBtn").addEventListener("click", () => {
+            G.stage = (G.stage || 0) + 1; renderGate();
+            gateMsg(G.stage === 1 ? "Snip! Dicer removed the loop, leaving a short double-stranded miRNA duplex. Only one strand, the guide, gets used." : "The guide strand is loaded into RISC, and the passenger strand is thrown away. Now drag RISC onto the mRNA its guide strand can pair with.", "good");
+          });
+          if (!G.stage) gateMsg("This pre-miRNA just left the nucleus. It's a hairpin: one RNA strand folded back on itself so its bases pair up into a stem, with an unpaired loop at the end.", "");
+          return;
+        }
         const zones = [...g.querySelectorAll(".tz")], card = g.querySelector(".risc");
         let chosen = null;
         const tryZone = z => {
@@ -723,7 +825,7 @@
           const t = TARGETS[+z.dataset.t][1], r = bestRun(t);
           const tiles = z.querySelectorAll(".gb");
           tiles.forEach((el, k) => el.style.outline = (k >= r.at && k < r.at + r.best) ? "3px solid #8e5bd0" : "");
-          if (r.best >= 6){ z.classList.add("filled"); chosen = z; g.querySelector("#cleaveBtn").hidden = false; gateMsg(`${r.best} bases in a row pair up. That's enough to bind! Now tap Cleave.`, "good"); }
+          if (r.best >= 6){ g.querySelectorAll(".mstep")[2].className = "mstep done"; g.querySelectorAll(".mstep")[3].className = "mstep cur"; z.classList.add("filled"); chosen = z; g.querySelector("#cleaveBtn").hidden = false; gateMsg(`${r.best} bases in a row pair up. That's enough to bind! Now tap Cleave.`, "good"); }
           else { chosen = null; g.querySelector("#cleaveBtn").hidden = true; card.classList.remove("nope"); void card.offsetWidth; card.classList.add("nope"); gateMsg(`Only ${r.best} bases in a row pair up. A miRNA needs at least 6. Try another mRNA.`, "bad"); }
         };
         let pick = null;
@@ -751,9 +853,10 @@
           if (!chosen) return; e.target.disabled = true;
           chosen.style.transition = "opacity .8s, transform .8s"; chosen.style.opacity = ".25"; chosen.style.transform = "scale(.96)";
           gateMsg("Snip! The double-stranded RNA is cut up.", "good");
-          setTimeout(passGate, 900);
+          g.querySelectorAll(".mstep")[3].className = "mstep done";
+          setTimeout(() => { G.stage = 0; passGate(); }, 900);
         });
-        gateMsg("Remember: A pairs with U and G pairs with C. Look for 6 or more bases in a row that pair with the miRNA.", "");
+        if (!g.querySelector("#gateMsg").textContent) gateMsg("Remember: A pairs with U and G pairs with C. Look for 6 or more bases in a row that pair with the miRNA.", "");
       }
     }
   };
@@ -872,11 +975,11 @@
     $("learnBtn").setAttribute("aria-pressed", m === "learn");
     $("testBtn").setAttribute("aria-pressed", m === "test");
     $("modeHint").textContent = m === "learn"
-      ? "Learn mode: every term is filled in. Read each bubble, watch what happens, then tap Next."
+      ? ""
       : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
     enterStep(idx, true);
   }
-  function restart(){ bl = {}; furthest = 0; for (const k in gates) delete gates[k]; enterStep(0, true); }
+  function restart(){ bl = {}; furthest = 0; for (const k in gates) delete gates[k]; GATES.mirna.stage = 0; enterStep(0, true); }
 
   $("learnBtn").addEventListener("click", () => setMode("learn"));
   $("testBtn").addEventListener("click", () => setMode("test"));
@@ -1007,7 +1110,7 @@
     $("spTrack").querySelectorAll("[data-ag]").forEach(b => b.addEventListener("click", () => clickAG(b.dataset.ag)));
     $("spTrack").querySelectorAll("[data-in]").forEach(b => b.addEventListener("click", () => clickIntron(b.dataset.in)));
     $("spTrack").querySelectorAll(".sgm.exon").forEach(b => b.addEventListener("click", () => clickExon(b.dataset.seg)));
-    $("spStage").textContent = mature ? "Mature mRNA: exons only, plus cap and tail" : "Pre-mRNA (in the nucleus)";
+    $("spStage").textContent = made ? "Exported! Translated by a ribosome in the cytoplasm" : mature ? "Mature mRNA: exons only, plus cap and tail. Ready for export" : "Pre-mRNA: one gene, 4 exons and 3 introns";
     $("spGo").disabled = !mature || made;
     $("spOut").innerHTML = made ? `<div class="made">${protein(key(), true)}<div><b>Built from exons ${key().split("-").join(", ")}</b><div class="muted-s">${exonsLeft().length === 4 ? "The full-length protein, with every piece." : `Missing the ${[2,3].filter(n => !key().split("-").includes(String(n))).map(n => "exon " + n).join(" and ")} piece${4 - exonsLeft().length > 1 ? "s" : ""}, so this protein has a different shape and maybe a different job.`}</div></div></div>` : "";
     $("spCount").textContent = `Proteins discovered: ${found.length} of 4`;
@@ -1019,6 +1122,39 @@
     $("spGrid").innerHTML = g;
   }
 
+  /* snRNP token: drag it onto an intron (cut), or onto GU then AG (skip exons) */
+  (function(){
+    const tok = $("spToken");
+    const targetAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest("[data-gu],[data-ag],[data-in],.sgm.intron,.sgm.exon") : null; };
+    const act = el => {
+      if (!el) return;
+      if (el.dataset.gu) clickGU(el.dataset.gu);
+      else if (el.dataset.ag) clickAG(el.dataset.ag);
+      else if (el.dataset.in) clickIntron(el.dataset.in);
+      else if (el.classList.contains("intron")) clickIntron(el.dataset.seg);
+      else if (el.classList.contains("exon")) clickExon(el.dataset.seg);
+    };
+    tok.addEventListener("pointerdown", e => {
+      if (e.button > 0) return;
+      e.preventDefault();
+      const r = tok.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+      let moved = false, clone = null, over = null;
+      const mark = el => { document.querySelectorAll(".sphot").forEach(q => q.classList.remove("sphot")); if (el) el.classList.add("sphot"); };
+      const move = ev => {
+        if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6){ moved = true; clone = tok.cloneNode(true); clone.removeAttribute("id"); clone.classList.add("dragging"); document.body.appendChild(clone); tok.classList.add("lifted"); }
+        if (!clone) return;
+        clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px";
+        over = targetAt(ev.clientX, ev.clientY); mark(over);
+      };
+      const up = () => {
+        document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
+        if (clone) clone.remove(); tok.classList.remove("lifted"); mark(null);
+        if (!moved){ say(`Drag me onto an intron to cut it out, or onto a <b>GU</b> then an <b>AG</b> to loop out a whole stretch. You can also just tap the pieces.`); return; }
+        act(over);
+      };
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+    });
+  })();
   $("spGo").addEventListener("click", translate);
   $("spNew").addEventListener("click", reset);
   document.addEventListener("keydown", e => { if (e.key === "Escape" && pending && document.body.dataset.view === "lab"){ pending = null; say(); render(); } });
@@ -1103,5 +1239,6 @@
   if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
 })();
 </script>
+<script src="studypath.js"></script>
 </body>
 </html>

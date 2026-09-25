@@ -264,6 +264,7 @@
   .bridge[hidden]{display:none}
   .donetoast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:30}
   @media (prefers-reduced-motion:reduce){ input.blank{animation:none} }
+  .modehint:empty{display:none}
 </style>
 </head>
 <body data-view="walk">
@@ -272,7 +273,6 @@
     <div>
       <a class="backlink" href="index.html">All modules</a>
       <h1>Mutations</h1>
-      <div class="sub">BIOL 112 Microbiology, Chapter 8: when the DNA sequence changes</div>
     </div>
     <div class="controls" id="walkControls">
       <div class="seg" role="group" aria-label="Mode">
@@ -849,7 +849,7 @@
     $("learnBtn").setAttribute("aria-pressed", m === "learn");
     $("testBtn").setAttribute("aria-pressed", m === "test");
     $("modeHint").textContent = m === "learn"
-      ? "Learn mode: every term is filled in. Read each bubble, watch what happens, then tap Next."
+      ? ""
       : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
     enterStep(idx, true);
   }
@@ -1128,5 +1128,6 @@
   if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
 })();
 </script>
+<script src="studypath.js"></script>
 </body>
 </html>
