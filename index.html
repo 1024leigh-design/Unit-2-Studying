@@ -83,6 +83,9 @@
     .pop{position:fixed;left:0;right:0;bottom:0;top:auto !important;width:100%;max-height:86vh;border-radius:20px 20px 0 0;z-index:30}
     .scrim{position:fixed;z-index:29}
   }
+  .moddir{display:grid;gap:14px;margin-top:18px}
+  .moddir h2{font-size:1.15rem;margin:6px 0 0}
+  .moddir .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
   .pathcard{background:var(--card);border:3px solid var(--accent);border-radius:20px;padding:18px 22px;margin:0 0 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
   .pathcard h2{margin:2px 0 6px;font-size:1.45rem}
   .pathcard p{margin:0 0 10px;color:var(--muted);line-height:1.5;max-width:62ch}
@@ -107,7 +110,7 @@
     <div class="pc-text">
       <div class="pc-tag">New? Start here</div>
       <h2>The Study Path</h2>
-      <p>One guided route through every major module, in order: gene regulation, transcription, post-transcriptional control, translation, and mutations. Just keep tapping Next.</p>
+      <p>One guided route through every major module, in order: gene regulation, transcription, post-transcriptional control, translation, mutations, and then Chapter 5 metabolism. Just keep tapping Next.</p>
       <ol class="pc-stops" id="pcStops"></ol>
     </div>
     <div class="pc-actions" id="pcActions"></div>
@@ -118,6 +121,7 @@
   </div>
   <div class="legend" id="legend"></div>
   <p class="hint">It all happens in one cell: DNA is transcribed into mRNA, and ribosomes translate mRNA into protein.</p>
+  <section class="moddir" id="modDir"></section>
 </div>
 
 <script>
@@ -143,6 +147,9 @@
     build:`<svg viewBox="0 0 120 40"><path d="M6,32 H114" stroke="#0f766e" stroke-width="4"/><rect x="70" y="22" width="26" height="14" rx="4" fill="none" stroke="#3f4cc0" stroke-width="2" stroke-dasharray="4 3"/><polygon points="26,5 34,5 40,11 40,20 34,26 26,26 20,20 20,11" fill="#d9443a"/><path d="M44,16 q16,-10 26,6" stroke="#5a6376" stroke-width="2" stroke-dasharray="4 3" fill="none"/></svg>`,
     eterna:`<svg viewBox="0 0 120 40"><path d="M12,34 C12,10 42,10 42,22 C42,34 72,34 72,19 C72,7 98,7 108,17" stroke="#8e5bd0" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="12" cy="34" r="5" fill="#2f9e63"/><circle cx="42" cy="22" r="5" fill="#f2b134"/><circle cx="72" cy="19" r="5" fill="#3b7dd8"/><circle cx="108" cy="17" r="5" fill="#d9443a"/></svg>`,
     enz:`<svg viewBox="0 0 120 40"><path d="M34,6 a16,16 0 1 0 0,28 l0,-9 a7,7 0 1 1 0,-10 z" fill="#c97b4a"/><circle cx="44" cy="20" r="6" fill="#2f9e63"/><path d="M62,20 h22" stroke="#5a6376" stroke-width="2.5" marker-end="url(#eA)"/><circle cx="98" cy="14" r="6" fill="#2f9e63"/><circle cx="104" cy="26" r="6" fill="#f2b134"/><defs><marker id="eA" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#5a6376"/></marker></defs></svg>`,
+    redox:`<svg viewBox="0 0 120 40"><ellipse cx="24" cy="20" rx="18" ry="13" fill="#3f4cc0"/><ellipse cx="96" cy="20" rx="18" ry="13" fill="#d9443a"/><path d="M46,14 q14,-12 28,0" stroke="#a8760f" stroke-width="2.5" fill="none"/><circle cx="60" cy="7" r="5" fill="#f2b134"/><text x="60" y="32" font-size="10" font-weight="700" fill="#5b3fb0" text-anchor="middle">OIL RIG</text></svg>`,
+    gly:`<svg viewBox="0 0 120 40"><polygon points="20,8 32,14 32,26 20,32 8,26 8,14" fill="none" stroke="#4a5263" stroke-width="3"/><path d="M40,20 h16" stroke="#5a6376" stroke-width="2.5"/><circle cx="66" cy="12" r="4" fill="#4a5263"/><circle cx="76" cy="12" r="4" fill="#4a5263"/><circle cx="86" cy="12" r="4" fill="#4a5263"/><circle cx="66" cy="28" r="4" fill="#4a5263"/><circle cx="76" cy="28" r="4" fill="#4a5263"/><circle cx="86" cy="28" r="4" fill="#4a5263"/><text x="108" y="24" font-size="10" font-weight="700" fill="#8e5bd0" text-anchor="middle">2ATP</text></svg>`,
+    ferm:`<svg viewBox="0 0 120 40"><path d="M30,4 v24 a8,8 0 0 0 16,0 v-24" fill="#f5c518" stroke="#8b93a3" stroke-width="2"/><path d="M60,4 v24 a8,8 0 0 0 16,0 v-24" fill="#e0463c" stroke="#8b93a3" stroke-width="2"/><circle cx="38" cy="14" r="2.5" fill="#fff"/><circle cx="41" cy="20" r="2" fill="#fff"/><text x="100" y="24" font-size="10" font-weight="700" fill="#1b7f4e" text-anchor="middle">NAD\u207A</text></svg>`,
     resp:`<svg viewBox="0 0 120 40"><rect x="6" y="16" width="108" height="9" rx="4" fill="#cfe0f5"/><circle cx="30" cy="20" r="9" fill="#3b7dd8"/><circle cx="58" cy="20" r="9" fill="#5aa0e0"/><circle cx="86" cy="20" r="9" fill="#7cb9ea"/><path d="M30,9 v-6 M58,9 v-6 M86,9 v-6" stroke="#f2b134" stroke-width="3" stroke-linecap="round"/><text x="104" y="12" font-size="11" font-weight="700" fill="#b0873a">ATP</text></svg>`
   };
   const MOD = {
@@ -156,8 +163,11 @@
     translation:{name:"Translation", href:"translation.html", desc:"Ribosomes read codons and build protein", icon:"tl", col:"#1b7f4e", wide:true},
     posttx:{name:"Post-transcriptional control", href:"posttranscriptional-control.html", desc:"Splicing, riboswitches, and miRNA", icon:"post", col:"#8e5bd0", wide:true},
     eterna:{name:"Eterna: fold your own RNA", href:"eterna.html", fun:true, desc:"Design RNA in a real science game", icon:"eterna", wide:true},
-    enzymes:{name:"Enzymes and proteins", soon:true, desc:"Active sites, induced fit, allosteric control", icon:"enz", wide:true},
-    resp:{name:"Cellular respiration", soon:true, desc:"Electron transport in the plasma membrane", icon:"resp", wide:true}
+    enzymes:{name:"Enzymes and metabolism", href:"enzymes.html", desc:"Active sites, inhibitors, feedback inhibition", icon:"enz", col:"#6b4bb8", wide:true},
+    energy:{name:"Chemistry of energy production", href:"energy-chemistry.html", desc:"Redox, electron carriers, and ATP", icon:"redox", col:"#9a6212", wide:true},
+    glycolysis:{name:"Glycolysis", href:"glycolysis.html", desc:"Glucose \u2192 2 pyruvate, 2 ATP, 2 NADH", icon:"gly", col:"#b83a34", wide:true},
+    krebs:{name:"Krebs cycle, ETC and ATP synthase", href:"krebs-etc.html", desc:"CO\u2082, NADH, chemiosmosis, 32\u201338 ATP", icon:"resp", col:"#3f4cc0", wide:true},
+    ferment:{name:"Fermentation and anaerobic respiration", href:"fermentation.html", desc:"Life without oxygen: NAD\u207A, nitrate, sulfate", icon:"ferm", col:"#1b7f4e", wide:true}
   };
 
   /* ================= Panel content (from the Chapter 8 slides) ================= */
@@ -215,7 +225,7 @@
         ["\u26A1","Bacteria have <b>no mitochondria</b>, so the electron transport chain runs in the <b>plasma membrane</b>."],
         ["\u26A0\uFE0F","The outer membrane carries <b>LPS</b> (endotoxin)."],
         ["\u{1F49C}","That thin peptidoglycan is why Gram-negative cells stain <b>pink</b>, not purple."]],
-      mods:["resp"]},
+      mods:["krebs","ferment"]},
     flagellum:{title:"Flagellum", kick:"How it swims", col:"#6b5f45", side:"left", top:"56%", hero:"flag",
       facts:[
         ["\u2699\uFE0F","A rotary motor powered by protons, spinning hundreds of times per second."],
@@ -513,6 +523,11 @@
     const inner = `${ic}<b>${m.name}${doneMod ? ' <i class="donechk" title="Test mode complete">\u2713</i>' : ""}</b><span>${m.desc}</span>`;
     return m.soon ? `<div class="${cls}">${inner}</div>` : `<a class="${cls}" style="--tc:${m.col || "#5b3fb0"}" href="${m.href}">${inner}</a>`;
   };
+  (function(){
+    const DIR = [["Chapter 8: From DNA to protein", ["pretx","transcription","posttx","translation","mutations"]], ["Practice labs", ["build","lab","splice","editor"]], ["Chapter 5: Microbial metabolism (respiration)", ["enzymes","energy","glycolysis","krebs","ferment"]]];
+    const el = document.getElementById("modDir");
+    if (el) el.innerHTML = DIR.map(d => `<h2>${d[0]}</h2><div class="grid">${d[1].filter(k => MOD[k]).map(tileHTML).join("")}</div>`).join("");
+  })();
   const factHTML = f => `<div class="fact"><span class="em">${f[0]}</span><span>${f[1]}</span></div>`;
   let heroKey = null, heroT0 = 0;
   function showPanel(key){

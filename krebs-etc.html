@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Krebs Cycle, ETC and ATP Synthase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="metab.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="metab.js"></script>
+<script>
+(function(){
+  const A = Metab.A, {f1, f3, lerp, clamp, smooth, seg, C} = A;
+  const coa = (x, y) => `<rect x="${f1(x)}" y="${f1(y - 12)}" width="44" height="24" rx="8" fill="#0f766e"/><text x="${f1(x + 22)}" y="${f1(y + 5)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">CoA</text>`;
+  const tally = (x, y, items) => { let s = `<rect x="${x}" y="${y}" width="${items.length * 116 + 16}" height="46" rx="14" fill="#fff" stroke="#d9dee7" stroke-width="2"/>`; items.forEach((it, i) => { s += A.tx(x + 66 + i * 116, y + 30, it, "t14 mid"); }); return s; };
+
+  const BL = {
+    acetylcoa:{show:"acetyl-CoA", ans:["acetylcoa","acetylcoenzymea","acetyl","acetylcoenzyme"], fuzzy:true},
+    mito:{show:"mitochondria", ans:["mitochondria","mitochondrion","mitochondrialmatrix","matrix"], fuzzy:true},
+    krebs:{show:"Krebs cycle", ans:["krebscycle","krebs","citricacidcycle","tca","tcacycle"], fuzzy:true},
+    oxaloacetate:{show:"oxaloacetate", ans:["oxaloacetate","oxaloaceticacid","oaa"], fuzzy:true},
+    citric:{show:"citric acid", ans:["citricacid","citrate"], fuzzy:true},
+    twice:{show:"twice", ans:["twice","two","2","2times","twotimes"], fuzzy:true},
+    six:{show:"6", ans:["6","six"]},
+    decarb:{show:"Decarboxylation", ans:["decarboxylation","decarboxylate","decarboxylated"], fuzzy:true},
+    glucose:{show:"glucose", ans:["glucose"], fuzzy:true},
+    etc:{show:"electron transport chain", ans:["electrontransportchain","etc","electrontransport"], fuzzy:true},
+    oxygen:{show:"oxygen (O₂)", ans:["oxygen","o2"], fuzzy:true},
+    plasma:{show:"plasma membrane", ans:["plasmamembrane","cellmembrane","membrane","cytoplasmicmembrane"], fuzzy:true},
+    chemiosmosis:{show:"Chemiosmosis", ans:["chemiosmosis"], fuzzy:true},
+    atpsynthase:{show:"ATP synthase", ans:["atpsynthase","atpsynthetase"], fuzzy:true},
+    water:{show:"water (H₂O)", ans:["water","h2o"], fuzzy:true},
+    oxphos:{show:"oxidative", ans:["oxidative","oxidativephosphorylation"], fuzzy:true},
+    glycerol:{show:"glycerol", ans:["glycerol"], fuzzy:true},
+    amino:{show:"amino acids", ans:["aminoacids","aminoacid","amino"], fuzzy:true}
+  };
+  const MORE = {
+    names:{title:"One cycle, three names", html:`<p>The Krebs cycle is also called the citric acid cycle (after its first product) and the TCA (tricarboxylic acid) cycle. Hans Krebs worked it out in 1937 and won the 1953 Nobel Prize.</p><p>Acetyl-CoA is "acetyl" (2 carbons) attached to coenzyme A, which is made from vitamin B5.</p>`},
+    fb:{title:"Your breath is made of glucose carbons", html:`<p>Every CO₂ you exhale was made by decarboxylation reactions like these. When you lose weight, most of that mass actually leaves your body as CO₂ through your lungs!</p>`},
+    etc:{title:"Poisoning the chain", html:`<p>Cyanide binds cytochrome oxidase, the last complex in the chain, so electrons can't be passed to O₂. The whole chain backs up and ATP production crashes. Some antibiotics and pesticides also work by jamming electron transport.</p>`},
+    motor:{title:"ATP synthase really spins", html:`<p>ATP synthase is a true rotary motor. As H⁺ flows through, part of it spins about 100 times per second, and each full turn makes 3 ATP. Paul Boyer and John Walker shared the 1997 Nobel Prize for figuring this out. Bacteria also use the H⁺ gradient (the proton motive force) to spin their flagella!</p>`},
+    yield:{title:"Why a range of 32 to 38?", html:`<p>The exact ATP count depends on the organism and conditions. In eukaryotes, some energy is spent shuttling NADH from glycolysis into the mitochondrion and moving ATP out, so the yield is lower. Bacteria don't have to move anything across a mitochondrial membrane, so they tend to be at the high end.</p>`}
+  };
+
+  /* ================= Scenes ================= */
+  function linkScene(t, R){
+    const T = 8, tt = t % T, inn = smooth(seg(tt, .5, 2)), co = smooth(seg(tt, 2.4, 3.6)), nd = smooth(seg(tt, 3.8, 5)), cc = smooth(seg(tt, 5.2, 6.2));
+    let o = A.tx(500, 40, `The intermediate step: pyruvate → ${R("acetylcoa")}`, "t20 mid");
+    o += `<rect x="360" y="70" width="620" height="380" rx="60" fill="#fde9dc" stroke="#c4532f" stroke-width="5"/>` + A.tx(670, 105, R("mito") === "?" ? "?" : "Mitochondrion (eukaryotes)", "t14 mid", `style="fill:#9c3d1d"`);
+    const px = lerp(170, 520, inn);
+    o += A.carbons(px, 250, co > .5 ? 2 : 3, {r:11}) + A.tx(px, 295, co > .5 ? "Acetyl" : "Pyruvate (3C)", "t14 mid");
+    if (co > .05) o += A.co2(lerp(px + 50, 700, co), lerp(250, 170, co)) + A.op(co, A.tx(700, 145, "CO₂ released", "t14 mid", `style="fill:#b83a34"`));
+    o += A.op(1 - nd, A.carrier(640, 330, "NAD", false)) + A.op(nd, A.carrier(640, 330, "NAD", true)) + A.op(nd, A.tx(640, 370, "NAD⁺ → NADH", "t14 mid", `style="fill:#1b7f4e"`));
+    if (cc > 0) o += A.op(cc, coa(px + 26, 250) + A.tx(px + 30, 220, "Acetyl-CoA (2C)", "t16 mid", `style="fill:#0f766e"`));
+    o += A.tx(180, 380, "Per pyruvate:", "t14 mid") + A.tx(180, 404, "1 CO₂, 1 NADH, 1 acetyl-CoA", "t12 mid") + A.tx(180, 428, "(2 pyruvate per glucose)", "t12 mid muted");
+    return o;
+  }
+  /* Krebs cycle wheel. focus: index of the highlighted station (-1 = animate), prod: how many stations' products to show */
+  const ST = [
+    {n:"Citric acid", c:6, a:-35, out:[], pa:0},
+    {n:"\u03B1-Ketoglutaric acid", c:5, a:35, out:["CO\u2082", "NADH"], pa:0},
+    {n:"Succinic acid", c:4, a:110, out:["CO\u2082", "NADH", "ATP"], pa:72},
+    {n:"Malic acid", c:4, a:180, out:["FADH\u2082"], pa:145},
+    {n:"Oxaloacetic acid", c:4, a:245, out:["NADH"], pa:212}
+  ];
+  function krebsScene(t, R, g, opts){
+    opts = opts || {};
+    const cx = 430, cy = 255, rr = 120, rad = d => d * Math.PI / 180;
+    const cur = opts.station !== undefined ? opts.station : Math.floor((t % 10) / 2);
+    let o = A.tx(500, 34, `The ${R("krebs") === "?" ? "?" : "Krebs cycle"} (mitochondrial matrix / bacterial cytoplasm)`, "t16 mid");
+    o += `<circle cx="${cx}" cy="${cy}" r="${rr}" fill="none" stroke="#f2b134" stroke-width="10" opacity=".55"/>`;
+    for (let k = 0; k < 5; k++){ const a = rad(ST[k].a + (k === 4 ? 40 : (ST[(k + 1) % 5].a - ST[k].a) * .5)); o += `<circle cx="${f1(cx + rr * Math.cos(a))}" cy="${f1(cy + rr * Math.sin(a))}" r="5" fill="#c98a0e"/>`; }
+    const P = (a, r) => [cx + (r || rr) * Math.cos(rad(a)), cy + (r || rr) * Math.sin(rad(a))];
+    ST.forEach((s, i) => {
+      const p = P(s.a), on = i === cur, right = Math.cos(rad(s.a)) > .05;
+      o += `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="${on ? 32 : 27}" fill="${on ? "#fff6d6" : "#fff"}" stroke="${on ? C.gold : "#c9a15a"}" stroke-width="${on ? 4 : 2}"/>`;
+      o += A.carbons(p[0], p[1] - 4, s.c, {r:5, gap:10}) + A.tx(p[0], p[1] + 16, s.c + "C", "t11 mid");
+      const q = P(s.a, rr + 44), name = i === 0 ? (R("citric") === "?" ? "?" : "Citric acid") : i === 4 ? (R("oxaloacetate") === "?" ? "?" : "Oxaloacetic acid") : s.n;
+      o += A.tx(q[0], q[1] + 5, name, right ? "t14" : "t14 end");
+      const shown = opts.prod === undefined ? true : i < opts.prod || opts.prod >= 5;
+      if (s.out.length && shown){ const m = P(s.pa, rr + 78), w = 64; s.out.forEach((x, k) => { const col = x === "CO\u2082" ? "#b83a34" : x === "ATP" ? "#8e5bd0" : x === "FADH\u2082" ? "#c98a0e" : "#2f9e63"; o += A.pill(m[0] + (k - (s.out.length - 1) / 2) * w, m[1] + 4, x, col, 1, 12); }); }
+    });
+    o += A.carbons(cx - 12, 72, 2, {r:8, gap:18}) + coa(cx + 8, 72) + A.tx(cx + 62, 77, "Acetyl-CoA (2C) enters", "t14") + A.arrow(cx + 20, 88, P(-40)[0] - 16, P(-40)[1] - 22, "#0f766e", 3);
+    if (opts.totals) o += `<rect x="760" y="150" width="225" height="200" rx="16" fill="#fff" stroke="#d9dee7" stroke-width="2"/>` + A.tx(872, 182, "Per turn", "t16 mid") + A.tx(872, 214, "2 CO\u2082", "t14 mid", `style="fill:#b83a34"`) + A.tx(872, 240, "3 NADH", "t14 mid", `style="fill:#1b7f4e"`) + A.tx(872, 266, "1 FADH\u2082", "t14 mid", `style="fill:#9a6212"`) + A.tx(872, 292, "1 ATP", "t14 mid", `style="fill:#6b4bb8"`) + A.tx(872, 330, `Turns ${R("twice") === "?" ? "?" : "TWICE"} per glucose`, "t12 mid", `style="fill:#5b3fb0"`);
+    return o;
+  }
+  function co2Scene(t, R){
+    const T = 7, tt = t % T;
+    let o = A.tx(500, 40, `Where does CO₂ come from? ${R("decarb") === "?" ? "?" : "Decarboxylation"}`, "t20 mid");
+    o += A.glucoseRing(120, 180, {r:10}) + A.tx(120, 250, "Glucose: 6 carbons", "t14 mid");
+    const spots = [["Pyruvate → acetyl-CoA", 2, 360], ["Krebs cycle (2 turns)", 4, 660]];
+    spots.forEach((s, i) => { o += `<rect x="${s[2] - 130}" y="110" width="260" height="120" rx="16" fill="#fff" stroke="#d9dee7" stroke-width="2"/>` + A.tx(s[2], 140, s[0], "t14 mid");
+      for (let k = 0; k < s[1]; k++){ const p = smooth(seg(tt, .6 + i * 1.4 + k * .3, 1.4 + i * 1.4 + k * .3)); o += A.co2(s[2] - (s[1] - 1) * 30 + k * 60, lerp(190, 300, p), .3 + .7 * p); } });
+    o += A.tx(500, 360, "6 carbons in → 6 CO₂ out", "t20 mid", `style="fill:#b83a34"`) + A.tx(500, 395, "This CO₂ is what you exhale!", "t16 mid");
+    o += tally(210, 410, ["4 ATP", "6 CO₂", "10 NADH", "2 FADH₂", "so far"]);
+    return o;
+  }
+  /* electron transport chain in a membrane. mode: "etc" or "atp" */
+  function etcScene(t, R, g, mode, done){
+    const T = 6, tt = t % T, y = 270;
+    let o = A.tx(500, 34, mode === "atp" ? `${R("chemiosmosis")}: H⁺ flows back through ${R("atpsynthase")}` : `The ${R("etc")}`, "t20 mid");
+    o += `<rect x="0" y="60" width="1000" height="${y - 34 - 60}" fill="#eef4ff"/>` + A.tx(20, 86, "Periplasm (bacteria) / intermembrane space (eukaryotes): H⁺ piles up here", "t12", `style="fill:#1f4a9c"`);
+    o += A.membrane(0, 1000, y, 64);
+    o += A.tx(20, 460, "Cytoplasm (bacteria) / mitochondrial matrix (eukaryotes)", "t12", `style="fill:#5a6376"`);
+    const cx = [150, 280, 400, 510, 630];
+    const cplx = (x, w, h, lbl, col) => `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="18" fill="${col}" stroke="#4a5263" stroke-width="2" opacity=".92"/>` + A.tx(x, y + h / 2 + 18, lbl, "t11 mid");
+    o += cplx(150, 92, 120, "NADH dehydrogenase", "#b9c3f0") + cplx(280, 44, 44, "Q", "#dfe3fb") + cplx(400, 80, 120, "Cyt b–c₁", "#b9c3f0") + cplx(510, 44, 44, "Cyt c", "#dfe3fb") + cplx(630, 92, 120, "Cyt oxidase", "#b9c3f0");
+    /* ATP synthase */
+    const spin = mode === "atp" ? t * 4 : t * .6;
+    o += `<rect x="815" y="${y - 70}" width="50" height="110" rx="12" fill="#5a8fd8"/><ellipse cx="840" cy="${y + 58}" rx="46" ry="30" fill="#7fa9e4" stroke="#2c5aa0" stroke-width="2"/>`;
+    for (let k = 0; k < 3; k++){ const a = spin + k * 2.09; o += `<line x1="840" y1="${y + 58}" x2="${f1(840 + 34 * Math.cos(a))}" y2="${f1(y + 58 + 20 * Math.sin(a))}" stroke="#1f4a9c" stroke-width="4"/>`; }
+    o += A.tx(840, y + 108, "ATP synthase", "t12 mid");
+    /* NADH and FADH2 feed in */
+    o += A.carrier(80, y + 110, "NAD", true, {e:false}) + A.carrier(250, y + 110, "FAD", true, {e:false});
+    /* electron path */
+    const path = [[120, y + 90], [150, y + 10], [280, y], [400, y + 10], [510, y - 20], [630, y + 10], [640, y + 90]];
+    const tot = path.length - 1;
+    for (let k = 0; k < 3; k++){ const q = ((tt / T) + k / 3) % 1, fpos = q * tot, i = Math.min(tot - 1, Math.floor(fpos)), f = fpos - i; const ex = lerp(path[i][0], path[i + 1][0], f), ey = lerp(path[i][1], path[i + 1][1], f); o += A.eDot(ex, ey, 10); }
+    /* H+ pumped up at the three big complexes */
+    [150, 400, 630].forEach((x, i) => { const q = ((tt / 2) + i * .3) % 1; o += A.op(Math.sin(q * Math.PI), A.hion(x, lerp(y + 40, y - 110, q), 11)); });
+    for (let k = 0; k < 9; k++) o += A.hion(120 + k * 70 + (k % 2) * 20, 120 + (k % 3) * 22, 10);
+    /* oxygen: final acceptor */
+    o += A.o2(670, y + 110) + A.tx(670, y + 145, "½ O₂ + 2H⁺", "t12 mid") + A.arrow(695, y + 110, 722, y + 110, "#5a6376", 2) + A.h2o(748, y + 104) + A.tx(748, y + 145, "H₂O", "t12 mid");
+    if (mode === "atp"){
+      for (let k = 0; k < 4; k++){ const q = ((t * .6) + k / 4) % 1; o += A.hion(840, lerp(y - 110, y + 60, q), 11); }
+      const pop = (t * .6) % 1;
+      o += A.op(Math.sin(pop * Math.PI), A.atp(900, lerp(y + 90, y + 150, pop), 3, {sc:.8, label:false})) + A.tx(990, y + 178, "ADP + P → ATP", "t12 end", `style="fill:#6b4bb8"`);
+    }
+    return o;
+  }
+  function yieldScene(t, R){
+    const bars = [["Glycolysis", 2, "#b83a34"], ["Krebs cycle", 2, "#9a6212"], ["Electron transport + chemiosmosis", 30, "#3f4cc0"]];
+    let o = A.tx(500, 44, "ATP per glucose (aerobic respiration)", "t20 mid");
+    const grow = smooth(seg(t % 7, .3, 2.5));
+    bars.forEach((b, i) => { const y = 110 + i * 80, w = b[1] / 34 * 560 * grow; o += A.tx(300, y + 30, b[0], "t14 end") + `<rect x="320" y="${y}" width="${f1(Math.max(4, w))}" height="46" rx="10" fill="${b[2]}"/>` + A.tx(330 + w, y + 30, i === 2 ? "~28–34" : String(b[1]), "t16", ""); });
+    o += A.tx(500, 390, "Total: 32–38 ATP per glucose", "t20 mid", `style="fill:#1b7f4e"`) + A.tx(500, 425, "Most of it comes from oxidative phosphorylation", "t14 mid muted");
+    return o;
+  }
+  function compareScene(t, R){
+    let o = A.tx(250, 40, "Eukaryote", "t20 mid") + A.tx(750, 40, "Prokaryote", "t20 mid") + `<line x1="500" y1="60" x2="500" y2="450" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
+    o += `<ellipse cx="250" cy="250" rx="210" ry="150" fill="#fde9dc" stroke="#c4532f" stroke-width="5"/><ellipse cx="250" cy="250" rx="180" ry="120" fill="#fff4ec" stroke="#c4532f" stroke-width="3"/>`;
+    o += A.tx(250, 250, "Matrix", "t14 mid") + A.tx(250, 120, "Intermembrane space: H⁺", "t12 mid", `style="fill:#1f4a9c"`) + A.tx(250, 360, "ETC in the INNER mitochondrial membrane", "t12 mid");
+    o += `<rect x="540" y="130" width="420" height="240" rx="110" fill="#f1f7ec" stroke="#5f8a4f" stroke-width="10"/><rect x="556" y="146" width="388" height="208" rx="100" fill="none" stroke="#c9a15a" stroke-width="5"/>`;
+    o += A.tx(750, 255, "Cytoplasm", "t14 mid") + A.tx(750, 110, "Periplasm (outside the membrane): H⁺", "t12 mid", `style="fill:#1f4a9c"`) + A.tx(750, 400, `ETC in the ${R("plasma")}`, "t12 mid");
+    for (let k = 0; k < 6; k++){ const a = k / 6 * Math.PI * 2 + t * .3; o += A.hion(250 + 196 * Math.cos(a), 250 + 136 * Math.sin(a), 9) + A.hion(750 + 222 * Math.cos(a) * .98, 250 + 132 * Math.sin(a), 9); }
+    return o;
+  }
+  function fuelScene(t, R){
+    let o = A.tx(500, 38, "All food molecules can be used for energy!", "t20 mid");
+    const node = (x, y, s, col, w) => `<rect x="${x - (w || 90)}" y="${y - 22}" width="${2 * (w || 90)}" height="44" rx="14" fill="#fff" stroke="${col}" stroke-width="2.5"/>` + A.tx(x, y + 6, s, "t14 mid");
+    o += node(160, 90, "Carbohydrates", "#b83a34") + node(500, 90, "Lipids (fats)", "#9a6212") + node(840, 90, "Proteins", "#3f4cc0");
+    o += node(160, 180, "Glucose", "#b83a34") + node(420, 180, R("glycerol") === "?" ? "?" : "Glycerol", "#9a6212", 70) + node(600, 180, "Fatty acids", "#9a6212", 80) + node(840, 180, R("amino") === "?" ? "?" : "Amino acids", "#3f4cc0");
+    o += node(290, 280, "Glycolysis", "#5a6376", 100) + node(290, 360, "Pyruvate → acetyl-CoA", "#5a6376", 120) + node(680, 360, "Krebs cycle", "#5a6376", 100) + node(680, 440, "Electron transport chain", "#5a6376", 140);
+    const on = Math.floor(t / 1.6) % 4;
+    const L = (x1, y1, x2, y2, i) => A.arrow(x1, y1, x2, y2, on === i ? "#e8744f" : "#9aa3b5", on === i ? 4 : 2.5);
+    o += L(160, 112, 160, 156, 0) + L(160, 202, 260, 256, 0) + L(460, 112, 430, 156, 1) + L(540, 112, 590, 156, 2) + L(410, 202, 320, 256, 1) + L(620, 202, 660, 336, 2);
+    o += L(290, 302, 290, 336, 0) + L(410, 360, 578, 360, 0) + L(680, 382, 680, 416, 0);
+    o += L(820, 202, 420, 336, 3) + L(850, 202, 710, 336, 3) + L(800, 202, 380, 272, 3);
+    return o;
+  }
+  function summaryScene(t, R){
+    let o = A.tx(500, 44, "Aerobic respiration: the whole story", "t20 mid");
+    o += A.tx(500, 90, "C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O + 32–38 ATP", "t20 mid", `style="fill:#1b7f4e"`);
+    const cols = [["Glycolysis", "glucose → 2 pyruvate", "2 ATP, 2 NADH"], ["Intermediate", "2 pyruvate → 2 acetyl-CoA", "2 CO₂, 2 NADH"], ["Krebs cycle", "2 turns", "2 ATP, 6 NADH, 2 FADH₂, 4 CO₂"], ["ETC + ATP synthase", "O₂ takes the electrons", "~28–34 ATP, H₂O"]];
+    cols.forEach((c, i) => { const x = 130 + i * 245, on = Math.floor(t / 1.6) % 4 === i; o += `<rect x="${x - 112}" y="130" width="224" height="200" rx="18" fill="${on ? "#fff6d6" : "#fff"}" stroke="${on ? C.gold : "#d9dee7"}" stroke-width="${on ? 4 : 2}"/>` + A.tx(x, 170, c[0], "t16 mid") + A.tx(x, 210, c[1], "t12 mid muted");
+      c[2].split(", ").forEach((p, k) => { o += A.tx(x, 250 + k * 24, p, "t14 mid", `style="fill:#1b7f4e"`); }); if (i < 3) o += A.arrow(x + 114, 230, x + 131, 230, "#5a6376", 3); });
+    return o;
+  }
+
+  /* ================= Activities ================= */
+  const quiz = (title, done, q, opts, right, why, wrongWhy) => ({title, done,
+    html:() => `<div class="lbl">${q}</div><div class="row">${opts.map((x, i) => `<button class="choice" data-i="${i}">${x}</button>`).join("")}</div>`,
+    wire:(g, st, api) => g.querySelectorAll("[data-i]").forEach(b => b.addEventListener("click", () => { if (+b.dataset.i === right){ b.classList.add("right"); api.msg(why, "good"); setTimeout(api.pass, 1100); } else { b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); api.msg(wrongWhy || "Not quite. Try another answer.", "bad"); } }))});
+  const GATES = {
+    link:{title:"Your turn: convert pyruvate", done:"Pyruvate lost a CO₂, NAD⁺ became NADH, and acetyl-CoA is ready for the Krebs cycle.",
+      init:() => ({co2:0, nad:0}),
+      html:st => `<div class="row">${!st.co2 ? `<span class="tok" data-k="co2" style="border-color:#b83a34;color:#b83a34">Remove CO₂</span>` : ""}${!st.nad ? `<span class="tok" data-k="nad" style="border-color:#2f9e63;color:#1b7f4e">NAD⁺</span>` : ""}</div>
+        <div class="zone ${st.co2 && st.nad ? "ok" : ""}" data-zone="pyr"><span class="zl">${st.co2 && st.nad ? "Acetyl-CoA (2C) ✓" : st.co2 ? "Acetyl group (2C): now it needs its electrons picked up" : "Pyruvate (3C) inside the mitochondrion"}</span><div class="zin">${st.co2 ? `<span class="tok placed">CO₂ out</span>` : ""}${st.nad ? `<span class="tok placed">NADH</span>` : ""}</div></div>`,
+      wire:(g, st, api) => { g.querySelectorAll("[data-k]").forEach(el => api.dragify(el, {tap:() => go(el.dataset.k), drop:() => go(el.dataset.k)}));
+        function go(k){ st[k] = 1; api.redraw(); if (st.co2 && st.nad){ api.msg("Per pyruvate: 1 CO₂, 1 NADH, 1 acetyl-CoA. Double it for one glucose!", "good"); setTimeout(api.pass, 1100); } else api.msg(k === "co2" ? "3 carbons − 1 = 2 carbons left." : "NAD⁺ picked up electrons: NADH!", "good"); return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag both actions onto the pyruvate (or tap them).", ""); }},
+    enter:quiz("Quick check", "Acetyl-CoA (2C) + oxaloacetate (4C) = citric acid (6C).", "Acetyl-CoA has 2 carbons and oxaloacetate has 4. How many carbons does citric acid have?", ["4", "6", "8"], 1, "2 + 4 = 6. That's why it's the \"6C\" molecule at the top of the cycle.", "Add the carbons: 2 + 4."),
+    spin:{title:"Your turn: turn the Krebs cycle", done:"One full turn: 2 CO₂, 3 NADH, 1 FADH₂, 1 ATP. Two turns per glucose!",
+      init:() => ({s:0, tally:{co2:0, nadh:0, fadh:0, atp:0}}), keep:false,
+      html:st => { const nx = ST[(st.s + 1) % 5];
+        return `<div class="chips"><span class="chip">CO₂: ${st.tally.co2}</span><span class="chip">NADH: ${st.tally.nadh}</span><span class="chip">FADH₂: ${st.tally.fadh}</span><span class="chip">ATP: ${st.tally.atp}</span></div>
+          ${st.s < 4 ? `<div class="lbl">Next: ${ST[st.s].n} (${ST[st.s].c}C) → ${nx.n} (${nx.c}C). What gets released? Pick ALL that apply, then turn.</div>
+          <div class="row">${["CO₂", "NADH", "FADH₂", "ATP"].map(x => `<button class="choice" data-p="${x}" aria-pressed="false">${x}</button>`).join("")}</div><div><button class="btn primary" id="turnBtn">Turn ↻</button></div>` : ""}`; },
+      wire:(g, st, api) => {
+        const sel = new Set();
+        g.querySelectorAll("[data-p]").forEach(b => b.addEventListener("click", () => { const k = b.dataset.p; if (sel.has(k)){ sel.delete(k); b.classList.remove("right"); } else { sel.add(k); b.classList.add("right"); } }));
+        const tb = g.querySelector("#turnBtn"); if (tb) tb.addEventListener("click", () => {
+          const want = ST[st.s + 1].out, ok = want.length === sel.size && want.every(x => sel.has(x));
+          if (!ok){ const lostC = ST[st.s].c - ST[st.s + 1].c; api.msg(lostC ? `Hint: ${ST[st.s].c}C → ${ST[st.s + 1].c}C means a carbon left as CO₂. What else? (${want.length} products total)` : `Hint: no carbon is lost in this step. It releases ${want.length} product${want.length > 1 ? "s" : ""}.`, "bad"); return; }
+          want.forEach(x => { st.tally[x === "CO₂" ? "co2" : x === "NADH" ? "nadh" : x === "FADH₂" ? "fadh" : "atp"]++; });
+          st.s++; api.redraw();
+          if (st.s >= 4){ api.msg("Back to oxaloacetate, ready for the next acetyl-CoA. One turn = 2 CO₂, 3 NADH, 1 FADH₂, 1 ATP.", "good"); setTimeout(api.pass, 1400); }
+          else api.msg(`Correct: ${want.join(" + ")}.`, "good");
+        });
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Watch the carbon count: every time it drops, a CO₂ was removed.", "");
+      }},
+    co2:quiz("Your turn: count the carbons", "6 carbons in, 6 CO₂ out.", "Glucose has 6 carbons. How many CO₂ molecules are released in total (intermediate step + 2 turns of Krebs)?", ["2", "4", "6", "12"], 2, "2 from pyruvate → acetyl-CoA, plus 4 from two turns of the Krebs cycle = 6.", "Count both places: the intermediate step AND the Krebs cycle."),
+    etc:{title:"Your turn: run the chain", done:"Electrons flowed from NADH down the chain to oxygen, which became water.",
+      init:() => ({n:0, o:0}),
+      html:st => `<div class="row">${!st.n ? `<span class="tok" data-k="n" style="border-color:#2f9e63;color:#1b7f4e">NADH (electron donor)</span>` : ""}${!st.o ? `<span class="tok" data-k="o" style="border-color:#d9443a;color:#b83a34">O₂</span>` : ""}<span class="tok" data-k="g" style="border-color:#5a6376">Glucose</span></div>
+        <div class="zones"><div class="zone ${st.n ? "ok" : ""}" data-zone="start"><span class="zl">Start of the chain (NADH dehydrogenase)</span>${st.n ? `<span class="tok placed">NADH → NAD⁺ + 2e⁻</span>` : ""}</div><div class="zone ${st.o ? "ok" : ""}" data-zone="end"><span class="zl">End of the chain: final electron acceptor</span>${st.o ? `<span class="tok placed">O₂ + e⁻ + H⁺ → H₂O</span>` : ""}</div></div>`,
+      wire:(g, st, api) => { g.querySelectorAll("[data-k]").forEach(el => api.dragify(el, {tap:() => { st.pick = el.dataset.k; api.msg("Now tap where it goes.", ""); }, drop:z => put(el.dataset.k, z.dataset.zone)}));
+        g.querySelectorAll("[data-zone]").forEach(z => z.addEventListener("click", () => { if (st.pick){ put(st.pick, z.dataset.zone); st.pick = null; } }));
+        function put(k, z){ if (k === "g"){ api.msg("Glucose was used up earlier. The ETC gets its electrons from NADH and FADH₂.", "bad"); return false; }
+          const want = k === "n" ? "start" : "end"; if (z !== want){ api.msg(k === "n" ? "NADH DELIVERS electrons, so it goes at the start." : "Oxygen ACCEPTS the electrons at the very end.", "bad"); return false; }
+          st[k] = 1; api.redraw(); if (st.n && st.o){ api.msg("NADH donates, O₂ accepts. Along the way, the energy pumps H⁺ across the membrane.", "good"); setTimeout(api.pass, 1200); } return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the electron donor to the start and the final electron acceptor to the end.", ""); }},
+    dam:{title:"Your turn: open the dam", done:"H⁺ flowed back through ATP synthase and spun it to make ATP. That's chemiosmosis!",
+      init:() => ({n:0}),
+      html:st => `<div class="row"><div class="pad"><span class="lbl">High H⁺ side (the "dam")</span><div class="row">${Array.from({length:6 - st.n}, (_, i) => `<span class="tok" data-h="${i}" style="border-color:#3b7dd8;color:#1f4a9c;border-radius:50%;padding:6px 9px">H⁺</span>`).join("")}</div></div>
+        <div class="zone" data-zone="syn" style="min-width:210px"><span class="zl">ATP synthase: let H⁺ flow through</span><div class="zin">${"<span class='tok placed'>ATP</span>".repeat(Math.floor(st.n / 2))}</div></div></div>
+        <div class="lbl">H⁺ through: ${st.n} of 6. ATP made: ${Math.floor(st.n / 2)}</div>`,
+      wire:(g, st, api) => { g.querySelectorAll("[data-h]").forEach(el => api.dragify(el, {tap:go, drop:go}));
+        function go(){ st.n++; api.redraw(); if (st.n >= 6){ api.msg("H⁺ flowing down its gradient powers ATP synthase, like water turning a turbine.", "good"); setTimeout(api.pass, 1100); } else api.msg(st.n % 2 ? "Whoosh! The motor turns..." : "ADP + P → ATP!", "good"); return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the H⁺ ions through ATP synthase (or tap them).", ""); }},
+    yield:quiz("Your turn: add it up", "32–38 ATP per glucose in aerobic respiration.", "Glycolysis makes 2 ATP, the Krebs cycle makes 2, and electron transport makes about 28–34. What's the total per glucose?", ["2", "4", "32–38", "100+"], 2, "Yes! And compare that to fermentation, which only gets the 2 from glycolysis.", "Add all three stages together."),
+    compare:Metab.sortGate({title:"Your turn: same or different?", done:"Same machinery and chemiosmosis; different location.",
+      bins:[["same","Same in both"],["diff","Different"]],
+      cards:[["a","NADH and FADH₂ deliver electrons","same"],["b","O₂ is the final electron acceptor (aerobic)","same"],["c","H⁺ gradient + ATP synthase make ATP","same"],["d","Where the chain is located","diff","Eukaryotes: inner mitochondrial membrane. Prokaryotes: plasma membrane."],["e","Where H⁺ builds up","diff","Intermembrane space vs. periplasm."]]}),
+    fuel:Metab.sortGate({title:"Your turn: where does each fuel enter?", done:"Glycerol enters glycolysis, fatty acids enter the Krebs cycle, and amino acids can enter at several points.",
+      bins:[["gly","Enters glycolysis"],["krebs","Enters the Krebs cycle (via acetyl-CoA)"],["many","Can enter at various points"]],
+      cards:[["a","Glucose","gly"],["b","Glycerol (from fats)","gly","Glycerol is a small 3-carbon molecule that joins glycolysis."],["c","Fatty acids (from fats)","krebs","Fatty acids are chopped into 2-carbon acetyl-CoA pieces."],["d","Amino acids (from proteins)","many","Different amino acids enter at different spots."]]})
+  };
+
+  const P1 = "Intermediate step", P2 = "Krebs cycle", P3 = "Electron transport", P4 = "Putting it together";
+  const STEPS = [
+    {part:P1, title:"From pyruvate to acetyl-CoA", scene:(t, c) => linkScene(t, c.R), gate:GATES.link,
+     text:`After glycolysis, pyruvate is transported into the {{mito}} (in eukaryotes). There, each pyruvate is converted to {{acetylcoa}}. One carbon leaves as CO₂, and NAD⁺ picks up electrons to make NADH. Per pyruvate: 1 CO₂, 1 NADH, and 1 acetyl-CoA. So far per glucose: 2 acetyl-CoA, 2 ATP, 2 CO₂, and 4 NADH.`},
+    {part:P2, title:"Starting the Krebs cycle", scene:(t, c) => krebsScene(t, c.R, c.g, {station:0}), gate:GATES.enter, more:"names",
+     text:`The {{krebs}} completes the breakdown of glucose. It happens in the mitochondrial matrix (eukaryotes) or the cytoplasm (prokaryotes). Acetyl-CoA (2 carbons) joins {{oxaloacetate}} (4 carbons) to make {{citric}} (6 carbons). The cycle turns {{twice}} per glucose, once for each pyruvate.`},
+    {part:P2, title:"Around the cycle", scene:(t, c) => krebsScene(t, c.R, c.g, {station:(c.g.s || 0) + 1 > 4 ? 0 : (c.g.s || 0) + (c.done ? 0 : 0), prod:c.done ? 5 : (c.g.s || 0) + 1, totals:c.done}), live:true, gate:GATES.spin,
+     text:`As the cycle turns, carbons are removed as CO₂ and electrons are loaded onto carriers. Per turn: 2 CO₂, 3 NADH, 1 FADH₂, and 1 ATP. Per glucose (2 turns): 4 CO₂, {{six}} NADH, 2 FADH₂, and 2 ATP. Oxaloacetate is regenerated at the end, ready for the next acetyl-CoA.`,
+     after:`Per glucose: 2 ATP, 6 NADH, 2 FADH₂, 4 CO₂ from the Krebs cycle.`},
+    {part:P2, title:"CO₂ and decarboxylation", scene:(t, c) => co2Scene(t, c.R), gate:GATES.co2, more:"fb",
+     text:`{{decarb}} is the fancy word for removing CO₂ from a molecule. The carbon atoms in that CO₂ come from the original {{glucose}} molecule. CO₂ is made during the pyruvate → acetyl-CoA step and in the Krebs cycle, and it's what we exhale! Running total after the Krebs cycle: 4 ATP, 6 CO₂, 10 NADH, and 2 FADH₂.`},
+    {part:P3, title:"The electron transport chain", scene:(t, c) => etcScene(t, c.R, c.g, "etc"), gate:GATES.etc, more:"etc",
+     text:`NADH and FADH₂ deliver their electrons to the {{etc}}, an electron "bucket brigade." A series of redox reactions passes the electrons down the chain, and that energy pumps H⁺ across the membrane (active transport). It's in the {{plasma}} of prokaryotes and the inner mitochondrial membrane of eukaryotes. The final electron acceptor is {{oxygen}}, which takes the electrons plus 2 H⁺.`,
+     after:`Final electron acceptor (aerobic): O₂`},
+    {part:P3, title:"Chemiosmosis and ATP synthase", scene:(t, c) => etcScene(t, c.R, c.g, "atp", c.done), gate:GATES.dam, more:"motor",
+     text:`{{chemiosmosis}} is using a proton (H⁺) gradient to make ATP. Electrons moving through the chain pump H⁺ across the membrane, and H⁺ builds up on one side like water behind a dam. Then H⁺ flows back through {{atpsynthase}}, a molecular motor that makes ATP as H⁺ flows through it.`},
+    {part:P3, title:"The ATP payoff", scene:(t, c) => yieldScene(t, c.R), gate:GATES.yield, more:"yield",
+     text:`Making ATP with energy from electron transport is {{oxphos}} phosphorylation, and it produces most of the cell's ATP. The total yield of aerobic respiration is 32–38 ATP per glucose. The end product of the ETC is {{water}}, made when O₂ accepts the final electrons.`},
+    {part:P4, title:"Prokaryotes vs. eukaryotes", scene:(t, c) => compareScene(t, c.R), gate:GATES.compare,
+     text:`The electron transport chain works the same way in both: NADH and FADH₂ deliver electrons, redox reactions pump H⁺, O₂ is the final acceptor, and ATP synthase uses the gradient. The difference is WHERE: the inner mitochondrial membrane in eukaryotes vs. the {{plasma}} in prokaryotes, which have no mitochondria.`},
+    {part:P4, title:"Fats and proteins are fuel too", scene:(t, c) => fuelScene(t, c.R), gate:GATES.fuel,
+     text:`Cells don't only burn glucose. Lipids (fats) are broken down into {{glycerol}} and fatty acids. Glycerol enters glycolysis, and fatty acids enter the Krebs cycle. Proteins are broken down into {{amino}}, which can enter respiration at various points. Bottom line: all food molecules can be used for energy!`},
+    {part:P4, title:"The whole story", scene:(t, c) => summaryScene(t, c.R),
+     table:{cap:"Aerobic respiration, stage by stage (per glucose)", head:["Stage","Eukaryotes","Prokaryotes","Makes"], rows:[["Glycolysis","Cytoplasm","Cytoplasm","2 ATP, 2 NADH, 2 pyruvate"],["Pyruvate → acetyl-CoA","Mitochondrial matrix","Cytoplasm","2 CO₂, 2 NADH, 2 acetyl-CoA"],["Krebs cycle","Mitochondrial matrix","Cytoplasm","2 ATP, 6 NADH, 2 FADH₂, 4 CO₂"],["ETC + chemiosmosis","Inner mitochondrial membrane","Plasma membrane","~28–34 ATP, H₂O"],["Total","","","32–38 ATP, 6 CO₂, 6 H₂O"]]},
+     text:`That's aerobic respiration! Glucose is broken down to pyruvate, then acetyl-CoA, and finally CO₂, while its electrons travel through NADH and FADH₂ to the electron transport chain. O₂ is the final electron acceptor, and ATP synthase makes the ATP. C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O + ATP.`,
+     after:`Next: what happens when there's no oxygen?`}
+  ];
+
+  Metab.start({title:"Krebs Cycle, ETC and ATP Synthase", page:"krebs-etc.html", BL, MORE, STEPS,
+    nextLabel:"Next up: life without oxygen", next:[["Fermentation and Anaerobic Respiration →","fermentation.html"],["All modules","index.html"]]});
+})();
+</script>
+<script src="studypath.js"></script>
+</body>
+</html>
