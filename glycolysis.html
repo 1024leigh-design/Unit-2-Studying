@@ -27,8 +27,6 @@
     pyruvate:{show:"pyruvate", ans:["pyruvate","pyruvicacid","pyruvates"], fuzzy:true},
     cytoplasm:{show:"cytoplasm", ans:["cytoplasm","cytosol"], fuzzy:true},
     invest:{show:"2", ans:["2","two"]},
-    f16bp:{show:"fructose 1,6-bisphosphate", ans:["fructose16bisphosphate","fructosebisphosphate","f16bp","fructose16biphosphate","fructose16diphosphate"], fuzzy:true},
-    g3p:{show:"glyceraldehyde 3-phosphate", ans:["glyceraldehyde3phosphate","g3p","glyceraldehydephosphate","glyceraldehyde"], fuzzy:true},
     twice:{show:"twice", ans:["twice","two","2","2times","twotimes","double"], fuzzy:true},
     four:{show:"4", ans:["4","four"]},
     nadh:{show:"NADH", ans:["nadh"]},
@@ -37,7 +35,7 @@
     fad:{show:"FAD", ans:["fad"]}
   };
   const MORE = {
-    ten:{title:"The ten steps of glycolysis", html:`<p>Glycolysis is really 10 enzyme-catalyzed reactions. You only need the big molecules (glucose, fructose 1,6-bisphosphate, pyruvate), but in full: glucose → glucose 6-phosphate → fructose 6-phosphate → fructose 1,6-bisphosphate → DHAP + glyceraldehyde 3-phosphate → 1,3-bisphosphoglycerate → 3-phosphoglycerate → 2-phosphoglycerate → phosphoenolpyruvate → pyruvate.</p><p>The enzyme phosphofructokinase (step 3) is the main control point. It is inhibited by ATP, a classic example of feedback inhibition!</p>`},
+    ten:{title:"The ten steps of glycolysis (not needed for the exam!)", html:`<p>For the exam, you really just need the big picture: glucose goes in, 2 pyruvate come out, with a net 2 ATP and 2 NADH along the way. Every molecule in between is optional detail, just for the curious.</p><p>Glycolysis is actually 10 enzyme-catalyzed reactions: glucose → glucose 6-phosphate → fructose 6-phosphate → fructose 1,6-bisphosphate → DHAP + glyceraldehyde 3-phosphate → 1,3-bisphosphoglycerate → 3-phosphoglycerate → 2-phosphoglycerate → phosphoenolpyruvate → pyruvate.</p><p>The enzyme phosphofructokinase (step 3) is the main control point. It is inhibited by ATP, a classic example of feedback inhibition!</p>`},
     other:{title:"Other sugars join in", html:`<p>Cells can feed other sugars into glycolysis. Galactose (from lactose) can be converted to glucose 6-phosphate, which enters glycolysis right after glucose. Fructose enters too. Glycerol from fats enters partway through.</p>`},
     why:{title:"Why spend ATP to make ATP?", html:`<p>Adding two phosphates makes glucose unstable and "primed," like pushing a boulder to the top of a hill so it can roll down the other side. It also traps the sugar inside the cell, because phosphorylated sugars can't cross the membrane.</p>`}
   };
@@ -87,7 +85,7 @@
     const sp = focus === "split" ? smooth(seg(tt, 1.2, 3)) : focus === "invest" ? 0 : 1;
     const fb = focus === "invest" ? inv : 1;
     if (sp < .5) o += A.op(fb, A.carbons(410, 240, 6, {r:9, gap:21, P:[0, "end"]}));
-    if (sp < .5) o += A.tx(410, 300, R("f16bp") === "?" ? "?" : "Fructose 1,6-bisphosphate", "t12 mid");
+    if (sp < .5) o += A.tx(410, 300, "Fructose 1,6-bisphosphate (FYI name only)", "t12 mid muted");
     if (focus === "split" || focus === "payoff" || focus === "net"){
       /* split into two 3-carbon pieces */
       const y1 = lerp(240, 150, sp), y2 = lerp(240, 330, sp), xg = lerp(410, 580, sp);
@@ -177,9 +175,9 @@
     {part:P2, title:"Glycolysis: the sugar cutter", scene:(t, c) => glyScene(t, c.R, "all"), more:"ten",
      text:`Step 1 of respiration is glycolysis ("glyco" = sugar, "lysis" = cutting). One glucose (6 carbons) is split into two {{pyruvate}} molecules (3 carbons each). Glycolysis happens in the {{cytoplasm}} of both prokaryotic and eukaryotic cells, and it doesn't need oxygen.`},
     {part:P2, title:"Energy investment", scene:(t, c) => glyScene(t, c.R, "invest"), gate:GATES.invest, more:"why",
-     text:`It takes energy to make energy! First, {{invest}} ATP are invested: each one hands a phosphate to the sugar. This converts glucose into {{f16bp}}, a 6-carbon sugar with a phosphate on each end.`},
+     text:`It takes energy to make energy! First, {{invest}} ATP are invested: each one hands a phosphate to the sugar. This converts glucose into an unstable 6-carbon sugar with a phosphate on each end. (Its name, fructose 1,6-bisphosphate, is shown in the diagram just for reference — you don't need to memorize it.)`},
     {part:P2, title:"The split", scene:(t, c) => glyScene(t, c.R, "split"), gate:GATES.split,
-     text:`Fructose 1,6-bisphosphate is unstable, and it splits into two 3-carbon molecules: DHAP and {{g3p}} (G3P). All the DHAP gets converted into G3P, so every step after this happens {{twice}} per glucose.`},
+     text:`That unstable 6-carbon sugar splits into two 3-carbon molecules (one of them quickly converts into the other, so they end up the same), and every step after this happens {{twice}} per glucose. You don't need to memorize the names of these middle molecules, just that one 6-carbon sugar becomes two 3-carbon pieces.`},
     {part:P2, title:"Energy payoff", scene:(t, c) => glyScene(t, c.R, "payoff"), gate:GATES.payoff, more:"other",
      text:`Now the payoff! As each G3P is turned into pyruvate, NAD⁺ picks up electrons and becomes {{nadh}}, and ATP is made by substrate-level phosphorylation. Counting both G3P molecules, the payoff stage makes {{four}} ATP and 2 NADH.`},
     {part:P2, title:"The bottom line", scene:(t, c) => glyScene(t, c.R, "net"), gate:GATES.net,
@@ -188,7 +186,7 @@
     {part:P3, title:"The roles of NAD⁺ and FAD", scene:(t, c) => nadScene(t, c.R),
      text:`{{nadplus}} is the electron carrier of glycolysis. It picks up electrons and becomes NADH. With oxygen, NADH delivers those electrons to the electron transport chain to make lots more ATP. Without oxygen, fermentation hands them back so NAD⁺ can be reused. {{fad}} is the other carrier. It picks up TWO electrons to become FADH₂, and you'll see it in the Krebs cycle.`},
     {part:P3, title:"Glycolysis summarized", scene:(t, c) => summaryScene(t, c.R),
-     table:{cap:"Glycolysis at a glance", head:["Question","Answer"], rows:[["Starting material","1 glucose (6 carbons)"],["End product","2 pyruvate (3 carbons each)"],["ATP","2 invested, 4 made: net 2 ATP"],["Electron carriers","2 NADH"],["Key middle molecule","Fructose 1,6-bisphosphate"],["Location","Cytoplasm (prokaryotes and eukaryotes)"],["Needs oxygen?","No"]]},
+     table:{cap:"Glycolysis at a glance", head:["Question","Answer"], rows:[["Starting material","1 glucose (6 carbons)"],["End product","2 pyruvate (3 carbons each)"],["ATP","2 invested, 4 made: net 2 ATP"],["Electron carriers","2 NADH"],["Key middle molecule (FYI, not required)","Fructose 1,6-bisphosphate"],["Location","Cytoplasm (prokaryotes and eukaryotes)"],["Needs oxygen?","No"]]},
      text:`"Glycolysis is the process of 1 glucose molecule being broken down into 2 pyruvate molecules. It first requires an energy investment of 2 ATP to make fructose 1,6-bisphosphate, then an energy generation stage makes 4 ATP and 2 NADH. The final products are 2 ATP (energy), 2 NADH (electron carriers), and 2 pyruvate." So where are the O₂, CO₂, and water? That's next!`,
      after:`Next: the Krebs cycle and the electron transport chain.`}
   ];

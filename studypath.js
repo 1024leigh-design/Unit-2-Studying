@@ -98,17 +98,22 @@
     const onStop = i >= 0;
     if (onStop) set(KEY, String(i)); else i = +(get(KEY) || 0);
     const d = done(), s = STOPS[i], nx = STOPS[i + 1];
-    const vs = viewsOf(s), lastView = vs.length ? vs[vs.length - 1] : null;
-    const onLastView = !lastView || (window.__op && window.__op.view === lastView);
+    const vs = viewsOf(s), curV = window.__op ? window.__op.view : null, vIdx = vs.indexOf(curV);
+    const lastView = vs.length ? vs[vs.length - 1] : null;
+    const onLastView = !lastView || curV === lastView;
     const fin = onStop && atEnd() && onLastView;
+    const subNext = onStop && atEnd() && !onLastView && vIdx >= 0 ? vs[vIdx + 1] : null;
+    const subName = k => (window.__op && window.__op.TRACKS[k] && window.__op.TRACKS[k].name) || k;
     if (fin) markDone(i);
     bar.innerHTML = `<div class="sptop"><div class="spwhere">Study path: stop ${i + 1} of ${STOPS.length}${onStop ? "" : " (you've stepped off the path)"}<small>${s.area}${s.area !== s.title ? ": " + s.title : ""}</small></div>
-      <div class="spbtns">${onStop ? "" : `<button class="spnext" data-go="${i}">Back to stop ${i + 1}</button>`}${nx ? `<button class="spnext${fin ? " ready" : ""}" data-go="${i + 1}">Next stop: ${nx.title} →</button>` : `<button class="spnext${fin ? " ready" : ""}" data-home="1">Finish the study path ✓</button>`}<button class="spexit" data-exit="1">Exit path</button></div></div>
+      <div class="spbtns">${onStop ? "" : `<button class="spnext" data-go="${i}">Back to stop ${i + 1}</button>`}${subNext ? `<button class="spnext ready" data-subgo="${subNext}">Study path: ${subName(subNext)} →</button>` : nx ? `<button class="spnext${fin ? " ready" : ""}" data-go="${i + 1}">Next stop: ${nx.title} →</button>` : `<button class="spnext${fin ? " ready" : ""}" data-home="1">Finish the study path ✓</button>`}<button class="spexit" data-exit="1">Exit path</button></div></div>
       <div class="spsegs">${STOPS.map((x, k) => `<button class="${k === i ? "cur" : d.includes(k) ? "done" : ""}" data-go="${k}" title="Stop ${k + 1}: ${x.title}" aria-label="Go to stop ${k + 1}: ${x.title}"></button>`).join("")}</div>`;
-    card.hidden = !fin;
+    card.hidden = !(fin || subNext);
     if (fin) card.innerHTML = nx ? `<b>Stop ${i + 1} complete! Next on your study path: ${nx.title}</b><button data-go="${i + 1}">Next stop →</button>` : `<b>You finished the whole study path. Amazing work!</b><button data-home="1">Back to all modules</button>`;
+    else if (subNext) card.innerHTML = `<b>Study path: on to ${subName(subNext)}!</b><button data-subgo="${subNext}">Continue →</button>`;
     [bar, card].forEach(el => {
       el.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(+b.dataset.go));
+      el.querySelectorAll("[data-subgo]").forEach(b => b.onclick = () => { window.__op.setView(b.dataset.subgo); window.__op.goTo(0); render(); });
       el.querySelectorAll("[data-home]").forEach(b => b.onclick = () => { set(KEY, null); location.href = "index.html"; });
       el.querySelectorAll("[data-exit]").forEach(b => b.onclick = () => { set(KEY, null); bar.remove(); card.remove(); document.body.classList.remove("onpath"); });
     });
