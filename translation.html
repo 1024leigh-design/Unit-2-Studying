@@ -220,6 +220,21 @@
   .spark{position:absolute;left:50%;top:50%;width:46px;height:46px;transform:translate(-50%,-50%) scale(0);background:radial-gradient(circle,#fff6b0 0 25%,#f2b134 26% 45%,transparent 46%);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);animation:spark .7s ease-out}
   @keyframes spark{0%{transform:translate(-50%,-50%) scale(0) rotate(0)}50%{transform:translate(-50%,-50%) scale(1.3) rotate(40deg)}100%{transform:translate(-50%,-50%) scale(0) rotate(80deg);opacity:0}}
   @media (prefers-reduced-motion:reduce){ .spark{animation:none;display:none} .trna.nope{animation:none} }
+
+  /* Elongation stations: ribosome window, tRNA shelf, peptide bond trigger */
+  .ribowin{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;background:#fbf3ec;border:2px solid #e3a877;border-radius:18px;padding:10px}
+  .rsite{border:2px solid #c98c5a;border-radius:14px;background:#fff;padding:10px 12px;display:grid;gap:6px;align-content:start;min-width:120px}
+  .rlbl{font-size:.78rem;font-weight:700;color:#8a4a24;text-transform:uppercase;letter-spacing:.04em}
+  .pchain{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
+  .pchain .aachip{padding:4px 10px;font-size:.85rem}
+  .dropzone.asite{flex:1}
+  .traylbl{font-size:.82rem;font-weight:700;color:var(--muted)}
+  .cyc{font-size:.85rem;font-weight:700;color:var(--accent)}
+  .trna .aab{background:#fff;border-color:var(--aa,#e8744f);color:#343b4a;box-shadow:inset 0 -3px 0 var(--aa,#e8744f)}
+  .bondrow{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;justify-self:start}
+  .bondrow.linked .aachip{border-color:#2f9e63;background:#e1f3e8;color:#1b7f4e;transition:all .5s}
+  .bondbtn{font-size:1.02rem}
+  .spark.s2{animation-delay:.18s;width:30px;height:30px}
 </style>
 </head>
 <body data-next='[["Mutations", "mutations.html"], ["Post-transcriptional control", "posttranscriptional-control.html"]]'>
@@ -428,7 +443,7 @@
      text:`Now the ribosome links methionine to alanine with a {{peptide}} bond. The growing chain (Met-Ala) is now attached to the tRNA in the A site, and the tRNA in the P site is empty.`},
     {part:P3, title:"The ribosome moves", v:M([F_MOVE1, F_EXIT1]), more:"move",
      text:`The ribosome slides one codon toward the 3' end of the mRNA. The tRNA holding the chain shifts into the P site, the empty tRNA shifts into the {{esite}} site and exits, and the A site opens up for the next codon.`},
-    {part:P3, title:"Repeat, repeat, repeat!", v:M(R, {ends:true}), more:"repeat",
+    {part:P3, title:"Repeat, repeat, repeat!", v:M(R, {ends:true}), more:"repeat", gate:"repeat",
      text:`Elongation keeps cycling: a tRNA arrives, a peptide bond forms, and the ribosome moves. UUC brings phenylalanine (Phe) and GGA brings glycine (Gly). Proteins are built in one direction. Met, the first amino acid, is the {{nterm}}-terminus, and new amino acids are always added to the C-terminus end.`,
      after:`mRNA is read 5' to 3'. Proteins are built N-terminus to C-terminus.`},
     {part:P4, title:"Termination: the stop codon", v:M(TERM), more:"term",
@@ -468,58 +483,116 @@
   }
   const PAIR = {A:"U", U:"A", G:"C", C:"G"};
   const gtile = (b) => `<span class="gb gb${b}">${b}</span>`;
+  /* Drag a card (or tap it). targets() lists drop zones; drop(zone) returns false to bounce it back. */
+  function dragify(el, o){
+    const nope = () => { el.classList.remove("nope"); void el.offsetWidth; el.classList.add("nope"); };
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); if (o.tap() === false) nope(); } });
+    el.addEventListener("pointerdown", e => {
+      if (e.button > 0) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+      let moved = false, clone = null, over = null;
+      const hit = ev => o.targets().find(z => { const q = z.getBoundingClientRect(); return ev.clientX > q.left && ev.clientX < q.right && ev.clientY > q.top && ev.clientY < q.bottom; }) || null;
+      const move = ev => {
+        if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6){ moved = true; clone = el.cloneNode(true); clone.classList.add("drag"); clone.style.width = r.width + "px"; document.body.appendChild(clone); el.classList.add("ghost"); }
+        if (!clone) return;
+        clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px";
+        over = hit(ev); o.targets().forEach(z => z.classList.toggle("over", z === over));
+      };
+      const up = () => {
+        document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
+        if (clone) clone.remove(); el.classList.remove("ghost"); o.targets().forEach(z => z.classList.remove("over"));
+        if (!moved){ if (o.tap() === false) nope(); return; }
+        if (o.drop(over) === false) nope();
+      };
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+    });
+  }
+  const aaChip = (aa, cls) => `<span class="aachip${cls ? " " + cls : ""}" style="--aa:${AACOL[aa] || "#9aa3b5"}">${aa}</span>`;
+  /* One elongation round: inspect the A-site codon, drag in the matching tRNA from the shelf */
+  function shelfHTML(codon, cards, chain){
+    return `<div class="ribowin"><div class="rsite"><span class="rlbl">P site</span><div class="pchain">${chain.map(a => aaChip(a)).join("")}</div></div>
+      <div class="dropzone asite" id="dropZone"><span class="rlbl">A site (empty)</span><div class="grow"><span class="glbl">mRNA codon 5'→3'</span>${[...codon].map(gtile).join("")}</div><div class="grow"><span class="glbl">Anticodon needed</span><span class="gslot">?</span><span class="gslot">?</span><span class="gslot">?</span></div></div></div>
+      <div class="traylbl">tRNA selection shelf: 3 loaded tRNAs</div>
+      <div class="shelf">${cards.map(c => `<div class="trna" data-ac="${c[0]}" data-aa="${c[1]}" role="button" tabindex="0" aria-label="tRNA with anticodon ${c[0]} carrying ${c[1]}"><span class="aab" style="--aa:${AACOL[c[1]] || "#9aa3b5"}">${c[1]}</span><span class="stem"></span><span class="body">${[...c[0]].map(gtile).join("")}</span><span class="aclbl">anticodon</span></div>`).join("")}</div>`;
+  }
+  function wireShelf(g, codon, onMatch){
+    const zone = g.querySelector("#dropZone");
+    const tryCard = card => {
+      const ac = card.dataset.ac;
+      const bad = [0,1,2].find(k => PAIR[codon[k]] !== ac[k]);
+      if (bad === undefined){
+        zone.classList.add("filled"); zone.querySelector(".rlbl").textContent = `A site: ${card.dataset.aa}-tRNA docked`;
+        zone.querySelectorAll(".gslot").forEach((sl, k) => { sl.outerHTML = gtile(ac[k]); });
+        card.style.visibility = "hidden";
+        gateMsg(`Every base pairs up: ${[0,1,2].map(k => codon[k] + " with " + ac[k]).join(", ")}.`, "good");
+        onMatch(card.dataset.aa); return true;
+      }
+      gateMsg(`Not a match. Codon base ${bad + 1} is ${codon[bad]}, which needs ${PAIR[codon[bad]]}, but this tRNA has ${ac[bad]}. (That tRNA pairs with a different codon.)`, "bad");
+      return false;
+    };
+    g.querySelectorAll(".trna").forEach(card => dragify(card, {
+      targets:() => zone.classList.contains("filled") ? [] : [zone],
+      tap:() => tryCard(card),
+      drop:z => z ? tryCard(card) : (gateMsg("Drop it on the A site box.", ""), undefined)
+    }));
+  }
+  /* The peptide bond trigger: chain in the P site links to the new amino acid in the A site */
+  function bondHTML(chain, aa){
+    return `<div class="bondrow"><span class="pchain">${chain.map(a => aaChip(a)).join("")}</span><span class="bondgap" id="bondGap"></span>${aaChip(aa, "new")}</div><div><button class="btn primary bondbtn" id="bondBtn">⚡ Form peptide bond</button></div>`;
+  }
+  function wireBond(g, chain, aa, after){
+    g.querySelector("#bondBtn").addEventListener("click", e => {
+      e.currentTarget.disabled = true;
+      const gap = g.querySelector("#bondGap"); gap.classList.add("made"); gap.innerHTML = `<span class="spark"></span><span class="spark s2"></span>`;
+      g.querySelector(".bondrow").classList.add("linked");
+      gateMsg(`Zap! rRNA in the large subunit moves the chain (${chain.join("-")}) onto ${aa}. Now it's ${chain.concat(aa).join("-")}.`, "good");
+      setTimeout(after, 1300);
+    });
+  }
+  const ROUNDS = [
+    {codon:"UUC", aa:"Phe", cards:[["AAC","Leu"],["UAG","Ile"],["AAG","Phe"]], chain:["Met","Ala"]},
+    {codon:"GGA", aa:"Gly", cards:[["CCU","Gly"],["CUU","Glu"],["GCU","Arg"]], chain:["Met","Ala","Phe"]}
+  ];
   const GATES = {
     trna:{
-      title:"Your turn: drag the matching tRNA into the A site",
+      title:"Your turn: inspect the A-site codon, then drag the matching tRNA into place",
       doneText:"Match! The tRNA with anticodon CGU pairs with GCA and brings alanine.",
-      html:() => {
-        const cards = [["AAG","Phe"],["CGU","Ala"],["CCU","Gly"]];
-        return `<div class="shelf">${cards.map(c => `<div class="trna" data-ac="${c[0]}" data-aa="${c[1]}" role="button" tabindex="0" aria-label="tRNA with anticodon ${c[0]} carrying ${c[1]}"><span class="aab">${c[1]}</span><span class="stem"></span><span class="body">${[...c[0]].map(gtile).join("")}</span><span class="aclbl">anticodon</span></div>`).join("")}
-          <div class="dropzone" id="dropZone"><div class="grow"><span class="glbl">A site codon (mRNA)</span>${[..."GCA"].map(gtile).join("")}</div><div class="grow"><span class="glbl">Anticodon needed</span><span class="gslot">?</span><span class="gslot">?</span><span class="gslot">?</span></div></div></div>`;
-      },
+      html:() => shelfHTML("GCA", [["AAG","Phe"],["CGU","Ala"],["CCU","Gly"]], ["Met"]),
       wire:g => {
-        const zone = g.querySelector("#dropZone");
-        const tryCard = card => {
-          const ac = card.dataset.ac, codon = "GCA";
-          const bad = [0,1,2].find(k => PAIR[codon[k]] !== ac[k]);
-          if (bad === undefined){ zone.classList.add("filled"); gateMsg("Every base pairs up: G with C, C with G, A with U.", "good"); setTimeout(passGate, 900); return; }
-          card.classList.remove("nope"); void card.offsetWidth; card.classList.add("nope");
-          gateMsg(`Not a match. Codon base ${bad + 1} is ${codon[bad]}, which needs ${PAIR[codon[bad]]}, but this tRNA has ${ac[bad]}. (That tRNA pairs with a different codon.)`, "bad");
-        };
-        g.querySelectorAll(".trna").forEach(card => {
-          card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); tryCard(card); } });
-          card.addEventListener("pointerdown", e => {
-            e.preventDefault();
-            const r = card.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
-            let moved = false, clone = null;
-            const move = ev => {
-              if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6){ moved = true; clone = card.cloneNode(true); clone.classList.add("drag"); clone.style.width = r.width + "px"; document.body.appendChild(clone); card.classList.add("ghost"); }
-              if (clone){ clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px"; const z = zone.getBoundingClientRect(); zone.classList.toggle("over", ev.clientX > z.left && ev.clientX < z.right && ev.clientY > z.top && ev.clientY < z.bottom); }
-            };
-            const up = ev => {
-              document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up);
-              if (clone) clone.remove(); card.classList.remove("ghost");
-              const over = zone.classList.contains("over"); zone.classList.remove("over");
-              if (!moved || over) tryCard(card); else gateMsg("Drop it on the A site box.", "");
-            };
-            document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
-          });
-        });
-        gateMsg("Tip: the anticodon pairs with the codon: A with U, G with C. Drag a tRNA (or tap it).", "");
+        wireShelf(g, "GCA", () => setTimeout(passGate, 1000));
+        gateMsg("Tip: the anticodon pairs with the codon: A with U, G with C. Drag a tRNA from the shelf (or tap it).", "");
       }
     },
     bond:{
-      title:"Your turn: form the peptide bond",
+      title:"Your turn: trigger the peptide bond",
       doneText:"Bond formed! Met-Ala is now attached to the tRNA in the A site.",
-      html:() => `<div class="bondrow"><span class="aachip">Met</span><span class="bondgap" id="bondGap"></span><span class="aachip new">Ala</span></div><div><button class="btn primary" id="bondBtn">Form peptide bond</button></div>`,
+      html:() => bondHTML(["Met"], "Ala"),
       wire:g => {
-        g.querySelector("#bondBtn").addEventListener("click", e => {
-          e.target.disabled = true;
-          const gap = g.querySelector("#bondGap"); gap.classList.add("made"); gap.innerHTML = `<span class="spark"></span>`;
-          gateMsg("The rRNA in the large subunit links the amino acids together.", "good");
-          setTimeout(passGate, 1000);
-        });
-        gateMsg("Methionine (in the P site) is about to link to alanine (in the A site).", "");
+        wireBond(g, ["Met"], "Ala", passGate);
+        gateMsg("Methionine (in the P site) is about to link to alanine (in the A site). Tap the button to fire the bond.", "");
+      }
+    },
+    repeat:{
+      title:"Your turn: run two more elongation cycles",
+      doneText:"Two more cycles done! Your chain is Met-Ala-Phe-Gly. Watch the ribosome replay it.",
+      html:() => {
+        const r = ROUNDS[GATES.repeat.round || 0], ph = GATES.repeat.phase || "dock";
+        const head = `<div class="cyc">Cycle ${(GATES.repeat.round || 0) + 2} of 3: ${ph === "dock" ? "1. tRNA arrives" : "2. Peptide bond"} → 3. Ribosome moves</div>`;
+        return head + (ph === "dock" ? shelfHTML(r.codon, r.cards, r.chain) : bondHTML(r.chain, r.aa));
+      },
+      wire:g => {
+        const G = GATES.repeat, r = ROUNDS[G.round || 0];
+        if ((G.phase || "dock") === "dock"){
+          wireShelf(g, r.codon, () => setTimeout(() => { G.phase = "bond"; renderGate(); gateMsg(`${r.aa} is in the A site. Link it to the chain!`, ""); }, 1000));
+          gateMsg(`The ribosome moved, so codon ${r.codon} now sits in the A site. Which tRNA matches?`, "");
+        } else {
+          wireBond(g, r.chain, r.aa, () => {
+            G.phase = "dock"; G.round = (G.round || 0) + 1;
+            if (G.round >= ROUNDS.length){ G.round = 0; passGate(); return; }
+            renderGate(); gateMsg(`The ribosome slides one codon toward the 3' end. The empty tRNA leaves from the E site, and codon ${ROUNDS[G.round].codon} enters the A site.`, "good");
+          });
+        }
       }
     }
   };
@@ -624,7 +697,11 @@
       if (flags.ends && s.protein < .1 && n >= 2){
         o += `<text x="${f1(ax + 26)}" y="${f1(ay - (n - 1) * 26 + 4)}" class="t12">N-terminus</text><text x="${f1(ax + 26)}" y="${f1(ay + 4)}" class="t12">C-terminus</text>`;
       }
-      if (flags.bond && n === 2) o += pill(ax - 100, ay - 30, "Peptide bond!", "#9a6212", clamp(t * 1.2, 0, 1));
+      if (flags.bond && n === 2){
+        o += pill(ax - 100, ay - 30, "Peptide bond!", "#9a6212", clamp(t * 1.2, 0, 1));
+        const k = t > 1.1 && t < 2.5 ? Math.sin(Math.PI * (t - 1.1) / 1.4) : 0;
+        if (k > .02){ const pts = []; for (let q = 0; q < 10; q++){ const r = (q % 2 ? 7 : 20) * k, a = -Math.PI / 2 + q * Math.PI / 5; pts.push(f1(ax + r * Math.cos(a)) + "," + f1(ay - 13 + r * Math.sin(a))); } o += `<polygon points="${pts.join(" ")}" fill="#fff6b0" stroke="#f2b134" stroke-width="2.5"/>`; }
+      }
       if (s.protein > .5) o += `<text x="${f1(ax - 40)}" y="${f1(ay - 34)}" class="t15 end" fill="${GREEN}" style="fill:${GREEN}" opacity="${f3((s.protein - .5) * 2)}">New protein! Met-Ala-Phe-Gly</text>`;
     }
     if (s.stopPill > .01) o += pill(CX(4), 280, "Stop codon: no tRNA matches!", RED, s.stopPill * (1 - s.protein));
@@ -819,7 +896,7 @@
       : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
     enterStep(idx, true);
   }
-  function restart(){ bl = {}; furthest = 0; visKey = ""; for (const k in gates) delete gates[k]; enterStep(0, true); }
+  function restart(){ bl = {}; furthest = 0; visKey = ""; for (const k in gates) delete gates[k]; GATES.repeat.round = 0; GATES.repeat.phase = "dock"; enterStep(0, true); }
 
   $("learnBtn").addEventListener("click", () => setMode("learn"));
   $("testBtn").addEventListener("click", () => setMode("test"));

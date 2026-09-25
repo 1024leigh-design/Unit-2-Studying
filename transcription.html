@@ -12,6 +12,7 @@
     --ink:#1d2433; --muted:#5a6376; --page:#eef1f5; --card:#ffffff; --line:#d9dee7;
     --accent:#3f4cc0; --accent-soft:#e7e9fb;
     --good:#1b7f4e; --good-soft:#e1f3e8; --warn:#9a6212; --warn-soft:#fbefd9; --bad:#b83a34;
+    --more:#5b3fb0; --more-soft:#f3effd;
     --font:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   }
   *{box-sizing:border-box}
@@ -62,6 +63,7 @@
   .dot.current{background:var(--accent);border-color:var(--accent);color:#fff}
   .dot:disabled{opacity:.35;cursor:not-allowed}
   .navbtns{display:flex;gap:8px}
+  [hidden]{display:none !important}
   button:focus-visible{outline:3px solid #f2b134;outline-offset:2px}
   @media (max-width:640px){
     h1{font-size:1.3rem}
@@ -140,9 +142,33 @@
   .spark{position:absolute;left:50%;top:50%;width:46px;height:46px;transform:translate(-50%,-50%) scale(0);background:radial-gradient(circle,#fff6b0 0 25%,#f2b134 26% 45%,transparent 46%);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);animation:spark .7s ease-out}
   @keyframes spark{0%{transform:translate(-50%,-50%) scale(0) rotate(0)}50%{transform:translate(-50%,-50%) scale(1.3) rotate(40deg)}100%{transform:translate(-50%,-50%) scale(0) rotate(80deg);opacity:0}}
   @media (prefers-reduced-motion:reduce){ .spark{animation:none;display:none} .trna.nope{animation:none} }
+
+  /* Drag-to-build nucleotides */
+  .buildpad{display:grid;gap:2px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;justify-self:start}
+  .gb.big,.gslot.big{width:42px;height:44px;font-size:1.15rem;border-radius:9px}
+  .grow.pairs{gap:4px;height:14px}
+  .grow.pairs .hb{width:42px;height:14px;background:repeating-linear-gradient(90deg,transparent 0 17px,#c9cfdb 17px 19px,transparent 19px 23px,#c9cfdb 23px 25px,transparent 25px)}
+  .grow.pairs .hb.on{background:repeating-linear-gradient(90deg,transparent 0 17px,#343b4a 17px 19px,transparent 19px 23px,#343b4a 23px 25px,transparent 25px)}
+  .gslot.cur{animation:slotglow 1.4s ease-in-out infinite}
+  .gslot.over{border-style:solid;border-color:var(--good);background:var(--good-soft);transform:scale(1.08)}
+  @keyframes slotglow{0%,100%{box-shadow:0 0 0 3px var(--accent-soft)}50%{box-shadow:0 0 0 7px var(--accent-soft)}}
+  .traylbl{font-size:.82rem;font-weight:700;color:var(--muted)}
+  .ntile{touch-action:none;user-select:none;cursor:grab;box-shadow:0 2px 0 rgba(29,36,51,.25)}
+  .ntile.lifted{opacity:.3}
+  .ntile.nope{animation:shake .32s;box-shadow:0 0 0 3px var(--bad)}
+  .dragging{position:fixed;z-index:50;pointer-events:none;cursor:grabbing;box-shadow:0 10px 24px rgba(29,36,51,.3);transform:scale(1.12)}
+  @media (prefers-reduced-motion:reduce){ .gslot.cur,.ntile.nope{animation:none} }
+
+  /* Next-module callout on the last step */
+  .bridge.callout{border:2px solid var(--more);background:var(--more-soft);padding:16px 20px;display:grid;gap:10px;justify-items:start}
+  .bridge.callout b{font-size:1.1rem}
+  .bridge.callout p{margin:0;color:var(--ink);line-height:1.55;max-width:70ch}
+  .bridge.callout .links{display:flex;flex-wrap:wrap;gap:8px}
+  .bridge.callout a.go{background:var(--more);border-color:var(--more);color:#fff;font-size:1.02rem}
+  .bridge a.btn{text-decoration:none;display:inline-block}
 </style>
 </head>
-<body data-next-label="Want to see how this mRNA is regulated next?" data-next='[["Head to Post-Transcriptional Control", "posttranscriptional-control.html"], ["Translation", "translation.html"], ["Pre-transcriptional control", "pretranscriptional-control.html"]]'>
+<body data-next-label="Want to see how this mRNA is regulated next?" data-next-text="The mRNA you just made isn't guaranteed to become protein. Splicing, the cap and tail, riboswitches, and microRNAs all decide its fate after transcription." data-next='[["Head to the Post-Transcriptional Control Module \u2192", "posttranscriptional-control.html"], ["Translation", "translation.html"], ["Pre-transcriptional control", "pretranscriptional-control.html"]]'>
 <div class="wrap">
   <header>
     <div>
@@ -307,28 +333,65 @@
     g.innerHTML = `<div class="gtitle">${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
     G.wire(g);
   }
+  /* Drag a piece (or tap it). targets() lists drop zones; drop(zone) returns false to bounce the piece back. */
+  function dragify(el, o){
+    const nope = () => { el.classList.remove("nope"); void el.offsetWidth; el.classList.add("nope"); };
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); if (o.tap() === false) nope(); } });
+    el.addEventListener("pointerdown", e => {
+      if (e.button > 0) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+      let moved = false, clone = null, over = null;
+      const hit = ev => o.targets().find(z => { const q = z.getBoundingClientRect(); return ev.clientX > q.left - 8 && ev.clientX < q.right + 8 && ev.clientY > q.top - 8 && ev.clientY < q.bottom + 8; }) || null;
+      const move = ev => {
+        if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6){ moved = true; clone = el.cloneNode(true); clone.classList.add("dragging"); clone.style.width = r.width + "px"; clone.style.height = r.height + "px"; document.body.appendChild(clone); el.classList.add("lifted"); }
+        if (!clone) return;
+        clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px";
+        over = hit(ev); o.targets().forEach(z => z.classList.toggle("over", z === over));
+      };
+      const up = () => {
+        document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
+        if (clone) clone.remove(); el.classList.remove("lifted"); o.targets().forEach(z => z.classList.remove("over"));
+        if (!moved){ if (o.tap() === false) nope(); return; }
+        if (o.drop(over) === false) nope();
+      };
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+    });
+  }
   const GATES = {
     build:{
       title:"Your turn: build the first three RNA bases",
       doneText:"You built 5'-AUG-3', the start codon!",
       html:() => {
         const got = GATES.build.got || "";
-        return `<div class="grow"><span class="glbl">DNA template 3'</span>${[..."TAC"].map(b => `<span class="gb gb${b}">${b}</span>`).join("")}<span class="glbl" style="min-width:0">&nbsp;5'</span></div>
-          <div class="grow"><span class="glbl">New RNA 5'</span>${[0,1,2].map(k => got[k] ? `<span class="gb gb${got[k]}">${got[k]}</span>` : `<span class="gslot${k === got.length ? " cur" : ""}">?</span>`).join("")}<span class="glbl" style="min-width:0">&nbsp;3'</span></div>
-          <div class="gkeys">${["A","U","G","C","T"].map(b => `<button class="gb gb${b}" data-nt="${b}" aria-label="Add ${b}">${b}</button>`).join("")}</div>`;
+        return `<div class="buildpad">
+          <div class="grow"><span class="glbl">DNA template 3'</span>${[..."TAC"].map(b => `<span class="gb big gb${b}">${b}</span>`).join("")}<span class="glbl" style="min-width:0">&nbsp;5'</span></div>
+          <div class="grow pairs"><span class="glbl"></span>${[0,1,2].map(k => `<span class="hb${got[k] ? " on" : ""}"></span>`).join("")}</div>
+          <div class="grow"><span class="glbl">New RNA 5'</span>${[0,1,2].map(k => got[k] ? `<span class="gb big gb${got[k]}">${got[k]}</span>` : `<span class="gslot big${k === got.length ? " cur" : ""}" data-slot="${k}">?</span>`).join("")}<span class="glbl" style="min-width:0">&nbsp;3'</span></div>
+          </div>
+          <div class="traylbl">Free nucleotides: drag one onto the glowing slot (or tap it)</div>
+          <div class="gkeys">${["A","U","G","C","T"].map(b => `<button class="gb gb${b} ntile" data-nt="${b}" aria-label="Add ${b}">${b}</button>`).join("")}</div>`;
       },
       wire:g => {
         const PAIR = {T:"A", A:"U", G:"C", C:"G"};
-        g.querySelectorAll("[data-nt]").forEach(b => b.addEventListener("click", () => {
-          const got = GATES.build.got || "", k = got.length, need = PAIR["TAC"[k]], nt = b.dataset.nt;
+        const place = (nt, slot) => {
+          const got = GATES.build.got || "", k = got.length, need = PAIR["TAC"[k]];
+          if (slot !== undefined && slot !== k){ gateMsg("RNA is built 5' to 3', one base at a time. Fill the glowing slot first!", "bad"); return false; }
           if (nt === need){
             GATES.build.got = got + nt;
-            if (GATES.build.got.length === 3){ renderGate(); gateMsg("All three bases pair up. Watch RNA polymerase link them together!", "good"); setTimeout(() => { GATES.build.got = ""; passGate(); }, 1100); return; }
-            renderGate(); gateMsg(`Yes! ${"TAC"[k]} on the DNA pairs with ${nt}. Next base?`, "good"); return;
+            if (GATES.build.got.length === 3){ renderGate(); gateMsg("All three bases pair up: 5'-AUG-3'. Watch RNA polymerase link them together!", "good"); setTimeout(() => { GATES.build.got = ""; passGate(); }, 1300); return true; }
+            renderGate(); gateMsg(`Yes! ${"TAC"[k]} on the DNA pairs with ${nt}. Next base?`, "good"); return true;
           }
           gateMsg(nt === "T" ? "RNA has no thymine (T)! It uses uracil (U) instead." : `${nt} doesn't pair with ${"TAC"[k]}. Rules: A pairs with U (in RNA), T pairs with A, G pairs with C.`, "bad");
+          return false;
+        };
+        const slots = () => [...g.querySelectorAll("[data-slot]")];
+        g.querySelectorAll("[data-nt]").forEach(b => dragify(b, {
+          targets:slots,
+          tap:() => place(b.dataset.nt),
+          drop:z => z ? place(b.dataset.nt, +z.dataset.slot) : gateMsg("Drop the nucleotide on the glowing slot under the template.", "")
         }));
-        if (!(GATES.build.got || "").length) gateMsg("Tap the RNA base that pairs with each DNA template base, left to right.", "");
+        if (!(GATES.build.got || "").length) gateMsg("Drag the RNA nucleotide that pairs with each DNA template base onto the glowing slot, left to right.", "");
       }
     }
   };
@@ -788,8 +851,9 @@
   const bubble = $("bubble");
   let bridge = null;
   if (links.length && bubble){
-    bridge = document.createElement("div"); bridge.className = "bridge"; bridge.hidden = true;
-    bridge.innerHTML = `<b>${document.body.dataset.nextLabel || "Where to next?"}</b>` + links.map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
+    bridge = document.createElement("div"); bridge.className = "bridge callout"; bridge.hidden = true; bridge.setAttribute("role", "note");
+    bridge.innerHTML = `<b>${document.body.dataset.nextLabel || "Where to next?"}</b>` + (document.body.dataset.nextText ? `<p>${document.body.dataset.nextText}</p>` : "")
+      + `<div class="links">` + links.map((l, i) => `<a class="btn ${i ? "secondary" : "primary go"}" href="${l[1]}">${l[0]}</a>`).join("") + `</div>`;
     bubble.insertAdjacentElement("afterend", bridge);
   }
 

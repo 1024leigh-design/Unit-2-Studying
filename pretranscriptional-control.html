@@ -177,6 +177,42 @@
   .bridge[hidden]{display:none}
   .donetoast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:30}
   @media (prefers-reduced-motion:reduce){ input.blank{animation:none} }
+
+  /* ===== Hands-on stations (drag the repressor, drag the sugars) ===== */
+  .play{margin-top:14px;border:2px solid #f0d99a;background:#fffbef;border-radius:14px;padding:12px 14px;display:grid;gap:10px}
+  .play.done{border-color:#9fd3b5;background:var(--good-soft)}
+  .play .ptitle{font-weight:700;color:#8a5a00}
+  .play.done .ptitle{color:var(--good)}
+  .gmsg{font-weight:700;min-height:1.2em;font-size:.95rem}
+  .gmsg.bad{color:var(--bad)} .gmsg.good{color:var(--good)}
+  .zl{font-size:.8rem;font-weight:700;color:var(--muted)}
+  .optok{touch-action:none;user-select:none;cursor:grab;display:inline-flex;align-items:center;gap:6px;font:700 .92rem var(--font);border-radius:999px;padding:5px 12px 5px 6px;background:#fff;border:2px solid var(--line);box-shadow:0 2px 0 rgba(29,36,51,.15)}
+  .optok:hover{border-color:var(--accent)}
+  .optok.lifted{opacity:.3}
+  .optok.dragging{position:fixed;z-index:50;pointer-events:none;cursor:grabbing;box-shadow:0 10px 24px rgba(29,36,51,.3)}
+  .stoptok{border-color:#e6b2af;color:var(--bad)}
+  .dnatrack{display:flex;align-items:stretch;background:repeating-linear-gradient(90deg,#fff 0 10px,#e8ecf2 10px 12px);border:2px solid #0f766e;border-radius:10px;padding:6px;gap:6px;min-height:64px}
+  .dseg{border-radius:8px;display:grid;place-items:center;font-weight:700;font-size:.88rem;padding:4px 6px;border:2px solid transparent;text-align:center}
+  .dseg.prom{flex:2;background:#fbe3b5}
+  .dseg.op{flex:1.4;background:#eef0f4;border:2px dashed #9aa3b5;gap:2px;min-width:112px}
+  .dseg.genes{flex:4;background:#d6efdf}
+  .dseg .dl{font-size:.78rem}
+  .cyto{border:2px dashed #c9cfdb;border-radius:12px;padding:8px 10px;display:flex;align-items:center;gap:12px;min-height:54px;background:#fff;flex-wrap:wrap}
+  [data-drop].over{outline:3px solid var(--accent);outline-offset:2px;background:var(--accent-soft)}
+  .stage.dropover{box-shadow:0 0 0 4px var(--accent-soft),0 0 0 6px var(--accent)}
+  .sugrow{display:grid;grid-template-columns:1fr 1.6fr;gap:10px}
+  .outside{border:2px dashed #c9cfdb;border-radius:14px;padding:8px 10px;background:#fff;display:grid;gap:6px;align-content:start}
+  .cellzone{border:3px solid #6f9a5f;border-radius:40px;padding:8px 18px;background:#f1f7ec;display:grid;gap:6px;align-content:start;min-height:84px}
+  .toks{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:40px}
+  .toks .empty{color:#b3bac7;font-weight:700;font-size:.85rem}
+  .combos{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .combo{font-size:.82rem;font-weight:700;border-radius:999px;padding:4px 10px;background:#eef1f5;color:var(--muted);border:2px solid transparent}
+  .combo.seen{background:var(--good-soft);color:var(--good)}
+  .combo.now{border-color:var(--accent)}
+  .play > *{min-width:0}
+  .play .chip{max-width:100%}
+  .dseg.op .optok{padding:3px 8px 3px 3px}
+  @media (max-width:640px){ .sugrow{grid-template-columns:1fr} .dseg{font-size:.72rem;padding:4px 3px} .dseg.op{min-width:0;flex:1.6} .dseg.op .optok{padding:2px} .dseg.op .optok .tl{display:none} .dnatrack{gap:4px;padding:5px} }
 </style>
 </head>
 <body data-next='[["Transcription", "transcription.html"], ["Post-transcriptional control", "posttranscriptional-control.html"], ["Mutations", "mutations.html"]]'>
@@ -560,7 +596,7 @@
      text:`Upstream of the operon sits the {{regulatory}} gene (also called the repressor gene). It is not part of the operon, but it codes for the protein that controls it: the repressor. Watch it get made!`},
     {part:P2, title:"Cis or trans?", v:O("generic", {repShow:1, carShow:0}, "park", {cistrans:true}), more:"cistrans",
      text:`The regulatory gene can sit right next to the operon (like lacI) or far away on the chromosome (like trpR). Either way works, because the repressor is a protein that travels through the cytoplasm to find the operator. A DNA site that only controls the genes right next to it is {{cis}}-acting, like the operator. A product that can float over and act anywhere is {{trans}}-acting, like the repressor.`},
-    {part:P2, title:"Negative control: the stop sign", v:O("generic", {repShow:1, rep:1}, "blocked"), more:"negative",
+    {part:P2, title:"Negative control: the stop sign", v:O("generic", {repShow:1, rep:1}, "blocked"), more:"negative", play:"repressor",
      text:`When a protein binds DNA and blocks transcription, that's {{negative}} control. The repressor is a stop sign sitting on the operator. The car pulls up to the promoter, but it can't get past. No mRNA, no proteins.`,
      after:`Negative control = a stop sign that blocks the road.`},
     {part:P2, title:"Positive control: the gas", v:O("generic", {repShow:0, rep:0, capShow:1, capAmp:1, cap:1}, "drive"), more:"positive",
@@ -596,7 +632,7 @@
      text:`Now glucose runs out. cAMP rises, cAMP binds CAP, and CAP-cAMP lands next to the promoter. It grabs RNA polymerase and helps it hold on. No stop sign AND a full tank, so the lac genes are transcribed at {{high}} levels. E. coli can finally eat that lactose!`},
     {part:P3, title:"No glucose, no lactose", v:O("lac", LAC_NONE, "blocked"), table:{data:LAC_TABLE, rows:["GL","Gl","gl","gL"], hl:"gl"}, more:"nonemore",
      text:`What if both sugars are gone? Glucose is low, so cAMP is high and CAP-cAMP is bound. Gas in the tank! But there's no {{lactose}}, so the repressor is back on the operator. Even a full tank can't get you through a stop sign. No transcription.`},
-    {part:P3, title:"Putting it all together", v:O("lac", LAC_ON, "drive"), table:{data:LAC_TABLE, rows:["GL","Gl","gl","gL"]}, more:"together",
+    {part:P3, title:"Putting it all together", v:O("lac", LAC_ON, "drive"), table:{data:LAC_TABLE, rows:["GL","Gl","gl","gL"]}, more:"together", play:"lac",
      cta:[{label:"Bonus: X-gal and blue-white screening", view:"xgal"},{label:"Next: Repressible operons", view:"rep"}],
      text:`The lac genes are transcribed at high levels only when lactose is present AND glucose is absent. With both sugars around, it's just a trickle. Glucose turning down the operons for other sugars is called {{catabolite}} repression. It makes sure E. coli always eats its favorite food first. Check out the table: you just worked through every row!`},
 
@@ -747,6 +783,19 @@
       }}
   };
   const LAB_GROUPS = [["Operons", LAB_ORDER], ["Plate experiments", ["xgal","pglo"]]];
+
+  /* ================= Hands-on stations inside the tracks ================= */
+  const PLAYS = {
+    repressor:{
+      start:() => ({on:false, did:{}}),
+      def:p => O("generic", {repShow:1, rep:p.on ? 1 : 0, repAct:1}, p.on ? "blocked" : "drive"),
+      zones:{op:[470, 540], dna:[40, 960]}
+    },
+    lac:{
+      start:() => ({glu:true, lac:false, seen:{Gl:true}}),
+      def:p => LABS.lac.def(p)
+    }
+  };
 
   /* ================= Operon Builder ================= */
   const ZONES = {
@@ -1490,7 +1539,7 @@
   function updateButtons(){
     const open = mode === "test" && !!textEl.querySelector("input.blank");
     checkRow.hidden = !open;
-    nextBtn.disabled = open;
+    nextBtn.disabled = open || !playDone();
     backBtn.disabled = idx() === 0;
     nextBtn.textContent = idx() === steps().length - 1 ? "Start over" : "Next";
   }
@@ -1517,15 +1566,19 @@
       if ("operon:" + st.pre.layout !== visKey) applyVisual(st.pre);
       else { opCur = {...st.pre.s}; opTw = null; carMode = st.pre.car; }
       applyVisual(st.v);
-    } else applyVisual(res ? st.v : preDef(i));
-    renderBubble(); renderNav(); trackTable();
+    } else if (st.play) applyVisual(PLAYS[st.play].def(playState()));
+    else applyVisual(res ? st.v : preDef(i));
+    renderBubble(); renderNav(); trackTable(); renderPlay();
   }
   const goTo = i => enterStep(clamp(i, 0, steps().length - 1));
   function resolvedNow(){
     furthest[view] = Math.max(furthest[view], idx() + 1);
     updateButtons(); renderNav(); showAfter(); trackTable();
-    sceneT = 0; applyVisual(steps()[idx()].v);
-    nextBtn.focus({preventScroll:true});
+    sceneT = 0;
+    const st = steps()[idx()];
+    applyVisual(st.play ? PLAYS[st.play].def(playState()) : st.v);
+    renderPlay();
+    if (playDone()) nextBtn.focus({preventScroll:true});
   }
   function check(){
     const inputs = [...textEl.querySelectorAll("input.blank")];
@@ -1555,10 +1608,109 @@
   function replay(){
     sceneT = 0; carT = 0;
     const i = idx(), st = steps()[i];
+    if (st.play) return;
     if (st.v.scene === "operon" && stepResolved(i)){
       const p = st.pre || preDef(i);
       if (p.scene === "operon" && p.layout === st.v.layout){ opCur = {...p.s}; carMode = p.car; applyVisual(st.v); }
     }
+  }
+
+
+  /* ================= Hands-on stations (drag pieces to drive the operon) ================= */
+  const plays = {};
+  const playKey = () => view + ":" + idx();
+  function playState(){ const st = steps()[idx()]; if (!st.play) return null; const k = playKey(); if (!plays[k]) plays[k] = PLAYS[st.play].start(); return plays[k]; }
+  const playDone = () => { const st = isTrack(view) && steps()[idx()]; return !st || !st.play || !!(plays[playKey()] || {}).done; };
+  function stageHit(ev){
+    const r = svg.getBoundingClientRect();
+    if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) return null;
+    return svgPt(ev);
+  }
+  /* Drag an HTML token. zoneOf(ev) names the zone under the pointer (or null); drop(zone) handles it. */
+  function dragToken(el, zoneOf, drop, tap){
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); tap(); } });
+    el.addEventListener("pointerdown", e => {
+      if (e.button > 0) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+      let moved = false, clone = null, zone = null;
+      const light = z => { document.querySelectorAll("[data-drop]").forEach(q => q.classList.toggle("over", q.dataset.drop === z)); $("scene").parentNode.classList.toggle("dropover", z === "stage" || (z || "").indexOf("svg") === 0); };
+      const move = ev => {
+        if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6){ moved = true; clone = el.cloneNode(true); clone.classList.add("dragging"); clone.style.width = r.width + "px"; document.body.appendChild(clone); el.classList.add("lifted"); }
+        if (!clone) return;
+        clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px";
+        zone = zoneOf(ev); light(zone);
+      };
+      const up = () => {
+        document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
+        if (clone) clone.remove(); el.classList.remove("lifted"); light(null);
+        if (!moved) tap(); else drop(zone);
+      };
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+    });
+  }
+  const htmlZone = ev => { const el = document.elementFromPoint(ev.clientX, ev.clientY); const z = el && el.closest && el.closest("[data-drop]"); return z ? z.dataset.drop : null; };
+  function playMsg(t, cls){ const m = $("playMsg"); if (m){ m.className = "gmsg " + (cls || ""); m.innerHTML = t; } }
+  const stopTok = `<span class="optok stoptok" id="repTok" role="button" tabindex="0" aria-label="Repressor protein: drag onto or off the operator"><svg viewBox="-24 -24 48 48" width="34" height="34" aria-hidden="true"><polygon points="-9,-21 9,-21 21,-9 21,9 9,21 -9,21 -21,9 -21,-9" fill="${RED}" stroke="#fff" stroke-width="3"/><text x="0" y="5" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">STOP</text></svg><span class="tl">Repressor</span></span>`;
+  function renderPlay(){
+    const st = isTrack(view) && steps()[idx()];
+    if (!st || !st.play) return;
+    const p = playState(), A = $("labArea");
+    if (st.play === "repressor"){
+      const Z = PLAYS.repressor.zones;
+      let h = `<div class="play${p.done ? " done" : ""}"><div class="ptitle">${p.done ? "✓ You controlled the operon with one protein!" : "Your turn: be the repressor"}</div>`;
+      h += `<div class="dnatrack"><div class="dseg prom" data-drop="prom">Promoter</div><div class="dseg op" data-drop="op">${p.on ? stopTok : ""}<span class="dl">Operator</span></div><div class="dseg genes" data-drop="genes">Genes</div></div>`;
+      h += `<div class="cyto" data-drop="cyto"><span class="zl">Cytoplasm (not bound)</span>${p.on ? "" : stopTok}</div>`;
+      h += `<div class="readout"><span class="chip ${p.on ? "off" : "on"}">Operator: ${p.on ? "blocked by repressor" : "open"}</span><span class="chip ${p.on ? "off" : "on"}">RNA polymerase: ${p.on ? "stuck at the promoter" : "transcribing"}</span></div>`;
+      h += `<div class="gmsg" id="playMsg"></div></div>`;
+      A.innerHTML = h;
+      const zoneOf = ev => { const z = htmlZone(ev); if (z) return z; const pt = stageHit(ev); if (!pt) return null; if (pt.y > 250 && pt.y < 380) return pt.x >= Z.op[0] && pt.x <= Z.op[1] ? "op" : pt.x < Z.op[0] ? "prom" : "genes"; return "cyto"; };
+      const set = on => {
+        if (on === p.on) return;
+        p.on = on; if (on) p.did.on = true; else if (p.did.on) p.did.off = true;
+        const fin = p.did.on && p.did.off && !p.done; if (fin) p.done = true;
+        applyVisual(PLAYS.repressor.def(p)); renderPlay();
+        if (fin){ playMsg("That's negative control: the protein's presence on the operator turns the genes OFF, and its absence lets them run. Tap Next!", "good"); updateButtons(); }
+        else playMsg(on ? "Stop sign up! RNA polymerase can bind the promoter, but it can't get past the repressor. No mRNA. Now drag the repressor back off the operator." : "The operator is clear, so RNA polymerase transcribes the genes again. Vroom!", "good");
+      };
+      dragToken($("repTok"), zoneOf, z => {
+        if (z === "op") set(true);
+        else if (z === "cyto") set(false);
+        else if (z === "prom" || z === "genes") playMsg(`The repressor can't bind the ${z === "prom" ? "promoter" : "genes"}. It only fits one specific DNA sequence: the operator.`, "bad");
+        else playMsg("Drop it on the operator, or back in the cytoplasm.", "");
+      }, () => set(!p.on));
+      if (!p.did.on) playMsg("Drag the repressor (stop sign) onto the operator and watch RNA polymerase in the diagram. You can also drop it right on the diagram, or tap it.", "");
+      return;
+    }
+    /* lac station: drag glucose and lactose into or out of the cell */
+    const L = LABS.lac, out = L.out(p), row = L.row(p);
+    const tok = (k, name) => `<span class="optok sug ${k}" data-sug="${k}" role="button" tabindex="0" aria-label="${name}: drag into or out of the cell">${k === "glu" ? `<svg viewBox="-20 -20 40 40" width="28" height="28" aria-hidden="true"><polygon points="${hexPts(0, 0, 15)}" fill="${GOLD}" stroke="#a8760f" stroke-width="2"/></svg>` : `<svg viewBox="-34 -20 68 40" width="44" height="28" aria-hidden="true"><polygon points="${hexPts(-13, 0, 12)}" fill="${PURPLE}" stroke="#5b3fb0" stroke-width="2"/><polygon points="${hexPts(13, 0, 12)}" fill="#b9a6ee" stroke="#5b3fb0" stroke-width="2"/></svg>`}${name}</span>`;
+    const inside = [["glu","Glucose"],["lac","Lactose"]].filter(x => p[x[0]]), outside = [["glu","Glucose"],["lac","Lactose"]].filter(x => !p[x[0]]);
+    const camp = !p.glu, capOn = !p.glu, repOn = !p.lac;
+    const combos = [["GL","Both sugars"],["Gl","Glucose only"],["gL","Lactose only"],["gl","Neither"]];
+    let h = `<div class="play${p.done ? " done" : ""}"><div class="ptitle">${p.done ? "✓ You ran the lac operon through all four situations!" : "Your turn: control the lac operon yourself"}</div>`;
+    h += `<div class="sugrow"><div class="outside" data-drop="out"><span class="zl">Outside the cell</span><div class="toks">${outside.map(x => tok(x[0], x[1])).join("") || `<span class="empty">empty</span>`}</div></div>`;
+    h += `<div class="cellzone" data-drop="in"><span class="zl">Inside E. coli (drop sugars here or on the diagram)</span><div class="toks">${inside.map(x => tok(x[0], x[1])).join("") || `<span class="empty">no sugars</span>`}</div></div></div>`;
+    h += `<div class="readout"><span class="chip ${camp ? "on" : "off"}">cAMP: ${camp ? "HIGH" : "LOW"}</span><span class="chip ${capOn ? "on" : "off"}">CAP-cAMP: ${capOn ? "bound to DNA (gas)" : "can't bind (no gas)"}</span><span class="chip ${repOn ? "off" : "on"}">Repressor: ${repOn ? "on the operator" : "released by allolactose"}</span><span class="chip ${out.lv}">lac genes: ${lvlName[out.lv]}</span></div>`;
+    h += `<p class="explain">${out.msg}</p>`;
+    h += `<div class="combos"><span class="zl">Situations tried:</span>${combos.map(c => `<span class="combo${p.seen[c[0]] ? " seen" : ""}${c[0] === row ? " now" : ""}">${p.seen[c[0]] ? "✓ " : ""}${c[1]}</span>`).join("")}</div>`;
+    h += `<div class="gmsg" id="playMsg"></div></div>`;
+    A.innerHTML = h;
+    renderTable({data:LAC_TABLE, rows:LAC_TABLE.order.filter(k => p.seen[k]), hl:row});
+    const set = (k, v) => {
+      if (p[k] === v) return;
+      p[k] = v; const r = L.row(p), fresh = !p.seen[r]; p.seen[r] = true;
+      const fin = Object.keys(p.seen).length === 4 && !p.done; if (fin) p.done = true;
+      applyVisual(L.def(p)); renderPlay();
+      const name = k === "glu" ? "Glucose" : "Lactose";
+      if (fin){ playMsg("All four rows of the table, done by hand! High transcription needs lactose present AND glucose absent. Tap Next!", "good"); updateButtons(); }
+      else playMsg(`${name} ${v ? "added" : "removed"}.${fresh ? " New situation!" : ""} ${k === "glu" ? (v ? "cAMP drops, so CAP lets go of the DNA." : "cAMP rises, binds CAP, and CAP grabs the DNA.") : (v ? "Allolactose forms and pulls the repressor off the operator." : "No allolactose, so the repressor lands back on the operator.")}`, "good");
+    };
+    A.querySelectorAll("[data-sug]").forEach(el => {
+      const k = el.dataset.sug;
+      dragToken(el, ev => htmlZone(ev) || (stageHit(ev) ? "in" : null), z => { if (z === "in") set(k, true); else if (z === "out") set(k, false); else playMsg("Drop it inside the cell (or on the diagram) to add it, or outside the cell to remove it.", ""); }, () => set(k, !p[k]));
+    });
+    if (!p.done && Object.keys(p.seen).length === 1) playMsg("Drag glucose and lactose in and out of the cell. Watch cAMP, CAP, and the repressor change in the diagram above. Try all four situations!", "");
   }
 
   /* ================= Lab UI ================= */
@@ -1710,7 +1862,7 @@
     else if (isTrack(view)){ visKey += "*"; enterStep(idx(), true); }
   }
   function restart(){
-    bl = {}; resetPos(); resetPlates();
+    bl = {}; resetPos(); resetPlates(); for (const k in plays) delete plays[k];
     LAB_ORDER.forEach(k => { labState[k] = {...LABS[k].start}; }); labPending = null; labMsg = "";
     visKey = "";
     if (view === "lab") enterLab(); else if (view === "build") enterBuild(true); else if (isTrack(view)) enterStep(0, true);
