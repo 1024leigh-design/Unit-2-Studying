@@ -246,10 +246,15 @@
   .plateside{position:absolute;top:12px;right:12px;width:44%;max-height:calc(100% - 24px);overflow:auto;background:rgba(255,255,255,.97);border:2px solid var(--line);border-radius:16px;padding:12px 14px;display:grid;gap:9px;box-shadow:0 6px 18px rgba(29,36,51,.12)}
   .ps-h{font-weight:700;display:flex;align-items:center;gap:8px}
   .ps-h .num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:.85rem}
+  .factgrid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .factcard{flex:1 1 130px;min-width:120px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 10px}
+  .fc-h{font-size:.76rem;font-weight:700;color:var(--muted);margin-bottom:2px}
+  .fc-v{font-size:.86rem;line-height:1.35}
   .ps-tray{display:flex;flex-wrap:wrap;gap:6px;min-height:48px;border:2px dashed #c9cfdb;border-radius:12px;padding:6px}
-  .ps-cell{border:3px solid #6f9a5f;background:#f1f7ec;border-radius:40px;padding:8px 16px;display:grid;gap:4px;min-height:74px}
+  .ps-outlbl{font-size:.78rem;font-weight:700;color:#5a6376;margin-bottom:-2px}
+  .ps-cell{position:relative;border:3px solid #6f9a5f;background:radial-gradient(ellipse at 30% 25%,#f8fbf3,#e5f0da 75%);border-radius:52px 68px 58px 46px/44px 52px 40px 48px;padding:10px 20px 10px 30px;display:grid;gap:4px;min-height:80px;box-shadow:inset 0 0 0 4px rgba(255,255,255,.6),inset 0 0 14px rgba(111,154,95,.3)}
+  .ps-flag{position:absolute;left:-22px;top:50%;transform:translateY(-50%)}
   .ps-cell.done{border-color:var(--good);box-shadow:0 0 0 4px var(--good-soft)}
-  .ps-lbl{font-size:.8rem;font-weight:700;color:#4d7a3d}
   .ps-in{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .optok.plas{padding:3px 10px 3px 3px;border-radius:14px}
   .optok.plas span{display:grid;line-height:1.15;font-size:.82rem}
@@ -580,13 +585,13 @@
   const MORE = {
     why:{title:"Why building proteins costs energy", html:`<p>Building a protein is <b>anabolic</b>: small building blocks (amino acids) get linked together into something bigger. Anabolic reactions are also <b>endergonic</b>, meaning they need energy put in to happen.</p><p>That energy comes from breaking high-energy bonds, most often the phosphate bonds in ATP. Think of those bonds like a stretched rubber band: breaking one releases stored energy the cell can put to work building something new.</p><p>So every time a cell decides NOT to transcribe a gene, it's skipping that anabolic, endergonic cost until the protein is actually needed. Multiply that across thousands of genes, and controlling transcription saves a huge amount of energy.</p>`},
     compare:{title:"Why don't eukaryotes use operons?", html:`<p>Bacterial ribosomes can start translating at several spots on one mRNA because each gene has its own ribosome landing pad (a Shine-Dalgarno sequence). Eukaryotic ribosomes usually load at the 5' cap and scan to the first AUG, so one mRNA normally makes one protein.</p><p>There are fun exceptions! About 15% of genes in the worm <i>C. elegans</i> sit in operons. Their long transcripts get cut apart and each piece receives a new cap through a process called trans-splicing. Trypanosomes (the parasites behind sleeping sickness) transcribe huge polycistronic stretches the same way.</p>`},
-    chromatin:{title:"Epigenetics and the histone code", html:`<div style="text-align:center;margin:4px 0 12px"><svg viewBox="0 0 280 120" width="280" height="120" role="img" aria-label="A histone with DNA wrapped around it and tags attached, next to a methyl tag on DNA"><circle cx="90" cy="62" r="32" fill="#9a88c2" stroke="#6d5a97" stroke-width="2"/><path d="M8,62 Q30,12 72,24 Q100,32 100,62 Q100,92 132,100 Q164,110 182,62" fill="none" stroke="#0f766e" stroke-width="5"/><text x="90" y="67" font-size="11" font-weight="700" fill="#3b2f5c" text-anchor="middle">Histone</text><rect x="74" y="16" width="11" height="17" rx="3" fill="#f2b134" transform="rotate(-30 79.5 24.5)"/><rect x="103" y="18" width="11" height="17" rx="3" fill="#f2b134" transform="rotate(20 108.5 26.5)"/><text x="134" y="18" font-size="10" font-weight="700" fill="#8a6410">tags</text><line x1="205" y1="62" x2="272" y2="62" stroke="#0f766e" stroke-width="5"/><line x1="232" y1="62" x2="232" y2="42" stroke="#b83a34" stroke-width="3"/><rect x="219" y="16" width="26" height="26" rx="4" fill="#b83a34"/><text x="232" y="33" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">CH3</text><text x="232" y="98" font-size="10" font-weight="700" fill="#5a6376" text-anchor="middle">methyl tag</text></svg></div><h3>Nucleosomes</h3><p>About 147 base pairs of DNA wrap around a ball of proteins called a histone, like thread around a spool. Each wrapped-up unit is called a nucleosome, and chains of them pack DNA down to fit inside the cell.</p><h3>Histone tags</h3><p>Cells attach small chemical tags to histones that act like sticky notes. Some tags loosen the wrap so a gene can turn ON; others tighten it so a gene stays OFF. Enzymes add these tags, and other enzymes remove them, so the pattern can change as the cell's needs change.</p><h3>DNA methylation</h3><p>Cells can also tag the DNA itself with small methyl groups, which usually keeps a gene silenced. This pattern gets copied every time the cell divides, so an "off" gene tends to stay off in that cell's descendants. That's part of why a skin cell and a brain cell can share the exact same DNA but behave completely differently.</p><h3>Bacteria do it too</h3><p>E. coli tags its own DNA right after copying it, which helps repair enzymes tell the brand-new strand apart from the original. Many bacteria also tag their own DNA so their defense enzymes don't accidentally chop it up the way they would an invading virus's DNA.</p>`},
+    chromatin:{title:"Epigenetics and the histone code", html:`<div style="text-align:center;margin:4px 0 12px"><svg viewBox="0 0 280 120" width="280" height="120" role="img" aria-label="A histone with DNA wrapped around it and tags attached, next to a methyl tag on DNA"><circle cx="90" cy="62" r="32" fill="#9a88c2" stroke="#6d5a97" stroke-width="2"/><path d="M8,62 Q30,12 72,24 Q100,32 100,62 Q100,92 132,100 Q164,110 182,62" fill="none" stroke="#0f766e" stroke-width="5"/><text x="90" y="67" font-size="11" font-weight="700" fill="#3b2f5c" text-anchor="middle">Histone</text><rect x="74" y="16" width="11" height="17" rx="3" fill="#f2b134" transform="rotate(-30 79.5 24.5)"/><rect x="103" y="18" width="11" height="17" rx="3" fill="#f2b134" transform="rotate(20 108.5 26.5)"/><text x="134" y="18" font-size="10" font-weight="700" fill="#8a6410">tags</text><line x1="205" y1="62" x2="272" y2="62" stroke="#0f766e" stroke-width="5"/><line x1="232" y1="62" x2="232" y2="42" stroke="#b83a34" stroke-width="3"/><rect x="219" y="16" width="26" height="26" rx="4" fill="#b83a34"/><text x="232" y="33" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">CH3</text><text x="232" y="98" font-size="10" font-weight="700" fill="#5a6376" text-anchor="middle">methyl tag</text></svg></div><h3>Nucleosomes</h3><p>About 147 base pairs of DNA wrap around a ball of proteins called a histone, like thread around a spool. Each wrapped-up unit is called a nucleosome, and chains of them pack DNA down to fit inside the cell.</p><h3>Histone tags</h3><p>Cells attach small chemical tags to histones that act like sticky notes. Some tags loosen the wrap so a gene can turn ON; others tighten it so a gene stays OFF. Enzymes add these tags, and other enzymes remove them, so the pattern can change as the cell's needs change.</p><h3>DNA methylation</h3><p>Cells can also tag the DNA itself with small methyl groups, which usually keeps a gene silenced. This pattern gets copied every time the cell divides, so an "off" gene tends to stay off in that cell's descendants. That's part of why a skin cell and a brain cell can share the exact same DNA but behave completely differently.</p><h3>Bacteria do it too</h3><p><i>E. coli</i> tags its own DNA right after copying it, which helps repair enzymes tell the brand-new strand apart from the original. Many bacteria also tag their own DNA so their defense enzymes don't accidentally chop it up the way they would an invading virus's DNA.</p>`},
     tf:{title:"Meet the transcription team", html:`<p>Eukaryotes actually have three different RNA polymerases! Pol I makes ribosomal RNA, Pol II makes mRNA (the one we care about most here), and Pol III makes tRNA and other small RNAs. Bacteria get by with just one.</p><p>Before Pol II can start, a whole team of helper proteins (the general transcription factors) has to assemble on the promoter first, kind of like a pit crew getting everything ready before a race.</p><p>\u{1F344} Fun (and scary) fact: the death cap mushroom makes a toxin called \u03b1-amanitin that jams Pol II so it can't move. Since your liver cells depend heavily on Pol II to keep making proteins, this toxin is a big part of what makes death cap mushrooms so dangerous. Moral of the story: never eat a wild mushroom you can't identify with 100% certainty!</p>`},
     enhancer:{title:"A gene named after a video game", html:`<p>Enhancers can sit surprisingly far from the gene they control. A limb enhancer called ZRS sits almost a million base pairs away from the <i>Sonic hedgehog</i> gene it switches on, and the DNA has to loop way around just to bring them together. Single-letter changes in ZRS alone can cause people (or cats, or mice) to be born with extra fingers or toes!</p><p>Curious about that name? The original "hedgehog" gene was found in fruit flies, where a broken copy makes the fly larva grow short and spiky, like a hedgehog. When scientists later found several similar genes in vertebrates, they had some fun naming them, and one research team named theirs after Sonic the Hedgehog, the video game character.</p><p>ZRS is a great example of why enhancers matter so much: a tiny change in one small stretch of DNA, far away from the gene itself, can change how a whole limb develops.</p>`},
-    recap:{title:"Why bacteria respond so fast", html:`<p>A typical E. coli mRNA lasts only a few minutes, while many eukaryotic mRNAs last hours. When a bacterium stops transcribing a gene, the old mRNA disappears fast, so protein production changes quickly. That's perfect for a cell that can divide every 20 minutes in good conditions.</p><p>Eukaryotes trade speed for precision: layers of chromatin, transcription factors, RNA processing, and mRNA export give many checkpoints to fine-tune each gene in each cell type.</p>`},
+    recap:{title:"Why bacteria respond so fast", html:`<p>A typical <i>E. coli</i> mRNA lasts only a few minutes, while many eukaryotic mRNAs last hours. When a bacterium stops transcribing a gene, the old mRNA disappears fast, so protein production changes quickly. That's perfect for a cell that can divide every 20 minutes in good conditions.</p><p>Eukaryotes trade speed for precision: layers of chromatin, transcription factors, RNA processing, and mRNA export give many checkpoints to fine-tune each gene in each cell type.</p>`},
     parts:{title:"The lac operator isn't alone", html:`<div style="text-align:center;margin:4px 0 12px"><svg viewBox="0 0 300 90" width="300" height="90" role="img" aria-label="The lac operon: O3, promoter, O1, and the three separate structural genes lacZ, lacY, and lacA with O2 inside lacZ"><line x1="6" y1="60" x2="294" y2="60" stroke="#0f766e" stroke-width="4"/><rect x="10" y="46" width="26" height="28" rx="4" fill="#fde2e0" stroke="#b83a34" opacity=".8"/><text x="23" y="64" font-size="9" font-weight="700" text-anchor="middle">O3</text><rect x="42" y="46" width="34" height="28" rx="4" fill="#fbe3b5" stroke="#8b93a3"/><text x="59" y="64" font-size="9" text-anchor="middle">P</text><rect x="78" y="46" width="24" height="28" rx="4" fill="#fde2e0" stroke="#b83a34"/><text x="90" y="64" font-size="9" font-weight="700" text-anchor="middle">O1</text><rect x="104" y="46" width="58" height="28" rx="4" fill="#d6efdf" stroke="#8b93a3"/><text x="133" y="64" font-size="9" font-style="italic" text-anchor="middle">lacZ</text><rect x="114" y="46" width="16" height="28" rx="3" fill="#fde2e0" stroke="#b83a34" stroke-width="1.5" opacity=".9"/><line x1="122" y1="32" x2="122" y2="46" stroke="#b83a34" stroke-width="1.5"/><text x="122" y="27" font-size="8" font-weight="700" text-anchor="middle" fill="#b83a34">O2</text><rect x="164" y="46" width="52" height="28" rx="4" fill="#cfe6da" stroke="#8b93a3"/><text x="190" y="64" font-size="9" font-style="italic" text-anchor="middle">lacY</text><rect x="218" y="46" width="52" height="28" rx="4" fill="#bcdccb" stroke="#8b93a3"/><text x="244" y="64" font-size="9" font-style="italic" text-anchor="middle">lacA</text></svg></div><p>The lac operon actually has three operators. O1 is the main one next to the promoter. O2 sits inside <i>lacZ</i> and O3 sits just upstream. The lac repressor is a tetramer with two DNA-grabbing ends, so it can hold two operators at once and loop the DNA between them. Knocking out the helper operators makes repression much weaker.</p><p>Operators are often palindromes (they read the same on both strands) because repressors usually bind as symmetric pairs of subunits.</p>`},
     regulatory:{title:"How much repressor is there?", html:`<p>The regulatory gene has its own separate promoter, so it gets transcribed on its own schedule, not as part of the operon it controls. For most repressor genes, that promoter runs constantly at a low level, so the cell always has a small, steady supply of repressor on hand, ready to act the moment it is needed.</p><p><i>lacI</i> is transcribed constantly from a weak promoter, so each cell has only about 10 repressor tetramers. That's enough because the repressor binds the operator incredibly tightly.</p><p>A mutant called <i>lacI<sup>q</sup></i> ("q" for quantity) makes about 10 times more repressor. It's built into many lab plasmids so that genes under lac control stay firmly off until scientists add IPTG.</p>`},
-    cistrans:{title:"How Jacob and Monod cracked the operon", html:`<p><i>Cis</i> is Latin for "on this side" and <i>trans</i> means "across." Jacob and Monod gave E. coli a second copy of the lac region on an F' plasmid, making partial diploids. A broken <i>lacI</i> could be rescued by a working <i>lacI</i> on the other DNA molecule, which showed the repressor is diffusible (trans-acting).</p><p>Operator mutants called <i>lacO<sup>c</sup></i> (constitutive) only affected the genes on their own DNA molecule, even with a normal operator elsewhere. That proved the operator is a DNA site (cis-acting). Their work earned the 1965 Nobel Prize with Andr\u00e9 Lwoff.</p>`},
+    cistrans:{title:"How Jacob and Monod cracked the operon", html:`<p><i>Cis</i> is Latin for "on this side" and <i>trans</i> means "across." Jacob and Monod gave <i>E. coli</i> a second copy of the <i>lac</i> region on an F' plasmid, making partial diploids. A broken <i>lacI</i> could be rescued by a working <i>lacI</i> on the other DNA molecule, which showed the repressor is diffusible (trans-acting).</p><p>Operator mutants called <i>lacO<sup>c</sup></i> (constitutive) only affected the genes on their own DNA molecule, even with a normal operator elsewhere. That proved the operator is a DNA site (cis-acting). Their work earned the 1965 Nobel Prize with Andr\u00e9 Lwoff.</p>`},
     negative:{title:"Meet the lac repressor up close", html:`<p>LacI is a tetramer of four identical ~360 amino acid subunits. Each subunit's "headpiece" uses a helix-turn-helix motif to read bases in the DNA major groove. Its grip on the operator is one of the tightest protein-DNA interactions known.</p><p>How does it find a 21 base pair target in 4.6 million base pairs? It slides along DNA and hops between nearby segments (facilitated diffusion), searching much faster than random bumping alone. Single-molecule experiments have tracked individual LacI proteins doing this in living cells.</p>`},
     positive:{title:"How CAP actually helps RNA polymerase", html:`<p>Bacterial RNA polymerase is a cluster of protein pieces working together. One piece, called sigma, is the part that actually recognizes and grabs onto a promoter's DNA sequence. The lac promoter's sequence isn't a great match for sigma, so on its own, RNA polymerase only grabs on weakly and often lets go. That's exactly why it needs CAP's help.</p><p>CAP-cAMP binds just upstream of the promoter and bends the DNA about 90 degrees. That bend, plus a direct touch between CAP and RNA polymerase, helps RNA polymerase grab on and hold tight. Biotechnologists even built a mutant promoter called lacUV5 that matches sigma so well on its own that it runs at full speed without any help from CAP at all.</p>`},
     nogas:{title:"Basal transcription", html:`<p>The low level of transcription that happens without activators is called basal transcription. How low depends on the promoter. The lac promoter is weak, so without CAP-cAMP it runs at only a small fraction of its full rate. Some promoters, like the mal promoters, are so weak they are almost silent without their activator.</p><p>Scientists measure this using reporter genes such as GFP or luciferase fused to a promoter, then comparing the glow with and without the activator.</p>`},
@@ -600,14 +605,14 @@
     capmore:{title:"CAP by the numbers", html:`<p>CAP (also called CRP, cAMP receptor protein) is a dimer, and each half binds one cAMP. It recognizes a 22 base pair site with the pattern TGTGA...TCACA and bends DNA about 90 degrees.</p><p>At some promoters, like lac, CAP binds upstream and reaches over to RNA polymerase's \u03b1 subunit (Class I). At others, like gal, it sits right next to the \u221235 box and touches several parts of RNA polymerase (Class II).</p><p>And adrenaline uses cAMP in your liver cells to trigger sugar release, so the same little molecule works across the tree of life.</p>`},
     fullspeed:{title:"How much does induction change things?", html:`<p>Fully induced, the lac operon can be transcribed around 1,000 times more than when repressed. \u03b2-galactosidase can become one of the most abundant proteins in the cell.</p><p>Biotech runs on this! In the popular pET system, the gene for T7 RNA polymerase is placed under lacUV5 control in a strain called BL21(DE3). Add IPTG, T7 RNA polymerase is made, and it cranks out huge amounts of whatever protein scientists cloned behind a T7 promoter.</p>`},
     nonemore:{title:"Is OFF really OFF?", html:`<p>Even fully repressed, the lac operon makes roughly one mRNA per cell cycle. Biologists call this leaky expression. It's usually harmless, but when scientists want to make a protein that is toxic to the cell, leakiness can kill the culture before they even add inducer. Adding extra glucose to the growth medium lowers cAMP and helps keep the leak tiny.</p>`},
-    together:{title:"Diauxie and blue-white screening", html:`<p>Grow E. coli with both glucose and lactose and the growth curve has two climbs with a pause in between. The cells eat all the glucose first, pause while they switch on the lac operon, then grow again on lactose. Jacques Monod named this diauxic growth in the 1940s.</p><p>In blue-white screening, bacteria with a working <i>lacZ</i> turn a chemical called X-gal blue. If a new gene gets inserted into the middle of <i>lacZ</i> on a plasmid, the enzyme breaks and the colonies stay white, so scientists know which colonies carry their gene.</p>`},
-    trpgenes:{title:"The trp genes in detail (not needed for the exam!)", html:`<p><i>trpE</i> and <i>trpD</i> make anthranilate synthase, <i>trpC</i> makes the next enzyme in the pathway, and <i>trpB</i> and <i>trpA</i> make tryptophan synthase, starting from a molecule called chorismate.</p><p>Tryptophan synthase is famous for a molecular tunnel. The \u03b1 subunit makes indole, and instead of letting it escape, the enzyme passes it through an internal channel about 25 \u00c5 long straight to the \u03b2 subunit. Biochemists call this substrate channeling.</p><p><i>trpR</i> sits far from the operon and also represses a few other genes, including itself.</p>`},
+    together:{title:"Diauxie and blue-white screening", html:`<p>Grow <i>E. coli</i> with both glucose and lactose and the growth curve has two climbs with a pause in between. The cells eat all the glucose first, pause while they switch on the lac operon, then grow again on lactose. Jacques Monod named this diauxic growth in the 1940s.</p><p>In blue-white screening, bacteria with a working <i>lacZ</i> turn a chemical called X-gal blue. If a new gene gets inserted into the middle of <i>lacZ</i> on a plasmid, the enzyme breaks and the colonies stay white, so scientists know which colonies carry their gene.</p>`},
+    trpgenes:{title:"The trp genes in detail (not needed for the exam!)", html:`<p><i>trpE</i> and <i>trpD</i> make anthranilate synthase, <i>trpC</i> makes the next enzyme in the pathway, and <i>trpB</i> and <i>trpA</i> make tryptophan synthase, starting from a molecule called chorismate.</p><p>Tryptophan synthase is famous for a molecular tunnel. The \u03b1 subunit makes indole, and instead of letting it escape, the enzyme passes it through an internal channel about 25 \u00c5 long straight to the \u03b2 subunit. Biochemists call this substrate channeling.</p><p><i>trpR</i> sits far from the operon and also represses a few other genes, including itself.</p><h3>Tryptophan's codon</h3><p>Most amino acids are coded for by several different codons, but tryptophan is one of only two amino acids with just a single codon: <b>UGG</b>. (Methionine, the start codon AUG, is the other.) That makes tryptophan an easy one to remember!</p><h3>The turkey myth</h3><p>You've probably heard that turkey makes you sleepy at Thanksgiving because of its tryptophan. Here's the real story: tryptophan is a building block your body uses to make serotonin, a neurotransmitter, which your body then converts into melatonin, the hormone that helps regulate your sleep-wake cycle (circadian rhythm). So the tryptophan-to-sleepiness pathway is real! But turkey doesn't actually have more tryptophan than chicken, beef, or many other common foods. The post-feast drowsiness is more likely from eating a huge, carb-heavy meal (which helps tryptophan cross into the brain more easily) than from turkey being special.</p>`},
     trprep:{title:"How tryptophan switches on TrpR", html:`<p>TrpR is a dimer. Without tryptophan (the "aporepressor"), its two DNA-reading helices are held at the wrong spacing to fit the operator's major grooves. When two tryptophan molecules bind, the helices swing into position, and now the repressor fits the operator snugly.</p>`},
     atten:{title:"Attenuation: the trp dimmer switch", html:`<p>Between the operator and <i>trpE</i> is a leader region, <i>trpL</i>, that codes for a 14 amino acid leader peptide with two tryptophan codons in a row. Its mRNA has four regions that can pair up in different ways.</p><p>High tryptophan: the ribosome zips past the Trp codons and covers region 2, so regions 3 and 4 fold into a terminator hairpin and RNA polymerase stops early. Low tryptophan: the ribosome stalls at the Trp codons, regions 2 and 3 pair instead (the antiterminator), and transcription continues.</p><p>Repression (about 70-fold) and attenuation (about 10-fold) together tune trp operon output around 600-fold. <i>Bacillus subtilis</i> does it differently, with a ring-shaped RNA-binding protein called TRAP.</p>`},
     ind_co:{title:"Repressors as research tools", html:`<p>Scientists borrowed bacterial repressors to control genes in other organisms. In the Tet-On and Tet-Off systems, the bacterial tetracycline repressor (TetR) is used in mouse and human cells, so researchers can switch genes on or off just by adding the antibiotic doxycycline.</p><p>Arrays of lac operators can also be inserted into a chromosome, and a LacI-GFP fusion protein that binds them makes that spot glow, letting researchers watch chromosomes move in living cells.</p>`},
     lab_lac:{title:"lac operon extras", html:`<p>Try every combination and see if your predictions match the summary table. Notice that only one combination turns the genes fully on.</p><p>Beyond cAMP and CAP, glucose also blocks lactose permease (inducer exclusion), so in real cells very little lactose even gets inside while glucose is around.</p>`},
-    lab_trp:{title:"trp operon extras", html:`<p>The real trp operon has a second control layer called attenuation, where a ribosome racing along the leader mRNA decides whether RNA polymerase finishes the job. Repression plus attenuation lets E. coli fine-tune tryptophan production about 600-fold.</p>`},
-    lab_ara:{title:"The ara operon and AraC", html:`<p>The ara operon (<i>araBAD</i>) lets E. coli eat arabinose. Its regulator AraC is a shape-shifter. Without arabinose, AraC binds two sites (araO<sub>2</sub> and araI<sub>1</sub>) about 210 base pairs apart and bends the DNA into a loop that keeps RNA polymerase away. When arabinose binds, AraC lets go of araO<sub>2</sub>, grabs araI<sub>1</sub> and araI<sub>2</sub> next to the promoter, and becomes an activator. CAP-cAMP boosts it further.</p><p>Biotech loves this: pBAD plasmids use the ara promoter so scientists can dial protein production up or down by adding more or less arabinose, and add glucose to shut it off tightly.</p>`},
+    lab_trp:{title:"trp operon extras", html:`<p>The real trp operon has a second control layer called attenuation, where a ribosome racing along the leader mRNA decides whether RNA polymerase finishes the job. Repression plus attenuation lets <i>E. coli</i> fine-tune tryptophan production about 600-fold.</p>`},
+    lab_ara:{title:"The ara operon and AraC", html:`<p>The <i>ara</i> operon (<i>araBAD</i>) lets <i>E. coli</i> eat arabinose. Its regulator AraC is a shape-shifter. Without arabinose, AraC binds two sites (araO<sub>2</sub> and araI<sub>1</sub>) about 210 base pairs apart and bends the DNA into a loop that keeps RNA polymerase away. When arabinose binds, AraC lets go of araO<sub>2</sub>, grabs araI<sub>1</sub> and araI<sub>2</sub> next to the promoter, and becomes an activator. CAP-cAMP boosts it further.</p><p>Biotech loves this: pBAD plasmids use the ara promoter so scientists can dial protein production up or down by adding more or less arabinose, and add glucose to shut it off tightly.</p>`},
     x_select:{title:"Satellite colonies and sneaky ampicillin", html:`<p>The ampicillin resistance gene (<i>bla</i>) makes \u03b2-lactamase, an enzyme that gets secreted and destroys ampicillin around the colony. If plates sit too long, the ampicillin in that halo is used up and tiny non-resistant "satellite colonies" can grow around a real colony. Many labs use carbenicillin instead, a more stable cousin of ampicillin.</p><p>\u03b2-lactamases are also a huge deal in medicine: they're one of the main ways pathogens resist penicillin-family antibiotics.</p>`},
     x_chem:{title:"The chemistry of blue", html:`<p>X-gal's full name is 5-bromo-4-chloro-3-indolyl-\u03b2-D-galactopyranoside. \u03b2-galactosidase cuts off the galactose, releasing a colorless indoxyl piece. Two of those pieces then pair up and react with oxygen to form an insoluble blue dye (a relative of indigo, the dye in blue jeans). Because the dye doesn't dissolve, the blue stays right in the colony.</p><p>A cousin substrate, ONPG, turns yellow when cut. Clinical micro labs use an ONPG test to identify bacteria that have \u03b2-galactosidase.</p>`},
     x_iptg:{title:"Why IPTG and not lactose?", html:`<p>IPTG (isopropyl \u03b2-D-1-thiogalactopyranoside) has a sulfur atom where lactose has an oxygen. The repressor still grabs it, but \u03b2-galactosidase can't cut that bond. So IPTG never gets used up, and the lac switch stays on at a steady level. Lactose would get eaten, and it would also compete with X-gal for the enzyme.</p><p>Many cloning strains also carry <i>lacI<sup>q</sup></i> (extra repressor), so they need IPTG to get strong expression.</p>`},
@@ -616,9 +621,10 @@
     x_pglo:{title:"GFP and the pGLO plasmid", html:`<p>GFP comes from the jellyfish <i>Aequorea victoria</i>. Its glowing center, the chromophore, forms on its own from three amino acids in the protein (serine, tyrosine, and glycine at positions 65 to 67). Osamu Shimomura, Martin Chalfie, and Roger Tsien won the 2008 Nobel Prize in Chemistry for discovering and developing it.</p><p>pGLO carries three key genes: <i>bla</i> (ampicillin resistance), <i>araC</i> (the regulator), and a GFP variant tuned to glow brightly under UV, placed behind the ara promoter. Cells are made to take up the plasmid with calcium chloride and a quick heat shock at 42 \u00b0C.</p>`},
     lab_xgal:{title:"X-gal plate extras", html:`<p>Try the transformation mix with and without ampicillin. Without selection, the untransformed cells take over the plate as a lawn, so you can't find your transformants.</p><p>Without an inducer, repression is slightly leaky, so real colonies may turn faintly blue after a long time. Labs add IPTG to get a strong, clear signal.</p>`},
     lab_pglo:{title:"pGLO plate extras", html:`<p>The pGLO lab combines two things you learned: ampicillin <b>selection</b> (only plasmid carriers survive) and <b>gene regulation</b> (arabinose flips AraC from repressor to activator, turning GFP on).</p><p>Compare the +pGLO plates with and without arabinose. Both have the same cells with the same plasmid. The only difference is whether the ara switch is on!</p>`},
+    ctrlquestions:{title:"Mix and match: real examples", html:`<p>Every operon needs its own answer to BOTH questions, and knowing one doesn't tell you the other. Here's how the operons you'll meet actually sort out:</p><p><b>lac operon:</b> negative control (the lac repressor is a stop sign) + inducible (normally off; lactose, via allolactose, turns it on). It's also positively controlled by CAP, completely separately!</p><p><b>trp operon:</b> negative control (the trp repressor is a stop sign) + repressible (normally on; tryptophan turns it off).</p><p><b>ara and mal operons</b> (which you'll see in the Operon Lab): mostly positive control, run by activators (AraC and MalT/CAP) rather than a repressor.</p><p>Notice that "negative control" shows up for both lac AND trp, even though one is inducible and the other is repressible. That's the whole point: the two questions really are independent.</p>`},
     feedback:{title:"Feedback loops are everywhere", html:`<p>Cells often stack feedback at more than one level. Tryptophan represses the trp operon (slow, minutes), but it also binds directly to the first enzyme in its own pathway, anthranilate synthase, and shuts it down within seconds. That's called feedback inhibition, and it's an example of the allosteric regulation from your enzyme slides.</p><p>Systems biologists have shown that genes that repress themselves (negative autoregulation) respond faster and more steadily than genes without feedback. Positive feedback does the opposite: it creates all-or-none switches, like the lac operon at low inducer levels.</p>`},
-    trpfeedback:{title:"Three layers of trp control", html:`<p>E. coli controls tryptophan at three levels. Repression shuts off transcription at the operator. Attenuation stops transcription early inside the leader. Feedback inhibition switches off the anthranilate synthase enzyme itself. Together they let the cell match tryptophan production to demand almost perfectly, without wasting energy.</p>`},
-    lab_mal:{title:"The mal genes and MalT", html:`<p>The mal genes let E. coli take up and use maltose and longer maltose chains. MalT is a positive regulator: the mal promoters are so weak that almost nothing happens without it. MalT is actually switched on by maltotriose (three glucoses in a row, made from maltose) plus ATP. In this lab we simplified that to "maltose loads the gas can."</p><p>Fun connection: one mal gene, <i>lamB</i>, makes a channel in the outer membrane called maltoporin. It's also the doorway phage lambda uses to infect E. coli, which is how it got its name.</p>`}
+    trpfeedback:{title:"The trp feedback loop, up close", html:`<div style="text-align:center;margin:4px 0 12px"><svg viewBox="0 0 340 150" width="340" height="150" role="img" aria-label="The trp operon feedback loop drawn on the operon: tryptophan builds up and loops back to activate the repressor on the operator"><line x1="10" y1="30" x2="330" y2="30" stroke="#0f766e" stroke-width="4"/><rect x="20" y="18" width="50" height="24" rx="4" fill="#fbe3b5" stroke="#8b93a3"/><text x="45" y="34" font-size="9" text-anchor="middle">P</text><rect x="74" y="18" width="34" height="24" rx="4" fill="#fde2e0" stroke="#8b93a3"/><text x="91" y="34" font-size="9" text-anchor="middle">O</text><rect x="112" y="18" width="208" height="24" rx="4" fill="#d6efdf" stroke="#8b93a3"/><text x="216" y="34" font-size="9" font-style="italic" text-anchor="middle">trp genes (trpE, D, C, B, A)</text><polygon points="82,2 100,2 100,15 82,15" fill="#d9443a"/><text x="91" y="12" font-size="6.5" fill="#fff" text-anchor="middle" font-weight="700">STOP</text><path d="M216,42 V68" stroke="#5a6376" stroke-width="2" marker-end="url(#fbArr1)"/><text x="216" y="84" font-size="10" text-anchor="middle">mRNA → enzymes → tryptophan builds up</text><path d="M120,92 Q30,120 89,44" fill="none" stroke="#b83a34" stroke-width="2.5" marker-end="url(#fbArr2)"/><text x="90" y="118" font-size="9" fill="#b83a34" text-anchor="middle">tryptophan activates</text><text x="90" y="132" font-size="9" fill="#b83a34" text-anchor="middle">the repressor</text><defs><marker id="fbArr1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#5a6376"/></marker><marker id="fbArr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#b83a34"/></marker></defs></svg></div><p><b>What's actually looping?</b> The trp genes are transcribed into mRNA, translated into enzymes, and those enzymes build tryptophan from scratch, using chorismate as the starting material. Once enough tryptophan piles up, some of it binds the trp repressor and switches it on (that's tryptophan acting as the corepressor). The now-active repressor sits down on the operator and shuts the genes off, so the cell stops spending energy making tryptophan it doesn't need yet. As the existing tryptophan gets used up building proteins, its level drops, the repressor falls back off, and the genes switch on again. The diagram above draws this loop directly onto the operon: the genes' own end product circles back around to control the very genes that made it.</p><p><b>A negative feedback loop and a negatively regulated operon are NOT the same thing!</b> "Negative control" just describes a mechanism: a repressor protein is used to turn genes off. A "negative feedback loop" is a bigger systems idea: a process's own output loops back around to slow down or stop that same process. The trp operon happens to be BOTH: it uses a repressor (so it is negatively regulated), and that repressor is switched on by the pathway's own end product, tryptophan (so it is also a feedback loop). But compare it to the lac operon, which is ALSO negatively regulated (it uses a repressor too!), yet is NOT a feedback loop, because its repressor responds to an outside signal, lactose showing up in the environment, not to something the lac genes themselves made. So every operon that uses a repressor is negatively regulated, but only some of those, like trp, are also feedback loops.</p><p><i>E. coli</i> actually controls tryptophan at three levels at once. Repression shuts off transcription at the operator. Attenuation stops transcription early, inside the leader region, before RNA polymerase even reaches the genes. Feedback inhibition switches off the anthranilate synthase enzyme itself, directly and within seconds, faster than either transcription control could. Together these three layers let the cell match tryptophan production to demand almost perfectly, without wasting energy.</p>`},
+    lab_mal:{title:"The mal genes and MalT", html:`<p>The <i>mal</i> genes let <i>E. coli</i> take up and use maltose and longer maltose chains. MalT is a positive regulator: the mal promoters are so weak that almost nothing happens without it. MalT is actually switched on by maltotriose (three glucoses in a row, made from maltose) plus ATP. In this lab we simplified that to "maltose loads the gas can."</p><p>Fun connection: one mal gene, <i>lamB</i>, makes a channel in the outer membrane called maltoporin. It's also the doorway phage lambda uses to infect <i>E. coli</i>, which is how it got its name.</p>`}
   };
 
   /* ================= Steps ================= */
@@ -663,11 +669,14 @@
      text:`Operons come in two flavors. An inducible operon is normally OFF, until a small molecule (an inducer) shows up and takes the stop sign away. A repressible operon is normally ON, until a small molecule (a corepressor) shows up and helps put the stop sign up. See how they compare below!`},
 
     {part:P2, title:"Negative feedback loops", v:T("feedback", {mode:"gen"}), more:"feedback", links:true,
-     cta:[{label:"Next: Inducible operons", view:"ind"}],
      text:`Let's connect operons to the central dogma. When an operon is ON, RNA polymerase transcribes its genes into mRNA (transcription). Ribosomes translate that mRNA into proteins (translation). In a repressible operon, those proteins are enzymes that build a product. When enough product piles up, it becomes the corepressor and switches its own genes OFF. As the product gets used up, the genes turn back ON. A product shutting down its own production is called negative {{feedback}}.`,
      after:`DNA to mRNA to protein to product, and the product loops back to flip the switch!`},
+    {part:P2, title:"Two separate questions", v:T("ctrlsummary"), more:"ctrlquestions",
+     cta:[{label:"Next: Inducible operons", view:"ind"}],
+     text:`Before moving on, let's untangle two ideas that are easy to mix up. "Positive vs. negative control" asks HOW a protein controls the operon: a repressor BLOCKS transcription (negative, a stop sign), while an activator HELPS transcription (positive, gas in the tank). "Inducible vs. repressible" asks something totally different: what's the operon's DEFAULT state? Inducible operons are normally OFF until an inducer switches them on. Repressible operons are normally ON until a corepressor switches them off. Every operon has an answer to BOTH questions, and the answers are independent of each other!`,
+     after:`Two separate questions, two separate answers, for every operon you'll meet.`},
     {part:P3, title:"Meet the lac operon", v:O("lac", {repShow:1, rep:1}, "blocked"), more:"lacgenes",
-     text:`E. coli's favorite food is glucose, but it can also eat lactose, the sugar in milk. The lac operon holds a set of lac genes for using lactose. (You don't need to memorize the individual gene names.) It's an {{inducible2}} operon: OFF until lactose shows up. For now, ignore the CAP site on the DNA. We'll come back to it!`},
+     text:`<i>E. coli</i>'s favorite food is glucose, but it can also eat lactose, the sugar in milk. The lac operon holds a set of lac genes for using lactose. (You don't need to memorize the individual gene names.) It's an {{inducible2}} operon: OFF until lactose shows up. For now, ignore the CAP site on the DNA. We'll come back to it!`},
     {part:P3, title:"No lactose: stop sign up", v:O("lac", {repShow:1, rep:1}, "blocked"), more:"leaky",
      text:`The lacI gene makes a repressor protein all the time. With no lactose around, the repressor sits on the {{operator2}} and the stop sign is up! RNA polymerase is blocked, so no lac genes are transcribed. If transcription is blocked by a repressor protein, the operon is under {{negative2}} control.`,
      after:`The lac operon is a classic example of negative control.`},
@@ -687,24 +696,24 @@
      pre:O("lac", {repShow:0, carShow:0, capShow:1, camp:1, capAmp:0, cap:0, lac:1}, "hide"), table:{data:LAC_TABLE, rows:["GL","Gl"]}, more:"capmore",
      text:`Part two is {{cap}}, the catabolite activator protein. CAP is the gas can, but on its own it's empty and can't grab the DNA. When cAMP binds to CAP, CAP changes shape and can now attach to the CAP site right next to the promoter. So: low glucose, then lots of cAMP, then cAMP binds CAP, then CAP binds DNA. That's the gas!`},
     {part:P3, title:"Glucose gone, lactose here: full speed!", v:O("lac", LAC_ON, "drive"), table:{data:LAC_TABLE, rows:["GL","Gl","gL"], hl:"gL"}, more:"fullspeed",
-     text:`Now glucose runs out. cAMP rises, cAMP binds CAP, and CAP-cAMP lands next to the promoter. It grabs RNA polymerase and helps it hold on. No stop sign AND a full tank, so the lac genes are transcribed at {{high}} levels. E. coli can finally eat that lactose!`},
+     text:`Now glucose runs out. cAMP rises, cAMP binds CAP, and CAP-cAMP lands next to the promoter. It grabs RNA polymerase and helps it hold on. No stop sign AND a full tank, so the lac genes are transcribed at {{high}} levels. <i>E. coli</i> can finally eat that lactose!`},
     {part:P3, title:"No glucose, no lactose", v:O("lac", LAC_NONE, "blocked"), table:{data:LAC_TABLE, rows:["GL","Gl","gl","gL"], hl:"gl"}, more:"nonemore",
      text:`What if both sugars are gone? Glucose is low, so cAMP is high and CAP-cAMP is bound. Gas in the tank! But there's no {{lactose}}, so the repressor is back on the operator. Even a full tank can't get you through a stop sign. No transcription.`},
     {part:P3, title:"Putting it all together", v:O("lac", LAC_ON, "drive"), table:{data:LAC_TABLE, rows:["GL","Gl","gl","gL"]}, more:"together", play:"lac",
      cta:[{label:"Bonus: X-gal and blue-white screening (Ch. 9)", view:"xgal"},{label:"Next: Repressible operons", view:"rep"}],
-     text:`The lac genes are transcribed at high levels only when lactose is present AND glucose is absent. With both sugars around, it's just a trickle. Glucose turning down the operons for other sugars is called {{catabolite}} repression. It makes sure E. coli always eats its favorite food first. Check out the table: you just worked through every row!`},
+     text:`The lac genes are transcribed at high levels only when lactose is present AND glucose is absent. With both sugars around, it's just a trickle. Glucose turning down the operons for other sugars is called {{catabolite}} repression. It makes sure <i>E. coli</i> always eats its favorite food first. Check out the table: you just worked through every row!`},
 
-    {part:P4, title:"Meet the trp operon", v:O("trp", TRP_LOW, "drive"), more:"trpgenes",
-     text:`Tryptophan (trp) is an amino acid that E. coli can build itself using the trp operon. Building it takes a lot of energy, so why bother if tryptophan is already around? The trp operon is {{repressible2}}: normally ON, and switched OFF when there's plenty of tryptophan. (No need to memorize the trp gene names, they're just there for fun!)`},
+    {part:P4, title:"Meet the trp operon", v:O("trp", TRP_LOW, "drive", {showTrp:true}), more:"trpgenes",
+     text:`Tryptophan (trp) is an amino acid that <i>E. coli</i> can build itself using the trp operon. Building it takes a lot of energy, so why bother if tryptophan is already around? The trp operon is {{repressible2}}: normally ON, and switched OFF when there's plenty of tryptophan. (No need to memorize the trp gene names, they're just there for fun!)`},
     {part:P4, title:"Low tryptophan: full speed ahead", v:O("trp", TRP_LOW, "drive", {inactive:true}), more:"trprep",
      text:`The trp repressor is made by the trpR gene. On its own, the trp repressor is {{inactive}}: it can't grab the operator. The road is clear, so RNA polymerase transcribes the trp genes and the cell builds the tryptophan it needs.`},
     {part:P4, title:"High tryptophan: stop sign up", v:O("trp", TRP_HIGH, "blocked"), more:"atten",
      text:`When tryptophan builds up, tryptophan itself binds the repressor and switches it on. In this system, tryptophan is the {{corepressor}}. The active repressor sits on the operator and blocks RNA polymerase. The cell stops making something it already has. So smart!`},
-    {part:P4, title:"The trp operon is a feedback loop", v:T("feedback", {mode:"trp"}), more:"trpfeedback", links:true,
+    {part:P4, title:"The trp operon is a feedback loop", v:T("feedback", {mode:"trp"}), more:"trpfeedback",
      text:`Put it all together! The trp genes are transcribed into mRNA, the mRNA is translated into enzymes, and those enzymes build tryptophan. When tryptophan piles up, it becomes the corepressor and shuts the trp genes off. As the cell uses tryptophan to build its own proteins, the level drops, the repressor lets go, and the genes turn back on. The trp operon is a classic example of negative {{feedback2}}.`},
     {part:P4, title:"Inducers vs. corepressors", v:T("duo", {mode:"lactrp"}), more:"ind_co",
      text:`Let's compare! In the lac operon, the inducer (allolactose) pulls the stop sign OFF the road, so genes turn on. In the trp operon, the corepressor (tryptophan) helps put the stop sign ON the road, so genes turn off. Both are negative control, because both use a repressor. They just use it in opposite ways.`,
-     after:`Amazing work! Now go play with these operons yourself.`, cta:[{label:"Open the Operon Lab", view:"lab", lab:"lac"}]}
+     after:`Amazing work! Now go play with these operons yourself.`, cta:[{label:"Open the Operon Lab", view:"lab", lab:"lac"},{label:"Open the Operon Builder", view:"build"}]}
   ];
   const XP = "Blue-white screening";
   const XGAL = [
@@ -726,8 +735,8 @@
   ];
   const TRACKS = {
     euk:{name:"Eukaryotes", steps:EUK},
-    basics:{name:"Gene regulation basics", short:"1. Basics", steps:PRO.slice(0, 8)},
-    ind:{name:"Inducible operons", short:"2. Inducible operons", steps:PRO.slice(8, 18)},
+    basics:{name:"Gene regulation basics", short:"1. Basics", steps:PRO.slice(0, 9)},
+    ind:{name:"Inducible operons", short:"2. Inducible operons", steps:PRO.slice(9, 19)},
     xgal:{name:"X-gal bonus", short:"X-gal bonus", bonus:true, steps:XGAL},
     rep:{name:"Repressible operons", short:"3. Repressible operons", steps:PRO.slice(18)}
   };
@@ -737,8 +746,8 @@
   /* ================= Lab definitions ================= */
   const lvlName = {on:"ON", low:"LOW", off:"OFF"};
   const LABS = {
-    lac:{name:"lac operon", table:LAC_TABLE, more:"lab_lac", toggles:[["glu","Glucose"],["lac","Lactose"]], start:{glu:true, lac:false},
-      intro:"Flip glucose and lactose on and off. Watch the stop sign (repressor), the gas (CAP-cAMP), and the car respond.",
+    lac:{name:"lac operon", table:LAC_TABLE, more:"lab_lac", toggles:[["glu","Glucose"],["lac","Lactose"]], start:{glu:false, lac:false},
+      intro:"",
       def:s => O("lac", {repShow:1, capShow:1, glu:+s.glu, lac:+s.lac, camp:+!s.glu, capAmp:+!s.glu, cap:+!s.glu, rep:+!s.lac, repAct:+!s.lac, ind:+s.lac}, !s.lac ? "blocked" : (s.glu ? "low" : "drive")),
       row:s => (s.glu ? "G" : "g") + (s.lac ? "L" : "l"),
       out:s => {
@@ -758,8 +767,8 @@
         const msg = s.trp ? "Plenty of tryptophan. Tryptophan (the corepressor) activates the repressor, and the stop sign goes up. trp genes OFF. No need to make more!" : "Tryptophan is low. The repressor is inactive on its own, so the road is clear. trp genes ON, and the cell builds tryptophan.";
         return {lv, msg, chips:[["Stop sign", s.trp ? "Up" : "Down", s.trp ? "off" : "on"], ["trp genes", lvlName[lv], lv]]};
       }},
-    ara:{name:"ara operon", extra:true, table:ARA_TABLE, more:"lab_ara", toggles:[["glu","Glucose"],["ara","Arabinose"]], start:{glu:true, ara:false},
-      intro:"The ara operon lets E. coli eat arabinose. Its regulator, AraC, is a shape-shifter: it's a stop sign without arabinose and gas with it!",
+    ara:{name:"ara operon", extra:true, table:ARA_TABLE, more:"lab_ara", toggles:[["glu","Glucose"],["ara","Arabinose"]], start:{glu:false, ara:false},
+      intro:"The <i>ara</i> operon lets <i>E. coli</i> eat arabinose. Its regulator, AraC, is a shape-shifter: it's a stop sign without arabinose and gas with it!",
       def:s => O("ara", {repShow:1, rep:1, repAct:+!s.ara, ind:+s.ara, glu:+s.glu, ara:+s.ara, camp:+!s.glu, capShow:1, capAmp:+!s.glu, cap:+!s.glu}, !s.ara ? "blocked" : (s.glu ? "low" : "drive")),
       row:s => (s.glu ? "G" : "g") + (s.ara ? "A" : "a"),
       out:s => {
@@ -770,8 +779,8 @@
           gA:"Arabinose only! AraC switches to its gas form and CAP-cAMP joins in. Two kinds of gas! ara genes ON."}[(s.glu ? "G" : "g") + (s.ara ? "A" : "a")];
         return {lv, msg, chips:[["AraC", s.ara ? "Gas form" : "Stop sign form", s.ara ? "on" : "off"], ["Gas (CAP-cAMP)", s.glu ? "Empty" : "Full", s.glu ? "off" : "on"], ["ara genes", lvlName[lv], lv]]};
       }},
-    mal:{name:"mal operon", extra:true, table:MAL_TABLE, more:"lab_mal", toggles:[["glu","Glucose"],["mal","Maltose"]], start:{glu:true, mal:false},
-      intro:"The mal genes let E. coli eat maltose. This one runs on positive control: there's no stop sign, just two gas cans (MalT and CAP).",
+    mal:{name:"mal operon", extra:true, table:MAL_TABLE, more:"lab_mal", toggles:[["glu","Glucose"],["mal","Maltose"]], start:{glu:false, mal:false},
+      intro:"The <i>mal</i> genes let <i>E. coli</i> eat maltose. This one runs on positive control: there's no stop sign, just two gas cans (MalT and CAP).",
       def:s => O("mal", {act2Show:1, act2:+s.mal, act2Fuel:+s.mal, glu:+s.glu, mal:+s.mal, camp:+!s.glu, capShow:1, capAmp:+!s.glu, cap:+!s.glu}, !s.mal ? "trace" : (s.glu ? "low" : "drive")),
       row:s => (s.glu ? "G" : "g") + (s.mal ? "M" : "m"),
       out:s => {
@@ -791,7 +800,7 @@
       start:{strain:null, cell:[], amp:true, xgal:true, iptg:true, lac:false, grown:false},
       plasmids:[["empty","Empty plasmid","lacZ intact"],["rec","Plasmid + your gene","gene inside lacZ"]],
       strainOf:c => c.length === 2 ? "mix" : c[0] || "wt",
-      intro:"Drag plasmids into the E. coli cell and tap Transform (or transform with no plasmid as a control). Pick what goes in the plate, then incubate. Can you get blue colonies? White ones? Both?",
+      intro:"Drag plasmids into the <i>E. coli</i> cell and tap Transform (or transform with no plasmid as a control). Pick what goes in the plate, then incubate. Can you get blue colonies? White ones? Both?",
       prompt:"Predict: will you see blue colonies, white colonies, both, a lawn, or no growth? Type blue, white, both, lawn, or none.",
       guess:{blue:"blue", white:"white", colorless:"white", offwhite:"white", both:"both", mixed:"both", mix:"both", blueandwhite:"both", bluewhite:"both", lawn:"lawn", none:"none", nogrowth:"none", nothing:"none", dead:"none", no:"none"},
       out:s => {
@@ -801,9 +810,9 @@
         const noXMsg = "Colonies grow, but without X-gal there's nothing to turn blue, so every colony looks like a normal off-white colony.";
         const lacNote = s.lac && !s.iptg ? " (Lactose works as an inducer too, but cells eat it up. That's why labs use IPTG, which they can't break down.)" : "";
         if (s.strain === "wt"){
-          if (s.amp){ spec = {growth:"none"}; cat = "none"; msg = "Wild-type E. coli has no plasmid, so it has no ampicillin resistance gene. Ampicillin kills it: no growth."; }
+          if (s.amp){ spec = {growth:"none"}; cat = "none"; msg = "Wild-type <i>E. coli</i> has no plasmid, so it has no ampicillin resistance gene. Ampicillin kills it: no growth."; }
           else { const c = col(true); spec = {growth:"colonies", color:() => c}; cat = c === "blue" ? "blue" : "white";
-            msg = !s.xgal ? noXMsg : (c === "blue" ? "Wild-type E. coli has its own working lac operon. The inducer removed the repressor, lacZ was transcribed, and \u03b2-galactosidase cut X-gal. Blue colonies!" + lacNote : noIndMsg); }
+            msg = !s.xgal ? noXMsg : (c === "blue" ? "Wild-type <i>E. coli</i> has its own working <i>lac</i> operon. The inducer removed the repressor, lacZ was transcribed, and \u03b2-galactosidase cut X-gal. Blue colonies!" + lacNote : noIndMsg); }
         } else if (s.strain === "empty"){
           const c = col(true); spec = {growth:"colonies", color:() => c}; cat = c === "blue" ? "blue" : "white";
           msg = (s.amp ? "The plasmid's ampicillin resistance gene lets every colony survive. " : "") + (!s.xgal ? noXMsg : (c === "blue" ? "The empty plasmid has an intact lacZ. The inducer switched it on and \u03b2-galactosidase cut X-gal: blue colonies." + lacNote : noIndMsg));
@@ -846,7 +855,7 @@
       }}
   };
   const labVis = (k, st) => { const d = LABS[k].def(st); return {...d, flags:{...d.flags, drag:LABS[k].toggles}}; };
-  const LAB_GROUPS = [["Operons", LAB_ORDER], ["Plate experiments", ["xgal","pglo"]]];
+  const LAB_GROUPS = [["Pick an operon to explore", LAB_ORDER], ["See the operon in transformations", ["xgal","pglo"]]];
 
   /* ================= Hands-on stations inside the tracks ================= */
   function setRepOn(p, on){
@@ -1267,6 +1276,11 @@
     const g = L.genesLbl; o += `<text x="${(g[0] + g[1]) / 2}" y="364" class="t12 mid${lay === "generic" ? "" : " it"}">${g[2]}</text>`;
     const b = L.bracket; o += `<path d="M${b[0]},380 v8 H${b[1]} v-8" fill="none" stroke="#8b93a3" stroke-width="1.5"/><text x="${(b[0] + b[1]) / 2}" y="406" class="t13 mid muted">${b[2]}</text>`;
 
+    if (def.flags.showTrp){
+      o += `<circle cx="820" cy="90" r="26" fill="#e7defa" stroke="${PURPLE}" stroke-width="2"/>` + indole(808, 90, PURPLE, 1);
+      o += `<text x="820" y="132" class="t13 mid" style="fill:${PURPLE}">Tryptophan (Trp)</text><text x="820" y="150" class="t12 mid muted">an amino acid</text>`;
+    }
+
     if (def.flags.cistrans){
       const gx = 120, gy = 316, ox = L.opX, oy = 284;
       o += `<text x="10" y="90" class="t12 muted">(the regulatory gene could also sit far away, like trpR)</text>`;
@@ -1404,14 +1418,20 @@
   const MOLICON = {glu:(x, y) => glucose(x, y, 1), lac:(x, y) => disacc(x, y, 1), ara:(x, y) => arabinose(x, y, 1), mal:(x, y) => maltose(x, y, 1), trp:(x, y) => trpChip(x, y, 1)};
   const bigMol = (k, x, y, sc) => `<g transform="translate(${f1(x)},${f1(y)}) scale(${sc || 1.8})">${MOLICON[k](0, 0)}</g>`;
   function trayLayer(DRAG, s, lay){
-    let o = `<rect x="12" y="8" width="976" height="76" rx="16" fill="#f5f6fa" stroke="#c9cfdb" stroke-dasharray="6 5"/>`;
-    o += `<text x="30" y="38" class="t15">Outside the cell</text><text x="30" y="62" class="t12 muted">Drag a molecule down into the cell</text>`;
-    o += `<path d="M12,94 H988 M12,101 H988" stroke="#c9a15a" stroke-width="3"/><text x="26" y="122" class="t12" style="fill:#8a6a24">Cell membrane</text>`;
+    const names = DRAG.map(d => d[1]);
+    const instr = names.length > 1 ? `Drag the ${names.slice(0, -1).join(", ")} or the ${names[names.length - 1]} down into the cell!` : `Drag the ${names[0]} down into the cell!`;
+    let o = `<text x="500" y="16" class="t16 mid" font-weight="700">${instr}</text>`;
+    o += `<text x="18" y="44" class="t13 muted">Outside the cell</text>`;
+    o += `<path d="M12,108 H988 M12,115 H988" stroke="#c9a15a" stroke-width="3"/>`;
+    o += `<text x="18" y="136" class="t13 muted">Inside the cell</text>`;
     DRAG.forEach((d, i) => {
-      const k = d[0], x = 400 + i * 230, y = 46, here = s[k] > .5, lifted = molDrag && molDrag.moved && molDrag.key === k && !molDrag.present;
-      if (!here && !lifted) o += `<g data-mol="${k}" style="cursor:grab"><rect x="${x - 34}" y="${y - 32}" width="${d[1].length * 9 + 84}" height="64" rx="14" fill="#fff" stroke="#8f98e6" stroke-width="2"/>${bigMol(k, x, y)}<text x="${x + 30}" y="${y + 6}" class="t15">${d[1]}</text></g>`;
+      const k = d[0], x = 400 + i * 230, y = 62, here = s[k] > .5, lifted = molDrag && molDrag.moved && molDrag.key === k && !molDrag.present;
+      o += `<path d="M${x},24 V46" stroke="${BLUE}" stroke-width="3" marker-end="url(#trayArr)"/>`;
+      const sc = (k === "lac" || k === "mal") ? 1.15 : 1.8;
+      if (!here && !lifted) o += `<g data-mol="${k}" style="cursor:grab"><rect x="${x - 34}" y="${y - 32}" width="${d[1].length * 9 + 100}" height="64" rx="14" fill="#fff" stroke="#8f98e6" stroke-width="2"/>${bigMol(k, x, y, sc)}<text x="${x + 42}" y="${y + 6}" class="t15">${d[1]}</text></g>`;
       else o += `<g opacity=".55"><rect x="${x - 34}" y="${y - 32}" width="${d[1].length * 9 + 84}" height="64" rx="14" fill="none" stroke="#c9cfdb" stroke-dasharray="4 4"/><text x="${x + 30}" y="${y + 6}" class="t13 muted">${d[1]}: in the cell</text></g>`;
     });
+    o += `<defs><marker id="trayArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="${BLUE}"/></marker></defs>`;
     return o;
   }
   function molGroup(k, inner, DRAG, dragging, box){
@@ -1427,7 +1447,7 @@
   }
   function dragOverlay(L, s){
     if (!molDrag || !molDrag.moved) return "";
-    const k = molDrag.key, inside = molDrag.y > 100;
+    const k = molDrag.key, inside = molDrag.y > 111;
     let o = "";
     if (!molDrag.present){ const T = molTargetPt(k, L, s); o += `<circle cx="${T[0]}" cy="${T[1]}" r="${54 + 4 * Math.sin(sceneT * 5)}" fill="rgba(63,76,192,.08)" stroke="${BLUE}" stroke-width="3" stroke-dasharray="8 6"/>`; }
     o += bigMol(k, molDrag.x, molDrag.y, 2.1);
@@ -1457,7 +1477,7 @@
       if (!molDrag) return;
       const d = molDrag; molDrag = null;
       if (!d.moved){ molSet(d.key, !d.present); return; }
-      const inside = d.y > 100;
+      const inside = d.y > 111;
       if (inside !== d.present) molSet(d.key, inside);
     };
     svg.addEventListener("pointerup", end); svg.addEventListener("pointercancel", () => { molDrag = null; });
@@ -1600,6 +1620,26 @@
       + `<g opacity="${f3(fade)}">` + duoLane(190, "ind", tt, labels) + duoLane(410, "rep", tt, labels) + `</g>`;
   }
 
+  function ctrlSummaryScene(){
+    const card = (x, y, w, h, fill, stroke) => `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="18" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>`;
+    let o = `<text x="500" y="34" class="t18 mid">Two separate questions about any operon</text>`;
+    o += `<text x="250" y="66" class="t15 mid" style="fill:#b83a34">Q1: How does the protein control it?</text>`;
+    o += card(250, 168, 420, 190, "#fbe8e7", "#b83a34");
+    o += stopSign(165, 140, 1, 1, .8);
+    o += `<text x="165" y="192" class="t13 mid">Negative control</text><text x="165" y="212" class="t12 mid muted">a repressor</text><text x="165" y="228" class="t12 mid muted">BLOCKS transcription</text><text x="165" y="244" class="t12 mid muted">(stop sign)</text>`;
+    o += gasCan(345, 143, 1, "Activator", 1, true);
+    o += `<text x="345" y="192" class="t13 mid">Positive control</text><text x="345" y="212" class="t12 mid muted">an activator</text><text x="345" y="228" class="t12 mid muted">HELPS transcription</text><text x="345" y="244" class="t12 mid muted">(gas)</text>`;
+    o += `<text x="750" y="66" class="t15 mid" style="fill:#1b7f4e">Q2: What's the default state?</text>`;
+    o += card(750, 168, 420, 190, "#e1f3e8", "#1b7f4e");
+    o += `<text x="680" y="150" class="t15 mid" font-weight="700">Inducible</text><text x="680" y="174" class="t12 mid muted">normally OFF</text><text x="680" y="194" class="t12 mid muted">an inducer</text><text x="680" y="212" class="t12 mid muted">turns it ON</text>`;
+    o += `<text x="830" y="150" class="t15 mid" font-weight="700">Repressible</text><text x="830" y="174" class="t12 mid muted">normally ON</text><text x="830" y="194" class="t12 mid muted">a corepressor</text><text x="830" y="212" class="t12 mid muted">turns it OFF</text>`;
+    o += `<rect x="90" y="300" width="820" height="140" rx="18" fill="#fff8e6" stroke="#e0b64a" stroke-width="2.5"/>`;
+    o += `<text x="500" y="328" class="t15 mid" font-weight="700">These two questions are independent!</text>`;
+    o += `<text x="500" y="358" class="t13 mid">The <tspan class="it">lac</tspan> operon is negatively controlled (a repressor) AND inducible (normally off, lactose turns it on).</text>`;
+    o += `<text x="500" y="380" class="t13 mid">The <tspan class="it">trp</tspan> operon is negatively controlled (a repressor) AND repressible (normally on, tryptophan turns it off).</text>`;
+    o += `<text x="500" y="402" class="t13 mid">The <tspan class="it">lac</tspan> operon is ALSO positively controlled by CAP — one operon, two separate control questions!</text>`;
+    return o;
+  }
   const MIXCOL = (on) => i => (i % 5 < 3 ? on : "white");
   function platePairSVG(t){
     const g = smooth(seg(t % 7, .2, 1.8));
@@ -1724,6 +1764,7 @@
     else if (d.scene === "enhancer") o = enhancerSVG(t);
     else if (d.scene === "seesaw") o = seesawSVG(t, frozen);
     else if (d.scene === "duo") o = duoSVG(t, d.mode, frozen);
+    else if (d.scene === "ctrlsummary") o = ctrlSummaryScene();
     else if (d.scene === "platepair") o = platePairSVG(t);
     else if (d.scene === "feedback") o = feedbackSVG(t, d.mode);
     else if (d.scene === "xgalchem") o = xgalChemSVG(t);
@@ -2031,11 +2072,15 @@
   }
 
   /* ================= Lab UI ================= */
+  const PLATE_PARENT = {xgal:"lac", pglo:"ara"};
+  const curOperonKey = () => LABS[labOp] ? labOp : PLATE_PARENT[labOp];
   function labSelector(){
     let h = "";
     LAB_GROUPS.forEach(gp => {
+      const items = gp[1] === LAB_ORDER ? gp[1] : gp[1].filter(k => PLATE_PARENT[k] === curOperonKey());
+      if (!items.length) return;
       h += `<div class="labgroup">${gp[0]}</div><div class="opsel" role="group" aria-label="${gp[0]}">`;
-      gp[1].forEach(k => { const L = LABS[k] || PLATELABS[k]; h += `<button data-op="${k}" aria-pressed="${k === labOp}" ${labPending ? "disabled" : ""}>${L.name}${L.extra ? `<span class="x">extra example</span>` : ""}</button>`; });
+      items.forEach(k => { const L = LABS[k] || PLATELABS[k]; h += `<button data-op="${k}" aria-pressed="${k === labOp}" ${labPending ? "disabled" : ""}>${L.name}${L.extra ? `<span class="x">extra example</span>` : ""}</button>`; });
       h += `</div>`;
     });
     return h;
@@ -2045,20 +2090,26 @@
     return `<svg viewBox="-24 -24 48 48" width="${sz || 40}" height="${sz || 40}" aria-hidden="true"><circle r="16" fill="none" stroke="#c9cfdb" stroke-width="6"/>${arcs.map(c => `<path d="${arcPath(0, 0, 16, c[1], c[2])}" fill="none" stroke="${c[0]}" stroke-width="7"/>`).join("")}</svg>`;
   };
   function renderPlateSide(){
-    const side = $("plateSide"), L = PLATELABS[labOp], st = plateState[labOp];
+    const side = $("plateSide"), L = PLATELABS[labOp], st = plateState[labOp], res = L.out(st);
     side.hidden = false;
     const inCell = st.cell || [], tray = L.plasmids.filter(x => !inCell.includes(x[0]));
     const tok = x => `<span class="optok plas" data-plas="${x[0]}" role="button" tabindex="0" aria-label="${x[1]}: drag into or out of the cell">${plasmidIcon(x[0], 34)}<span><b>${x[1]}</b><small>${x[2]}</small></span></span>`;
     const dis = labPending ? "disabled" : "";
     let h = `<div class="ps-h"><span class="num">1</span> Transform the bacteria</div>`;
+    h += `<div class="ps-outlbl">Outside the cell</div>`;
     h += `<div class="ps-tray" data-drop="tray">${tray.map(tok).join("") || `<span class="muted-s">All plasmids are in the cell.</span>`}</div>`;
-    h += `<div class="ps-cell${st.strain ? " done" : ""}" data-drop="cell"><span class="ps-lbl">E. coli cell${st.strain ? " ✓ transformed" : ": drag plasmids in here"}</span><div class="ps-in">${inCell.map(k => tok(L.plasmids.find(x => x[0] === k))).join("") || `<span class="muted-s">No plasmid (a control)</span>`}</div></div>`;
+    h += `<div class="ps-outlbl">Inside the cell — <i>E. coli</i> cell${st.strain ? " ✓ transformed" : ": drag plasmids here"}</div>`;
+    h += `<div class="ps-cell${st.strain ? " done" : ""}" data-drop="cell"><svg class="ps-flag" viewBox="0 0 40 20" width="30" height="15" aria-hidden="true"><path d="M40,10 Q28,2 20,10 T2,10" stroke="#6f9a5f" stroke-width="3" fill="none" stroke-linecap="round"/></svg><div class="ps-in">${inCell.map(k => tok(L.plasmids.find(x => x[0] === k))).join("") || `<span class="muted-s">No plasmid (a control)</span>`}</div></div>`;
     h += `<button class="btn primary" id="xfBtn" ${st.strain || dis ? "disabled" : ""}>${st.strain ? "Transformed!" : "⚡ Transform"}</button>`;
     h += `<div class="ps-h"><span class="num">2</span> Add to the plate</div><div class="ps-adds">` + L.adds.map(x => `<button class="chipbtn" data-add="${x[0]}" aria-pressed="${!!st[x[0]]}" ${dis}>${st[x[0]] ? "✓ " : "+ "}${x[1]}</button>`).join("") + `</div>`;
     h += `<div class="ps-h"><span class="num">3</span> Grow and look</div><div class="actions"><button class="btn primary" id="incBtn" ${!st.strain || dis ? "disabled" : ""}>${st.grown ? "Incubate a fresh plate" : "Incubate overnight"}</button>`;
     if (labOp === "pglo") h += `<button class="btn secondary uvbtn" id="uvBtn" aria-pressed="${!!st.uv}">${st.uv ? "UV light: on" : "UV light: off"}</button>`;
     h += `</div>`;
     if (labPending) h += `<div class="predict">${L.prompt} <input class="pred" id="predIn" size="8" autocomplete="off" aria-label="Your prediction"> <button class="btn primary" id="predCheck">Check</button> <button class="btn secondary" id="predMove">Move on</button><div class="feedback bad" id="predFb"></div></div>`;
+    if (st.grown && !labPending){
+      h += `<div class="ps-h">What grew?</div><div class="readout">${res.chips.map(c => `<span class="chip ${c[2]}">${c[0]}: ${c[1]}</span>`).join("")}</div>`;
+      h += `<p class="explain">${labMsg ? `<b>${labMsg}</b> ` : ""}${res.msg}</p>`;
+    }
     side.innerHTML = h;
     const setCell = (k, inn) => { const c = (st.cell || []).filter(x => x !== k); if (inn) c.push(k); st.cell = c; st.strain = null; st.grown = false; labMsg = ""; renderPlateLab(); };
     side.querySelectorAll("[data-plas]").forEach(el => { const k = el.dataset.plas, inn = inCell.includes(k);
@@ -2077,23 +2128,23 @@
       $("predMove").addEventListener("click", () => incubate("Here's what grew:"));
     }
   }
+  function factSquares(){
+    const col = labOp === "xgal" ? 1 : 2, D = XVP_TABLE;
+    return `<div class="factgrid">` + D.order.map(k => { const r = D.rows[k][0]; return `<div class="factcard"><div class="fc-h">${r[0]}</div><div class="fc-v">${r[col]}</div></div>`; }).join("") + `</div>`;
+  }
   function renderPlateLab(){
-    const L = PLATELABS[labOp], st = plateState[labOp], res = L.out(st);
+    const L = PLATELABS[labOp];
     $("stepNo").textContent = "Operon Lab: plate experiments";
     $("stepTitle").textContent = L.name;
-    textEl.textContent = L.intro;
+    textEl.textContent = "";
     afterEl.hidden = true; fb.textContent = ""; fb.className = "feedback"; checkRow.hidden = true;
     let h = `<div class="lab">` + labSelector();
-    h += `<div class="note"><b>Don't mix them up:</b> X-gal plates use the <i>lac</i> operon (lacZ turns X-gal blue). The pGLO lab uses GFP switched on by arabinose (green glow under UV). Ampicillin selects for the plasmid in both. See the table below!</div>`;
-    if (st.grown && !labPending){
-      h += `<div class="readout">${res.chips.map(c => `<span class="chip ${c[2]}">${c[0]}: ${c[1]}</span>`).join("")}</div>`;
-      h += `<p class="explain">${labMsg ? `<b>${labMsg}</b> ` : ""}${res.msg}</p>`;
-    } else h += `<p class="explain">Follow the 3 numbered steps by the plate: transform, add to the plate, then incubate.</p>`;
+    h += `<div class="note"><b>Quick facts: ${L.name}</b> (don't mix it up with the ${labOp === "xgal" ? "pGLO" : "X-gal"} lab!)${factSquares()}</div>`;
     $("labArea").innerHTML = h + `</div>`;
     $("bubbleFoot").innerHTML = footHTML(L.more, null); wireFoot();
     $("labArea").querySelectorAll("[data-op]").forEach(b => b.addEventListener("click", () => { labOp = b.dataset.op; labMsg = ""; enterLab(); }));
+    renderTable(null);
     renderPlateSide();
-    renderTable({data:XVP_TABLE, rows:XVP_TABLE.order});
   }
   function incubate(msg){ const st = plateState[labOp]; labPending = null; st.grown = true; labMsg = msg; sceneT = 0; renderPlateLab(); }
   function plateCheck(){
@@ -2106,14 +2157,14 @@
     if (PLATELABS[labOp]) return renderPlateLab();
     const L = LABS[labOp], s = labState[labOp];
     $("stepNo").textContent = "Operon Lab";
-    $("stepTitle").textContent = `Explore the ${L.name}`;
+    $("stepTitle").textContent = "Explore a new operon";
     textEl.textContent = L.intro;
     afterEl.hidden = true; fb.textContent = ""; fb.className = "feedback"; checkRow.hidden = true;
     const shown = labPending ? labPending.prev : s, next = labPending ? labPending.next : s;
     const out = L.out(shown);
     let h = `<div class="lab">` + labSelector();
     if (L.extra) h += `<div class="xtag">Extra example: you are not responsible for knowing this operon. It's here to help you understand how operons work.</div>`;
-    h += `<div class="draghint">\u261D Drag ${L.toggles.map(tg => tg[1].toLowerCase()).join(" or ")} from the top of the diagram into the cell. Drag it back up to take it away.${labPending ? ` <b>You just ${next[labPending.key] ? "added" : "removed"} ${labPending.name}.</b>` : ""}</div>`;
+    if (labPending) h += `<div class="draghint"><b>You just ${next[labPending.key] ? "added" : "removed"} ${labPending.name}.</b></div>`;
     if (labPending){
       h += `<div class="predict">Predict before you watch: will the ${L.name.split(" ")[0]} genes be ON, LOW, or OFF? <input class="pred" id="predIn" size="5" autocomplete="off" aria-label="Your prediction"> <button class="btn primary" id="predCheck">Check</button> <button class="btn secondary" id="predMove">Move on</button><div class="feedback bad" id="predFb"></div></div>`;
     } else {
