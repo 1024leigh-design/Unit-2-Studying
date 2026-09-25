@@ -246,11 +246,15 @@
   .plateside{position:absolute;top:12px;right:12px;width:44%;max-height:calc(100% - 24px);overflow:auto;background:rgba(255,255,255,.97);border:2px solid var(--line);border-radius:16px;padding:12px 14px;display:grid;gap:9px;box-shadow:0 6px 18px rgba(29,36,51,.12)}
   .ps-h{font-weight:700;display:flex;align-items:center;gap:8px}
   .ps-h .num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:.85rem}
+  .factgrid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .factcard{flex:1 1 130px;min-width:120px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 10px}
+  .fc-h{font-size:.76rem;font-weight:700;color:var(--muted);margin-bottom:2px}
+  .fc-v{font-size:.86rem;line-height:1.35}
   .ps-tray{display:flex;flex-wrap:wrap;gap:6px;min-height:48px;border:2px dashed #c9cfdb;border-radius:12px;padding:6px}
   .ps-outlbl{font-size:.78rem;font-weight:700;color:#5a6376;margin-bottom:-2px}
-  .ps-cell{border:3px solid #6f9a5f;background:radial-gradient(ellipse at 30% 25%,#f8fbf3,#e5f0da 75%);border-radius:60px;padding:10px 20px;display:grid;gap:4px;min-height:80px;box-shadow:inset 0 0 0 4px rgba(255,255,255,.6),inset 0 0 14px rgba(111,154,95,.3)}
+  .ps-cell{position:relative;border:3px solid #6f9a5f;background:radial-gradient(ellipse at 30% 25%,#f8fbf3,#e5f0da 75%);border-radius:52px 68px 58px 46px/44px 52px 40px 48px;padding:10px 20px 10px 30px;display:grid;gap:4px;min-height:80px;box-shadow:inset 0 0 0 4px rgba(255,255,255,.6),inset 0 0 14px rgba(111,154,95,.3)}
+  .ps-flag{position:absolute;left:-22px;top:50%;transform:translateY(-50%)}
   .ps-cell.done{border-color:var(--good);box-shadow:0 0 0 4px var(--good-soft)}
-  .ps-lbl{font-size:.8rem;font-weight:700;color:#4d7a3d}
   .ps-in{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
   .optok.plas{padding:3px 10px 3px 3px;border-radius:14px}
   .optok.plas span{display:grid;line-height:1.15;font-size:.82rem}
@@ -851,7 +855,7 @@
       }}
   };
   const labVis = (k, st) => { const d = LABS[k].def(st); return {...d, flags:{...d.flags, drag:LABS[k].toggles}}; };
-  const LAB_GROUPS = [["Operons", LAB_ORDER], ["Operons in experiments", ["xgal","pglo"]]];
+  const LAB_GROUPS = [["Pick an operon to explore", LAB_ORDER], ["See the operon in transformations", ["xgal","pglo"]]];
 
   /* ================= Hands-on stations inside the tracks ================= */
   function setRepOn(p, on){
@@ -1423,7 +1427,8 @@
     DRAG.forEach((d, i) => {
       const k = d[0], x = 400 + i * 230, y = 62, here = s[k] > .5, lifted = molDrag && molDrag.moved && molDrag.key === k && !molDrag.present;
       o += `<path d="M${x},24 V46" stroke="${BLUE}" stroke-width="3" marker-end="url(#trayArr)"/>`;
-      if (!here && !lifted) o += `<g data-mol="${k}" style="cursor:grab"><rect x="${x - 34}" y="${y - 32}" width="${d[1].length * 9 + 100}" height="64" rx="14" fill="#fff" stroke="#8f98e6" stroke-width="2"/>${bigMol(k, x, y)}<text x="${x + 42}" y="${y + 6}" class="t15">${d[1]}</text></g>`;
+      const sc = (k === "lac" || k === "mal") ? 1.15 : 1.8;
+      if (!here && !lifted) o += `<g data-mol="${k}" style="cursor:grab"><rect x="${x - 34}" y="${y - 32}" width="${d[1].length * 9 + 100}" height="64" rx="14" fill="#fff" stroke="#8f98e6" stroke-width="2"/>${bigMol(k, x, y, sc)}<text x="${x + 42}" y="${y + 6}" class="t15">${d[1]}</text></g>`;
       else o += `<g opacity=".55"><rect x="${x - 34}" y="${y - 32}" width="${d[1].length * 9 + 84}" height="64" rx="14" fill="none" stroke="#c9cfdb" stroke-dasharray="4 4"/><text x="${x + 30}" y="${y + 6}" class="t13 muted">${d[1]}: in the cell</text></g>`;
     });
     o += `<defs><marker id="trayArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="${BLUE}"/></marker></defs>`;
@@ -2072,7 +2077,7 @@
   function labSelector(){
     let h = "";
     LAB_GROUPS.forEach(gp => {
-      const items = gp[0] === "Operons" ? gp[1] : gp[1].filter(k => PLATE_PARENT[k] === curOperonKey());
+      const items = gp[1] === LAB_ORDER ? gp[1] : gp[1].filter(k => PLATE_PARENT[k] === curOperonKey());
       if (!items.length) return;
       h += `<div class="labgroup">${gp[0]}</div><div class="opsel" role="group" aria-label="${gp[0]}">`;
       items.forEach(k => { const L = LABS[k] || PLATELABS[k]; h += `<button data-op="${k}" aria-pressed="${k === labOp}" ${labPending ? "disabled" : ""}>${L.name}${L.extra ? `<span class="x">extra example</span>` : ""}</button>`; });
@@ -2090,12 +2095,11 @@
     const inCell = st.cell || [], tray = L.plasmids.filter(x => !inCell.includes(x[0]));
     const tok = x => `<span class="optok plas" data-plas="${x[0]}" role="button" tabindex="0" aria-label="${x[1]}: drag into or out of the cell">${plasmidIcon(x[0], 34)}<span><b>${x[1]}</b><small>${x[2]}</small></span></span>`;
     const dis = labPending ? "disabled" : "";
-    let h = `<p class="explain" style="margin:0 0 4px">${L.intro}</p>`;
-    h += `<div class="ps-h"><span class="num">1</span> Transform the bacteria</div>`;
+    let h = `<div class="ps-h"><span class="num">1</span> Transform the bacteria</div>`;
     h += `<div class="ps-outlbl">Outside the cell</div>`;
     h += `<div class="ps-tray" data-drop="tray">${tray.map(tok).join("") || `<span class="muted-s">All plasmids are in the cell.</span>`}</div>`;
-    h += `<div class="ps-outlbl">Inside the cell</div>`;
-    h += `<div class="ps-cell${st.strain ? " done" : ""}" data-drop="cell"><span class="ps-lbl"><i>E. coli</i> cell${st.strain ? " ✓ transformed" : ": drag plasmids in here"}</span><div class="ps-in">${inCell.map(k => tok(L.plasmids.find(x => x[0] === k))).join("") || `<span class="muted-s">No plasmid (a control)</span>`}</div></div>`;
+    h += `<div class="ps-outlbl">Inside the cell — <i>E. coli</i> cell${st.strain ? " ✓ transformed" : ": drag plasmids here"}</div>`;
+    h += `<div class="ps-cell${st.strain ? " done" : ""}" data-drop="cell"><svg class="ps-flag" viewBox="0 0 40 20" width="30" height="15" aria-hidden="true"><path d="M40,10 Q28,2 20,10 T2,10" stroke="#6f9a5f" stroke-width="3" fill="none" stroke-linecap="round"/></svg><div class="ps-in">${inCell.map(k => tok(L.plasmids.find(x => x[0] === k))).join("") || `<span class="muted-s">No plasmid (a control)</span>`}</div></div>`;
     h += `<button class="btn primary" id="xfBtn" ${st.strain || dis ? "disabled" : ""}>${st.strain ? "Transformed!" : "⚡ Transform"}</button>`;
     h += `<div class="ps-h"><span class="num">2</span> Add to the plate</div><div class="ps-adds">` + L.adds.map(x => `<button class="chipbtn" data-add="${x[0]}" aria-pressed="${!!st[x[0]]}" ${dis}>${st[x[0]] ? "✓ " : "+ "}${x[1]}</button>`).join("") + `</div>`;
     h += `<div class="ps-h"><span class="num">3</span> Grow and look</div><div class="actions"><button class="btn primary" id="incBtn" ${!st.strain || dis ? "disabled" : ""}>${st.grown ? "Incubate a fresh plate" : "Incubate overnight"}</button>`;
@@ -2124,11 +2128,9 @@
       $("predMove").addEventListener("click", () => incubate("Here's what grew:"));
     }
   }
-  function xvpTableHTML(){
-    const D = XVP_TABLE;
-    let t = `<table><thead><tr>${D.head.map(x => `<th>${x}</th>`).join("")}</tr></thead><tbody>`;
-    D.order.forEach(k => { const r = D.rows[k]; t += `<tr>` + r[0].map((c, j) => j === 0 ? `<td><b>${c}</b></td>` : `<td>${c}</td>`).join("") + `</tr>`; });
-    return t + `</tbody></table>`;
+  function factSquares(){
+    const col = labOp === "xgal" ? 1 : 2, D = XVP_TABLE;
+    return `<div class="factgrid">` + D.order.map(k => { const r = D.rows[k][0]; return `<div class="factcard"><div class="fc-h">${r[0]}</div><div class="fc-v">${r[col]}</div></div>`; }).join("") + `</div>`;
   }
   function renderPlateLab(){
     const L = PLATELABS[labOp];
@@ -2137,7 +2139,7 @@
     textEl.textContent = "";
     afterEl.hidden = true; fb.textContent = ""; fb.className = "feedback"; checkRow.hidden = true;
     let h = `<div class="lab">` + labSelector();
-    h += `<div class="note"><b>Don't mix them up:</b> X-gal plates use the <i>lac</i> operon (lacZ turns X-gal blue). The pGLO lab uses GFP switched on by arabinose (green glow under UV). Ampicillin selects for the plasmid in both.<div class="tablewrap" style="margin-top:8px">${xvpTableHTML()}</div></div>`;
+    h += `<div class="note"><b>Quick facts: ${L.name}</b> (don't mix it up with the ${labOp === "xgal" ? "pGLO" : "X-gal"} lab!)${factSquares()}</div>`;
     $("labArea").innerHTML = h + `</div>`;
     $("bubbleFoot").innerHTML = footHTML(L.more, null); wireFoot();
     $("labArea").querySelectorAll("[data-op]").forEach(b => b.addEventListener("click", () => { labOp = b.dataset.op; labMsg = ""; enterLab(); }));

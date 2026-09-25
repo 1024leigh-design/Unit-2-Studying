@@ -29,9 +29,23 @@
   .modehint{color:var(--muted);font-size:.92rem;margin:0 0 10px}
   .stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   svg{display:block;width:100%;height:auto;font-family:var(--font)}
-  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 2px 0;font-size:.85rem;color:var(--muted)}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:8px 16px 12px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
   .legend span{display:inline-flex;align-items:center;gap:6px}
   .legend i{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;font-style:normal;font-weight:700;font-size:.78rem}
+  .bubble-foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .bubble-foot:empty{margin-top:0}
+  .more-btn{font:700 .92rem var(--font);border-radius:999px;padding:7px 14px;cursor:pointer;border:2px solid #cbbdf2;background:var(--more-soft);color:var(--more)}
+  .overlay{position:fixed;inset:0;background:rgba(29,36,51,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+  .overlay[hidden]{display:none}
+  .panel{background:#fff;border-radius:18px;max-width:680px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;border-top:6px solid var(--more)}
+  .panel .ptag{display:inline-block;background:var(--more-soft);color:var(--more);font-weight:700;font-size:.85rem;border-radius:999px;padding:4px 12px}
+  .panel h2{margin:10px 0 8px;font-size:1.3rem}
+  .panel h3{font-size:1.02rem;margin:14px 0 4px;color:var(--more)}
+  .panel p{margin:0 0 8px;line-height:1.6}
+  .panel .close{margin-top:10px}
+  .polslide{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .polslide input[type=range]{flex:1}
+  .polslide .plbl{font-size:.85rem;font-weight:700;color:var(--muted);white-space:nowrap}
 
   .bubble{position:relative;margin-top:18px;background:var(--card);border:2px solid var(--accent);border-radius:16px;padding:16px 20px 16px}
   .bubble::before{content:"";position:absolute;top:-11px;left:52px;width:18px;height:18px;background:var(--card);border-left:2px solid var(--accent);border-top:2px solid var(--accent);transform:rotate(45deg)}
@@ -188,20 +202,22 @@
 
   <div class="stage">
     <svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="Animated diagram of transcription"></svg>
+    <div class="legend" id="legend"></div>
   </div>
-  <div class="legend" id="legend"></div>
 
   <section class="bubble" id="bubble" aria-live="polite">
     <div class="stepno" id="stepNo"></div>
     <div class="title" id="stepTitle"></div>
     <p class="text" id="stepText"></p>
     <p class="after" id="stepAfter" hidden></p>
+    <div class="polslide" id="polSlide" hidden></div>
     <div class="gate" id="gate" hidden></div>
     <div class="feedback" id="feedback"></div>
     <div class="check-row" id="checkRow" hidden>
       <button class="btn primary" id="checkBtn">Check</button>
       <button class="btn secondary" id="moveOnBtn">Move on</button>
     </div>
+    <div class="bubble-foot" id="bubbleFoot"></div>
   </section>
 
   <nav>
@@ -211,15 +227,24 @@
   </nav>
 </div>
 
+<div class="overlay" id="moreOverlay" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
+    <span class="ptag">Learn more: just for the curious, not on the exam</span>
+    <h2 id="moreTitle"></h2>
+    <div id="moreBody"></div>
+    <button class="btn primary close" id="moreClose">Back to the module</button>
+  </div>
+</div>
+
 <script>
 (function(){
   /* ---------- Sequence and layout ---------- */
-  const CODING = "C" + "TATAA" + "GTG" + "CA" + "ATGGCATTCGGATAA" + "GCGC" + "T";
+  const CODING = "C" + "TATAA" + "GTG" + "CA" + "ATGGCATTCGGACGTAACTAA" + "GCGC" + "T";
   const COMP = {A:"T", T:"A", G:"C", C:"G"};
   const TEMPLATE = CODING.split("").map(b => COMP[b]).join("");
   const N = CODING.length;
-  const GS = 11, GE = 25;              // gene start and end index
-  const X0 = 150, DX = 27;
+  const GS = 11, GE = 31;              // gene start and end index
+  const X0 = 95, DX = 24;
   const X = i => X0 + i * DX;
   const rnaB = i => CODING[i] === "T" ? "U" : CODING[i];
 
@@ -228,8 +253,8 @@
   const REGIONS = [
     {label:"Promoter", key:"promoter", from:1, to:5, fill:"#fbe3b5", stroke:"#e0b45c"},
     {label:"Operator", from:6, to:8, fill:"#eef0f4", stroke:"#9aa3b5", dash:true},
-    {label:"Gene", from:11, to:25, fill:"#d6efdf", stroke:"#7cc19a"},
-    {label:"Terminator", key:"terminator", from:26, to:29, fill:"#f8d0cd", stroke:"#e08a84"}
+    {label:"Gene", from:11, to:31, fill:"#d6efdf", stroke:"#7cc19a"},
+    {label:"Terminator", key:"terminator", from:32, to:35, fill:"#f8d0cd", stroke:"#e08a84"}
   ];
 
   /* ---------- Helpers ---------- */
@@ -255,10 +280,31 @@
     terminator:{show:"terminator", ans:["terminator","terminatorsequence","terminatorregion"], fuzzy:true},
     mrna:      {show:"mRNA", ans:["mrna","messengerrna","messenger"], fuzzy:true},
     cytoplasm: {show:"cytoplasm", ans:["cytoplasm","cytosol"], fuzzy:true},
-    complete:  {show:"complete", ans:["complete","completed","finished","finish","done","over"], fuzzy:true},
+    txword:    {show:"transcription", ans:["transcription"], fuzzy:true},
     nucleus:   {show:"nucleus", ans:["nucleus"], fuzzy:true},
     introns:   {show:"introns", ans:["introns","intron"], fuzzy:true}
   };
+
+  /* ---------- Learn more ---------- */
+  const MORE = {
+    promoterFinders:{title:"Not all RNA polymerases find promoters the same way", html:`<p>Bacteria get by with one RNA polymerase core enzyme, but it can't recognize a promoter on its own. It needs a helper protein called a <b>sigma factor</b> to dock onto it first and read the promoter sequence. Most genes use the everyday sigma factor (σ<sup>70</sup> in <i>E. coli</i>), but stressed cells can swap in a different sigma factor to instantly redirect RNA polymerase toward a whole new set of genes, such as heat-shock genes.</p><p>Eukaryotes take this even further: they have three separate RNA polymerases (Pol I, II, and III), and none of them can find a promoter alone either. Pol II, the one that makes mRNA, needs a whole team of general transcription factors to assemble on the promoter first, like a pit crew getting everything ready before RNA polymerase can even bind.</p>`},
+    tataBox:{title:"The TATA box and other promoter sequences", html:`<p>Promoters aren't random DNA; they're built from short, recognizable sequences. Many eukaryotic genes have a <b>TATA box</b>, a stretch rich in adenine and thymine sitting about 25 to 30 base pairs before the gene starts. A protein called TBP (TATA-binding protein) wedges into it and bends the DNA sharply, which helps the rest of the transcription machinery assemble in the right spot.</p><p>Why A and T? A-T base pairs are held together by only two hydrogen bonds (versus three for G-C), so an A-T-rich stretch is a little easier to bend and pry open, which is exactly what's needed to get transcription started there.</p><p>Bacterial promoters have their own consensus sequences too, commonly called the −10 box ("Pribnow box") and −35 box, named for how many bases they sit before the gene. The closer a real promoter's sequence matches the consensus, the more often RNA polymerase binds it, which is one reason some genes are transcribed far more often than others.</p>`},
+    polVsHelicase:{title:"RNA polymerase vs. DNA helicase: two different \"unzippers\"", html:`<p>Both transcription and DNA replication need the double helix pried apart, but they use different tools for the job. <b>DNA helicase</b> is the enzyme that starts replication by unwinding DNA; <b>RNA polymerase</b> is the enzyme that starts transcription, and it can pry the strands apart all by itself, without any helicase at all.</p><p>Separating two DNA strands means breaking hydrogen bonds, and that takes energy input, called <b>activation energy</b>, to get going. Both helicase and RNA polymerase are <b>catalysts</b>: proteins that lower the activation energy needed for a reaction, so it can happen fast enough to matter inside a cell, without being used up themselves.</p><p>Unwinding DNA is a <b>catabolic</b> process in the sense that it's breaking bonds (hydrogen bonds between base pairs) rather than building new ones. Helicase pays for that unwinding by burning ATP directly, one molecule at a time, like a motor walking down the strand. RNA polymerase doesn't need a separate ATP-burning step to unwind DNA; instead, it uses the energy released as it forms new bonds while building RNA to help drive the strands apart as it moves forward. Two different enzymes, two different jobs, but the same underlying idea: prying apart a stable helix takes energy, and a catalyst makes that energy investment pay off fast.</p>`},
+    strandChoice:{title:"How does RNA polymerase know which strand to read?", html:`<p>There's nothing chemically special that makes one DNA strand always "the" template strand across the whole genome. Instead, it depends entirely on where a gene's promoter sits and which direction it faces. RNA polymerase always reads 3' to 5' and always builds RNA 5' to 3', so once it locks onto a promoter, the strand running 3' to 5' <i>from that starting point</i> automatically becomes the template for that gene.</p><p>Because genes are scattered on both strands of a chromosome, the "coding strand" for one gene can be the "template strand" for a neighboring gene running the opposite direction! There's no single template strand for an entire chromosome, only a template strand for each individual gene, decided by which way that gene's promoter points.</p>`},
+    buildingRNA:{title:"Why RNA nucleotides arrive as triphosphates", html:`<p>The free nucleotides RNA polymerase uses aren't just single-phosphate units; they arrive as <b>ribonucleoside triphosphates</b> (ATP, UTP, GTP, and CTP), the RNA cousins of the ATP your cells use for energy. When RNA polymerase links one onto the growing chain, it clips off two of those three phosphates as a unit called pyrophosphate.</p><p>Breaking that bond releases energy, and cells immediately break the pyrophosphate apart again, which pulls the whole reaction strongly in the forward direction. So building RNA isn't just information copying, it's also a mini energy transaction every single time a base is added.</p>`},
+    helixReform:{title:"Keeping the bubble small: supercoiling", html:`<p>Only about 12 to 14 base pairs are unwound at any moment inside RNA polymerase, the "transcription bubble." Unwinding a long stretch all at once would put a lot of twisting strain on the rest of the chromosome, since DNA is a closed, coiled-up shape, not a loose noodle.</p><p>As RNA polymerase moves forward, it over-winds (adds extra twists to) the DNA ahead of it and under-winds the DNA behind it, a problem called <b>supercoiling</b>. Cells rely on enzymes called <b>topoisomerases</b> (including one called DNA gyrase in bacteria) to cut, swivel, and reseal the DNA backbone to relieve this strain, so the helix can keep re-forming smoothly behind the enzyme instead of getting hopelessly tangled.</p>`},
+    directionMatters:{title:"Why RNA polymerase can only build 5' to 3'", html:`<p>Each new RNA nucleotide is added by attaching its 5' phosphate group to the exposed 3'-OH (hydroxyl) group at the end of the growing chain. That means the chain can only ever grow from its 3' end, which is another way of saying RNA is built 5' to 3'; there's no chemical way to add a base onto the 5' end instead.</p><p>Because the two DNA strands are antiparallel, reading the template strand in its own 3' to 5' direction automatically produces new RNA running 5' to 3', matching the coding strand's orientation. This one-way chemistry is also why DNA replication needs extra tricks (like Okazaki fragments) to copy the strand that runs the "wrong" way relative to the replication fork.</p>`},
+    terminatorDetail:{title:"How does RNA polymerase know where to stop?", html:`<p>A <b>terminator</b> is a sequence at the end of a gene that signals "stop here," and bacteria use two main strategies. In <b>rho-independent (intrinsic) termination</b>, the terminator sequence, once transcribed into RNA, folds back on itself into a hairpin loop (because it contains a G-C-rich palindrome), immediately followed by a run of U's. That hairpin physically destabilizes RNA polymerase's grip, and the weak U-A pairing (only two hydrogen bonds each) lets the RNA pull free easily.</p><p>In <b>rho-dependent termination</b>, a separate protein called Rho chases along behind RNA polymerase and catches up when the enzyme pauses at a rho-dependent terminator sequence, then pulls the RNA and DNA apart. Either way, transcription doesn't just "run out" at the end of a gene; a specific sequence actively signals the stop.</p>`},
+    mrnaMore:{title:"mRNA: a short-lived messenger", html:`<p>mRNA (messenger RNA) is deliberately temporary. A typical bacterial mRNA lasts only a few minutes before cellular enzymes chop it up, while many eukaryotic mRNAs last hours. That short lifespan is a feature, not a flaw: it lets a cell quickly change which proteins it's making, just by changing which genes it's transcribing, without waiting for old instructions to be used up.</p><p>One gene can be transcribed into many mRNA copies, and each mRNA copy can be translated into many protein copies, so a single burst of transcription can be amplified into a large amount of protein. This copy-of-a-copy strategy also protects the original gene: the master DNA blueprint never has to leave its safe location (the nucleus, in eukaryotes) to be read by the protein-building machinery.</p>`},
+    coupledTxTl:{title:"The upside (and risk) of coupled transcription and translation", html:`<p>Because bacteria have no nuclear membrane separating DNA from ribosomes, a ribosome can grab the 5' end of an mRNA and start translating before RNA polymerase has even finished transcribing the 3' end. This <b>coupled transcription and translation</b> lets bacteria respond to their environment and make proteins extremely fast, which matters for a cell that might need to divide again in only 20 minutes.</p><p>There's a catch: if RNA polymerase makes a mistake or the ribosome runs into trouble, there's no time for quality-control editing the way eukaryotes get by processing pre-mRNA first. Bacteria rely on the Rho protein (mentioned in termination) partly to detect and stop transcription when a ribosome has stalled or fallen off early, since an untranslated mRNA drifting through the cytoplasm can be a signal that something has gone wrong.</p>`},
+    eukProcessing:{title:"Why eukaryotic processing pays off", html:`<p>Eukaryotic mRNA processing costs time, but it buys a lot in return. The 5' cap and 3' poly-A tail protect the mRNA from being chewed up by enzymes and help ribosomes recognize it. Before export, the cell also does quality control: mRNAs with processing errors are often degraded right in the nucleus and never even reach the cytoplasm.</p><p>Splicing out introns has an enormous bonus: many genes can be spliced in more than one way, called <b>alternative splicing</b>, keeping some exons and skipping others. That means a single gene can code for several different protein versions, which is a major reason humans can build so much biological complexity from only about 20,000 genes.</p>`}
+  };
+  function openMore(key){
+    const m = MORE[key]; if (!m) return;
+    $("moreTitle").textContent = m.title; $("moreBody").innerHTML = m.html;
+    $("moreOverlay").hidden = false; $("moreClose").focus();
+  }
+  function closeMore(){ $("moreOverlay").hidden = true; }
 
   /* ---------- Scene states ---------- */
   const B = {a:4.2, polShow:0, open:0, rnaOn:0, hl:0, arrow:0, polLeave:0, detach:0, zoom:0, strand:0, gene:1, bact:0, euk:0};
@@ -268,35 +314,35 @@
   S[2]  = {...S[1], a:11, open:1};
   S[3]  = {...S[2], hl:1, strand:1};
   S[4]  = {...S[3], hl:0.35, rnaOn:1, a:14};
-  S[5]  = {...S[4], a:19, arrow:1};
-  S[6]  = {...S[5], a:24, arrow:0};
-  S[7]  = {...S[6], a:28};
+  S[5]  = {...S[4], a:22, arrow:0};   // "The helix reforms" (was step 7, now shown before Direction matters)
+  S[6]  = {...S[5], a:28, arrow:1};   // "Direction matters" (was step 6)
+  S[7]  = {...S[6], a:34, arrow:0};
   S[8]  = {...S[7], open:0, polLeave:1, detach:1, zoom:0, hl:0};
   S[9]  = {...S[8], gene:0, bact:1};
   S[10] = {...S[9], bact:0, euk:1};
 
   const STEPS = [
-    {title:"Meet the gene", state:S[0],
+    {title:"Meet the gene", state:S[0], more:"promoterFinders",
      text:`This is a short stretch of bacterial DNA. The top strand runs 5' to 3' and the bottom strand runs 3' to 5', so the two strands are <b>antiparallel</b>. Look at the regions along the bottom. The {{promoter}} is the site where the enzyme that builds RNA binds to start transcription. Next is the <b>operator</b>. Nothing is bound to it right now, so the path into the gene is open. After the <b>gene</b> comes a stop signal you'll name later.`},
-    {title:"The enzyme arrives", state:S[1],
+    {title:"The enzyme arrives", state:S[1], more:"tataBox",
      text:`The enzyme that builds RNA, {{rnapol}}, finds the promoter and binds to it. No repressor protein is sitting on the operator, so nothing blocks its path forward.`},
-    {title:"Opening the helix", state:S[2],
+    {title:"Opening the helix", state:S[2], more:"polVsHelicase",
      text:`RNA polymerase slides to the start of the gene and pulls the strands apart by breaking the {{hydrogen}} bonds between base pairs. This open section is the <b>transcription bubble</b>. RNA polymerase unwinds the DNA itself, so no helicase is needed.`},
-    {title:"Pick a strand", state:S[3],
-     text:`Only one DNA strand gets copied. The strand RNA polymerase reads is called the {{template}} strand. The other one is the <b>coding strand</b>. Its sequence matches the new RNA, except for one base you'll meet next.`},
-    {title:"Building RNA", state:S[4], gate:"build",
+    {title:"Pick a strand", state:S[3], more:"strandChoice",
+     text:`Only one DNA strand gets copied. The strand RNA polymerase reads is called the {{template}} strand. The other one is the <b>coding strand</b>. Its sequence matches the new RNA, except for one base you'll meet next. Remember that the two strands are antiparallel, so which strand is "template" depends entirely on which <b>direction</b> a gene faces along the DNA.`},
+    {title:"Building RNA", state:S[4], gate:"build", more:"buildingRNA",
      text:`RNA nucleotides pair with the template bases one at a time, following the base pairing rules. RNA has no thymine, so adenine on the DNA pairs with {{uracil}}. The first three template bases of this gene are 3'-TAC-5'. Build the matching RNA below!`},
-    {title:"Direction matters", state:S[5],
-     text:`RNA polymerase can only add new nucleotides to one end of the growing chain. That means RNA is always built in the {{five}} to {{three}} direction, while the template strand is read in the opposite direction.`},
-    {title:"The helix reforms", state:S[6],
+    {title:"The helix reforms", state:S[5], more:"helixReform",
      text:`As RNA polymerase moves forward, the DNA behind it zips back together and the new RNA peels away. Only a small section of DNA is unwound at any moment.`},
-    {title:"Stop signal", state:S[7],
+    {title:"Direction matters", state:S[6], slider:true, more:"directionMatters",
+     text:`RNA polymerase can only add new nucleotides to one end of the growing chain. That means RNA is always built in the {{five}} to {{three}} direction, while the template strand is read in the opposite direction. Drag the slider below to move RNA polymerase yourself and watch which strand it rides along, and which way it travels.`},
+    {title:"Stop signal", state:S[7], more:"terminatorDetail",
      text:`RNA polymerase reaches the end of the gene. Transcription stops when RNA polymerase reaches the {{terminator}}.`},
-    {title:"Release", state:S[8],
+    {title:"Release", state:S[8], more:"mrnaMore",
      text:`RNA polymerase lets go, the new RNA is released, and the DNA helix reforms. The finished product is {{mrna}}, a short-term copy of the gene that carries its instructions to the ribosome.`},
-    {title:"Bacteria: all at once", state:S[9], pre:S[9], scene:true,
-     text:`Bacteria have no nucleus, so transcription happens in the {{cytoplasm}}. Ribosomes can grab the mRNA and start translating before transcription is {{complete}}. This is called <b>coupled transcription and translation</b>, and bacterial mRNA needs no processing.`},
-    {title:"Eukaryotes: process first", state:S[10], pre:S[10], scene:true,
+    {title:"Bacteria: all at once", state:S[9], pre:S[9], scene:true, more:"coupledTxTl",
+     text:`Bacteria have no nucleus, so transcription happens in the {{cytoplasm}}. Ribosomes can grab the mRNA and start translating before {{txword}} is complete. This is called <b>coupled transcription and translation</b>, and bacterial mRNA needs no processing.`},
+    {title:"Eukaryotes: process first", state:S[10], pre:S[10], scene:true, more:"eukProcessing",
      text:`In eukaryotes, transcription happens in the {{nucleus}}, and the pre-mRNA must be processed before it can leave. A <b>5' cap</b> and a <b>3' poly-A tail</b> are added, and <b>snRNPs</b> cut out the {{introns}} and splice the exons together. Only the mature mRNA exits to the cytoplasm for translation.`,
      after:`INtrons are IN the way, EXons are EXpressed!`}
   ];
@@ -438,15 +484,22 @@
     return `<g${o}><rect x="${f1(x-11.5)}" y="${f1(y)}" width="23" height="26" rx="5" fill="${c[0]}"/><text x="${f1(x)}" y="${f1(y+18)}" class="bt" fill="${c[1]}">${b}</text></g>`;
   }
 
+  function polymeraseIcon(cx, cy, op, label){
+    return `<g opacity="${f3(op)}"><ellipse cx="${f1(cx)}" cy="${f1(cy+24)}" rx="84" ry="64" fill="rgba(108,122,224,.18)" stroke="#3f4cc0" stroke-width="2"/>`
+      + `<path d="M${f1(cx-48)},${f1(cy+10)} Q${f1(cx-62)},${f1(cy-27)} ${f1(cx-20)},${f1(cy-38)} Q${f1(cx+15)},${f1(cy-48)} ${f1(cx+43)},${f1(cy-27)} Q${f1(cx+67)},${f1(cy-6)} ${f1(cx+49)},${f1(cy+22)} Q${f1(cx+28)},${f1(cy+50)} ${f1(cx-6)},${f1(cy+46)} Q${f1(cx-38)},${f1(cy+43)} ${f1(cx-48)},${f1(cy+10)} Z" fill="#5563d6" stroke="#2c3796" stroke-width="2.5"/>`
+      + `<circle cx="${f1(cx-10)}" cy="${f1(cy+3)}" r="12" fill="#8f98e6"/><circle cx="${f1(cx-10)}" cy="${f1(cy+3)}" r="5" fill="#2c3796"/>`
+      + `<rect x="${f1(cx-78)}" y="${f1(cy-95)}" width="156" height="26" rx="13" fill="#3f4cc0"/><text x="${f1(cx)}" y="${f1(cy-77)}" class="pill">${label}</text></g>`;
+  }
   function geneSVG(s){
     const sep = u => s.open * prof(u - s.a);
-    const cTop = u => 292 - 42 * sep(u), tTop = u => 322 + 42 * sep(u);
+    const cTop = u => 257 - 42 * sep(u), tTop = u => 287 + 42 * sep(u);
     const path = fn => { let d = ""; for (let u = -0.6; u <= N - 0.4; u += 0.2) d += (d ? "L" : "M") + f1(X0 + u * DX) + "," + f1(fn(u)); return d; };
     let o = "";
     for (const r of REGIONS){
       const x1 = X(r.from) - 13, x2 = X(r.to) + 13;
       const txt = (r.key && !resolved(r.key)) ? "?" : r.label;
-      o += `<rect x="${x1}" y="414" width="${x2-x1}" height="24" rx="6" fill="${r.fill}" stroke="${r.stroke}" stroke-width="1.5"${r.dash ? ' stroke-dasharray="4 3"' : ""}/><text x="${(x1+x2)/2}" y="430.5" class="band">${txt}</text>`;
+      o += `<rect x="${x1}" y="${f1(cTop(r.from)-8)}" width="${x2-x1}" height="${f1(tTop(r.from)+26-(cTop(r.from)-8))}" rx="8" fill="${r.fill}" fill-opacity=".55" stroke="${r.stroke}" stroke-width="1.5"${r.dash ? ' stroke-dasharray="4 3"' : ""}/>`;
+      o += `<path d="M${x1+6},${f1(tTop(r.from)+30)} v8 H${x2-6} v-8" fill="none" stroke="${r.stroke}" stroke-width="1.5"/><text x="${(x1+x2)/2}" y="${f1(tTop(r.from)+56)}" class="band">${txt}</text>`;
     }
     const cB = u => cTop(u) - 2, tB = u => tTop(u) + 28;
     if (s.hl > 0.01) o += `<path d="${path(tB)}" fill="none" stroke="#ffd23f" stroke-width="16" stroke-linecap="round" opacity="${f3(0.65*s.hl)}"/>`;
@@ -468,9 +521,9 @@
         const g = clamp(s.a - i, 0, 1), al = g * s.rnaOn;
         if (al <= 0.001) continue;
         const d = s.a - i;
-        const hyb = 294 + 42 * sep(i);
-        let top = lerp(hyb, 150, smooth((d - 2.5) / 2.5));
-        top = lerp(top, 146, s.detach);
+        const hyb = 259 + 42 * sep(i);
+        let top = lerp(hyb, 115, smooth((d - 2.5) / 2.5));
+        top = lerp(top, 111, s.detach);
         top -= (1 - g) * 14;
         pts.push({i, x:X(i), top, al});
       }
@@ -487,23 +540,22 @@
           if (pts.length > 1) rn += `<text x="${f1(l.x+24)}" y="${f1(l.top+10)}" class="prime rna">3'</text>`;
           rn += `</g>`;
         }
-        if (f.top < 200) rn += `<text x="${f1(f.x-12)}" y="${f1(f.top-12)}" class="lbl" opacity="${f3(s.rnaOn)}">${resolved("mrna") ? "mRNA" : "New RNA"}</text>`;
+        if (f.top < 165) rn += `<text x="${f1(f.x-12)}" y="${f1(f.top-12)}" class="lbl" opacity="${f3(s.rnaOn)}">${resolved("mrna") ? "mRNA" : "New RNA"}</text>`;
       }
     }
     o = o.replace("%%RNA%%", () => rn);
     // RNA polymerase
     if (s.polShow > 0.01 && s.polLeave < 0.99){
       const cx = X(s.a - 1.2) + s.polLeave * 300;
-      const cy = 322 - (1 - s.polShow) * 320 - s.polLeave * 330;
+      const cy = 165 - (1 - s.polShow) * 300 - s.polLeave * 310;
       const op = s.polShow * (1 - s.polLeave);
-      const px = clamp(cx + 40, 90, 910);
-      o += `<g opacity="${f3(op)}"><ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="128" ry="104" fill="rgba(108,122,224,.2)" stroke="#3f4cc0" stroke-width="2.5"/>`;
-      o += `<rect x="${f1(px-78)}" y="${f1(cy-128)}" width="156" height="26" rx="13" fill="#3f4cc0"/><text x="${f1(px)}" y="${f1(cy-110)}" class="pill">${resolved("rnapol") ? "RNA polymerase" : "?"}</text></g>`;
+      const px = clamp(cx, 90, 910);
+      o += polymeraseIcon(px, cy, op, resolved("rnapol") ? "RNA polymerase" : "?");
     }
     // direction arrow
     if (s.arrow > 0.01){
       const x1 = X(s.a) - 6, x2 = x1 + 84;
-      o += `<g opacity="${f3(s.arrow)}"><line x1="${f1(x1)}" y1="403" x2="${f1(x2)}" y2="403" stroke="#e8744f" stroke-width="4" stroke-linecap="round" marker-end="url(#ah)"/><text x="${f1(x2+14)}" y="408" class="lbl">RNA grows 5' → 3'</text></g>`;
+      o += `<g opacity="${f3(s.arrow)}"><line x1="${f1(x1)}" y1="398" x2="${f1(x2)}" y2="398" stroke="#e8744f" stroke-width="4" stroke-linecap="round" marker-end="url(#ah)"/><text x="${f1(x2+14)}" y="403" class="lbl">RNA grows 5' → 3'</text></g>`;
     }
     return o;
   }
@@ -689,6 +741,8 @@
       inp.addEventListener("input", () => inp.classList.remove("wrong"));
     });
     showAfter();
+    $("bubbleFoot").innerHTML = st.more ? `<button class="more-btn" data-more="${st.more}">Learn more</button>` : "";
+    $("bubbleFoot").querySelectorAll("[data-more]").forEach(b => b.addEventListener("click", () => openMore(b.dataset.more)));
     fb.textContent = ""; fb.className = "feedback";
     updateButtons();
     bubble.classList.remove("pop"); void bubble.offsetWidth; bubble.classList.add("pop");
@@ -724,6 +778,14 @@
     renderLegend();
   }
 
+  function renderSlider(){
+    const el = $("polSlide"), st = STEPS[idx];
+    if (!st.slider){ el.hidden = true; el.innerHTML = ""; return; }
+    el.hidden = false;
+    const lo = S[4].a, hi = GE;
+    el.innerHTML = `<span class="plbl">Slide RNA polymerase:</span><input type="range" id="polRange" min="${lo}" max="${hi}" step="0.2" value="${clamp(cur.a, lo, hi)}">`;
+    $("polRange").addEventListener("input", e => { tw = null; cur.a = +e.target.value; dirty = true; });
+  }
   function enterStep(i){
     const changed = i !== idx;
     idx = i;
@@ -732,7 +794,7 @@
     if (changed && st.scene) sceneT = 0;
     playing = res && !!st.scene;
     animateTo(res ? st.state : prevState(i));
-    renderBubble(); renderNav(); renderGate(); dirty = true;
+    renderBubble(); renderNav(); renderGate(); renderSlider(); dirty = true;
   }
   function goTo(i){ enterStep(clamp(i, 0, LAST)); }
 
@@ -804,7 +866,10 @@
   backBtn.addEventListener("click", () => goTo(idx - 1));
   replayBtn.addEventListener("click", replay);
   nextBtn.addEventListener("click", () => { if (idx === LAST) restart(); else goTo(idx + 1); });
+  $("moreClose").addEventListener("click", closeMore);
+  $("moreOverlay").addEventListener("click", e => { if (e.target.id === "moreOverlay") closeMore(); });
   document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !$("moreOverlay").hidden){ closeMore(); return; }
     if (e.target && e.target.tagName === "INPUT") return;
     if (e.key === "ArrowRight" && !nextBtn.disabled && idx < LAST) goTo(idx + 1);
     if (e.key === "ArrowLeft" && idx > 0) goTo(idx - 1);
@@ -815,7 +880,7 @@
   requestAnimationFrame(frame);
 
   // exposed for testing only
-  window.__tx = {goTo, check, moveOn, setMode, get idx(){return idx;}, get cur(){return cur;}, get bl(){return bl;}, matches};
+  window.__tx = {goTo, check, moveOn, setMode, openMore, closeMore, get idx(){return idx;}, get cur(){return cur;}, get bl(){return bl;}, matches};
 })();
 </script>
 <script>
