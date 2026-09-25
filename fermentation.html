@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fermentation and Anaerobic Respiration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="metab.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="metab.js"></script>
+<script>
+(function(){
+  const A = Metab.A, {f1, f3, lerp, clamp, smooth, seg, C} = A;
+  const box = (x, y, w, h, s, col, sub) => `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="14" fill="#fff" stroke="${col}" stroke-width="2.5"/>` + A.tx(x, y + (sub ? -2 : 6), s, "t14 mid") + (sub ? A.tx(x, y + 18, sub, "t11 mid muted") : "");
+  /* test tube: color = broth color, gas = bubble in the Durham tube */
+  function tube(x, y, col, gas, label, o){
+    let s = `<path d="M${x - 34},${y - 150} L${x - 34},${y + 60} A34,34 0 0 0 ${x + 34},${y + 60} L${x + 34},${y - 150}" fill="#fff" stroke="#8b93a3" stroke-width="3"/>`;
+    s += `<path d="M${x - 31},${y - 90} L${x - 31},${y + 60} A31,31 0 0 0 ${x + 31},${y + 60} L${x + 31},${y - 90} Z" fill="${col}" opacity=".85"/>`;
+    s += `<rect x="${x - 10}" y="${y - 30}" width="20" height="80" rx="6" fill="${col}" stroke="#5a6376" stroke-width="2"/>`;
+    if (gas > 0) s += `<rect x="${x - 8}" y="${y - 28}" width="16" height="${f1(40 * gas)}" rx="5" fill="#fff"/>`;
+    s += `<rect x="${x - 40}" y="${y - 162}" width="80" height="16" rx="5" fill="#c9cfdb"/>`;
+    if (label) s += A.tx(x, y + 125, label, "t14 mid");
+    return A.op(o === undefined ? 1 : o, s);
+  }
+  const RED = "#e0463c", YEL = "#f5c518";
+
+  const BL = {
+    notoxygen:{show:"not oxygen", ans:["notoxygen","noto2","nototwo","nooxygen","anythingbutoxygen","notoxygeno2"], fuzzy:true},
+    nitrate:{show:"Nitrate", ans:["nitrate","no3"], fuzzy:true},
+    sulfate:{show:"Sulfate", ans:["sulfate","sulphate","so4"], fuzzy:true},
+    etc:{show:"electron transport chain", ans:["electrontransportchain","etc","electrontransport"], fuzzy:true},
+    less:{show:"less", ans:["less","fewer","lower"], fuzzy:true},
+    nadplus:{show:"NAD⁺", ans:["nad","nadplus"]},
+    two:{show:"2", ans:["2","two"]},
+    oxygen:{show:"oxygen", ans:["oxygen","o2"], fuzzy:true},
+    alcohol:{show:"Alcohol", ans:["alcohol","alcoholic","ethanol"], fuzzy:true},
+    lactic:{show:"lactic acid", ans:["lacticacid","lactate","lactic"], fuzzy:true},
+    phenol:{show:"phenol red", ans:["phenolred","phenol"], fuzzy:true},
+    acid:{show:"acid", ans:["acid","acids","acidic","lacticacid","h"], fuzzy:true}
+  };
+  const MORE = {
+    denit:{title:"Denitrification and rotten eggs", html:`<p>Bacteria like <i>Pseudomonas</i> and <i>Bacillus</i> can use nitrate as their final electron acceptor. Reducing nitrate all the way to N₂ gas is called denitrification, and it returns nitrogen to the atmosphere (and pulls it out of farm soil).</p><p>Sulfate-reducing bacteria like <i>Desulfovibrio</i> turn sulfate into hydrogen sulfide (H₂S), the rotten-egg smell of marshes and black mud.</p>`},
+    why:{title:"Why less ATP than aerobic?", html:`<p>Oxygen pulls on electrons harder than nitrate or sulfate does. With a weaker final acceptor, electrons release less energy as they move down the chain, so fewer H⁺ get pumped and less ATP is made. Only part of the Krebs cycle may run too.</p>`},
+    lactic:{title:"Your muscles ferment too", html:`<p>During hard exercise, your muscle cells can run low on oxygen. They switch to lactic acid fermentation to keep glycolysis going, making lactate. It's a quick 2 ATP per glucose, a lot less than aerobic respiration, but fast!</p>`},
+    swiss:{title:"The holes in Swiss cheese", html:`<p><i>Propionibacterium</i> ferments lactic acid into propionic acid and CO₂. The propionic acid gives Swiss cheese its nutty flavor, and the trapped CO₂ bubbles make the holes (called "eyes").</p>`},
+    test:{title:"Durham tubes", html:`<p>The tiny upside-down tube inside a fermentation tube is a Durham tube. It starts full of broth. If the bacteria make gas (like CO₂ or H₂), some gets trapped at the top of the Durham tube as a visible bubble.</p>`}
+  };
+
+  /* ================= Scenes ================= */
+  function pipesScene(t, R){
+    const T = 6, tt = t % T;
+    let o = A.tx(500, 38, "Aerobic vs. anaerobic respiration", "t20 mid");
+    const row = (y, title, col, acc, prod) => {
+      let s = A.tx(40, y - 34, title, "t16", `style="fill:${col}"`);
+      s += box(130, y, 170, 50, "Glycolysis", col) + A.arrow(218, y, 250, y, "#5a6376", 3) + box(340, y, 170, 50, "Krebs cycle", col) + A.arrow(428, y, 460, y, "#5a6376", 3) + box(560, y, 190, 50, "Electron transport", col);
+      const q = smooth(seg(tt, .6, 2)); s += A.arrow(658, y, 700, y, "#5a6376", 3);
+      s += `<rect x="705" y="${y - 30}" width="260" height="60" rx="16" fill="${col}" opacity=".12"/>` + A.tx(835, y - 5, acc, "t16 mid", `style="fill:${col}"`) + A.op(q, A.tx(835, y + 20, prod, "t14 mid"));
+      return s;
+    };
+    o += row(130, "Aerobic respiration", "#1b7f4e", "O₂", "→ H₂O");
+    o += row(280, "Anaerobic respiration", "#9a6212", `${R("nitrate") === "?" ? "?" : "NO₃⁻"} or ${R("sulfate") === "?" ? "?" : "SO₄²⁻"}`, "→ NO₂⁻ or N₂,  → H₂S");
+    o += A.tx(500, 380, `Same pathway, different final electron acceptor (${R("notoxygen") === "?" ? "?" : "NOT oxygen"})`, "t16 mid");
+    o += A.tx(500, 412, "Anaerobic ATP yield: less than aerobic, but more than fermentation", "t14 mid muted");
+    return o;
+  }
+  function anaerobeScene(t, R){
+    let o = A.tx(500, 38, "Anaerobic respiration: inputs and outputs", "t20 mid");
+    o += `<rect x="330" y="100" width="340" height="230" rx="110" fill="#f1f7ec" stroke="#5f8a4f" stroke-width="8"/>` + A.tx(500, 210, "Bacterium", "t16 mid") + A.tx(500, 236, "(no O₂ around)", "t12 mid muted");
+    const ins = [["Glucose", 140, 150], ["NO₃⁻ or SO₄²⁻", 140, 280]], outs = [["CO₂", 860, 130], ["ATP (moderate)", 860, 215], ["NO₂⁻ / N₂ or H₂S", 860, 300]];
+    const p = (t % 5) / 5;
+    ins.forEach(i => { o += box(i[1], i[2], 200, 48, i[0], "#3f4cc0") + A.arrow(242, i[2], 322, lerp(i[2], 215, .4), "#3f4cc0", 3); });
+    outs.forEach(u => { o += A.arrow(678, lerp(u[2], 215, .4), 752, u[2], "#1b7f4e", 3) + box(u[1], u[2], 210, 48, u[0], "#1b7f4e"); });
+    o += A.tx(140, 110, "Starting materials", "t14 mid", `style="fill:#3f4cc0"`) + A.tx(860, 90, "End products", "t14 mid", `style="fill:#1b7f4e"`);
+    o += A.tx(500, 390, "The final electron acceptor gets REDUCED (it gains the electrons)", "t14 mid") + A.tx(500, 420, "Nitrate → nitrite or N₂ gas. Sulfate → hydrogen sulfide (rotten eggs!)", "t14 mid muted");
+    for (let k = 0; k < 3; k++){ const q = (p + k / 3) % 1; o += A.eDot(lerp(380, 620, q), 170 + 90 * Math.sin(q * Math.PI), 9); }
+    return o;
+  }
+  function nadScene(t, R, g, done){
+    const T = 6, tt = t % T, q = tt / T;
+    let o = A.tx(500, 38, "Fermentation's job: free up NAD⁺ (#FreeNAD⁺)", "t20 mid");
+    o += box(220, 130, 200, 56, "Glucose", "#5a6376") + A.arrow(220, 160, 220, 200, "#5a6376", 3) + box(220, 240, 220, 70, "Glycolysis", "#b83a34", "2 ATP (the only ATP!)") + A.arrow(220, 277, 220, 320, "#5a6376", 3) + box(220, 360, 200, 56, "2 Pyruvate", "#5a6376");
+    o += A.arrow(322, 360, 560, 360, "#5a6376", 3) + box(680, 360, 230, 70, "Fermentation", "#9a6212", "pyruvate takes the electrons");
+    o += box(680, 170, 260, 56, "Lactate or ethanol + CO₂", "#9a6212") + A.arrow(680, 324, 680, 200, "#9a6212", 3);
+    /* NAD+/NADH loop */
+    o += `<path d="M335,240 C460,240 470,300 560,330" fill="none" stroke="#2f9e63" stroke-width="3" stroke-dasharray="7 5"/><path d="M570,390 C470,440 380,420 330,262" fill="none" stroke="#2f9e63" stroke-width="3" stroke-dasharray="7 5"/>`;
+    const a = q < .5 ? q * 2 : 1, b = q >= .5 ? (q - .5) * 2 : 0;
+    const pa = t => [lerp(335, 560, t), 240 + 90 * t * t], pb = t => [lerp(570, 330, t), lerp(390, 262, t) + 60 * Math.sin(t * Math.PI)];
+    if (q < .5){ const p = pa(a); o += A.carrier(p[0], p[1], "NAD", true, {e:false}); } else { const p = pb(b); o += A.carrier(p[0], p[1], "NAD", false); }
+    o += A.tx(470, 225, "NADH", "t12 mid", `style="fill:#1b7f4e"`) + A.tx(430, 450, `${R("nadplus")} recycled back to glycolysis`, "t12 mid", `style="fill:#1b7f4e"`);
+    o += A.tx(820, 460, "No O₂, no electron transport chain", "t12 mid muted");
+    return o;
+  }
+  function typesScene(t, R){
+    let o = A.tx(500, 36, "Pyruvate can be fermented into many products", "t20 mid") + box(500, 90, 170, 46, "Pyruvate", "#5a6376");
+    const B = [["Streptococcus, Lactobacillus, Bacillus", R("lactic") === "?" ? "?" : "Lactic acid", "#b83a34"], ["Saccharomyces, (yeast)", "Ethanol + CO₂", "#9a6212"], ["Propionibacterium", "Propionic acid, acetic acid, CO₂, H₂", "#5a6376"], ["Clostridium", "Butyric acid, butanol, acetone, isopropyl alcohol, CO₂", "#5a6376"], ["E. coli, Salmonella", "Ethanol, lactic, succinic, acetic acid, CO₂, H₂", "#5a6376"], ["Enterobacter", "Ethanol, lactic, formic acid, butanediol, acetoin, CO₂, H₂", "#5a6376"]];
+    const on = Math.floor(t / 1.5) % 6;
+    B.forEach((b, i) => { const x = 90 + i * 164, y = 250, hot = i < 2;
+      o += A.arrow(500, 114, x, 176, i === on ? "#e8744f" : "#c9cfdb", i === on ? 3.5 : 2);
+      o += `<rect x="${x - 78}" y="180" width="156" height="${hot ? 250 : 250}" rx="14" fill="${i === on ? "#fff6d6" : hot ? "#fdf6ee" : "#fff"}" stroke="${hot ? b[2] : "#d9dee7"}" stroke-width="${hot ? 3 : 1.5}"/>`;
+      const words = b[0].split(", "); words.forEach((w, k) => { o += A.tx(x, 208 + k * 18, w + (k < words.length - 1 && words[k + 1][0] !== "(" ? "," : ""), "t12 mid", `style="font-style:${w[0] === "(" ? "normal" : "italic"}"`); });
+      const prod = b[1].split(", "); prod.forEach((w, k) => { o += A.tx(x, 290 + k * 20, w, i < 2 ? "t14 mid" : "t12 mid", `style="fill:${b[2]}"`); }); });
+    o += A.tx(500, 460, "The two big ones to know: lactic acid and alcohol (ethanol + CO₂)", "t14 mid", `style="fill:#5b3fb0"`);
+    return o;
+  }
+  function foodScene(t, R){
+    const F = [["🧀", "Cheese, yogurt", "Lactic acid", "Lactobacillus, Streptococcus"], ["🥬", "Sauerkraut, pickles, kimchi", "Lactic acid", "Lactobacillus plantarum"], ["🍺", "Beer, wine", "Ethanol", "Saccharomyces (yeast)"], ["🍞", "Bread", "CO₂ makes it rise", "Saccharomyces (yeast)"], ["🧪", "Vinegar", "Acetic acid", "Acetobacter (from ethanol)"], ["🧀", "Swiss cheese", "Propionic acid + CO₂", "Propionibacterium"]];
+    let o = A.tx(500, 36, "Fermentation feeds us (and fuels industry)", "t20 mid");
+    const on = Math.floor(t / 1.5) % 6;
+    F.forEach((f, i) => { const x = 175 + (i % 3) * 325, y = 90 + Math.floor(i / 3) * 180;
+      o += `<rect x="${x - 150}" y="${y}" width="300" height="160" rx="18" fill="${i === on ? "#fff6d6" : "#fff"}" stroke="${i === on ? C.gold : "#d9dee7"}" stroke-width="${i === on ? 3 : 1.5}"/>`;
+      o += `<text x="${x}" y="${y + 52}" font-size="36" text-anchor="middle">${f[0]}</text>` + A.tx(x, y + 86, f[1], "t16 mid") + A.tx(x, y + 112, f[2], "t14 mid", `style="fill:#9a6212"`) + A.tx(x, y + 138, f[3], "t12 mid muted", `style="font-style:italic"`); });
+    o += A.tx(500, 460, "Also: acetone and butanol (Clostridium) and citric acid (Aspergillus) for industry", "t12 mid muted");
+    return o;
+  }
+  function testScene(t, R, g, done){
+    const T = 8, tt = t % T, p = done ? smooth(seg(tt, .5, 3)) : 0;
+    let o = A.tx(500, 36, `The ${R("phenol") === "?" ? "?" : "phenol red"} sugar fermentation test`, "t20 mid");
+    const mix = (a, b, k) => { const h = x => [parseInt(x.slice(1, 3), 16), parseInt(x.slice(3, 5), 16), parseInt(x.slice(5, 7), 16)]; const A1 = h(a), B1 = h(b); return "rgb(" + A1.map((v, i) => Math.round(lerp(v, B1[i], k))).join(",") + ")"; };
+    o += tube(220, 260, mix(RED, YEL, p), p, "Acid + gas") + tube(500, 260, mix(RED, YEL, p), 0, "Acid, no gas") + tube(780, 260, RED, 0, "No fermentation");
+    o += A.tx(220, 440, "yellow + bubble", "t12 mid muted") + A.tx(500, 440, "yellow, no bubble", "t12 mid muted") + A.tx(780, 440, "stays red", "t12 mid muted");
+    o += A.tx(80, 110, "Durham tube", "t12", "") + A.arrow(120, 118, 205, 226, "#5a6376", 2);
+    o += A.tx(960, 110, "Sugar + bacteria", "t12 end", "") + A.tx(960, 128, "+ pH indicator", "t12 end", "");
+    return o;
+  }
+  function compareScene(t, R){
+    const H = ["", "Aerobic respiration", "Anaerobic respiration", "Fermentation"], rows = [["Needs O₂?", "Yes", "No", "No"], ["Final e⁻ acceptor", "O₂", "NO₃⁻, SO₄²⁻, etc.", "Organic molecule (pyruvate)"], ["Electron transport chain?", "Yes", "Yes", "No"], ["ATP per glucose", "32–38", "Moderate", "2"], ["End products", "CO₂ + H₂O", "CO₂ + NO₂⁻/N₂/H₂S", "Lactate, ethanol + CO₂..."]];
+    let o = A.tx(500, 36, "Three ways to break down glucose", "t20 mid");
+    const X = [140, 380, 620, 860], cols = ["#343b4a", "#1b7f4e", "#9a6212", "#b83a34"];
+    H.forEach((h, i) => { if (i) o += `<rect x="${X[i] - 115}" y="62" width="230" height="40" rx="12" fill="${cols[i]}"/>` + A.tx(X[i], 88, h, "t14 mid wht"); });
+    rows.forEach((r, j) => { const y = 140 + j * 64, on = Math.floor(t / 1.6) % 5 === j; o += `<rect x="20" y="${y - 28}" width="960" height="54" rx="10" fill="${on ? "#fff6d6" : j % 2 ? "#f7f8fb" : "#fff"}"/>`; r.forEach((c, i) => { o += A.tx(X[i], y + 5, c, i ? "t14 mid" : "t14 mid", i ? `style="fill:${cols[i]}"` : ""); }); });
+    return o;
+  }
+
+  /* ================= Activities ================= */
+  const GATES = {
+    acceptor:{title:"Your turn: no oxygen here! Give the chain a final electron acceptor", done:"Nitrate became nitrite/N₂ and sulfate became H₂S. Anaerobic respiration!",
+      init:() => ({done:{}}),
+      html:st => `<div class="row"><span class="tok" style="opacity:.45;text-decoration:line-through;cursor:not-allowed" data-a="o2">O₂ (none here)</span>${!st.done.no3 ? `<span class="tok" data-a="no3">NO₃⁻ (nitrate)</span>` : ""}${!st.done.so4 ? `<span class="tok" data-a="so4">SO₄²⁻ (sulfate)</span>` : ""}<span class="tok" data-a="glu">Glucose</span></div>
+        <div class="zone" data-zone="end"><span class="zl">End of the electron transport chain</span><div class="zin">${st.done.no3 ? `<span class="tok placed">NO₃⁻ → NO₂⁻ / N₂</span>` : ""}${st.done.so4 ? `<span class="tok placed">SO₄²⁻ → H₂S</span>` : ""}</div></div>`,
+      wire:(g, st, api) => { g.querySelectorAll("[data-a]").forEach(el => api.dragify(el, {tap:() => go(el.dataset.a), drop:() => go(el.dataset.a)}));
+        function go(a){ if (a === "o2"){ api.msg("There's no oxygen in this environment! Find another acceptor.", "bad"); return false; } if (a === "glu"){ api.msg("Glucose is the starting material (the electron DONOR), not the final acceptor.", "bad"); return false; }
+          st.done[a] = 1; api.redraw(); if (st.done.no3 && st.done.so4){ api.msg("Both work! The chain and chemiosmosis still run, just with a different final acceptor.", "good"); setTimeout(api.pass, 1100); } else api.msg(a === "no3" ? "Nitrate accepted the electrons and was reduced to nitrite (NO₂⁻) or N₂ gas. Try the other one!" : "Sulfate accepted the electrons and was reduced to H₂S. Try the other one!", "good"); return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag a molecule that can accept electrons at the end of the chain.", ""); }},
+    sort3:Metab.sortGate({title:"Your turn: aerobic, anaerobic, or both?", done:"Sorted! They share the same pathway; the final electron acceptor and ATP yield differ.",
+      bins:[["aer","Aerobic only"],["an","Anaerobic only"],["both","Both"]],
+      cards:[["a","Uses glycolysis, Krebs, and an ETC","both"],["b","Final acceptor is O₂","aer"],["c","Final acceptor is nitrate or sulfate","an"],["d","Makes 32–38 ATP","aer","Aerobic respiration makes the most ATP."],["e","Can make H₂S","an","Sulfate gets reduced to hydrogen sulfide."],["f","Makes water at the end","aer","O₂ + electrons + H⁺ → H₂O."],["g","Uses chemiosmosis (ATP synthase)","both"]]}),
+    free:{title:"Your turn: keep glycolysis running", done:"You regenerated NAD⁺ three times. That's the whole point of fermentation!",
+      init:() => ({nad:2, runs:0, stuck:false}),
+      html:st => `<div class="chips"><span class="chip ${st.nad ? "on" : "off"}">NAD⁺ available: ${st.nad}</span><span class="chip">NADH waiting: ${2 - st.nad}</span><span class="chip">Glucose broken down: ${st.runs}</span><span class="chip on">ATP: ${st.runs * 2}</span></div>
+        <div class="row"><button class="btn primary" id="runBtn" ${st.nad ? "" : "disabled"}>Run glycolysis</button>${st.nad < 2 ? `<span class="tok" data-k="nadh" style="border-color:#2f9e63;color:#1b7f4e">NADH</span>` : ""}<div class="zone" data-zone="pyr" style="min-width:200px"><span class="zl">Pyruvate: hand it the electrons (fermentation)</span></div></div>`,
+      wire:(g, st, api) => {
+        g.querySelector("#runBtn").addEventListener("click", () => { st.nad -= 2; st.runs++; api.redraw(); api.msg(st.runs >= 3 ? "" : "2 ATP made, but both NAD⁺ became NADH. Glycolysis is STUCK until NAD⁺ comes back!", "bad"); if (st.runs >= 3){ api.msg("Great job keeping it going. Without fermentation, glycolysis would stop!", "good"); setTimeout(api.pass, 1200); } });
+        const el = g.querySelector("[data-k]"); if (el) api.dragify(el, {tap:back, drop:back});
+        function back(){ st.nad = 2; api.redraw(); api.msg("NADH gave its electrons to pyruvate (making lactate or ethanol), so NAD⁺ is free again. Run glycolysis!", "good"); return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Run glycolysis 3 times. When you run out of NAD⁺, drag NADH onto pyruvate to free it up.", "");
+      }},
+    match:{title:"Your turn: match each microbe to its fermentation products", done:"Matched! Yeast makes ethanol + CO₂; Lactobacillus makes lactic acid.",
+      init:() => ({ok:{}}),
+      html:st => { const P = [["eth","Ethanol + CO₂"],["lac","Lactic acid"],["prop","Propionic acid + CO₂"],["but","Butanol + acetone"]], O = [["eth","Saccharomyces (yeast)"],["lac","Lactobacillus"],["prop","Propionibacterium"],["but","Clostridium"]];
+        return `<div class="row">${P.filter(p => !st.ok[p[0]]).map(p => `<span class="tok" data-p="${p[0]}">${p[1]}</span>`).join("")}</div><div class="zones">${O.map(x => `<div class="zone ${st.ok[x[0]] ? "ok" : ""}" data-zone="${x[0]}"><span class="zl" style="font-style:italic">${x[1]}</span>${st.ok[x[0]] ? `<span class="tok placed">${P.find(p => p[0] === x[0])[1]}</span>` : ""}</div>`).join("")}</div>`; },
+      wire:(g, st, api) => { g.querySelectorAll("[data-p]").forEach(el => api.dragify(el, {tap:() => { st.pick = el.dataset.p; api.msg("Now tap the microbe.", ""); }, drop:z => put(el.dataset.p, z.dataset.zone)}));
+        g.querySelectorAll("[data-zone]").forEach(z => z.addEventListener("click", () => { if (st.pick){ put(st.pick, z.dataset.zone); st.pick = null; } }));
+        function put(p, z){ if (p !== z){ api.msg("Not that one. Check the diagram above!", "bad"); return false; } st.ok[p] = 1; api.redraw(); if (Object.keys(st.ok).length === 4){ api.msg("All matched!", "good"); setTimeout(api.pass, 1000); } else api.msg("Yes!", "good"); return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag each product onto the microbe that makes it.", ""); }},
+    food:Metab.sortGate({title:"Your turn: which kind of fermentation?", done:"Sorted! Lactic acid sours foods; alcohol fermentation makes drinks and makes bread rise.",
+      bins:[["lac","Lactic acid fermentation"],["alc","Alcohol fermentation"],["oth","Other fermentations"]],
+      cards:[["a","Yogurt","lac"],["b","Sauerkraut","lac"],["c","Beer","alc"],["d","Bread rising","alc","Yeast's CO₂ makes bread rise."],["e","Swiss cheese holes","oth","That's propionic acid fermentation (Propionibacterium)."],["f","Kimchi","lac"],["g","Wine","alc"]]}),
+    tubes:{title:"Your turn: read the tubes", done:"Yellow = acid from fermentation. A bubble = gas. Red = no fermentation.",
+      init:() => ({ok:{}}),
+      html:st => { const L = [["ag","Fermented: acid AND gas"],["a","Fermented: acid only"],["n","Did not ferment this sugar"]], T = [["ag","Tube 1: yellow + bubble"],["a","Tube 2: yellow, no bubble"],["n","Tube 3: still red"]];
+        return `<div class="row">${L.filter(l => !st.ok[l[0]]).map(l => `<span class="tok" data-l="${l[0]}">${l[1]}</span>`).join("")}</div><div class="zones">${T.map(x => `<div class="zone ${st.ok[x[0]] ? "ok" : ""}" data-zone="${x[0]}"><span class="zl">${x[1]}</span>${st.ok[x[0]] ? `<span class="tok placed">${L.find(l => l[0] === x[0])[1]}</span>` : ""}</div>`).join("")}</div>`; },
+      wire:(g, st, api) => { g.querySelectorAll("[data-l]").forEach(el => api.dragify(el, {tap:() => { st.pick = el.dataset.l; api.msg("Now tap the tube.", ""); }, drop:z => put(el.dataset.l, z.dataset.zone)}));
+        g.querySelectorAll("[data-zone]").forEach(z => z.addEventListener("click", () => { if (st.pick){ put(st.pick, z.dataset.zone); st.pick = null; } }));
+        function put(l, z){ if (l !== z){ api.msg("Remember: yellow means acid (low pH), and a bubble in the Durham tube means gas.", "bad"); return false; } st.ok[l] = 1; api.redraw(); if (Object.keys(st.ok).length === 3){ api.msg("You can read a fermentation test!", "good"); setTimeout(api.pass, 1000); } return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag each result onto the matching tube.", ""); }},
+    final:Metab.sortGate({title:"Your turn: final review", done:"You've got it: aerobic, anaerobic, and fermentation!",
+      bins:[["aer","Aerobic respiration"],["an","Anaerobic respiration"],["fer","Fermentation"]],
+      cards:[["a","32–38 ATP","aer"],["b","Only 2 ATP","fer"],["c","Final acceptor: nitrate","an"],["d","Main purpose: regenerate NAD⁺","fer"],["e","Final acceptor: O₂","aer"],["f","No electron transport chain","fer"],["g","Makes H₂S from sulfate","an"]]})
+  };
+
+  const P1 = "Anaerobic respiration", P2 = "Fermentation", P3 = "Wrap-up";
+  const STEPS = [
+    {part:P1, title:"When oxygen ghosts you", scene:(t, c) => pipesScene(t, c.R), gate:GATES.acceptor, more:"denit",
+     text:`Many bacteria can still respire without oxygen! In anaerobic respiration, the final electron acceptor is {{notoxygen}}. The cell still uses glycolysis, the Krebs cycle, the {{etc}}, and chemiosmosis. Instead of O₂, it uses other inorganic molecules: {{nitrate}} (NO₃⁻) is reduced to nitrite (NO₂⁻) or N₂ gas, and {{sulfate}} (SO₄²⁻) is reduced to hydrogen sulfide (H₂S).`},
+    {part:P1, title:"How is it different from aerobic?", scene:(t, c) => anaerobeScene(t, c.R), gate:GATES.sort3, more:"why",
+     text:`Anaerobic respiration starts with the same material, glucose (or another organic molecule), and it still releases CO₂. The big difference is the final electron acceptor, so the end products are things like nitrite, N₂, or H₂S instead of water. It makes {{less}} ATP than aerobic respiration, but more than fermentation.`},
+    {part:P2, title:"Fermentation: #FreeNAD⁺", scene:(t, c) => nadScene(t, c.R, c.g, c.done), gate:GATES.free, more:"lactic",
+     text:`Fermentation happens when there's no {{oxygen}} available (anaerobic conditions), and no O₂ is needed. It makes only {{two}} ATP per glucose, all from glycolysis. Its main purpose is to regenerate {{nadplus}}: NADH hands its electrons to pyruvate (or something made from it), so NAD⁺ is free to keep glycolysis running. Without fermentation, glycolysis would stop!`,
+     after:`Fermentation = glycolysis + a way to recycle NAD⁺.`},
+    {part:P2, title:"Types of fermentation", scene:(t, c) => typesScene(t, c.R), gate:GATES.match, more:"swiss",
+     text:`{{alcohol}} fermentation produces ethanol + CO₂ (yeast like Saccharomyces, used in brewing and baking). Lactic acid fermentation produces {{lactic}}, also called lactate (Streptococcus, Lactobacillus; also your tired muscles and yogurt). Other bacteria make other organic acids and alcohols, like propionic acid or butanol.`},
+    {part:P2, title:"Fermented foods and industry", scene:(t, c) => foodScene(t, c.R), gate:GATES.food,
+     table:{cap:"Some industrial uses for different fermentations (Table 5.4)", head:["End product","Use","Starting material","Microorganism"], rows:[["Ethanol","Beer, wine, fuel","Starch, sugar, agricultural wastes","<i>Saccharomyces cerevisiae</i> (yeast)"],["Acetic acid","Vinegar","Ethanol","<i>Acetobacter</i>"],["Lactic acid","Cheese, yogurt, rye bread, sauerkraut, summer sausage","Milk, grain, cabbage, meat","<i>Lactobacillus, Streptococcus, Pediococcus</i>"],["Propionic acid + CO₂","Swiss cheese","Lactic acid","<i>Propionibacterium</i>"],["Acetone and butanol","Pharmaceutical, industrial uses","Molasses","<i>Clostridium acetobutylicum</i>"],["Citric acid","Flavoring","Molasses","<i>Aspergillus</i> (fungus)"]]},
+     text:`Humans have used fermentation for thousands of years! Lactic acid bacteria sour yogurt, cheese, sauerkraut, pickles, and kimchi. Yeast's ethanol makes beer and wine, and its CO₂ makes bread rise. Industry uses fermentation to make vinegar, solvents, and flavorings too.`},
+    {part:P2, title:"The sugar fermentation test", scene:(t, c) => testScene(t, c.R, c.g, c.done), gate:GATES.tubes, more:"test",
+     text:`The {{phenol}} sugar fermentation test tells you whether a bacterium can use a certain carbohydrate. Put the sugar, the bacteria, and a pH indicator in a tube. If fermentation happens, {{acid}} is made (H⁺), the pH drops, and the color changes from red to yellow. A bubble trapped in the small inner tube means gas (like CO₂) was produced too.`,
+     after:`Fermentation → acid → pH drops → color change (+ gas?)`},
+    {part:P3, title:"Aerobic vs. anaerobic vs. fermentation", scene:(t, c) => compareScene(t, c.R), gate:GATES.final,
+     table:{cap:"Carbohydrate catabolism: the three options", head:["","Aerobic respiration","Anaerobic respiration","Fermentation"], rows:[["O₂ needed?","Yes","No","No"],["Final electron acceptor","O₂","Inorganic molecule other than O₂ (nitrate, sulfate)","Organic molecule (pyruvate or a derivative)"],["Electron transport chain?","Yes","Yes","No"],["ATP per glucose","32–38","Moderate (less than aerobic)","2"],["End products","CO₂, H₂O","CO₂, NO₂⁻ / N₂, H₂S","Lactic acid, ethanol + CO₂, others"]]},
+     text:`Let's compare! Aerobic respiration uses O₂ as the final electron acceptor and makes the most ATP. Anaerobic respiration uses a different inorganic acceptor and makes less. Fermentation skips the electron transport chain entirely: just 2 ATP, with the goal of recycling NAD⁺. Bacteria are experts at switching between these depending on their environment!`,
+     after:`Chapter 5 respiration: complete!`}
+  ];
+
+  Metab.start({title:"Fermentation and Anaerobic Respiration", page:"fermentation.html", BL, MORE, STEPS,
+    nextLabel:"You finished the respiration modules!", next:[["Back to all modules","index.html"],["Review: Krebs cycle and ETC","krebs-etc.html"]]});
+})();
+</script>
+<script src="studypath.js"></script>
+</body>
+</html>

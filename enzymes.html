@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enzymes and Metabolism</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="metab.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="metab.js"></script>
+<script>
+(function(){
+  const A = Metab.A, {f1, f3, lerp, clamp, smooth, seg, C} = A;
+  const tri = (x, y, s, col) => `<polygon points="${f1(x)},${f1(y - 16 * s)} ${f1(x + 17 * s)},${f1(y + 12 * s)} ${f1(x - 17 * s)},${f1(y + 12 * s)}" fill="${col || C.green}" stroke="#1b6b43" stroke-width="2"/>`;
+  const half = (x, y, s, col) => `<path d="M${f1(x - 16 * s)},${f1(y - 14 * s)} L${f1(x + 16 * s)},${f1(y - 14 * s)} L${f1(x + 16 * s)},${f1(y)} A${f1(16 * s)},${f1(16 * s)} 0 0 1 ${f1(x - 16 * s)},${f1(y)} Z" fill="${col || C.blue}" stroke="#2c3796" stroke-width="2"/>`;
+  const sq = (x, y, s, col) => `<rect x="${f1(x - 15 * s)}" y="${f1(y - 15 * s)}" width="${f1(30 * s)}" height="${f1(30 * s)}" rx="4" fill="${col || C.orange}" stroke="#a8461f" stroke-width="2"/>`;
+  /* a substrate made of two parts (triangle + half circle) that the enzyme splits */
+  const substrate = (x, y, gapv, s) => tri(x - 16 * (s || 1) - gapv, y, s || 1, C.green) + half(x + 16 * (s || 1) + gapv, y + 6, s || 1, "#e8744f");
+  /* enzyme drawn with a triangle-shaped active site on top */
+  const enz = (x, y, o) => A.enzyme(x, y, {notch:"tri", ...(o || {})});
+
+  /* ================= Blanks ================= */
+  const BL = {
+    metabolism:{show:"metabolism", ans:["metabolism"], fuzzy:true},
+    catabolism:{show:"Catabolism", ans:["catabolism","catabolic"], fuzzy:true},
+    anabolism:{show:"Anabolism", ans:["anabolism","anabolic"], fuzzy:true},
+    pathway:{show:"metabolic pathway", ans:["metabolicpathway","pathway","metabolicpathways","pathways"], fuzzy:true},
+    amphibolic:{show:"amphibolic", ans:["amphibolic"], fuzzy:true},
+    collision:{show:"collision", ans:["collision","collide","collisions"], fuzzy:true},
+    activation:{show:"activation", ans:["activation"], fuzzy:true},
+    rate:{show:"reaction rate", ans:["reactionrate","rate"], fuzzy:true},
+    catalysts:{show:"catalysts", ans:["catalysts","catalyst"], fuzzy:true},
+    lowers:{show:"lowers", ans:["lowers","lower","decreases","decrease","reduces","reduce","lowering"], fuzzy:true},
+    substrate:{show:"substrate", ans:["substrate","substrates","reactant","reactants"], fuzzy:true},
+    activesite:{show:"active site", ans:["activesite","active"], fuzzy:true},
+    esc:{show:"enzyme-substrate complex", ans:["enzymesubstratecomplex","enzymesubstrate","escomplex","es"], fuzzy:true},
+    products:{show:"products", ans:["products","product"], fuzzy:true},
+    inducedfit:{show:"induced fit", ans:["inducedfit","induced"], fuzzy:true},
+    turnover:{show:"turnover number", ans:["turnovernumber","turnover"], fuzzy:true},
+    cofactors:{show:"Cofactors", ans:["cofactors","cofactor"], fuzzy:true},
+    apoenzyme:{show:"apoenzyme", ans:["apoenzyme","apoenzymes"], fuzzy:true},
+    denature:{show:"denature", ans:["denature","denatures","denatured","denaturation","unfold"], fuzzy:true},
+    saturation:{show:"saturation", ans:["saturation","saturated","saturate","saturationpoint"], fuzzy:true},
+    allosteric:{show:"allosteric", ans:["allosteric"], fuzzy:true},
+    competitive:{show:"Competitive", ans:["competitive"], fuzzy:true},
+    noncompetitive:{show:"Non-competitive", ans:["noncompetitive","noncomp"], fuzzy:true},
+    first:{show:"first", ans:["first","1st","one","1","firstenzyme"]},
+    feedback:{show:"feedback", ans:["feedback"], fuzzy:true}
+  };
+
+  /* ================= Learn more ================= */
+  const MORE = {
+    meta:{title:"Metabolism by the numbers", html:`<p>A single E. coli cell carries out well over a thousand different chemical reactions, and it can divide about every 20 minutes when food is plentiful. Every one of those reactions is sped up by a specific enzyme.</p><p>Catabolism and anabolism are linked by ATP: catabolic reactions make ATP, and anabolic reactions spend it.</p>`},
+    ea:{title:"Why don't things just burst into flames?", html:`<p>Sugar and oxygen could react to release lots of energy, but a sugar cube sitting in air doesn't catch fire on its own. The activation energy barrier is too high at room temperature. A flame supplies that energy; inside a cell, enzymes lower the barrier instead, so the same reaction can happen at body temperature, one controlled step at a time.</p>`},
+    names:{title:"How enzymes get their names", html:`<p>Most enzyme names end in <b>-ase</b> and hint at their job: lactase splits lactose, DNA polymerase builds DNA, dehydrogenases remove hydrogen atoms (electrons!), and kinases add phosphate groups.</p>`},
+    vit:{title:"Vitamins are cofactor precursors", html:`<p>Many B vitamins are used to build coenzymes. Niacin (B3) becomes NAD⁺, riboflavin (B2) becomes FAD, and pantothenic acid (B5) becomes coenzyme A, which you'll meet in the Krebs cycle. That's why vitamin deficiencies can slow down metabolism. (This detail is not for memorization.)</p><p>Metal ions like Mg²⁺, Zn²⁺, Fe²⁺ and Cu²⁺ are inorganic cofactors.</p>`},
+    temp:{title:"Heat-loving enzymes", html:`<p>Human enzymes work best near 37°C. But thermophilic microbes living in hot springs have enzymes that work at 70°C or more. Taq polymerase, from the hot-spring bacterium <i>Thermus aquaticus</i>, is the enzyme that makes PCR possible because it survives repeated heating to 95°C.</p>`},
+    statin:{title:"Drugs as enzyme inhibitors", html:`<p>Many medicines are enzyme inhibitors. Statins compete with HMG-CoA for the active site of the enzyme that makes cholesterol. Sulfa drugs compete with a molecule bacteria use to make folic acid, which is why they work as antibiotics. Heavy metals like mercury and lead are toxic partly because they bind enzymes and change their shape.</p>`},
+    fb:{title:"Feedback everywhere", html:`<p>Feedback inhibition is fast: it works on enzymes that are already made. Cells often combine it with slower gene regulation. The trp operon is a great example: tryptophan both turns off the trp genes (repression) and inhibits the first enzyme of the tryptophan pathway (feedback inhibition).</p>`}
+  };
+
+  /* ================= Scenes ================= */
+  function metabScene(t, R){
+    const T = 8, tt = t % T, br = smooth(seg(tt, .8, 2.4)), bu = smooth(seg(tt, 4.4, 6));
+    let o = `<rect x="20" y="20" width="960" height="430" rx="30" fill="#f7f9fc" stroke="#d9dee7" stroke-width="2"/>`;
+    o += A.tx(500, 58, `All chemical reactions in a cell = ${R("metabolism")}`, "t20 mid");
+    o += `<line x1="500" y1="90" x2="500" y2="430" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
+    /* catabolism: a big molecule breaks apart and releases energy */
+    o += A.tx(255, 100, `${R("catabolism")}: breaking down`, "t16 mid", `style="fill:#b83a34"`);
+    if (br < .5) o += `<line x1="217" y1="230" x2="293" y2="230" stroke="${C.carbon}" stroke-width="4" opacity="${f3(1 - br * 2)}"/>`;
+    o += A.carbons(lerp(217.5, 150, br), lerp(230, 215, br), 3, {}) + A.carbons(lerp(292.5, 360, br), lerp(230, 250, br), 3, {});
+    for (let k = 0; k < 5; k++){ const a = -Math.PI / 2 + (k - 2) * .45, d = 40 + 90 * br; o += A.op(br * (1 - seg(tt, 3.2, 4)), `<text x="${f1(255 + d * Math.cos(a))}" y="${f1(230 + d * Math.sin(a))}" font-size="26" text-anchor="middle">⚡</text>`); }
+    o += A.pill(255, 350, "Releases energy (makes ATP)", "#b83a34", 1) + A.tx(255, 400, "Example: glucose → CO₂ + H₂O", "t14 mid muted");
+    /* anabolism: small pieces are joined, using energy */
+    o += A.tx(745, 100, `${R("anabolism")}: building up`, "t16 mid", `style="fill:#1b7f4e"`);
+    const pieces = [[640, 190], [860, 180], [650, 290], [850, 290]];
+    if (bu < .95) pieces.forEach((p, i) => { o += A.carbons(lerp(p[0], 745 + (i - 1.5) * 25, bu), lerp(p[1], 230, bu), 1, {}); });
+    else o += A.carbons(745, 230, 4, {col:"#1b7f4e"});
+    o += A.op(bu > .1 && bu < 1 ? 1 : 0, `<text x="745" y="180" font-size="26" text-anchor="middle">⚡</text>`);
+    o += A.pill(745, 350, "Uses energy (spends ATP)", "#1b7f4e", 1) + A.tx(745, 400, "Example: amino acids → protein", "t14 mid muted");
+    return o;
+  }
+  function pathwayScene(t, R){
+    const T = 6, tt = t % T, k = Math.floor(tt / 1.2) % 4;
+    let o = A.tx(500, 50, `A ${R("pathway")}: one enzyme per step`, "t20 mid");
+    const X = [140, 380, 620, 860], L = ["A", "B", "C", "D"];
+    X.forEach((x, i) => {
+      o += `<circle cx="${x}" cy="180" r="42" fill="${i === k ? "#fff6d6" : "#fff"}" stroke="${i === k ? C.gold : "#9aa3b5"}" stroke-width="${i === k ? 5 : 2.5}"/>` + A.tx(x, 192, L[i], "t20 mid");
+      if (i < 3){ o += A.arrow(x + 50, 180, X[i + 1] - 52, 180, "#5a6376", 3); o += A.enzyme((x + X[i + 1]) / 2, 250, {sc:.42, label:""}) + A.tx((x + X[i + 1]) / 2, 305, `Enzyme ${i + 1}`, "t12 mid"); }
+    });
+    o += A.tx(500, 350, `Catabolic: glycolysis, Krebs cycle, fatty acid oxidation`, "t14 mid", `style="fill:#b83a34"`);
+    o += A.tx(500, 380, `Anabolic: protein synthesis, DNA replication, photosynthesis`, "t14 mid", `style="fill:#1b7f4e"`);
+    o += A.tx(500, 420, `${R("amphibolic") === "?" ? "?" : "Amphibolic"}: both! (Krebs cycle intermediates can be burned OR used as building blocks)`, "t14 mid", `style="fill:#5b3fb0"`);
+    return o;
+  }
+  /* collision theory: little particle simulation driven by the activity sliders */
+  function collisionScene(t, R, g){
+    const temp = g.temp || 1, n = g.conc || 12;
+    if (!g.sim || g.sim.n !== n){ g.sim = {n, p:Array.from({length:n}, (_, i) => ({x:120 + (i * 97) % 760, y:120 + (i * 53) % 250, a:i * 2.4, k:i % 2, prod:false})), t:t, made:0, hits:[]}; }
+    const S = g.sim, dt = Math.min(.05, Math.max(0, t - S.t)); S.t = t;
+    const sp = 60 + 90 * temp;
+    S.p.forEach(q => { q.x += Math.cos(q.a) * sp * dt; q.y += Math.sin(q.a) * sp * dt; if (q.x < 80 || q.x > 920) q.a = Math.PI - q.a; if (q.y < 100 || q.y > 390) q.a = -q.a; q.x = clamp(q.x, 80, 920); q.y = clamp(q.y, 100, 390); });
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++){ const a = S.p[i], b = S.p[j]; if (a.prod || b.prod || a.k === b.k) continue; if (Math.hypot(a.x - b.x, a.y - b.y) < 26){ const tmp = a.a; a.a = b.a; b.a = tmp; S.hits.push({x:(a.x + b.x) / 2, y:(a.y + b.y) / 2, t, ok:temp >= 2}); if (temp >= 2 || ((i + j + Math.floor(t)) % 5 === 0)){ a.prod = b.prod = true; S.made++; } a.x += 14 * Math.cos(a.a); b.x += 14 * Math.cos(b.a); } }
+    S.hits = S.hits.filter(h => t - h.t < .5);
+    let o = `<rect x="60" y="80" width="880" height="330" rx="20" fill="#fbfcff" stroke="#c9cfdb" stroke-width="2"/>` + A.tx(500, 50, `${R("collision") === "?" ? "?" : "Collision"} theory: molecules must collide with enough energy`, "t20 mid");
+    S.hits.forEach(h => { o += A.op(1 - (t - h.t) * 2, `<circle cx="${f1(h.x)}" cy="${f1(h.y)}" r="${f1(14 + 40 * (t - h.t))}" fill="none" stroke="${h.ok ? C.gold : "#9aa3b5"}" stroke-width="3"/>`); });
+    S.p.forEach(q => { o += `<circle cx="${f1(q.x)}" cy="${f1(q.y)}" r="12" fill="${q.prod ? C.gold : q.k ? "#7fb2f0" : "#2f4fb0"}" stroke="#fff" stroke-width="2"/>`; });
+    const fast = temp + n / 12;
+    o += `<text x="90" y="446" class="t14"><tspan style="fill:#2f4fb0">●</tspan> reactant 1   <tspan style="fill:#7fb2f0">●</tspan> reactant 2   <tspan style="fill:#f2b134">●</tspan> product</text>`;
+    o += A.pill(800, 440, `Reaction rate: ${fast >= 4 ? "FAST" : fast >= 2.6 ? "medium" : "slow"}`, fast >= 4 ? C.green : fast >= 2.6 ? "#9a6212" : "#7a8292", 1, 15);
+    if (S.p.every(q => q.prod) || S.made > n) g.sim = null;
+    return o;
+  }
+  function energyScene(t, R, g, done){
+    const T = 7, tt = t % T;
+    let o = A.tx(500, 44, `Enzymes lower the ${R("activation") === "?" ? "?" : "activation"} energy`, "t20 mid");
+    o += `<line x1="110" y1="80" x2="110" y2="420" stroke="#343b4a" stroke-width="3"/><line x1="110" y1="420" x2="930" y2="420" stroke="#343b4a" stroke-width="3"/>`;
+    o += `<text x="70" y="250" class="t14 mid" transform="rotate(-90 70 250)">Energy</text>` + A.tx(520, 452, "Progress of the reaction →", "t14 mid");
+    const curve = h => `M130,300 C300,300 330,${h} 480,${h} C630,${h} 660,370 900,370`;
+    o += `<path d="${curve(110)}" fill="none" stroke="#b83a34" stroke-width="5"/><path d="${curve(230)}" fill="none" stroke="#2f9e63" stroke-width="5" stroke-dasharray="${done ? "0" : "10 8"}"/>`;
+    o += A.tx(480, 96, "Without enzyme", "t14 mid", `style="fill:#b83a34"`) + A.tx(480, 256, "With enzyme", "t14 mid", `style="fill:#1b7f4e"`);
+    o += A.arrow(560, 300, 560, 116, "#b83a34", 2.5) + A.tx(548, 180, "big barrier", "t12 end", `style="fill:#b83a34"`);
+    o += A.arrow(420, 300, 420, 236, "#1b7f4e", 2.5) + A.tx(410, 280, "small barrier", "t12 end", `style="fill:#1b7f4e"`);
+    o += `<line x1="130" y1="300" x2="330" y2="300" stroke="#9aa3b5" stroke-dasharray="4 4"/>` + A.tx(140, 330, "Reactants", "t14", ``) + A.tx(900, 400, "Products", "t14 end");
+    /* two balls roll over: the enzyme one gets over sooner */
+    const pt = (h, p) => { const u = p, x = 130 + 770 * u; const y = u < .45 ? lerp(300, h, smooth(u / .45)) : lerp(h, 370, smooth((u - .45) / .55)); return [x, y - 14]; };
+    const pe = smooth(seg(tt, .5, 3)), pn = tt < 3.4 ? seg(tt, .5, 2.6) * .42 : smooth(seg(tt, 3.4, 6.4));
+    const b1 = pt(230, pe), b2 = pt(110, Math.min(pn, 1));
+    o += `<circle cx="${f1(b1[0])}" cy="${f1(b1[1])}" r="13" fill="#2f9e63"/><circle cx="${f1(b2[0])}" cy="${f1(b2[1])}" r="13" fill="#b83a34"/>`;
+    return o;
+  }
+  function stepsScene(t, R, g, done){
+    const T = 9, tt = t % T, inn = smooth(seg(tt, .4, 1.8)), cut = smooth(seg(tt, 3, 4)), out = smooth(seg(tt, 4.6, 6.2));
+    let o = A.tx(500, 44, "How an enzyme works", "t20 mid");
+    const labels = ["1. Substrate binds", "2. E-S complex", "3. Bonds break", "4. Products leave"];
+    const st = tt < 1.8 ? 0 : tt < 3 ? 1 : tt < 4.6 ? 2 : 3;
+    labels.forEach((l, i) => { o += `<rect x="${60 + i * 225}" y="72" width="210" height="38" rx="19" fill="${i === st ? C.blue : "#eef1f5"}"/>` + A.tx(165 + i * 225, 97, l, "t14 mid", i === st ? `style="fill:#fff"` : ""); });
+    o += enz(500, 340, {sc:1.4, open:1 - .25 * inn * (1 - out), label:"Enzyme"});
+    o += A.tx(500, 450, `The ${R("activesite")} (the notch) fits only one substrate shape`, "t14 mid muted");
+    const sy = lerp(170, 266, inn), g2 = 26 * cut + 150 * out;
+    o += tri(500 - g2, sy - 30 * out, 1.4, C.green) + half(540 + g2, sy + 4 - 30 * out, 1.3, "#e8744f");
+    if (cut < .9 && inn > .5) o += `<line x1="514" y1="${f1(sy)}" x2="526" y2="${f1(sy)}" stroke="#343b4a" stroke-width="4" opacity="${f3(1 - cut)}"/>`;
+    o += A.tx(520, sy - 50, out > .3 ? R("products") : inn > .9 ? R("esc") : R("substrate"), "t16 mid");
+    return o;
+  }
+  function inducedScene(t, R){
+    const T = 6, tt = t % T, inn = smooth(seg(tt, .5, 1.8)), grip = smooth(seg(tt, 1.8, 2.6)) * (1 - smooth(seg(tt, 4.6, 5.4)));
+    let o = A.tx(500, 44, `The ${R("inducedfit")} model`, "t20 mid");
+    o += enz(330, 330, {sc:1.5, open:1 - .45 * grip, label:"Enzyme"});
+    o += tri(330, lerp(150, 262, inn) - 30 * smooth(seg(tt, 4.6, 5.6)), 1.3, C.green);
+    o += A.tx(330, 440, grip > .5 ? "Active site closes around the substrate" : "Active site is a loose fit at first", "t14 mid");
+    const count = Math.floor(t * 4.3);
+    o += `<rect x="600" y="140" width="330" height="190" rx="18" fill="#fff" stroke="#d9dee7" stroke-width="2"/>` + A.tx(765, 180, R("turnover") === "?" ? "?" : "Turnover number", "t16 mid");
+    o += A.tx(765, 250, String(count), "t20 mid", `style="font-size:54px"`) + A.tx(765, 300, "substrates converted per enzyme per second", "t12 mid muted");
+    return o;
+  }
+  function cofactorScene(t, R, g, done){
+    const T = 6, tt = t % T, dock = done ? smooth(seg(tt, .6, 1.8)) : 0;
+    let o = A.tx(500, 44, `${R("cofactors")} + ${R("apoenzyme")} = a working enzyme`, "t20 mid");
+    o += A.enzyme(380, 300, {sc:1.6, notch:"tri", col:dock > .9 ? C.enz : "#aeb4c8", label:dock > .9 ? "Active!" : "Apoenzyme"});
+    o += `<circle cx="${f1(lerp(760, 525, dock))}" cy="${f1(lerp(180, 322, dock))}" r="22" fill="#0f9fb0" stroke="#0a6e7a" stroke-width="2.5"/>` + A.tx(lerp(760, 525, dock), lerp(186, 328, dock), "Mg²⁺", "t12 mid wht");
+    o += A.tx(760, 150, dock < .1 ? "Cofactor (metal ion)" : "", "t14 mid");
+    o += A.tx(380, 420, dock > .9 ? "Protein + cofactor: now it can bind substrate" : "Protein part alone is inactive", "t14 mid");
+    o += A.tx(760, 260, "Cofactors: Mg²⁺, Zn²⁺, or", "t14 mid muted") + A.tx(760, 284, "organic coenzymes (like NAD⁺)", "t14 mid muted");
+    return o;
+  }
+  /* enzyme activity graphs driven by sliders */
+  function factorScene(t, R, g){
+    const T = g.temp === undefined ? 37 : g.temp, pH = g.pH === undefined ? 7 : g.pH, S = g.sub === undefined ? 30 : g.sub;
+    const fT = v => v <= 38 ? Math.pow(v / 38, 1.3) : Math.max(0, Math.cos((v - 38) / 14 * Math.PI / 2)), fP = v => Math.exp(-Math.pow((v - 7) / 1.8, 2)), fS = v => Math.min(1, v / (v + 10) * 1.12);
+    const aT = fT(T), aP = fP(pH), aS = fS(S);
+    let o = A.tx(500, 38, "Factors that affect enzyme activity", "t20 mid");
+    const graph = (x0, lbl, fn, xv, xmin, xmax, unit) => {
+      let s = `<rect x="${x0}" y="70" width="280" height="260" rx="12" fill="#fff8e6" stroke="#f0d99a"/><line x1="${x0 + 30}" y1="300" x2="${x0 + 265}" y2="300" stroke="#343b4a" stroke-width="2"/><line x1="${x0 + 30}" y1="90" x2="${x0 + 30}" y2="300" stroke="#343b4a" stroke-width="2"/>`;
+      let d = ""; for (let i = 0; i <= 60; i++){ const v = xmin + (xmax - xmin) * i / 60; d += (i ? "L" : "M") + f1(x0 + 30 + 235 * i / 60) + "," + f1(300 - 190 * clamp(fn(v), 0, 1)); }
+      s += `<path d="${d}" fill="none" stroke="#d9443a" stroke-width="4"/>`;
+      const px = x0 + 30 + 235 * (xv - xmin) / (xmax - xmin), py = 300 - 190 * clamp(fn(xv), 0, 1);
+      s += `<circle cx="${f1(px)}" cy="${f1(py)}" r="10" fill="${C.blue}" stroke="#fff" stroke-width="3"/>` + A.tx(x0 + 148, 330, `${lbl}: ${xv}${unit}`, "t14 mid");
+      return s;
+    };
+    o += graph(40, "Temperature", fT, T, 0, 60, "°C");
+    o += graph(360, "pH", fP, pH, 1, 13, "");
+    o += graph(680, "Substrate", fS, S, 0, 100, "");
+    const act = clamp(aT * aP * Math.min(1, aS), 0, 1);
+    o += A.tx(500, 390, `Enzyme activity: ${Math.round(act * 100)}%`, "t20 mid");
+    let msg = T > 47 ? `Too hot! The enzyme's shape is lost: it ${R("denature") === "?" ? "?" : "denatures"}.` : Math.abs(pH - 7) > 2.5 ? "Extreme pH changes the enzyme's shape." : S > 70 ? `Every active site is busy: ${R("saturation") === "?" ? "?" : "saturation"}.` : T < 20 ? "Cold: molecules move slowly, fewer collisions." : "Near the optimum!";
+    o += A.tx(500, 430, msg, "t16 mid", `style="fill:${T > 45 || Math.abs(pH - 7) > 2.5 ? "#b83a34" : "#1b7f4e"}"`);
+    return o;
+  }
+  function alloScene(t, R){
+    const T = 7, tt = t % T, bind = smooth(seg(tt, 1, 2.2)) * (1 - smooth(seg(tt, 5.4, 6.4)));
+    let o = A.tx(500, 44, `Active site vs. ${R("allosteric")} site`, "t20 mid");
+    o += A.enzyme(500, 300, {sc:1.9, notch:"tri", open:1 - .6 * bind, allo:true, col:bind > .5 ? "#8f98c8" : C.enz});
+    o += A.arrow(330, 140, 470, 218, "#343b4a", 2.5) + A.tx(320, 130, "Active site: substrate binds here", "t14 end");
+    o += A.arrow(770, 200, 680, 322, "#343b4a", 2.5) + A.tx(700, 190, `${R("allosteric") === "?" ? "?" : "Allosteric"} site: a separate spot`, "t14");
+    o += `<circle cx="${f1(lerp(860, 673, bind))}" cy="${f1(lerp(420, 345, bind))}" r="13" fill="#6b4bb8" stroke="#fff" stroke-width="2"/>`;
+    o += A.tx(500, 450, bind > .5 ? "An inhibitor at the allosteric site changes the enzyme's shape" : "Inhibitors or activators can bind the allosteric site", "t14 mid");
+    return o;
+  }
+  function inhibScene(t, R){
+    const T = 8, tt = t % T, b = smooth(seg(tt, .8, 2));
+    let o = A.tx(250, 44, `${R("competitive")} inhibition`, "t16 mid") + A.tx(750, 44, `${R("noncompetitive")} inhibition`, "t16 mid");
+    o += `<line x1="500" y1="70" x2="500" y2="440" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
+    o += enz(250, 300, {sc:1.3, label:"Enzyme"}) + tri(250, lerp(130, 222, b), 1.1, "#8e5bd0") + A.tx(250, lerp(100, 190, b) - 10, "Inhibitor", "t12 mid");
+    o += tri(120, 150, 1.1, C.green) + A.tx(120, 120, "Substrate", "t12 mid") + tri(390, 170, 1.1, C.green);
+    o += A.tx(250, 405, "Same shape as the substrate:", "t14 mid") + A.tx(250, 427, "blocks the active site", "t14 mid");
+    o += A.tx(250, 455, "More substrate can outcompete it", "t12 mid", `style="fill:#1b7f4e"`);
+    o += A.enzyme(750, 300, {sc:1.3, notch:"tri", open:1 - .8 * b, allo:true, label:"Enzyme"}) + `<circle cx="${f1(lerp(900, 855, b))}" cy="${f1(lerp(190, 313, b))}" r="12" fill="#5a6376" stroke="#fff" stroke-width="2"/>` + A.tx(lerp(900, 855, b), lerp(170, 293, b) - 6, "Hg²⁺", "t12 mid");
+    o += tri(700, lerp(150, 175, b), 1.1, C.green) + A.tx(700, 120, b > .5 ? "Can't fit!" : "Substrate", "t12 mid");
+    o += A.tx(750, 405, "Binds the allosteric site:", "t14 mid") + A.tx(750, 427, "changes the enzyme's shape", "t14 mid");
+    o += A.tx(750, 455, "More substrate does NOT help", "t12 mid", `style="fill:#b83a34"`);
+    return o;
+  }
+  function feedbackScene(t, R, g, done){
+    const T = 10, tt = t % T, D = Math.min(6, Math.floor(tt * 1.1)), shut = D >= 5 ? smooth(seg(tt, 5, 6)) : 0;
+    let o = A.tx(500, 44, `${R("feedback") === "?" ? "?" : "Feedback"} inhibition: the end product tells the beginning to stop`, "t16 mid");
+    const X = [120, 360, 600, 840], L = ["A", "B", "C", "D"];
+    X.forEach((x, i) => { o += `<circle cx="${x}" cy="200" r="40" fill="#fff" stroke="#9aa3b5" stroke-width="2.5"/>` + A.tx(x, 212, L[i], "t20 mid");
+      if (i < 3){ o += A.arrow(x + 48, 200, X[i + 1] - 50, 200, i === 0 && shut > .5 ? "#c9cfdb" : "#5a6376", 3); o += A.enzyme((x + X[i + 1]) / 2, 270, {sc:.4, col:i === 0 && shut > .5 ? "#aeb4c8" : C.enz}) + A.tx((x + X[i + 1]) / 2, 322, `Enzyme ${i + 1}`, "t12 mid"); } });
+    for (let k = 0; k < D; k++) o += `<circle cx="${830 + (k % 3) * 26 - 26}" cy="${280 + Math.floor(k / 3) * 26}" r="11" fill="#6b4bb8"/>`;
+    o += A.tx(840, 350, D >= 5 ? "Lots of D" : "D builds up", "t12 mid");
+    if (shut > 0) o += A.op(shut, `<path d="M810,250 C700,120 420,110 245,245" fill="none" stroke="#b83a34" stroke-width="3" stroke-dasharray="8 6"/>` + A.pill(520, 118, `D blocks the ${R("first") === "?" ? "?" : "first"} enzyme`, "#b83a34", 1) + `<line x1="228" y1="252" x2="262" y2="286" stroke="#b83a34" stroke-width="6"/><line x1="262" y1="252" x2="228" y2="286" stroke="#b83a34" stroke-width="6"/>`);
+    o += A.tx(500, 420, D >= 5 ? "High [D]: pathway shuts down. When D gets used up, enzyme 1 turns back on." : "Low [D]: the pathway runs", "t14 mid");
+    return o;
+  }
+  function vocabScene(t){
+    const W = [["Substrate","what the enzyme acts on"],["Active site","where substrate binds"],["Allosteric site","regulatory site elsewhere"],["Cofactor","non-protein helper"],["Apoenzyme","protein part alone"],["Induced fit","site reshapes around substrate"],["Turnover number","substrates per enzyme per second"],["Activation energy","energy barrier to start"]];
+    let o = A.tx(500, 44, "Vocab you need", "t20 mid");
+    W.forEach((w, i) => { const x = 60 + (i % 2) * 460, y = 80 + Math.floor(i / 2) * 90, on = Math.floor(t / 1.5) % 8 === i;
+      o += `<rect x="${x}" y="${y}" width="420" height="72" rx="14" fill="#fff" stroke="${on ? C.blue : "#d9dee7"}" stroke-width="${on ? 3 : 1.5}"/>` + A.tx(x + 18, y + 30, w[0], "t16", "") + A.tx(x + 18, y + 56, w[1], "t14", `style="fill:#5a6376"`); });
+    return o;
+  }
+
+  /* ================= Hands-on activities ================= */
+  const quiz = (title, done, q, opts, right, why) => ({title, done,
+    html:() => `<div class="lbl">${q}</div><div class="row">${opts.map((x, i) => `<button class="choice" data-i="${i}">${x}</button>`).join("")}</div>`,
+    wire:(g, st, api) => { g.querySelectorAll("[data-i]").forEach(b => b.addEventListener("click", () => { const i = +b.dataset.i; if (i === right){ b.classList.add("right"); api.msg(why, "good"); setTimeout(api.pass, 1100); } else { b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); api.msg("Not quite. Try another answer.", "bad"); } })); }});
+
+  const GATES = {
+    catana:Metab.sortGate({title:"Your turn: sort each process", done:"Sorted! Catabolic breaks down and releases energy; anabolic builds up and uses energy.",
+      bins:[["cat","Catabolic (breakdown)"],["ana","Anabolic (build up)"]],
+      cards:[["g","Glycolysis","cat","Glycolysis breaks glucose apart. Is that building or breaking?"],["k","Krebs cycle","cat","The Krebs cycle finishes breaking down glucose to CO₂."],["f","Fatty acid oxidation","cat","Oxidation breaks the fatty acid down."],["p","Protein synthesis","ana","Building a protein from amino acids uses energy."],["d","DNA replication","ana","Copying DNA builds a new strand."],["ph","Photosynthesis","ana","Photosynthesis builds glucose from CO₂."]]}),
+    collide:{title:"Your turn: speed up the reaction", done:"Fast! Higher temperature and more reactants mean more (and harder) collisions.", live:true,
+      init:() => ({temp:1, conc:12}),
+      html:st => `<div class="slider"><label>Temperature <span>${["", "cool", "warm", "hot"][st.temp]}</span></label><input type="range" min="1" max="3" step="1" value="${st.temp}" id="sTemp"></div>
+        <div class="slider"><label>Concentration of reactants <span>${st.conc} molecules</span></label><input type="range" min="8" max="30" step="2" value="${st.conc}" id="sConc"></div>`,
+      wire:(g, st, api) => {
+        const up = () => { st.temp = +g.querySelector("#sTemp").value; st.conc = +g.querySelector("#sConc").value; g.querySelector("label span").textContent = ["", "cool", "warm", "hot"][st.temp]; g.querySelectorAll("label span")[1].textContent = st.conc + " molecules";
+          if (st.temp + st.conc / 12 >= 4){ api.msg("Watch the gold products pile up. More collisions, with more energy, means a faster reaction rate!", "good"); if (!st.passed){ st.passed = true; setTimeout(api.pass, 1600); } }
+          else api.msg(st.temp >= 2 ? "Hotter molecules collide with more energy. Now add more reactants." : "Heat things up, or pack in more molecules.", ""); };
+        g.querySelectorAll("input").forEach(i => i.addEventListener("input", up));
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Use the sliders to get the reaction rate to FAST.", "");
+      }},
+    lowers:quiz("Quick check", "Right: enzymes lower the activation energy, so the reaction happens faster.", "What does an enzyme change about a reaction?", ["The activation energy", "The energy stored in the products", "Whether energy is released or used"], 0, "Yes! Only the height of the hill changes. The starting and ending energy stay the same."),
+    fit:{title:"Your turn: be the enzyme", done:"Catalyzed! The enzyme released the products and is ready to use again.",
+      init:() => ({stage:0, uses:0}),
+      html:st => `<div class="row"><div class="pad" style="text-align:center"><svg class="gsvg" viewBox="-100 -80 200 150" width="200"><path d="M-60,-46 L-17,-46 L0,-18 L17,-46 L60,-46 C84,-46 88,-20 88,4 C88,40 60,54 0,54 C-60,54 -88,40 -88,4 C-88,-20 -84,-46 -60,-46 Z" fill="#6c7ae0" stroke="#3e4aa8" stroke-width="2.5"/>${st.stage === 1 ? `<polygon points="0,-60 16,-30 -16,-30" fill="#2f9e63" stroke="#1b6b43" stroke-width="2" transform="translate(0,14)"/>` : ""}<text x="0" y="22" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">Enzyme</text></svg>
+        <div class="zone" data-zone="site" style="min-height:40px"><span class="zl">Active site: drop a substrate here</span></div></div>
+        <div style="display:grid;gap:8px"><span class="lbl">Substrates floating by</span><div class="row">${st.stage === 0 ? `<span class="tok" data-s="tri">▲ triangle</span><span class="tok" data-s="sq">■ square</span><span class="tok" data-s="circ">● circle</span>` : ""}</div>
+        ${st.stage === 1 ? `<button class="btn primary" id="catBtn">⚡ Catalyze the reaction</button>` : ""}<div class="lbl">Times this enzyme has been used: ${st.uses}</div></div></div>`,
+      wire:(g, st, api) => {
+        g.querySelectorAll("[data-s]").forEach(el => api.dragify(el, {targets:() => [g.querySelector("[data-zone]")], tap:() => drop(el.dataset.s), drop:() => drop(el.dataset.s)}));
+        function drop(s){ if (s !== "tri"){ api.msg("That shape doesn't fit the active site. Enzymes are specific: only one substrate shape fits.", "bad"); return false; } st.stage = 1; api.redraw(); api.msg("It fits! This is the enzyme-substrate complex. Now catalyze it.", "good"); return true; }
+        const cb = g.querySelector("#catBtn"); if (cb) cb.addEventListener("click", () => { st.stage = 0; st.uses++; api.redraw(); if (st.uses >= 2){ api.msg("Products released, and the enzyme is unchanged. That's a catalyst!", "good"); setTimeout(api.pass, 1000); } else api.msg("Bonds broke and two products floated away. The enzyme isn't used up. Do it again!", "good"); });
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the substrate that fits the active site (or tap it).", "");
+      }},
+    cofactor:{title:"Your turn: activate the apoenzyme", done:"Activated! Apoenzyme + cofactor = a working enzyme.",
+      html:() => `<div class="row"><div class="zone" data-zone="apo" style="min-width:220px"><span class="zl">Apoenzyme (inactive): drop its helper here</span></div>
+        <div class="row"><span class="tok" data-c="mg">Mg²⁺ (metal ion)</span><span class="tok" data-c="glu">Glucose</span><span class="tok" data-c="aa">An amino acid</span></div></div>`,
+      wire:(g, st, api) => { g.querySelectorAll("[data-c]").forEach(el => api.dragify(el, {tap:() => go(el.dataset.c), drop:() => go(el.dataset.c)}));
+        function go(c){ if (c !== "mg"){ api.msg(c === "glu" ? "Glucose is a substrate (food), not a cofactor." : "Amino acids are part of the protein itself. A cofactor is a NON-protein helper.", "bad"); return false; } g.querySelector("[data-zone]").classList.add("ok"); api.msg("Mg²⁺ is an inorganic cofactor. Now the enzyme works!", "good"); setTimeout(api.pass, 1000); return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Which one is a cofactor? Drag it onto the apoenzyme.", ""); }},
+    factors:{title:"Your turn: test the factors", done:"You found the optimum, denatured it, and saturated it!", live:true,
+      init:() => ({temp:37, pH:7, sub:30, seen:{}}),
+      html:st => `<div class="slider"><label>Temperature <span>${st.temp}°C</span></label><input type="range" min="0" max="60" value="${st.temp}" data-k="temp"></div>
+        <div class="slider"><label>pH <span>${st.pH}</span></label><input type="range" min="1" max="13" value="${st.pH}" data-k="pH"></div>
+        <div class="slider"><label>Substrate concentration <span>${st.sub}</span></label><input type="range" min="0" max="100" value="${st.sub}" data-k="sub"></div>
+        <div class="chips"><span class="chip ${st.seen.hot ? "on" : ""}">${st.seen.hot ? "✓" : "○"} Denature it with heat</span><span class="chip ${st.seen.ph ? "on" : ""}">${st.seen.ph ? "✓" : "○"} Try an extreme pH</span><span class="chip ${st.seen.sat ? "on" : ""}">${st.seen.sat ? "✓" : "○"} Reach saturation</span></div>`,
+      wire:(g, st, api) => { g.querySelectorAll("input").forEach(i => i.addEventListener("input", () => { st[i.dataset.k] = +i.value; i.parentNode.querySelector("span").textContent = i.value + (i.dataset.k === "temp" ? "°C" : "");
+          const before = Object.keys(st.seen).length; if (st.temp > 45) st.seen.hot = 1; if (Math.abs(st.pH - 7) > 3) st.seen.ph = 1; if (st.sub > 80) st.seen.sat = 1;
+          if (Object.keys(st.seen).length !== before){ api.redraw(); if (Object.keys(st.seen).length === 3){ api.msg("Each enzyme has an optimal temperature and pH. More substrate helps only until every active site is full.", "good"); setTimeout(api.pass, 1300); } } }));
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Move the sliders and watch the dots on the graphs.", ""); }},
+    inhib:{title:"Your turn: place each inhibitor", done:"Competitive inhibitors block the active site; non-competitive inhibitors bind the allosteric site.",
+      init:() => ({placed:{}}),
+      html:st => `<div class="row">${!st.placed.st ? `<span class="tok" data-i="st">▲ Statin (looks like the substrate)</span>` : ""}${!st.placed.hg ? `<span class="tok" data-i="hg">● Heavy metal (Hg²⁺)</span>` : ""}</div>
+        <div class="zones"><div class="zone ${st.placed.st ? "ok" : ""}" data-zone="act"><span class="zl">Active site</span>${st.placed.st ? `<span class="tok placed">Statin: competitive</span>` : ""}</div><div class="zone ${st.placed.hg ? "ok" : ""}" data-zone="allo"><span class="zl">Allosteric site</span>${st.placed.hg ? `<span class="tok placed">Hg²⁺: non-competitive</span>` : ""}</div></div>
+        ${st.placed.st && st.placed.hg ? `<div class="lbl">Now add LOTS more substrate. Which inhibitor gets outcompeted?</div><div class="row"><button class="choice" data-q="st">The statin</button><button class="choice" data-q="hg">The heavy metal</button></div>` : ""}`,
+      wire:(g, st, api) => { g.querySelectorAll("[data-i]").forEach(el => api.dragify(el, {tap:() => { st.pick = el.dataset.i; api.msg("Now tap the site it binds.", ""); }, drop:z => put(el.dataset.i, z.dataset.zone)}));
+        g.querySelectorAll("[data-zone]").forEach(z => z.addEventListener("click", () => { if (st.pick){ put(st.pick, z.dataset.zone); st.pick = null; } }));
+        function put(i, z){ const want = i === "st" ? "act" : "allo"; if (z !== want){ api.msg(i === "st" ? "The statin has the same shape as the substrate. Where does the substrate go?" : "Heavy metals bind somewhere else and change the enzyme's shape.", "bad"); return false; } st.placed[i] = 1; api.redraw(); api.msg(i === "st" ? "Competitive: it competes for the active site." : "Non-competitive: it binds the allosteric site.", "good"); return true; }
+        g.querySelectorAll("[data-q]").forEach(b => b.addEventListener("click", () => { if (b.dataset.q === "st"){ b.classList.add("right"); api.msg("Right! Tons of substrate wins the race for the active site. The heavy metal doesn't care how much substrate there is.", "good"); setTimeout(api.pass, 1300); } else { b.classList.add("wrong"); api.msg("The heavy metal isn't competing for the active site, so extra substrate can't push it out.", "bad"); } }));
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag each inhibitor to the site it binds.", ""); }},
+    feedback:{title:"Your turn: shut down the pathway", done:"The end product (D) inhibits the first enzyme, so no resources are wasted.",
+      html:() => `<div class="row"><span class="tok" data-d="1" style="background:#efe7fb;border-color:#8e5bd0">D (end product)</span></div>
+        <div class="zones">${[1, 2, 3].map(n => `<div class="zone" data-zone="${n}"><span class="zl">Enzyme ${n}: ${["A → B", "B → C", "C → D"][n - 1]}</span></div>`).join("")}</div>`,
+      wire:(g, st, api) => { const el = g.querySelector("[data-d]"); api.dragify(el, {tap:() => { st.pick = 1; api.msg("Tap the enzyme D should block.", ""); }, drop:z => put(z.dataset.zone)});
+        g.querySelectorAll("[data-zone]").forEach(z => z.addEventListener("click", () => { if (st.pick) put(z.dataset.zone); }));
+        function put(z){ if (z !== "1"){ api.msg(z === "3" ? "Blocking the last step would leave A, B, and C piling up. That wastes resources!" : "Close, but B would still be made for nothing. Block the very start of the pathway.", "bad"); return false; } g.querySelector('[data-zone="1"]').classList.add("ok"); api.msg("Yes! D acts as an allosteric inhibitor of enzyme 1, so the whole pathway stops at the start.", "good"); setTimeout(api.pass, 1100); return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag D onto the enzyme it should inhibit.", ""); }},
+    vocab:Metab.sortGate({title:"Your turn: sort the vocab", done:"Vocab sorted!", tip:"Where does each term belong? Drag it into a box.",
+      bins:[["enz","Part of an enzyme"],["rx","About the reaction"],["reg","Regulation (control)"]],
+      cards:[["a","Active site","enz"],["b","Apoenzyme","enz"],["c","Cofactor","enz"],["d","Activation energy","rx"],["e","Reaction rate","rx"],["f","Collision theory","rx"],["g","Competitive inhibition","reg"],["h","Feedback inhibition","reg"],["i","Allosteric site","reg","The allosteric site is where regulators bind. Put it with regulation."]]})
+  };
+
+  /* ================= Steps ================= */
+  const P1 = "Metabolism", P2 = "How enzymes work", P3 = "Controlling enzymes";
+  const STEPS = [
+    {part:P1, title:"What is metabolism?", scene:(t, c) => metabScene(t, c.R), more:"meta", gate:GATES.catana,
+     text:`All of the chemical reactions in a cell are called {{metabolism}}. {{catabolism}} is the BREAKDOWN of molecules to release energy, like breaking glucose down into CO₂ and water. {{anabolism}} is building up molecules using energy, like joining amino acids into a protein.`,
+     after:`Catabolism breaks down (releases energy). Anabolism builds up (uses energy).`},
+    {part:P1, title:"Metabolic pathways", scene:(t, c) => pathwayScene(t, c.R),
+     text:`A {{pathway}} is a series of connected chemical reactions, where the product of one step becomes the reactant for the next. Each step is run by its own enzyme. Some pathways are catabolic, some are anabolic, and some, called {{amphibolic}} pathways, do both. Krebs cycle intermediates, for example, can be broken down for energy or used as building blocks.`},
+    {part:P1, title:"Collision theory", scene:(t, c) => collisionScene(t, c.R, c.g), live:true, gate:GATES.collide, more:"ea",
+     text:`What makes reactions happen? {{collision}} theory says chemical reactions occur when molecules collide with enough energy and the proper orientation. The minimum energy needed for a reaction to begin is the {{activation}} energy. The speed at which reactants turn into products is the {{rate}}. Temperature, pressure, concentration, surface area, and catalysts all change how often and how hard molecules collide.`,
+     after:`More collisions = faster reaction. Higher activation energy = slower reaction.`},
+    {part:P2, title:"Enzymes lower the barrier", scene:(t, c) => energyScene(t, c.R, c.g, c.done), gate:GATES.lowers, more:"names",
+     text:`Enzymes are biological {{catalysts}}, mostly proteins. They speed up reactions without being used up. An enzyme {{lowers}} the activation energy, so the reaction happens more easily and the reaction rate goes up.`,
+     after:`↓ activation energy → ↑ reaction rate`},
+    {part:P2, title:"How an enzyme works", scene:(t, c) => stepsScene(t, c.R, c.g, c.done), gate:GATES.fit,
+     text:`The molecule an enzyme acts on is its {{substrate}} (a reactant). 1) The substrate binds to a specific spot on the enzyme called the {{activesite}}. 2) Together they form the {{esc}}. 3) The enzyme helps bonds break or form. 4) The {{products}} are released, and the enzyme is free to work again.`},
+    {part:P2, title:"Induced fit and turnover number", scene:(t, c) => inducedScene(t, c.R),
+     text:`The active site isn't a rigid lock. In the {{inducedfit}} model, the active site changes shape when the substrate binds, creating a tighter, optimal fit. How efficient is an enzyme? The {{turnover}} is the number of substrate molecules one enzyme converts per second.`},
+    {part:P2, title:"Cofactors and apoenzymes", scene:(t, c) => cofactorScene(t, c.R, c.g, c.done), gate:GATES.cofactor, more:"vit",
+     text:`Many enzymes need a teammate. {{cofactors}} are non-protein helpers required for enzyme activity: metal ions like Mg²⁺ and Zn²⁺, or organic molecules called coenzymes. The protein portion of the enzyme on its own is the {{apoenzyme}}, and it is inactive by itself.`,
+     after:`Apoenzyme (protein) + cofactor = working enzyme`},
+    {part:P2, title:"Factors that affect enzyme activity", scene:(t, c) => factorScene(t, c.R, c.g), live:true, gate:GATES.factors, more:"temp",
+     text:`Higher temperature means more collisions, but too much heat makes an enzyme {{denature}}: it loses its shape and function. Each enzyme has an optimal pH, and extreme pH changes its shape too. More substrate speeds things up only until {{saturation}}, when every active site is occupied. Enzyme concentration, inhibitors, cofactors, and salt concentration matter as well.`},
+    {part:P3, title:"The allosteric site", scene:(t, c) => alloScene(t, c.R),
+     text:`Enzymes have two kinds of binding sites. The active site is where the substrate binds, with a shape and chemistry that match the substrate. The {{allosteric}} site is a separate binding site. It's a regulatory site where inhibitors or activators bind to turn the enzyme down or up.`},
+    {part:P3, title:"Competitive vs. non-competitive inhibition", scene:(t, c) => inhibScene(t, c.R), gate:GATES.inhib, more:"statin",
+     text:`{{competitive}} inhibitors have a shape similar to the substrate and compete for the active site. They can be overcome by adding more substrate (example: statins compete with HMG-CoA). {{noncompetitive}} inhibitors bind the allosteric site, change the enzyme's shape, and make the active site nonfunctional. Adding more substrate can't overcome them (example: heavy metals).`},
+    {part:P3, title:"Feedback inhibition", scene:(t, c) => feedbackScene(t, c.R, c.g, c.done), gate:GATES.feedback, more:"fb",
+     text:`In {{feedback}} inhibition, the end product of a pathway inhibits the {{first}} enzyme in the pathway. In A → B → C → D, product D acts as an allosteric inhibitor of the enzyme that turns A into B. When D is high, the whole pathway shuts down. When D is low, it runs again. This prevents waste and keeps the cell in balance.`,
+     after:`"The end product tells the beginning to stop!"`},
+    {part:P3, title:"Vocab review", scene:t => vocabScene(t), gate:GATES.vocab,
+     table:{cap:"Enzyme vocab", head:["Term","Meaning"], rows:[["Reactant / substrate","The molecule(s) the enzyme acts on"],["Product","What the reaction makes"],["Catalyst","Speeds up a reaction without being used up"],["Enzyme-substrate complex","Enzyme with substrate bound in its active site"],["Cofactor","Non-protein helper (metal ion or coenzyme)"],["Apoenzyme","Protein part of an enzyme; inactive alone"],["Induced fit","Active site changes shape when substrate binds"],["Turnover number","Substrates converted per enzyme per second"],["Allosteric site","Regulatory site separate from the active site"],["Feedback inhibition","End product inhibits the first enzyme of its pathway"]]},
+     text:`Nice work! You now know how enzymes speed up the reactions of metabolism and how cells control them. Next up: where the energy actually comes from, with redox reactions and ATP.`,
+     after:`Enzymes: done! Up next: the chemistry of energy production.`}
+  ];
+
+  Metab.start({title:"Enzymes and Metabolism", page:"enzymes.html", BL, MORE, STEPS,
+    nextLabel:"Next up: where does the energy come from?", next:[["Chemistry of Energy Production →","energy-chemistry.html"],["All modules","index.html"]]});
+})();
+</script>
+<script src="studypath.js"></script>
+</body>
+</html>

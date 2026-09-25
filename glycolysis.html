@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glycolysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="metab.css">
+</head>
+<body>
+<div id="app"></div>
+<script src="metab.js"></script>
+<script>
+(function(){
+  const A = Metab.A, {f1, f3, lerp, clamp, smooth, seg, C} = A;
+
+  const BL = {
+    glycolysis:{show:"glycolysis", ans:["glycolysis"], fuzzy:true},
+    krebs:{show:"Krebs cycle", ans:["krebscycle","krebs","citricacidcycle","tcacycle","tca"], fuzzy:true},
+    etc:{show:"electron transport chain", ans:["electrontransportchain","etc","electrontransport"], fuzzy:true},
+    exergonic:{show:"exergonic", ans:["exergonic"], fuzzy:true},
+    matrix:{show:"mitochondrial matrix", ans:["mitochondrialmatrix","matrix"], fuzzy:true},
+    inner:{show:"inner mitochondrial membrane", ans:["innermitochondrialmembrane","innermembrane","innermitochondria"], fuzzy:true},
+    plasma:{show:"plasma membrane", ans:["plasmamembrane","cellmembrane","membrane","cytoplasmicmembrane"], fuzzy:true},
+    pyruvate:{show:"pyruvate", ans:["pyruvate","pyruvicacid","pyruvates"], fuzzy:true},
+    cytoplasm:{show:"cytoplasm", ans:["cytoplasm","cytosol"], fuzzy:true},
+    invest:{show:"2", ans:["2","two"]},
+    f16bp:{show:"fructose 1,6-bisphosphate", ans:["fructose16bisphosphate","fructosebisphosphate","f16bp","fructose16biphosphate","fructose16diphosphate"], fuzzy:true},
+    g3p:{show:"glyceraldehyde 3-phosphate", ans:["glyceraldehyde3phosphate","g3p","glyceraldehydephosphate","glyceraldehyde"], fuzzy:true},
+    twice:{show:"twice", ans:["twice","two","2","2times","twotimes","double"], fuzzy:true},
+    four:{show:"4", ans:["4","four"]},
+    nadh:{show:"NADH", ans:["nadh"]},
+    net:{show:"2", ans:["2","two"]},
+    nadplus:{show:"NAD⁺", ans:["nad","nadplus"]},
+    fad:{show:"FAD", ans:["fad"]}
+  };
+  const MORE = {
+    ten:{title:"The ten steps of glycolysis", html:`<p>Glycolysis is really 10 enzyme-catalyzed reactions. You only need the big molecules (glucose, fructose 1,6-bisphosphate, pyruvate), but in full: glucose → glucose 6-phosphate → fructose 6-phosphate → fructose 1,6-bisphosphate → DHAP + glyceraldehyde 3-phosphate → 1,3-bisphosphoglycerate → 3-phosphoglycerate → 2-phosphoglycerate → phosphoenolpyruvate → pyruvate.</p><p>The enzyme phosphofructokinase (step 3) is the main control point. It is inhibited by ATP, a classic example of feedback inhibition!</p>`},
+    other:{title:"Other sugars join in", html:`<p>Cells can feed other sugars into glycolysis. Galactose (from lactose) can be converted to glucose 6-phosphate, which enters glycolysis right after glucose. Fructose enters too. Glycerol from fats enters partway through.</p>`},
+    why:{title:"Why spend ATP to make ATP?", html:`<p>Adding two phosphates makes glucose unstable and "primed," like pushing a boulder to the top of a hill so it can roll down the other side. It also traps the sugar inside the cell, because phosphorylated sugars can't cross the membrane.</p>`}
+  };
+
+  /* ================= Scenes ================= */
+  function overviewScene(t, R){
+    const T = 8, k = Math.floor((t % T) / 2);
+    let o = A.tx(500, 44, "Cellular respiration: glucose → energy (ATP)", "t20 mid");
+    const box = (x, i, title, sub, col) => `<rect x="${x - 125}" y="130" width="250" height="120" rx="18" fill="${k === i ? "#fff6d6" : "#fff"}" stroke="${k === i ? C.gold : col}" stroke-width="${k === i ? 4 : 2.5}"/>` + A.tx(x, 178, title, "t16 mid", `style="fill:${col}"`) + A.tx(x, 208, sub, "t12 mid muted");
+    o += A.glucoseRing(60, 190, {r:8}) + A.tx(60, 250, "Glucose", "t12 mid");
+    o += box(250, 0, `1. ${R("glycolysis") === "?" ? "?" : "Glycolysis"}`, "glucose → pyruvate", "#b83a34") + A.arrow(378, 190, 400, 190, "#5a6376", 3);
+    o += box(530, 1, `2. ${R("krebs")}`, "completes glucose breakdown", "#9a6212") + A.arrow(658, 190, 680, 190, "#5a6376", 3);
+    o += box(810, 2, "3. Electron transport", "makes most of the ATP", "#3f4cc0");
+    o += A.tx(500, 330, "C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O + ATP", "t20 mid");
+    o += A.tx(500, 380, "Catabolic, exergonic, and enzyme-controlled", "t16 mid", `style="fill:#5b3fb0"`);
+    [250, 530, 810].forEach((x, i) => { o += A.atp(x - 10, 290, 3, {label:false, sc:.7}); });
+    return o;
+  }
+  function whereScene(t, R){
+    let o = A.tx(250, 44, "Eukaryote", "t20 mid") + A.tx(750, 44, "Prokaryote", "t20 mid") + `<line x1="500" y1="60" x2="500" y2="450" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
+    /* eukaryote: cytoplasm + mitochondrion */
+    o += `<rect x="30" y="70" width="440" height="370" rx="36" fill="#f7f5fb" stroke="#8f7fb0" stroke-width="3"/>`;
+    o += `<ellipse cx="290" cy="300" rx="160" ry="100" fill="#fde9dc" stroke="#c4532f" stroke-width="4"/><path d="M160,300 q20,-50 40,0 q20,50 40,0 q20,-50 40,0 q20,50 40,0 q20,-50 40,0 q20,50 40,0" fill="none" stroke="#c4532f" stroke-width="3"/>`;
+    o += A.pill(140, 120, "1. Glycolysis", "#b83a34", 1, 13) + A.tx(140, 150, R("cytoplasm") === "?" ? "?" : "Cytoplasm", "t14 mid");
+    o += A.pill(290, 250, "2. Krebs", "#9a6212", 1, 13) + A.tx(290, 350, R("matrix") === "?" ? "?" : "Matrix (inside)", "t12 mid");
+    o += A.pill(360, 190, "3. ETC", "#3f4cc0", 1, 13) + A.tx(290, 420, R("inner") === "?" ? "?" : "ETC: inner mitochondrial membrane", "t12 mid");
+    /* prokaryote */
+    o += `<rect x="540" y="130" width="420" height="250" rx="120" fill="#f1f7ec" stroke="#5f8a4f" stroke-width="10"/><rect x="552" y="142" width="396" height="226" rx="110" fill="none" stroke="#c9a15a" stroke-width="3"/>`;
+    o += A.pill(700, 230, "1. Glycolysis", "#b83a34", 1, 13) + A.pill(820, 280, "2. Krebs", "#9a6212", 1, 13) + A.tx(750, 330, "both in the cytoplasm", "t14 mid");
+    o += A.pill(750, 120, "3. ETC", "#3f4cc0", 1, 13) + A.tx(750, 410, R("plasma") === "?" ? "?" : "ETC: plasma membrane (no mitochondria!)", "t14 mid");
+    return o;
+  }
+  /* the glycolysis pathway, left to right, with a focus stage */
+  function glyScene(t, R, focus){
+    const T = 7, tt = t % T;
+    let o = A.tx(500, 38, `${R("glycolysis") === "?" ? "?" : "Glycolysis"}: "sugar cutter" (in the ${R("cytoplasm")})`, "t20 mid");
+    const hl = (x, w, on) => on ? `<rect x="${x}" y="58" width="${w}" height="400" rx="18" fill="#fff8e6" stroke="#f0d99a" stroke-width="2"/>` : "";
+    o += hl(20, 380, focus === "invest") + hl(300, 260, focus === "split") + hl(520, 470, focus === "payoff");
+    /* glucose */
+    o += A.glucoseRing(110, 240, {r:10}) + A.tx(110, 310, "Glucose (6C)", "t14 mid");
+    /* investment */
+    const inv = focus === "invest" ? smooth(seg(tt, .8, 2.6)) : 1;
+    o += A.arrow(170, 240, 245, 240, "#5a6376", 3);
+    for (let k = 0; k < 2; k++){ const y = 110 + k * 50; o += A.atp(175, y, inv > .5 ? 2 : 3, {sc:.75, label:false}) + A.tx(260, y + 5, inv > .5 ? "ADP" : "ATP", "t12", ""); }
+    o += A.tx(205, 200, "−2 ATP", "t14 mid", `style="fill:#b83a34"`);
+    /* F-1,6-BP */
+    const sp = focus === "split" ? smooth(seg(tt, 1.2, 3)) : focus === "invest" ? 0 : 1;
+    const fb = focus === "invest" ? inv : 1;
+    if (sp < .5) o += A.op(fb, A.carbons(410, 240, 6, {r:9, gap:21, P:[0, "end"]}));
+    if (sp < .5) o += A.tx(410, 300, R("f16bp") === "?" ? "?" : "Fructose 1,6-bisphosphate", "t12 mid");
+    if (focus === "split" || focus === "payoff" || focus === "net"){
+      /* split into two 3-carbon pieces */
+      const y1 = lerp(240, 150, sp), y2 = lerp(240, 330, sp), xg = lerp(410, 580, sp);
+      if (sp >= .5 || focus !== "split") { o += A.carbons(xg, y1, 3, {r:9, gap:21, P:["end"]}) + A.carbons(xg, y2, 3, {r:9, gap:21, P:["end"]}); }
+      if (sp > .8) o += A.tx(xg, y1 + 36, "G3P", "t14 mid") + A.tx(xg, y2 + 36, focus === "split" ? "G3P (DHAP → G3P)" : "G3P", "t14 mid");
+      if (focus === "split" && sp > .8) o += A.pill(580, 440, `Everything after this happens ${R("twice") === "?" ? "?" : "TWICE"}`, "#5b3fb0", 1);
+    }
+    if (focus === "payoff" || focus === "net"){
+      const pf = focus === "payoff" ? smooth(seg(tt, .6, 2.6)) : 1;
+      [150, 330].forEach((y, k) => {
+        o += A.arrow(640, y, 830, y, "#5a6376", 3) + A.carbons(900, y, 3, {r:9, gap:21}) + A.tx(900, y + 36, R("pyruvate") === "?" ? "?" : "Pyruvate (3C)", "t12 mid");
+        o += A.op(pf, A.carrier(700, y - 42, "NAD", true, {e:false})) + A.op(1 - pf, A.carrier(700, y - 42, "NAD", false));
+        o += A.op(pf, A.atp(690, y + 34, 3, {sc:.55, label:false}) + A.atp(740, y + 34, 3, {sc:.55, label:false}) + A.tx(778, y + 40, "+2 ATP", "t12", `style="fill:#1b7f4e"`));
+      });
+      o += A.tx(700, 250, "+4 ATP, +2 NADH total", "t14 mid", `style="fill:#1b7f4e"`);
+    }
+    if (focus === "net"){
+      o += `<rect x="310" y="400" width="380" height="58" rx="14" fill="#fff" stroke="#1b7f4e" stroke-width="2.5"/>` + A.tx(500, 426, "−2 ATP + 4 ATP = NET 2 ATP", "t16 mid", `style="fill:#1b7f4e"`) + A.tx(500, 448, "+ 2 NADH + 2 pyruvate", "t14 mid");
+    }
+    return o;
+  }
+  function nadScene(t, R){
+    const T = 6, tt = t % T, p = smooth(seg(tt, .6, 2.4)), q = smooth(seg(tt, 3, 4.8));
+    let o = A.tx(500, 44, "Where do NADH's electrons go next?", "t20 mid");
+    o += A.carrier(160, 200, "NAD", false) + A.arrow(220, 200, 330, 200, "#5a6376", 3) + A.tx(275, 185, "picks up e⁻", "t12 mid");
+    o += A.carrier(410, 200, "NAD", true) + A.tx(410, 250, "in glycolysis", "t12 mid muted");
+    o += A.arrow(470, 190, 650, 120, "#3f4cc0", 3) + A.tx(560, 130, "with O₂", "t14 mid", `style="fill:#3f4cc0"`);
+    o += `<rect x="660" y="80" width="300" height="84" rx="16" fill="#e7e9fb"/>` + A.tx(810, 116, "Electron transport chain", "t16 mid", `style="fill:#2c3796"`) + A.tx(810, 144, "(lots of ATP)", "t14 mid");
+    o += A.arrow(470, 215, 650, 290, "#b83a34", 3) + A.tx(560, 290, "no O₂", "t14 mid", `style="fill:#b83a34"`);
+    o += `<rect x="660" y="250" width="300" height="84" rx="16" fill="#fbe8e7"/>` + A.tx(810, 286, "Fermentation", "t16 mid", `style="fill:#b83a34"`) + A.tx(810, 314, "(gives NAD⁺ back)", "t14 mid");
+    const ex = lerp(430, 630, p), ey = lerp(190, 150, p);
+    o += A.op(1 - q, A.eDot(ex, ey, 11) + A.eDot(ex + 20, ey + 6, 11));
+    o += A.tx(500, 400, "FAD (→ FADH₂) is the other carrier you'll meet, in the Krebs cycle.", "t14 mid muted");
+    return o;
+  }
+  function summaryScene(t, R){
+    let o = A.tx(500, 44, "Glycolysis summarized", "t20 mid");
+    o += A.glucoseRing(120, 200, {r:10}) + A.tx(120, 270, "1 glucose", "t14 mid") + A.arrow(190, 200, 300, 200, "#5a6376", 4);
+    o += A.carbons(400, 150, 3, {r:9, gap:21}) + A.carbons(400, 250, 3, {r:9, gap:21}) + A.tx(400, 300, "2 pyruvate", "t14 mid");
+    o += A.atp(560, 140, 3, {sc:.8, label:false}) + A.atp(640, 140, 3, {sc:.8, label:false}) + A.tx(720, 145, "2 ATP (net)", "t16", "");
+    o += A.carrier(600, 230, "NAD", true) + A.carrier(690, 230, "NAD", true) + A.tx(750, 236, "2 NADH", "t16", "");
+    o += A.tx(500, 360, "Energy investment: 2 ATP → fructose 1,6-bisphosphate", "t14 mid") + A.tx(500, 390, "Energy generation: 4 ATP and 2 NADH", "t14 mid") + A.tx(500, 430, "Location: cytoplasm (prokaryotes AND eukaryotes). No oxygen needed.", "t14 mid", `style="fill:#5b3fb0"`);
+    return o;
+  }
+
+  /* ================= Activities ================= */
+  const twoPhase = (a, b, midMsg) => ({title:a.title, done:b.done,
+    init:() => ({ph:0, a:a.init(), b:b.init()}),
+    html:st => `<div class="lbl">${st.ph ? b.title : a.title}</div>` + (st.ph ? b.html(st.b) : a.html(st.a)),
+    wire:(g, st, api) => (st.ph ? b : a).wire(g, st.ph ? st.b : st.a, {...api, pass:() => { if (!st.ph){ st.ph = 1; api.redraw(); api.msg(midMsg, "good"); } else api.pass(); }})});
+  const GATES = {
+    where:twoPhase(
+      Metab.sortGate({title:"Eukaryote: where does each stage happen?", done:"", bins:[["cyto","Cytoplasm"],["mat","Mitochondrial matrix"],["inn","Inner mitochondrial membrane"]],
+        cards:[["g","Glycolysis","cyto","Glycolysis happens outside the mitochondrion."],["k","Krebs cycle","mat","The Krebs cycle happens in the fluid inside the mitochondrion."],["e","Electron transport chain","inn","The ETC is embedded in a membrane."]]}),
+      Metab.sortGate({title:"Prokaryote (no mitochondria!): where does each stage happen?", done:"In bacteria, glycolysis and Krebs are in the cytoplasm, and the ETC is in the plasma membrane.", bins:[["cyto","Cytoplasm"],["pm","Plasma membrane"]],
+        cards:[["g","Glycolysis","cyto"],["k","Krebs cycle","cyto","Bacteria have no mitochondria, so where is the fluid part?"],["e","Electron transport chain","pm","The ETC needs a membrane. Which one do bacteria have?"]]}),
+      "Eukaryote done! Now try a bacterium, which has no mitochondria."),
+    invest:{title:"Your turn: make the energy investment", done:"Invested! 2 ATP → 2 ADP, and glucose became fructose 1,6-bisphosphate.",
+      init:() => ({n:0}),
+      html:st => `<div class="row">${[0, 1].map(k => k < st.n ? `<span class="tok placed">ADP</span>` : `<span class="tok" data-atp="${k}" style="background:#f3effd;border-color:#8e5bd0">ATP (give a P)</span>`).join("")}</div>
+        <div class="zone ${st.n >= 2 ? "ok" : ""}" data-zone="glu"><span class="zl">${st.n >= 2 ? "Fructose 1,6-bisphosphate: P-(6 carbons)-P ✓" : `Glucose: phosphates added so far: ${st.n}`}</span></div>`,
+      wire:(g, st, api) => { g.querySelectorAll("[data-atp]").forEach(el => api.dragify(el, {tap:add, drop:add}));
+        function add(){ st.n++; api.redraw(); if (st.n >= 2){ api.msg("Both phosphates are on. The sugar is now unstable and ready to split.", "good"); setTimeout(api.pass, 1000); } else api.msg("One phosphate on. Glycolysis invests one more ATP.", "good"); return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag each ATP onto glucose to transfer a phosphate.", ""); }},
+    split:{title:"Quick check", done:"Right: two 3-carbon molecules, so the rest of glycolysis runs twice.",
+      html:() => `<div class="lbl">Fructose 1,6-bisphosphate has 6 carbons. When it splits, what do you get?</div><div class="row"><button class="choice" data-i="0">Two 3-carbon molecules</button><button class="choice" data-i="1">Three 2-carbon molecules</button><button class="choice" data-i="2">One 6-carbon molecule</button></div>`,
+      wire:(g, st, api) => g.querySelectorAll("[data-i]").forEach(b => b.addEventListener("click", () => { if (b.dataset.i === "0"){ b.classList.add("right"); api.msg("Yes! DHAP and G3P, and DHAP gets converted to G3P.", "good"); setTimeout(api.pass, 1000); } else { b.classList.add("wrong"); api.msg("Count the carbons: 6 split in half.", "bad"); } }))},
+    payoff:{title:"Your turn: collect the payoff", done:"Payoff collected: 4 ATP and 2 NADH from the two G3P molecules.",
+      init:() => ({nad:0, adp:0}),
+      html:st => `<div class="row">${st.nad < 2 ? `<span class="tok" data-k="nad" style="border-color:#2f9e63;color:#1b7f4e">NAD⁺</span>` : ""}${st.adp < 4 ? `<span class="tok" data-k="adp" style="border-color:#8e5bd0;color:#5b3fb0">ADP + P</span>` : ""}<span class="tok" data-k="fad" style="border-color:#c98a0e;color:#9a6212">FAD</span></div>
+        <div class="zone" data-zone="g3p"><span class="zl">2 G3P → 2 pyruvate: drop carriers and ADP here</span><div class="zin">${"<span class='tok placed'>NADH</span>".repeat(st.nad)}${"<span class='tok placed'>ATP</span>".repeat(st.adp)}</div></div>
+        <div class="chips"><span class="chip ${st.nad >= 2 ? "on" : ""}">NADH: ${st.nad} of 2</span><span class="chip ${st.adp >= 4 ? "on" : ""}">ATP: ${st.adp} of 4</span></div>`,
+      wire:(g, st, api) => { g.querySelectorAll("[data-k]").forEach(el => api.dragify(el, {tap:() => add(el.dataset.k), drop:() => add(el.dataset.k)}));
+        function add(k){ if (k === "fad"){ api.msg("FAD isn't used in glycolysis. It picks up electrons later, in the Krebs cycle.", "bad"); return false; } st[k]++; api.redraw(); if (st.nad >= 2 && st.adp >= 4){ api.msg("4 ATP made by substrate-level phosphorylation, plus 2 NADH!", "good"); setTimeout(api.pass, 1100); } else api.msg(k === "nad" ? "NAD⁺ picked up electrons and became NADH." : "A phosphate moved from the substrate onto ADP: ATP!", "good"); return true; }
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag NAD⁺ and ADP into the payoff box until you've collected everything. (One of these doesn't belong in glycolysis!)", ""); }},
+    net:{title:"Your turn: do the ATP math", done:"Net 2 ATP per glucose (4 made − 2 invested).",
+      html:() => `<div class="lbl">Glycolysis invests 2 ATP and makes 4 ATP. What's the NET gain per glucose?</div><div class="row">${[0, 2, 4, 6].map(n => `<button class="choice" data-n="${n}">${n} ATP</button>`).join("")}</div>`,
+      wire:(g, st, api) => g.querySelectorAll("[data-n]").forEach(b => b.addEventListener("click", () => { if (b.dataset.n === "2"){ b.classList.add("right"); api.msg("4 − 2 = 2. Small, but glycolysis also makes 2 NADH and 2 pyruvate to use next.", "good"); setTimeout(api.pass, 1100); } else { b.classList.add("wrong"); api.msg(b.dataset.n === "4" ? "4 is the total made. Don't forget the 2 that were invested!" : "Subtract the investment from the payoff.", "bad"); } }))}
+  };
+
+  const P1 = "Cellular respiration", P2 = "Glycolysis step by step", P3 = "Wrap-up";
+  const STEPS = [
+    {part:P1, title:"Cellular respiration", scene:(t, c) => overviewScene(t, c.R),
+     text:`Cellular respiration is how cells break down glucose and other organic molecules to make ATP. It is catabolic, {{exergonic}}, and enzyme-controlled. It has three stages: {{glycolysis}}, the {{krebs}}, and the {{etc}}.`},
+    {part:P1, title:"Where does each stage happen?", scene:(t, c) => whereScene(t, c.R), gate:GATES.where,
+     text:`In eukaryotes, glycolysis happens in the {{cytoplasm}}, the Krebs cycle happens in the {{matrix}}, and the electron transport chain is in the {{inner}}. Prokaryotes have no mitochondria! Glycolysis and the Krebs cycle both happen in the cytoplasm, and the electron transport chain is in the {{plasma}}.`},
+    {part:P2, title:"Glycolysis: the sugar cutter", scene:(t, c) => glyScene(t, c.R, "all"), more:"ten",
+     text:`Step 1 of respiration is glycolysis ("glyco" = sugar, "lysis" = cutting). One glucose (6 carbons) is split into two {{pyruvate}} molecules (3 carbons each). Glycolysis happens in the {{cytoplasm}} of both prokaryotic and eukaryotic cells, and it doesn't need oxygen.`},
+    {part:P2, title:"Energy investment", scene:(t, c) => glyScene(t, c.R, "invest"), gate:GATES.invest, more:"why",
+     text:`It takes energy to make energy! First, {{invest}} ATP are invested: each one hands a phosphate to the sugar. This converts glucose into {{f16bp}}, a 6-carbon sugar with a phosphate on each end.`},
+    {part:P2, title:"The split", scene:(t, c) => glyScene(t, c.R, "split"), gate:GATES.split,
+     text:`Fructose 1,6-bisphosphate is unstable, and it splits into two 3-carbon molecules: DHAP and {{g3p}} (G3P). All the DHAP gets converted into G3P, so every step after this happens {{twice}} per glucose.`},
+    {part:P2, title:"Energy payoff", scene:(t, c) => glyScene(t, c.R, "payoff"), gate:GATES.payoff, more:"other",
+     text:`Now the payoff! As each G3P is turned into pyruvate, NAD⁺ picks up electrons and becomes {{nadh}}, and ATP is made by substrate-level phosphorylation. Counting both G3P molecules, the payoff stage makes {{four}} ATP and 2 NADH.`},
+    {part:P2, title:"The bottom line", scene:(t, c) => glyScene(t, c.R, "net"), gate:GATES.net,
+     text:`For every glucose: glycolysis uses 2 ATP to get started and makes 4 ATP, for a net gain of {{net}} ATP. It also makes 2 NADH (energy carriers for later) and 2 pyruvate, the end product.`,
+     after:`Net: 2 ATP, 2 NADH, 2 pyruvate per glucose.`},
+    {part:P3, title:"The roles of NAD⁺ and FAD", scene:(t, c) => nadScene(t, c.R),
+     text:`{{nadplus}} is the electron carrier of glycolysis. It picks up electrons and becomes NADH. With oxygen, NADH delivers those electrons to the electron transport chain to make lots more ATP. Without oxygen, fermentation hands them back so NAD⁺ can be reused. {{fad}} is the other carrier. It picks up TWO electrons to become FADH₂, and you'll see it in the Krebs cycle.`},
+    {part:P3, title:"Glycolysis summarized", scene:(t, c) => summaryScene(t, c.R),
+     table:{cap:"Glycolysis at a glance", head:["Question","Answer"], rows:[["Starting material","1 glucose (6 carbons)"],["End product","2 pyruvate (3 carbons each)"],["ATP","2 invested, 4 made: net 2 ATP"],["Electron carriers","2 NADH"],["Key middle molecule","Fructose 1,6-bisphosphate"],["Location","Cytoplasm (prokaryotes and eukaryotes)"],["Needs oxygen?","No"]]},
+     text:`"Glycolysis is the process of 1 glucose molecule being broken down into 2 pyruvate molecules. It first requires an energy investment of 2 ATP to make fructose 1,6-bisphosphate, then an energy generation stage makes 4 ATP and 2 NADH. The final products are 2 ATP (energy), 2 NADH (electron carriers), and 2 pyruvate." So where are the O₂, CO₂, and water? That's next!`,
+     after:`Next: the Krebs cycle and the electron transport chain.`}
+  ];
+
+  Metab.start({title:"Glycolysis", page:"glycolysis.html", BL, MORE, STEPS,
+    nextLabel:"Next up: finishing off the glucose", next:[["Krebs Cycle, ETC and ATP Synthase →","krebs-etc.html"],["All modules","index.html"]]});
+})();
+</script>
+<script src="studypath.js"></script>
+</body>
+</html>
