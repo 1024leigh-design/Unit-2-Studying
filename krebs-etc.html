@@ -39,7 +39,7 @@
     amino:{show:"amino acids", ans:["aminoacids","aminoacid","amino"], fuzzy:true}
   };
   const MORE = {
-    names:{title:"One cycle, three names", html:`<p>The Krebs cycle is also called the citric acid cycle (after its first product) and the TCA (tricarboxylic acid) cycle. Hans Krebs worked it out in 1937 and won the 1953 Nobel Prize.</p><p>Acetyl-CoA is "acetyl" (2 carbons) attached to coenzyme A, which is made from vitamin B5.</p>`},
+    names:{title:"One cycle, three names", html:`<p>The Krebs cycle is also called the citric acid cycle (after its first product) and the TCA (tricarboxylic acid) cycle. Hans Krebs worked it out in 1937 and won the 1953 Nobel Prize.</p><p>Acetyl-CoA is "acetyl" (2 carbons) attached to coenzyme A, which is made from vitamin B5.</p><p><b>You don't need to memorize the five named stops around the wheel</b> (citric acid, α-ketoglutaric acid, succinic acid, malic acid, oxaloacetic acid). For the exam, just know that the cycle starts when acetyl-CoA joins oxaloacetate to form citric acid, turns all the way around releasing CO₂ and loading electron carriers, and regenerates oxaloacetate at the end so it can start again.</p>`},
     fb:{title:"Your breath is made of glucose carbons", html:`<p>Every CO₂ you exhale was made by decarboxylation reactions like these. When you lose weight, most of that mass actually leaves your body as CO₂ through your lungs!</p>`},
     etc:{title:"Poisoning the chain", html:`<p>Cyanide binds cytochrome oxidase, the last complex in the chain, so electrons can't be passed to O₂. The whole chain backs up and ATP production crashes. Some antibiotics and pesticides also work by jamming electron transport.</p>`},
     motor:{title:"ATP synthase really spins", html:`<p>ATP synthase is a true rotary motor. As H⁺ flows through, part of it spins about 100 times per second, and each full turn makes 3 ATP. Paul Boyer and John Walker shared the 1997 Nobel Prize for figuring this out. Bacteria also use the H⁺ gradient (the proton motive force) to spin their flagella!</p>`},
@@ -80,7 +80,7 @@
       o += `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="${on ? 32 : 27}" fill="${on ? "#fff6d6" : "#fff"}" stroke="${on ? C.gold : "#c9a15a"}" stroke-width="${on ? 4 : 2}"/>`;
       o += A.carbons(p[0], p[1] - 4, s.c, {r:5, gap:10}) + A.tx(p[0], p[1] + 16, s.c + "C", "t11 mid");
       const q = P(s.a, rr + 44), name = i === 0 ? (R("citric") === "?" ? "?" : "Citric acid") : i === 4 ? (R("oxaloacetate") === "?" ? "?" : "Oxaloacetic acid") : s.n;
-      o += A.tx(q[0], q[1] + 5, name, right ? "t14" : "t14 end");
+      o += A.tx(q[0], q[1] + 5, name, (right ? "t14" : "t14 end") + (i > 0 && i < 4 ? " muted" : ""));
       const shown = opts.prod === undefined ? true : i < opts.prod || opts.prod >= 5;
       if (s.out.length && shown){ const m = P(s.pa, rr + 78), w = 64; s.out.forEach((x, k) => { const col = x === "CO\u2082" ? "#b83a34" : x === "ATP" ? "#8e5bd0" : x === "FADH\u2082" ? "#c98a0e" : "#2f9e63"; o += A.pill(m[0] + (k - (s.out.length - 1) / 2) * w, m[1] + 4, x, col, 1, 12); }); }
     });
@@ -238,7 +238,7 @@
     {part:P2, title:"Starting the Krebs cycle", scene:(t, c) => krebsScene(t, c.R, c.g, {station:0}), gate:GATES.enter, more:"names",
      text:`The {{krebs}} completes the breakdown of glucose. It happens in the mitochondrial matrix (eukaryotes) or the cytoplasm (prokaryotes). Acetyl-CoA (2 carbons) joins {{oxaloacetate}} (4 carbons) to make {{citric}} (6 carbons). The cycle turns {{twice}} per glucose, once for each pyruvate.`},
     {part:P2, title:"Around the cycle", scene:(t, c) => krebsScene(t, c.R, c.g, {station:(c.g.s || 0) + 1 > 4 ? 0 : (c.g.s || 0) + (c.done ? 0 : 0), prod:c.done ? 5 : (c.g.s || 0) + 1, totals:c.done}), live:true, gate:GATES.spin,
-     text:`As the cycle turns, carbons are removed as CO₂ and electrons are loaded onto carriers. Per turn: 2 CO₂, 3 NADH, 1 FADH₂, and 1 ATP. Per glucose (2 turns): 4 CO₂, {{six}} NADH, 2 FADH₂, and 2 ATP. Oxaloacetate is regenerated at the end, ready for the next acetyl-CoA.`,
+     text:`As the cycle turns, carbons are removed as CO₂ and electrons are loaded onto carriers. Per turn: 2 CO₂, 3 NADH, 1 FADH₂, and 1 ATP. Per glucose (2 turns): 4 CO₂, {{six}} NADH, 2 FADH₂, and 2 ATP. Oxaloacetate is regenerated at the end, ready for the next acetyl-CoA. (The names of the stops in between are shown for reference, but you don't need to memorize them — just the totals per turn.)`,
      after:`Per glucose: 2 ATP, 6 NADH, 2 FADH₂, 4 CO₂ from the Krebs cycle.`},
     {part:P2, title:"CO₂ and decarboxylation", scene:(t, c) => co2Scene(t, c.R), gate:GATES.co2, more:"fb",
      text:`{{decarb}} is the fancy word for removing CO₂ from a molecule. The carbon atoms in that CO₂ come from the original {{glucose}} molecule. CO₂ is made during the pyruvate → acetyl-CoA step and in the Krebs cycle, and it's what we exhale! Running total after the Krebs cycle: 4 ATP, 6 CO₂, 10 NADH, and 2 FADH₂.`},
