@@ -214,6 +214,21 @@
   .dseg.op .optok{padding:3px 8px 3px 3px}
   @media (max-width:640px){ .sugrow{grid-template-columns:1fr} .dseg{font-size:.72rem;padding:4px 3px} .dseg.op{min-width:0;flex:1.6} .dseg.op .optok{padding:2px} .dseg.op .optok .tl{display:none} .dnatrack{gap:4px;padding:5px} }
   .draghint{background:#eef6ff;border:1px solid #bcd6f5;border-radius:12px;padding:10px 12px;font-weight:700;font-size:.95rem;line-height:1.5}
+  .bigtable{display:grid;gap:6px}
+  .bighead{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:8px}
+  .bighead .bigcol{font-weight:700;text-align:center;border-radius:10px;padding:6px 4px;font-size:.92rem}
+  .bighead .bigcol.pro{background:#eaf4e3;color:#3f6335}
+  .bighead .bigcol.euk{background:#f1ecfa;color:#5b3fb0}
+  .bigrow{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:8px;align-items:center}
+  .bigcat{font-weight:700;font-size:.92rem}
+  .bigslot{min-height:40px;border:2px dashed var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;padding:4px 6px}
+  .bigslot.pro{background:#f7faf5}
+  .bigslot.euk{background:#faf8fd}
+  .bigslot.ok{border-style:solid;border-color:#9fd3b5;background:#f2fbf6}
+  .bigph{color:var(--muted);font-size:.8rem}
+  .bigpair{display:flex;flex-wrap:wrap;gap:8px;padding-left:2px}
+  .bigchip{font-size:.86rem}
+  .optok.placed{cursor:default;background:#fff}
   #scene [data-mol]{cursor:grab}
   #scene.dragmode{touch-action:none}
   .bld{display:grid;gap:12px;margin-top:6px}
@@ -530,12 +545,13 @@
     Gm:[["+ Glucose, \u2212 Maltose","Not bound to DNA","Empty, not bound","Almost never binds","Almost none"],"off"],
     gm:[["\u2212 Glucose, \u2212 Maltose","Bound to DNA","Empty, not bound","Almost never binds","Almost none"],"off"],
     gM:[["\u2212 Glucose, + Maltose","Bound to DNA","Loaded and bound","Sits on promoter and transcribes","High transcription!"],"on"]}};
-  const CMP_TABLE = {cap:"Prokaryotes vs. eukaryotes", head:["","Prokaryotes","Eukaryotes"], order:["a","b","c","d","e"], rows:{
-    a:[["Main strategy","Operons: related genes controlled together","Each gene is regulated on its own"],""],
-    b:[["Gene organization","Genes clustered, sharing one promoter and operator","Genes scattered, each with its own control elements"],""],
-    c:[["Control elements","Promoter, operator, regulatory genes","Promoters, enhancers, silencers, transcription factors"],""],
-    d:[["Response speed","Rapid: whole gene sets flip on or off","Slower and more complex"],""],
-    e:[["Examples","lac operon (inducible), trp operon (repressible)","Individual genes with many regulatory sites"],""]}};
+  const BIGROWS = [
+    {cat:"Main strategy", pro:"Operons: genes grouped together", euk:"Each gene regulated on its own", col:"#b83a34"},
+    {cat:"Gene organization", pro:"Clustered, share one promoter", euk:"Scattered, own controls each", col:"#9a6212"},
+    {cat:"Control elements", pro:"Promoter, operator, repressor", euk:"Promoter, enhancers, silencers, TFs", col:"#3f4cc0"},
+    {cat:"Response speed", pro:"Fast", euk:"Slower", col:"#1b7f4e"},
+    {cat:"Examples", pro:"lac operon, trp operon", euk:"Individual human genes", col:"#6b4bb8"}
+  ];
 
   const XVP_TABLE = {cap:"Don't mix them up: X-gal screening vs. the pGLO lab", head:["","X-gal (blue-white) screening","pGLO lab"], order:["a","b","c","d","e"], rows:{
     a:[["Reporter gene","lacZ (makes \u03b2-galactosidase)","GFP (green fluorescent protein)"],""],
@@ -557,11 +573,11 @@
 
   /* ================= Learn more content ================= */
   const MORE = {
-    why:{title:"Sigma factors: swapping the car's GPS", html:`<p>Bacterial RNA polymerase has a detachable piece called a sigma (\u03c3) factor that decides which promoters it recognizes. E. coli has seven. \u03c3<sup>70</sup> handles everyday "housekeeping" genes, \u03c3<sup>32</sup> turns on heat shock genes, \u03c3<sup>S</sup> takes over when cells stop growing, and \u03c3<sup>28</sup> runs flagella genes.</p><p>By swapping sigma factors, a bacterium can reprogram hundreds of genes at once. During starvation, a signal molecule called ppGpp (the "alarmone") reshapes transcription across the whole genome in what's called the stringent response.</p>`},
+    why:{title:"Why building proteins costs energy", html:`<p>Building a protein is <b>anabolic</b>: small building blocks (amino acids) get linked together into something bigger. Anabolic reactions are also <b>endergonic</b>, meaning they need energy put in to happen.</p><p>That energy comes from breaking high-energy bonds, most often the phosphate bonds in ATP. Think of those bonds like a stretched rubber band: breaking one releases stored energy the cell can put to work building something new.</p><p>So every time a cell decides NOT to transcribe a gene, it's skipping that anabolic, endergonic cost until the protein is actually needed. Multiply that across thousands of genes, and controlling transcription saves a huge amount of energy.</p>`},
     compare:{title:"Why don't eukaryotes use operons?", html:`<p>Bacterial ribosomes can start translating at several spots on one mRNA because each gene has its own ribosome landing pad (a Shine-Dalgarno sequence). Eukaryotic ribosomes usually load at the 5' cap and scan to the first AUG, so one mRNA normally makes one protein.</p><p>There are fun exceptions! About 15% of genes in the worm <i>C. elegans</i> sit in operons. Their long transcripts get cut apart and each piece receives a new cap through a process called trans-splicing. Trypanosomes (the parasites behind sleeping sickness) transcribe huge polycistronic stretches the same way.</p>`},
-    chromatin:{title:"Epigenetics and the histone code", html:`<h3>Nucleosomes</h3><p>About 147 base pairs of DNA wrap around a histone octamer (two each of H2A, H2B, H3, and H4). Histone H1 clips on the outside and helps pack nucleosomes tighter.</p><h3>Histone tags</h3><p>Histone tails can be acetylated, methylated, phosphorylated, and more. Acetylation (added by HATs, removed by HDACs) neutralizes positive charges on lysines, so DNA grips less tightly and genes open up. Specific marks have "meanings": H3K4me3 marks active promoters, while H3K27me3 and H3K9me3 mark silenced regions.</p><h3>DNA methylation</h3><p>In mammals, methyl groups are added to cytosines in CpG pairs. DNMT3 enzymes add new marks and DNMT1 copies them after replication, so the pattern is inherited by daughter cells. This drives X-chromosome inactivation and genomic imprinting (where only the mom's or dad's copy of a gene is used). Cancer drugs like azacitidine (blocks DNA methylation) and vorinostat (blocks HDACs) work by resetting these marks.</p><h3>Bacteria do it too</h3><p>E. coli's Dam enzyme methylates every GATC site. Right after replication, the new strand is briefly unmethylated, which helps mismatch repair figure out which strand has the mistake. Many bacteria also methylate their own DNA so their restriction enzymes only chop up invading phage DNA.</p>`},
-    tf:{title:"General transcription factors and three RNA polymerases", html:`<p>Eukaryotes have three nuclear RNA polymerases: Pol I makes most rRNA, Pol II makes mRNA, and Pol III makes tRNA and other small RNAs. Bacteria get by with one core enzyme plus sigma factors.</p><p>Pol II needs a team of general transcription factors to form the preinitiation complex. TFIID contains TBP (TATA-binding protein), which grabs the TATA box and bends the DNA. TFIIB, TFIIF, TFIIE, and TFIIH join next. TFIIH unwinds the DNA and phosphorylates the tail of Pol II, which releases it to start transcribing.</p><p>Fun and scary fact: the death cap mushroom makes \u03b1-amanitin, a toxin that jams Pol II. It is one of the deadliest natural toxins because it shuts down mRNA production in liver cells.</p>`},
-    enhancer:{title:"Long-distance control", html:`<p>Enhancers can work from tens of thousands to even a million base pairs away. The limb enhancer ZRS sits about one million base pairs from the <i>Sonic hedgehog</i> gene it controls, and single-letter changes in it can cause people to be born with extra fingers or toes.</p><p>A large protein bridge called the Mediator complex (around 25 to 30 proteins) connects activators on enhancers to RNA polymerase II at the promoter. To keep enhancers from switching on the wrong genes, the genome is organized into neighborhoods called TADs, fenced off by insulator proteins like CTCF and cohesin.</p><p>Repressors on silencers often recruit HDACs or other co-repressors that tighten chromatin, tying enhancers and silencers back to epigenetics.</p>`},
+    chromatin:{title:"Epigenetics and the histone code", html:`<div style="text-align:center;margin:4px 0 12px"><svg viewBox="0 0 220 110" width="220" height="110" role="img" aria-label="DNA wrapped around a histone"><circle cx="110" cy="58" r="30" fill="#9a88c2" stroke="#6d5a97" stroke-width="2"/><path d="M14,58 Q40,8 80,20 Q110,28 110,58 Q110,88 140,96 Q180,108 206,58" fill="none" stroke="#0f766e" stroke-width="5"/><text x="110" y="63" font-size="11" font-weight="700" fill="#3b2f5c" text-anchor="middle">Histone</text></svg></div><h3>Nucleosomes</h3><p>About 147 base pairs of DNA wrap around a ball of proteins called a histone, like thread around a spool. Each wrapped-up unit is called a nucleosome, and chains of them pack DNA down to fit inside the cell.</p><h3>Histone tags</h3><p>Cells attach small chemical tags to histones that act like sticky notes. Some tags loosen the wrap so a gene can turn ON; others tighten it so a gene stays OFF. Enzymes add these tags, and other enzymes remove them, so the pattern can change as the cell's needs change.</p><h3>DNA methylation</h3><p>Cells can also tag the DNA itself with small methyl groups, which usually keeps a gene silenced. This pattern gets copied every time the cell divides, so an "off" gene tends to stay off in that cell's descendants. That's part of why a skin cell and a brain cell can share the exact same DNA but behave completely differently.</p><h3>Bacteria do it too</h3><p>E. coli tags its own DNA right after copying it, which helps repair enzymes tell the brand-new strand apart from the original. Many bacteria also tag their own DNA so their defense enzymes don't accidentally chop it up the way they would an invading virus's DNA.</p>`},
+    tf:{title:"Meet the transcription team", html:`<p>Eukaryotes actually have three different RNA polymerases! Pol I makes ribosomal RNA, Pol II makes mRNA (the one we care about most here), and Pol III makes tRNA and other small RNAs. Bacteria get by with just one.</p><p>Before Pol II can start, a whole team of helper proteins (the general transcription factors) has to assemble on the promoter first, kind of like a pit crew getting everything ready before a race.</p><p>\u{1F344} Fun (and scary) fact: the death cap mushroom makes a toxin called \u03b1-amanitin that jams Pol II so it can't move. Since your liver cells depend heavily on Pol II to keep making proteins, this toxin is a big part of what makes death cap mushrooms so dangerous. Moral of the story: never eat a wild mushroom you can't identify with 100% certainty!</p>`},
+    enhancer:{title:"A gene named after a video game", html:`<p>Enhancers can sit surprisingly far from the gene they control. A limb enhancer called ZRS sits almost a million base pairs away from the <i>Sonic hedgehog</i> gene it switches on, and the DNA has to loop way around just to bring them together. Single-letter changes in ZRS alone can cause people (or cats, or mice) to be born with extra fingers or toes!</p><p>Curious about that name? The original "hedgehog" gene was found in fruit flies, where a broken copy makes the fly larva grow short and spiky, like a hedgehog. When scientists later found several similar genes in vertebrates, they had some fun naming them, and one research team named theirs after Sonic the Hedgehog, the video game character.</p><p>ZRS is a great example of why enhancers matter so much: a tiny change in one small stretch of DNA, far away from the gene itself, can change how a whole limb develops.</p>`},
     recap:{title:"Why bacteria respond so fast", html:`<p>A typical E. coli mRNA lasts only a few minutes, while many eukaryotic mRNAs last hours. When a bacterium stops transcribing a gene, the old mRNA disappears fast, so protein production changes quickly. That's perfect for a cell that can divide every 20 minutes in good conditions.</p><p>Eukaryotes trade speed for precision: layers of chromatin, transcription factors, RNA processing, and mRNA export give many checkpoints to fine-tune each gene in each cell type.</p>`},
     parts:{title:"The lac operator isn't alone", html:`<p>The lac operon actually has three operators. O1 is the main one next to the promoter. O2 sits inside <i>lacZ</i> and O3 sits just upstream. The lac repressor is a tetramer with two DNA-grabbing ends, so it can hold two operators at once and loop the DNA between them. Knocking out the helper operators makes repression much weaker.</p><p>Operators are often palindromes (they read the same on both strands) because repressors usually bind as symmetric pairs of subunits.</p>`},
     regulatory:{title:"How much repressor is there?", html:`<p><i>lacI</i> is transcribed constantly from a weak promoter, so each cell has only about 10 repressor tetramers. That's enough because the repressor binds the operator incredibly tightly.</p><p>A mutant called <i>lacI<sup>q</sup></i> ("q" for quantity) makes about 10 times more repressor. It's built into many lab plasmids so that genes under lac control stay firmly off until scientists add IPTG.</p>`},
@@ -615,9 +631,9 @@
      text:`In eukaryotes, RNA polymerase can't find the promoter all by itself. Helper proteins called transcription {{factors}} land on the promoter first and guide RNA polymerase into place. No helpers, no transcription.`},
     {part:"Eukaryote basics", title:"Enhancers and silencers", v:T("enhancer"), more:"enhancer",
      text:`Eukaryotic genes also have control sequences that can sit far away from the gene. Activator proteins bind {{enhancers}} to boost transcription. Repressor proteins bind {{silencers}} to turn transcription down. The DNA can bend into a loop so these proteins can reach RNA polymerase.`},
-    {part:"Wrap-up", title:"The big picture", v:T("compare"), more:"recap", table:{data:CMP_TABLE, rows:["a","b","c","d","e"]},
-     text:`Nice work! Prokaryotes control whole groups of genes with operons, so they can switch sets of genes on or off {{quickly}}. Eukaryotes control genes one at a time using packaging, transcription factors, enhancers, and silencers. That's slower, but it gives much finer control.`,
-     after:`You've got the eukaryote basics. Operons are next!`, cta:[{label:"Head to Prokaryotes", view:"pro"}]}
+    {part:"Wrap-up", title:"The big picture", v:T("compare"), play:"bigtable",
+     text:`Nice work! Prokaryotes control whole groups of genes with operons, so they can switch sets of genes on or off quickly. Eukaryotes control genes one at a time using packaging, transcription factors, enhancers, and silencers. That's slower, but it gives much finer control. Build the summary table below to lock it in!`,
+     after:`You've got the eukaryote basics. Operons are next — use the Prokaryotes tab above, or Next!`}
   ];
 
   const P2 = "Operon basics", P3 = "The lac operon", P4 = "The trp operon";
@@ -836,6 +852,10 @@
     lac:{
       start:() => ({glu:true, lac:false, seen:{Gl:true}}),
       def:p => labVis("lac", p)
+    },
+    bigtable:{
+      start:() => ({ok:{}}),
+      def:() => T("compare")
     }
   };
 
@@ -1339,11 +1359,11 @@
         const age = ((t + i * .7) % 2.2) / 2.2;
         o += mrna(x1 + 20, x1 + 84, 270 - age * 110, on * (1 - age));
       }
-      o += `<text x="${xm}" y="305" class="t12 mid">Gene ${i + 1}</text><text x="${xm}" y="344" class="t12 mid ${always ? "grn" : "muted"}">${always ? "Always on" : "On demand"}</text>`;
+      o += `<text x="${xm}" y="306" class="t15 mid">Gene ${i + 1}</text><text x="${xm}" y="346" class="t13 mid ${always ? "grn" : "muted"}">${always ? "Always on" : "On demand"}</text>`;
     }
     const lo = smooth(seg(tt, .8, 1.4)) * (1 - smooth(seg(tt, 4.2, 4.8)));
-    if (lo > .01) o += disacc(555, 200, lo) + disacc(595, 180, lo) + `<text x="575" y="160" class="t12 mid" opacity="${f3(lo)}">Lactose shows up!</text>`;
-    return o + `<text x="500" y="400" class="t13 mid muted">Energy spent only on genes the cell needs right now</text>`;
+    if (lo > .01) o += disacc(555, 200, lo) + disacc(595, 180, lo) + `<text x="575" y="158" class="t15 mid" opacity="${f3(lo)}">Lactose shows up!</text>`;
+    return o + `<text x="500" y="404" class="t15 mid muted">Energy spent only on genes the cell needs right now</text>`;
   }
   function compareSVG(t){
     let o = `<rect x="20" y="30" width="465" height="410" rx="24" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="3"/><rect x="515" y="30" width="465" height="410" rx="24" fill="#f5f1fb" stroke="#8f7fb0" stroke-width="3"/>`;
@@ -1353,26 +1373,38 @@
     for (let i = 0; i < 3; i++) o += `<rect x="${160 + i * 95}" y="306" width="95" height="28" rx="5" fill="${cols[i]}" opacity=".8"/><text x="${207 + i * 95}" y="325" class="t12 mid wht">Gene ${i + 1}</text>`;
     const len = clamp((t % 4) / 3.2, 0, 1) * 285;
     for (let i = 0; i < 3; i++){ const a = 160 + i * 95, b = Math.min(a + 95, 160 + len); if (b > a) o += `<line x1="${a}" y1="240" x2="${f1(b)}" y2="240" stroke="${cols[i]}" stroke-width="8"/>`; }
+    if (len > 2) o += car(160 + len, 306, clamp(len / 15, 0, 1));
     o += `<text x="252" y="220" class="t12 mid">one mRNA, three genes</text><text x="252" y="390" class="t13 mid muted">One promoter controls all three genes</text>`;
     for (let i = 0; i < 3; i++){
       const y = 150 + i * 100;
       o += dnaLadder(560, 940, y) + `<rect x="580" y="${y - 14}" width="60" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="610" y="${y + 5}" class="t12 mid">P</text><rect x="640" y="${y - 14}" width="130" height="28" rx="5" fill="${cols[i]}" opacity=".8"/><text x="705" y="${y + 5}" class="t12 mid wht">Gene ${i + 1}</text>`;
       const q = clamp(((t + i * 1.1) % 4) / 2.6, 0, 1);
-      if (q > 0) o += `<line x1="640" y1="${y - 30}" x2="${f1(640 + q * 130)}" y2="${y - 30}" stroke="${cols[i]}" stroke-width="7"/>`;
+      if (q > 0){ o += `<line x1="640" y1="${y - 30}" x2="${f1(640 + q * 130)}" y2="${y - 30}" stroke="${cols[i]}" stroke-width="7"/>`; o += car(640 + q * 130, y - 16, clamp(q / .15, 0, 1)); }
     }
-    return o + `<text x="747" y="420" class="t13 mid muted">Each gene has its own promoter and mRNA</text>`;
+    return o + `<text x="747" y="405" class="t13 mid muted">Each gene has its own promoter,</text><text x="747" y="425" class="t13 mid muted">its own RNA polymerase, and its own mRNA</text>`;
   }
   function chromatinSVG(t){
-    let o = `<path d="M30,300 H960" stroke="#0f766e" stroke-width="5"/>`;
-    [[150,300],[190,280],[230,300],[270,282],[310,300],[170,248],[210,244],[250,250],[290,246],[190,215],[230,212],[270,218],[210,184],[250,186],[330,270],[130,265]].forEach(p => { o += `<circle cx="${p[0]}" cy="${p[1]}" r="21" fill="#9a88c2" stroke="#6d5a97" stroke-width="2"/>`; });
+    const HB = [[150,300],[190,280],[230,300],[270,282],[310,300],[170,248],[210,244],[250,250],[290,246],[190,215],[230,212],[270,218],[210,184],[250,186],[330,270],[130,265]];
+    let o = "";
+    /* heterochromatin: DNA wound tight around each histone bead, beads linked in a packed chain */
+    let hd = `M${HB[0][0]},${HB[0][1]}`; for (let i = 1; i < HB.length; i++) hd += ` L${HB[i][0]},${HB[i][1]}`;
+    o += `<path d="${hd}" fill="none" stroke="#0f766e" stroke-width="4" stroke-linejoin="round" opacity=".55"/>`;
+    HB.forEach(p => { const rot = (p[0] * 3 + p[1]) % 180;
+      o += `<ellipse cx="${p[0]}" cy="${p[1]}" rx="25" ry="13" fill="none" stroke="#0f766e" stroke-width="4" transform="rotate(${rot} ${p[0]} ${p[1]})"/>`;
+      o += `<circle cx="${p[0]}" cy="${p[1]}" r="19" fill="#9a88c2" stroke="#6d5a97" stroke-width="2"/>`;
+    });
     o += `<text x="230" y="130" class="t15 mid">Tightly packed (heterochromatin)</text><text x="230" y="152" class="t13 mid red">Genes OFF</text>`;
+    o += `<text x="230" y="392" class="t12 mid muted">DNA wound tight around each histone</text>`;
+    /* euchromatin: DNA runs open and straight, histones just resting on top, gene reachable */
+    o += `<path d="M420,300 H960" stroke="#0f766e" stroke-width="5"/>`;
     [520, 600, 680, 900].forEach(x => { o += `<circle cx="${x}" cy="300" r="22" fill="#9a88c2" stroke="#6d5a97" stroke-width="2"/><path d="M${x - 22},296 q22,-14 44,0" stroke="#0f766e" stroke-width="3" fill="none"/>`; });
     o += `<text x="600" y="352" class="t12 mid pur">${resolved("histones") ? "Histones" : "?"}</text><path d="M586,340 L600,324 M614,340 L600,324" stroke="#6b4bb8" stroke-width="1.5"/>`;
     o += `<rect x="730" y="288" width="130" height="24" rx="5" fill="#d6efdf" stroke="#8b93a3"/><text x="795" y="305" class="t12 mid">Gene</text>`;
     o += `<text x="730" y="130" class="t15 mid">Loosely packed (euchromatin)</text><text x="730" y="152" class="t13 mid grn">Genes ON</text>`;
+    /* both cars travel the same direction (left to right): one gets through, one is blocked before it can enter the packed DNA */
     const p = (t % 3) / 3;
-    o += car(lerp(760, 830, smooth(p)), 286, 1 - smooth(seg(p, .85, 1))) + mrna(740, lerp(740, 800, smooth(p)), 250, 1);
-    return o + car(410 + Math.abs(Math.sin(t * 3)) * 8, 286, 1) + pill(410, 216, "Can't get in!", "#7a8292", 1);
+    o += car(lerp(490, 830, smooth(p)), 286, 1 - smooth(seg(p, .85, 1))) + mrna(740, lerp(740, 800, smooth(p)), 250, 1);
+    return o + car(90 + Math.abs(Math.sin(t * 3)) * 8, 286, 1) + pill(90, 216, "Can't get in!", "#7a8292", 1);
   }
   function tfSVG(t){
     const tt = t % 7;
@@ -1638,7 +1670,7 @@
     let h = "";
     if (links) h += `<a class="btn secondary" href="transcription.html">Next module: Transcription</a>`;
     (ctas || []).forEach(c => { h += `<button class="btn primary" data-cta="${c.view}" data-lab="${c.lab || ""}">${c.label}</button>`; });
-    if (moreKey) h += `<button class="more-btn" data-more="${moreKey}">Learn more</button><span class="more-note">Extra deep-dive, not on the exam</span>`;
+    if (moreKey) h += `<button class="more-btn" data-more="${moreKey}">Learn more</button>`;
     return h;
   }
   function wireFoot(){
@@ -1821,6 +1853,44 @@
         else playMsg("Drop it on the operator, or back in the cytoplasm.", "");
       }, () => set(!p.on));
       if (!p.did.on) playMsg("Drag the repressor (stop sign) onto the operator and watch RNA polymerase in the diagram. You can also drop it right on the diagram, or tap it.", "");
+      return;
+    }
+    if (st.play === "bigtable"){
+      const total = BIGROWS.length * 2, placedN = Object.keys(p.ok).length;
+      let h = `<div class="play${placedN >= total ? " done" : ""}"><div class="ptitle">${placedN >= total ? "✓ You built the whole summary table!" : "Your turn: build the summary table"}</div>`;
+      h += `<div class="bigtable"><div class="bighead"><div></div><div class="bigcol pro">Prokaryotes</div><div class="bigcol euk">Eukaryotes</div></div>`;
+      BIGROWS.forEach((r, i) => {
+        h += `<div class="bigrow">`;
+        h += `<div class="bigcat" style="color:${r.col}">${r.cat}</div>`;
+        ["pro", "euk"].forEach(k => {
+          const done = p.ok[i + k];
+          h += `<div class="bigslot ${k}${done ? " ok" : ""}" data-drop="${k}-${i}">${done ? `<span class="optok placed" style="border-color:${r.col};color:${r.col}">${r[k]}</span>` : `<span class="bigph">${k === "pro" ? "Prokaryotes" : "Eukaryotes"}</span>`}</div>`;
+        });
+        h += `</div>`;
+        if (!p.ok[i + "pro"] || !p.ok[i + "euk"]){
+          h += `<div class="bigpair">`;
+          if (!p.ok[i + "pro"]) h += `<span class="optok bigchip" data-chip="pro-${i}">${r.pro}</span>`;
+          if (!p.ok[i + "euk"]) h += `<span class="optok bigchip" data-chip="euk-${i}">${r.euk}</span>`;
+          h += `</div>`;
+        }
+      });
+      h += `</div><div class="gmsg" id="playMsg"></div></div>`;
+      A.innerHTML = h;
+      let pending = null;
+      const place = (key, i, col) => {
+        if (key !== col){ playMsg(`Not quite. "${BIGROWS[i][key]}" describes ${key === "pro" ? "prokaryotes" : "eukaryotes"}, not ${col === "pro" ? "prokaryotes" : "eukaryotes"}.`, "bad"); return false; }
+        p.ok[i + key] = true; renderPlay();
+        const done = Object.keys(p.ok).length >= total;
+        if (done){ p.done = true; playMsg("The whole table is built! Tap Next when you're ready.", "good"); updateButtons(); }
+        else playMsg("Yes! Keep going.", "good");
+        return true;
+      };
+      A.querySelectorAll("[data-chip]").forEach(el => {
+        const [key, i] = el.dataset.chip.split("-");
+        dragToken(el, htmlZone, z => { if (!z) { playMsg("Drop it in the Prokaryotes or Eukaryotes column for that row.", ""); return; } const [col] = z.split("-"); place(key, +i, col); }, () => { pending = {key, i:+i}; playMsg("Now tap the column it belongs in.", ""); });
+      });
+      A.querySelectorAll("[data-drop]").forEach(z => z.addEventListener("click", () => { if (!pending) return; const [col] = z.dataset.drop.split("-"); place(pending.key, pending.i, col); pending = null; }));
+      if (!placedN) playMsg("Drag each short answer into the Prokaryotes or Eukaryotes column (or tap a card, then tap a column).", "");
       return;
     }
     /* lac station: drag glucose and lactose into or out of the cell */

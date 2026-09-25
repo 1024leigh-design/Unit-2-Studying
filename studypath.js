@@ -3,9 +3,7 @@
 (function(){
   const STOPS = [
     {page:"pretranscriptional-control.html", view:"euk", title:"Gene regulation in eukaryotes", area:"Pre-transcriptional control"},
-    {page:"pretranscriptional-control.html", view:"basics", title:"Operon basics", area:"Pre-transcriptional control"},
-    {page:"pretranscriptional-control.html", view:"ind", title:"Inducible operons: lac", area:"Pre-transcriptional control"},
-    {page:"pretranscriptional-control.html", view:"rep", title:"Repressible operons: trp", area:"Pre-transcriptional control"},
+    {page:"pretranscriptional-control.html", view:["basics","ind","rep"], title:"Operons: lac & trp", area:"Pre-transcriptional control"},
     {page:"transcription.html", title:"Transcription", area:"Transcription"},
     {page:"posttranscriptional-control.html", title:"Post-transcriptional control", area:"Post-transcriptional control"},
     {page:"translation.html", title:"Translation", area:"Translation"},
@@ -22,14 +20,16 @@
   const done = () => { try { return JSON.parse(get(DONE) || "[]"); } catch (e) { return []; } };
   const markDone = i => { const d = done(); if (!d.includes(i)){ d.push(i); set(DONE, JSON.stringify(d)); } };
   const PAGE = location.pathname.split("/").pop() || "index.html";
-  const href = s => s.page + (s.view ? "#" + s.view : "");
+  const viewsOf = s => Array.isArray(s.view) ? s.view : (s.view ? [s.view] : []);
+  const href = s => { const vs = viewsOf(s); return s.page + (vs.length ? "#" + vs[0] : ""); };
 
   function go(i){
     const s = STOPS[i]; if (!s) return;
     set(KEY, String(i));
-    if (s.page === PAGE && window.__op && s.view){
-      if (history.replaceState) history.replaceState(null, "", "#" + s.view);
-      window.__op.setView(s.view); window.__op.goTo(0); render(); return;
+    const v0 = viewsOf(s)[0];
+    if (s.page === PAGE && window.__op && v0){
+      if (history.replaceState) history.replaceState(null, "", "#" + v0);
+      window.__op.setView(v0); window.__op.goTo(0); render(); return;
     }
     location.href = href(s);
   }
@@ -40,7 +40,7 @@
   function here(){
     const cands = STOPS.map((s, i) => i).filter(i => STOPS[i].page === PAGE);
     if (!cands.length) return -1;
-    if (window.__op){ const v = window.__op.view; const i = cands.find(k => STOPS[k].view === v); return i === undefined ? -1 : i; }
+    if (window.__op){ const v = window.__op.view; const i = cands.find(k => viewsOf(STOPS[k]).includes(v)); return i === undefined ? -1 : i; }
     return cands[0];
   }
   if (PAGE === "index.html" || get(KEY) === null) return;
@@ -84,7 +84,10 @@
     let i = here();
     const onStop = i >= 0;
     if (onStop) set(KEY, String(i)); else i = +(get(KEY) || 0);
-    const d = done(), s = STOPS[i], nx = STOPS[i + 1], fin = onStop && atEnd();
+    const d = done(), s = STOPS[i], nx = STOPS[i + 1];
+    const vs = viewsOf(s), lastView = vs.length ? vs[vs.length - 1] : null;
+    const onLastView = !lastView || (window.__op && window.__op.view === lastView);
+    const fin = onStop && atEnd() && onLastView;
     if (fin) markDone(i);
     bar.innerHTML = `<div class="sptop"><div class="spwhere">Study path: stop ${i + 1} of ${STOPS.length}${onStop ? "" : " (you've stepped off the path)"}<small>${s.area}${s.area !== s.title ? ": " + s.title : ""}</small></div>
       <div class="spbtns">${onStop ? "" : `<button class="spnext" data-go="${i}">Back to stop ${i + 1}</button>`}${nx ? `<button class="spnext${fin ? " ready" : ""}" data-go="${i + 1}">Next stop: ${nx.title} →</button>` : `<button class="spnext${fin ? " ready" : ""}" data-home="1">Finish the study path ✓</button>`}<button class="spexit" data-exit="1">Exit path</button></div></div>

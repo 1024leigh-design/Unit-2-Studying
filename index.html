@@ -35,9 +35,7 @@
   .tag:hover .tagbg,.tag:focus-visible .tagbg{filter:brightness(1.08)}
   @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
   .tag .tagg{animation:bob 2.6s ease-in-out infinite;transform-box:fill-box}
-  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
-  .rnap{transform-box:fill-box;transform-origin:center;animation:pulse 1.8s ease-in-out infinite}
-  @media (prefers-reduced-motion:reduce){ .tag .tagg,.rnap{animation:none} }
+  @media (prefers-reduced-motion:reduce){ .tag .tagg{animation:none} }
 
   .pop{position:absolute;width:min(430px,88%);max-height:calc(100% - 28px);overflow-y:auto;overscroll-behavior:contain;
     background:var(--card);border-radius:18px;box-shadow:0 14px 40px rgba(20,26,40,.3);border-top:6px solid var(--accent);
@@ -85,15 +83,24 @@
   }
   .moddir{display:grid;gap:14px;margin-top:18px}
   .moddir h2{font-size:1.15rem;margin:6px 0 0}
-  .moddir .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+  .moddir .grid{display:grid;grid-template-columns:1fr;gap:10px}
+  @media (min-width:640px){ .moddir .grid{grid-template-columns:repeat(2,1fr)} }
+  @media (min-width:920px){ .moddir .grid{grid-template-columns:repeat(3,1fr)} }
+  .modtabs{display:flex;gap:8px;flex-wrap:wrap}
+  .modtab{font:700 .95rem var(--font);padding:10px 18px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+  .modtab:hover{border-color:var(--accent)}
+  .modtab[aria-selected="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
+  .modpanel{display:grid;gap:14px;margin-top:4px}
+  .moddesc{color:var(--muted);margin:0;line-height:1.5;max-width:70ch}
   .pathcard{background:var(--card);border:3px solid var(--accent);border-radius:20px;padding:18px 22px;margin:0 0 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
   .pathcard h2{margin:2px 0 6px;font-size:1.45rem}
   .pathcard p{margin:0 0 10px;color:var(--muted);line-height:1.5;max-width:62ch}
   .pc-tag{display:inline-block;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem;border-radius:999px;padding:3px 12px}
-  .pc-stops{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none;counter-reset:st}
-  .pc-stops li{counter-increment:st;font-size:.82rem;font-weight:700;border-radius:999px;padding:4px 10px;background:#eef1f5;color:var(--muted)}
-  .pc-stops li::before{content:counter(st) ". "}
-  .pc-stops li.done{background:#e1f3e8;color:#1b7f4e}
+  .pc-stops{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0}
+  .pc-stops .bucket{font-size:.86rem;font-weight:700;border-radius:999px;padding:6px 14px;background:#eef1f5;color:var(--muted)}
+  .pc-stops .bucket b{color:var(--ink)}
+  .pc-stops .bucket.done{background:#e1f3e8;color:#1b7f4e}
+  .pc-stops .bucket.done b{color:#1b7f4e}
   .pc-actions{display:grid;gap:8px;justify-items:stretch;min-width:220px}
   .pc-go{font:700 1.1rem var(--font);border-radius:999px;padding:14px 26px;border:0;background:var(--accent);color:#fff;cursor:pointer}
   .pc-alt{font:700 .88rem var(--font);border-radius:999px;padding:8px 16px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
@@ -103,15 +110,15 @@
 <div class="wrap">
   <header>
     <h1>Inside the Bacterial Cell</h1>
-    <div class="sub">Click the DNA, the mRNA, a ribosome, or a protein to explore.</div>
+    <div class="sub"><strong>Welcome!</strong> Click the DNA, the mRNA, a ribosome, or a protein to explore — or click "Start the Study Path" below to see it all!</div>
   </header>
 
   <section class="pathcard" id="pathCard">
     <div class="pc-text">
       <div class="pc-tag">New? Start here</div>
       <h2>The Study Path</h2>
-      <p>One guided route through every major module, in order: gene regulation, transcription, post-transcriptional control, translation, mutations, and then Chapter 5 metabolism. Just keep tapping Next.</p>
-      <ol class="pc-stops" id="pcStops"></ol>
+      <p>The Study Path will take you through every module to study Chapters 8 and 5, in order. Just keep tapping Next.</p>
+      <div class="pc-stops" id="pcStops"></div>
     </div>
     <div class="pc-actions" id="pcActions"></div>
   </section>
@@ -120,7 +127,6 @@
     <svg id="cell" viewBox="0 0 1000 560" role="img" aria-label="Interactive diagram of a bacterial cell"></svg>
   </div>
   <div class="legend" id="legend"></div>
-  <p class="hint">It all happens in one cell: DNA is transcribed into mRNA, and ribosomes translate mRNA into protein.</p>
   <section class="moddir" id="modDir"></section>
 </div>
 
@@ -133,16 +139,16 @@
   const lerp = (a,b,t) => a + (b - a) * t;
   const smooth = t => { t = clamp(t,0,1); return t * t * (3 - 2 * t); };
   const seg = (t,a,b) => clamp((t - a) / (b - a), 0, 1);
-  const TEAL = "#0f766e", ORANGE = "#d9622f", BROWN = "#8a4a24", RED = "#b83a34", PURPLE = "#8e5bd0", GREEN = "#2f9e63";
+  const TEAL = "#0f766e", ORANGE = "#d9622f", BROWN = "#8a4a24", RED = "#a8348f", PURPLE = "#8e5bd0", GREEN = "#2f9e63";
   const BASE = {A:["#2f9e63","#fff"], T:["#d9534f","#fff"], U:["#8e5bd0","#fff"], G:["#f2b134","#3b2a00"], C:["#3b7dd8","#fff"]};
 
   /* ================= Tile icons ================= */
   const ICON = {
-    tx:`<svg viewBox="0 0 120 40"><path d="M6,30 H70 M6,22 H70" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/><rect x="28" y="13" width="28" height="15" rx="7" fill="#3f4cc0"/><path d="M58,11 q10,-6 20,0 q10,6 20,0" stroke="#d9622f" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M102,27 l8,-7 -8,-7" stroke="#5a6376" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`,
+    tx:`<svg viewBox="0 0 120 40"><path d="M4,28 H50 M4,20 H50" stroke="#0f766e" stroke-width="3.5" stroke-linecap="round"/><g stroke="#0f766e" stroke-width="2"><path d="M10,20 V28 M20,20 V28 M30,20 V28 M40,20 V28"/></g><text x="27" y="38" font-size="9" font-weight="700" fill="#0f766e" text-anchor="middle">DNA</text><ellipse cx="58" cy="24" rx="12" ry="10" fill="#3f4cc0"/><path d="M70,16 q10,-8 20,-2 q10,6 20,0" stroke="#d9622f" stroke-width="3.5" fill="none" stroke-linecap="round"/><text x="98" y="9" font-size="9" font-weight="700" fill="#d9622f" text-anchor="middle">mRNA</text></svg>`,
     pre:`<svg viewBox="0 0 120 40"><path d="M6,32 H114" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/><rect x="14" y="24" width="28" height="12" rx="3" fill="#fbe3b5" stroke="#8b93a3"/><rect x="42" y="24" width="18" height="12" rx="3" fill="#fde2e0" stroke="#8b93a3"/><rect x="60" y="24" width="52" height="12" rx="3" fill="#d6efdf" stroke="#8b93a3"/><polygon points="51,4 57,4 61,8 61,15 57,19 51,19 47,15 47,8" fill="#d9443a"/><rect x="16" y="10" width="22" height="10" rx="5" fill="#3f4cc0"/></svg>`,
     tl:`<svg viewBox="0 0 120 40"><path d="M4,32 q8,-5 16,0 q8,5 16,0 q8,-5 16,0 q8,5 16,0 q8,-5 16,0 q8,5 16,0" stroke="#d9622f" stroke-width="3.5" fill="none" stroke-linecap="round"/><ellipse cx="58" cy="21" rx="20" ry="13" fill="#c97b4a"/><ellipse cx="58" cy="32" rx="16" ry="6" fill="#e3a877"/><circle cx="78" cy="11" r="5" fill="#2f9e63"/><circle cx="90" cy="6" r="5" fill="#f2b134"/><circle cx="102" cy="11" r="5" fill="#3b7dd8"/></svg>`,
     mut:`<svg viewBox="0 0 120 40"><path d="M6,13 H114 M6,29 H114" stroke="#0f766e" stroke-width="3.5"/><g stroke="#9aa3b5" stroke-width="2"><path d="M20,13 V29 M34,13 V29 M74,13 V29 M88,13 V29 M102,13 V29"/></g><rect x="48" y="7" width="16" height="28" rx="5" fill="#b83a34"/><text x="56" y="28" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">!</text></svg>`,
-    post:`<svg viewBox="0 0 120 40"><path d="M6,24 q9,-10 18,0 q9,10 18,0 q9,-10 18,0" stroke="#d9622f" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="78" cy="15" r="10" fill="#8e5bd0"/><circle cx="74" cy="11" r="3.5" fill="#c2a6ea"/><path d="M92,24 q9,-10 18,0" stroke="#d9622f" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M62,32 l18,0" stroke="#9aa3b5" stroke-width="2" stroke-dasharray="3 3"/></svg>`,
+    post:`<svg viewBox="0 0 120 40"><path d="M4,26 H36" stroke="#d9622f" stroke-width="3.5" stroke-linecap="round"/><path d="M36,26 Q52,4 68,26" stroke="#8e5bd0" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M68,26 H116" stroke="#d9622f" stroke-width="3.5" stroke-linecap="round"/><path d="M40,20 l6,10 M64,20 l-6,10" stroke="#5a6376" stroke-width="2.5" stroke-linecap="round"/><text x="52" y="14" font-size="8" font-weight="700" fill="#8e5bd0" text-anchor="middle">intron</text><text x="93" y="38" font-size="8" font-weight="700" fill="#d9622f" text-anchor="middle">exon</text></svg>`,
     lab:`<svg viewBox="0 0 120 40"><circle cx="32" cy="20" r="17" fill="#f3e5b5" stroke="#c3c8d2" stroke-width="2.5"/><circle cx="26" cy="15" r="3.5" fill="#2f63c7"/><circle cx="39" cy="22" r="3.5" fill="#fff" stroke="#b9ae8c"/><circle cx="30" cy="28" r="3.5" fill="#2f63c7"/><rect x="62" y="11" width="48" height="18" rx="9" fill="#e1f3e8" stroke="#1b7f4e" stroke-width="2"/><circle cx="99" cy="20" r="6.5" fill="#1b7f4e"/></svg>`,
     build:`<svg viewBox="0 0 120 40"><path d="M6,32 H114" stroke="#0f766e" stroke-width="4"/><rect x="70" y="22" width="26" height="14" rx="4" fill="none" stroke="#3f4cc0" stroke-width="2" stroke-dasharray="4 3"/><polygon points="26,5 34,5 40,11 40,20 34,26 26,26 20,20 20,11" fill="#d9443a"/><path d="M44,16 q16,-10 26,6" stroke="#5a6376" stroke-width="2" stroke-dasharray="4 3" fill="none"/></svg>`,
     eterna:`<svg viewBox="0 0 120 40"><path d="M12,34 C12,10 42,10 42,22 C42,34 72,34 72,19 C72,7 98,7 108,17" stroke="#8e5bd0" stroke-width="3.5" fill="none" stroke-linecap="round"/><circle cx="12" cy="34" r="5" fill="#2f9e63"/><circle cx="42" cy="22" r="5" fill="#f2b134"/><circle cx="72" cy="19" r="5" fill="#3b7dd8"/><circle cx="108" cy="17" r="5" fill="#d9443a"/></svg>`,
@@ -271,7 +277,7 @@
   }
   function plasmid(x, y, r, rot){
     let d = ""; for (let i = 0; i <= 160; i++){ const a = i / 160 * Math.PI * 2, rr = r * (1 + .035 * Math.sin(4 * a + rot)); d += (i ? "L" : "M") + f1(x + rr * Math.cos(a)) + "," + f1(y + rr * .85 * Math.sin(a)); }
-    return `<path d="${d}Z" fill="none" stroke="#f0b3ae" stroke-width="6.5"/><path d="${d}Z" fill="none" stroke="${RED}" stroke-width="3.2"/>`;
+    return `<path d="${d}Z" fill="none" stroke="#f0c6e8" stroke-width="6.5"/><path d="${d}Z" fill="none" stroke="${RED}" stroke-width="3.2"/>`;
   }
   function chromosome(){
     const cx = 380, cy = 288, sq = 1.16;
@@ -297,7 +303,7 @@
     const n = Math.hypot(dx, dy), ux = dx / n, uy = dy / n, px = -uy, py = ux;
     let d = `M${x0},${y0}`;
     for (let s = 0; s <= len; s += 5){ const amp = Math.min(1, s / 44) * 15, w = amp * Math.sin(s / 21 - t * 8.5); d += ` L${f1(x0 + ux * s + px * w)},${f1(y0 + uy * s + py * w)}`; }
-    return `<path d="${d}" fill="none" stroke="#c0b193" stroke-width="7" stroke-linecap="round" opacity=".5"/><path d="${d}" fill="none" stroke="#8a7a5a" stroke-width="3.2" stroke-linecap="round"/><circle cx="${x0}" cy="${y0}" r="8" fill="#6b5f45"/><circle cx="${x0}" cy="${y0}" r="3.5" fill="#bdae90"/>`;
+    return `<path d="${d}" fill="none" stroke="#c0b193" stroke-width="11" stroke-linecap="round" opacity=".5"/><path d="${d}" fill="none" stroke="#8a7a5a" stroke-width="5.5" stroke-linecap="round"/><circle cx="${x0}" cy="${y0}" r="9" fill="#6b5f45"/><circle cx="${x0}" cy="${y0}" r="4" fill="#bdae90"/>`;
   }
   function fimbriae(){
     let o = "";
@@ -367,13 +373,13 @@
     [.18,.38,.58,.78].forEach((tt, k) => {
       const p = mPoint(tt);
       o += ribo(p[0], p[1] - 3, 1.3);
-      for (let j = 0; j < 1 + k * 2; j++) o += `<circle cx="${f1(p[0] - 5 + (j % 2) * 10)}" cy="${f1(p[1] - 21 - j * 8)}" r="4.2" fill="${["#2f9e63","#f2b134","#3b7dd8","#8e5bd0","#d9443a"][j % 5]}" stroke="#fff" stroke-width="1.2"/>`;
+      for (let j = 0; j < Math.min(4, 1 + k); j++) o += `<circle cx="${f1(p[0] - 5 + (j % 2) * 10)}" cy="${f1(p[1] - 21 - j * 8)}" r="4.2" fill="${["#2f9e63","#f2b134","#3b7dd8","#8e5bd0"][j % 4]}" stroke="#fff" stroke-width="1.2"/>`;
       o += `<circle class="ring" cx="${f1(p[0])}" cy="${f1(p[1] - 4)}" r="15"/>`;
     });
     o += `</g>`;
-    o += `<g class="hot" tabindex="0" role="button" data-part="dna" aria-label="RNA polymerase"><ellipse class="rnap" cx="552" cy="276" rx="17" ry="13" fill="url(#gPol)" stroke="#39429f" stroke-width="2"/><circle class="ring" cx="552" cy="276" r="19"/></g>`;
+    o += `<g class="hot" tabindex="0" role="button" data-part="dna" aria-label="RNA polymerase"><ellipse cx="552" cy="276" rx="17" ry="13" fill="url(#gPol)" stroke="#39429f" stroke-width="2"/><circle class="ring" cx="552" cy="276" r="19"/></g>`;
     o += tagSVG(330, 56, "DNA", TEAL, "dna", 352, 198);
-    o += tagSVG(846, 76, "mRNA", ORANGE, "mrna", 780, 206);
+    o += tagSVG(846, 76, "mRNA", ORANGE, "mrna", 620, 244);
     o += tagSVG(140, 96, "Ribosome", BROWN, "ribosome", 206, 222);
     o += tagSVG(628, 500, "Protein", PURPLE, "protein", 640, 318);
     svg.innerHTML = o;
@@ -480,7 +486,7 @@
       const rot = t * .6;
       [[196,64,17],[280,88,14],[300,58,11]].forEach((p, i) => {
         let pd = ""; for (let k = 0; k <= 90; k++){ const a = k / 90 * Math.PI * 2, r = p[2] * (1 + .04 * Math.sin(4 * a + rot + i)); pd += (k ? "L" : "M") + f1(p[0] + r * Math.cos(a)) + "," + f1(p[1] + r * .85 * Math.sin(a)); }
-        o += `<path d="${pd}Z" fill="none" stroke="#f0b3ae" stroke-width="6"/><path d="${pd}Z" fill="none" stroke="${RED}" stroke-width="3"/>`;
+        o += `<path d="${pd}Z" fill="none" stroke="#f0c6e8" stroke-width="6"/><path d="${pd}Z" fill="none" stroke="${RED}" stroke-width="3"/>`;
       });
       o += `<text x="240" y="140" font-size="12" font-weight="700" fill="#5a6376" text-anchor="middle">Small circular DNA, separate from the chromosome</text>`;
       o += `<text x="72" y="40" font-size="12" font-weight="700" fill="${TEAL}">Chromosome</text><text x="332" y="122" font-size="12" font-weight="700" fill="${RED}">Plasmids</text>`;
@@ -516,17 +522,38 @@
   const f3o = v => (+v).toFixed(3);
 
   /* ================= Popup ================= */
-  const tileHTML = k => {
+  const tileHTML = (k, opts) => {
+    opts = opts || {};
     const m = MOD[k], ic = ICON[m.icon] || "";
-    const cls = `tile${m.wide ? " wide" : ""}${m.soon ? " soon" : ""}${m.fun ? " fun" : ""}`;
+    const cls = `tile${(m.wide && !opts.noWide) ? " wide" : ""}${m.soon ? " soon" : ""}${m.fun ? " fun" : ""}`;
     let doneMod = false; try { doneMod = !!(m.wide && m.href && localStorage.getItem("bio112-done:" + m.href.split("#")[0]) === "1"); } catch (e) {}
-    const inner = `${ic}<b>${m.name}${doneMod ? ' <i class="donechk" title="Test mode complete">\u2713</i>' : ""}</b><span>${m.desc}</span>`;
+    const inner = `${ic}<b>${m.name}${doneMod ? ' <i class="donechk" title="Test mode complete">\u2713</i>' : ""}</b>${opts.noDesc ? "" : `<span>${m.desc}</span>`}`;
     return m.soon ? `<div class="${cls}">${inner}</div>` : `<a class="${cls}" style="--tc:${m.col || "#5b3fb0"}" href="${m.href}">${inner}</a>`;
   };
   (function(){
-    const DIR = [["Chapter 8: From DNA to protein", ["pretx","transcription","posttx","translation","mutations"]], ["Practice labs", ["build","lab","splice","editor"]], ["Chapter 5: Microbial metabolism (respiration)", ["enzymes","energy","glycolysis","krebs","ferment"]]];
+    const CH8 = ["pretx","transcription","posttx","translation","mutations"];
+    const LABS_DIR = ["build","lab","splice","editor"];
+    const CH5 = ["enzymes","energy","glycolysis","krebs","ferment"];
+    const t = k => tileHTML(k, {noDesc:true, noWide:true});
     const el = document.getElementById("modDir");
-    if (el) el.innerHTML = DIR.map(d => `<h2>${d[0]}</h2><div class="grid">${d[1].filter(k => MOD[k]).map(tileHTML).join("")}</div>`).join("");
+    if (!el) return;
+    el.innerHTML = `<div class="modtabs" role="tablist">
+        <button class="modtab" data-tab="ch8" aria-selected="true">Chapter 8: From DNA to Protein</button>
+        <button class="modtab" data-tab="ch5" aria-selected="false">Chapter 5: Microbial Metabolism</button>
+      </div>
+      <div class="modpanel" data-panel="ch8">
+        <div class="grid">${CH8.map(t).join("")}</div>
+        <h2>Practice labs</h2>
+        <p class="moddesc">Ready to put it to the test? These hands-on labs let you test your knowledge and explore the material at your own pace.</p>
+        <div class="grid">${LABS_DIR.map(t).join("")}</div>
+      </div>
+      <div class="modpanel" data-panel="ch5" hidden>
+        <div class="grid">${CH5.map(t).join("")}</div>
+      </div>`;
+    el.querySelectorAll(".modtab").forEach(b => b.addEventListener("click", () => {
+      el.querySelectorAll(".modtab").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+      el.querySelectorAll(".modpanel").forEach(p => { p.hidden = p.dataset.panel !== b.dataset.tab; });
+    }));
   })();
   const factHTML = f => `<div class="fact"><span class="em">${f[0]}</span><span>${f[1]}</span></div>`;
   let heroKey = null, heroT0 = 0;
@@ -596,7 +623,10 @@
 (function(){
   const SP = window.StudyPath; if (!SP) return;
   const d = SP.done(), first = SP.STOPS.findIndex((x, i) => !d.includes(i)), cur = SP.active() ? SP.current() : (d.length ? Math.max(first, 0) : -1);
-  document.getElementById("pcStops").innerHTML = SP.STOPS.map((s, i) => `<li class="${d.includes(i) ? "done" : ""}">${s.title}</li>`).join("");
+  const idxed = SP.STOPS.map((s, i) => ({s, i}));
+  const ch8 = idxed.filter(x => !x.s.area.startsWith("Chapter 5")), ch5 = idxed.filter(x => x.s.area.startsWith("Chapter 5"));
+  const bucket = (arr, label) => { const n = arr.filter(x => d.includes(x.i)).length; return `<span class="bucket${n === arr.length ? " done" : ""}"><b>${label}</b>: ${n} of ${arr.length}</span>`; };
+  document.getElementById("pcStops").innerHTML = bucket(ch8, "Chapter 8") + bucket(ch5, "Chapter 5");
   const A = document.getElementById("pcActions");
   A.innerHTML = cur >= 0 || d.length
     ? `<button class="pc-go" id="pcGo">Continue: stop ${Math.max(cur, 0) + 1} \u2192</button><button class="pc-alt" id="pcRestart">Start the path over</button>`
