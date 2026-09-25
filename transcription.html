@@ -166,6 +166,7 @@
   .bridge.callout .links{display:flex;flex-wrap:wrap;gap:8px}
   .bridge.callout a.go{background:var(--more);border-color:var(--more);color:#fff;font-size:1.02rem}
   .bridge a.btn{text-decoration:none;display:inline-block}
+  .modehint:empty{display:none}
 </style>
 </head>
 <body data-next-label="Want to see how this mRNA is regulated next?" data-next-text="The mRNA you just made isn't guaranteed to become protein. Splicing, the cap and tail, riboswitches, and microRNAs all decide its fate after transcription." data-next='[["Head to the Post-Transcriptional Control Module \u2192", "posttranscriptional-control.html"], ["Translation", "translation.html"], ["Pre-transcriptional control", "pretranscriptional-control.html"]]'>
@@ -174,7 +175,6 @@
     <div>
       <a class="backlink" href="index.html">All modules</a>
       <h1>Transcription: DNA to mRNA</h1>
-      <div class="sub">BIOL 112 Microbiology, Chapter 8</div>
     </div>
     <div class="controls">
       <div class="seg" role="group" aria-label="Mode">
@@ -778,7 +778,7 @@
     $("learnBtn").setAttribute("aria-pressed", m === "learn");
     $("testBtn").setAttribute("aria-pressed", m === "test");
     $("modeHint").textContent = m === "learn"
-      ? "Learn mode: every term is filled in. Read each bubble, watch what happens, then tap Next."
+      ? ""
       : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
     if (m === "test") furthest = Math.max(furthest, 0);
     enterStep(idx);
@@ -877,5 +877,6 @@
   if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
 })();
 </script>
+<script src="studypath.js"></script>
 </body>
 </html>

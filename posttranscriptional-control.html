@@ -348,6 +348,7 @@
   .mstep.cur{background:var(--more);color:#fff}
   .mstep.done{background:var(--good-soft);color:var(--good)}
   .hpwrap{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;justify-self:start;max-width:100%}
+  .modehint:empty{display:none}
 </style>
 </head>
 <body data-view="walk">
@@ -356,7 +357,6 @@
     <div>
       <a class="backlink" href="index.html">All modules</a>
       <h1>Post-Transcriptional Control</h1>
-      <div class="sub">BIOL 112 Microbiology, Chapter 8: controlling the mRNA after it is made</div>
     </div>
     <div class="controls" id="walkControls">
       <div class="seg" role="group" aria-label="Mode">
@@ -975,7 +975,7 @@
     $("learnBtn").setAttribute("aria-pressed", m === "learn");
     $("testBtn").setAttribute("aria-pressed", m === "test");
     $("modeHint").textContent = m === "learn"
-      ? "Learn mode: every term is filled in. Read each bubble, watch what happens, then tap Next."
+      ? ""
       : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
     enterStep(idx, true);
   }
@@ -1239,5 +1239,6 @@
   if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
 })();
 </script>
+<script src="studypath.js"></script>
 </body>
 </html>

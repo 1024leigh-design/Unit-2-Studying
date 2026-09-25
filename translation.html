@@ -235,6 +235,7 @@
   .bondrow.linked .aachip{border-color:#2f9e63;background:#e1f3e8;color:#1b7f4e;transition:all .5s}
   .bondbtn{font-size:1.02rem}
   .spark.s2{animation-delay:.18s;width:30px;height:30px}
+  .modehint:empty{display:none}
 </style>
 </head>
 <body data-next='[["Mutations", "mutations.html"], ["Post-transcriptional control", "posttranscriptional-control.html"]]'>
@@ -243,7 +244,6 @@
     <div>
       <a class="backlink" href="index.html">All modules</a>
       <h1>Translation: mRNA to Protein</h1>
-      <div class="sub">BIOL 112 Microbiology, Chapter 8: how ribosomes read the genetic code</div>
     </div>
     <div class="controls">
       <div class="seg" role="group" aria-label="Mode">
@@ -892,7 +892,7 @@
     $("learnBtn").setAttribute("aria-pressed", m === "learn");
     $("testBtn").setAttribute("aria-pressed", m === "test");
     $("modeHint").textContent = m === "learn"
-      ? "Learn mode: every term is filled in. Read each bubble, watch what happens, then tap Next."
+      ? ""
       : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
     enterStep(idx, true);
   }
@@ -979,5 +979,6 @@
   if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
 })();
 </script>
+<script src="studypath.js"></script>
 </body>
 </html>

@@ -83,6 +83,17 @@
     .pop{position:fixed;left:0;right:0;bottom:0;top:auto !important;width:100%;max-height:86vh;border-radius:20px 20px 0 0;z-index:30}
     .scrim{position:fixed;z-index:29}
   }
+  .pathcard{background:var(--card);border:3px solid var(--accent);border-radius:20px;padding:18px 22px;margin:0 0 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+  .pathcard h2{margin:2px 0 6px;font-size:1.45rem}
+  .pathcard p{margin:0 0 10px;color:var(--muted);line-height:1.5;max-width:62ch}
+  .pc-tag{display:inline-block;background:var(--accent);color:#fff;font-weight:700;font-size:.8rem;border-radius:999px;padding:3px 12px}
+  .pc-stops{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none;counter-reset:st}
+  .pc-stops li{counter-increment:st;font-size:.82rem;font-weight:700;border-radius:999px;padding:4px 10px;background:#eef1f5;color:var(--muted)}
+  .pc-stops li::before{content:counter(st) ". "}
+  .pc-stops li.done{background:#e1f3e8;color:#1b7f4e}
+  .pc-actions{display:grid;gap:8px;justify-items:stretch;min-width:220px}
+  .pc-go{font:700 1.1rem var(--font);border-radius:999px;padding:14px 26px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+  .pc-alt{font:700 .88rem var(--font);border-radius:999px;padding:8px 16px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
 </style>
 </head>
 <body>
@@ -91,6 +102,16 @@
     <h1>Inside the Bacterial Cell</h1>
     <div class="sub">Click the DNA, the mRNA, a ribosome, or a protein to explore.</div>
   </header>
+
+  <section class="pathcard" id="pathCard">
+    <div class="pc-text">
+      <div class="pc-tag">New? Start here</div>
+      <h2>The Study Path</h2>
+      <p>One guided route through every major module, in order: gene regulation, transcription, post-transcriptional control, translation, and mutations. Just keep tapping Next.</p>
+      <ol class="pc-stops" id="pcStops"></ol>
+    </div>
+    <div class="pc-actions" id="pcActions"></div>
+  </section>
 
   <div class="stagewrap" id="stage">
     <svg id="cell" viewBox="0 0 1000 560" role="img" aria-label="Interactive diagram of a bacterial cell"></svg>
@@ -553,6 +574,20 @@
   draw();
   requestAnimationFrame(frame);
   window.__hub = {showPanel, closePop, PARTS, MOD, HERO};
+})();
+</script>
+<script src="studypath.js"></script>
+<script>
+(function(){
+  const SP = window.StudyPath; if (!SP) return;
+  const d = SP.done(), first = SP.STOPS.findIndex((x, i) => !d.includes(i)), cur = SP.active() ? SP.current() : (d.length ? Math.max(first, 0) : -1);
+  document.getElementById("pcStops").innerHTML = SP.STOPS.map((s, i) => `<li class="${d.includes(i) ? "done" : ""}">${s.title}</li>`).join("");
+  const A = document.getElementById("pcActions");
+  A.innerHTML = cur >= 0 || d.length
+    ? `<button class="pc-go" id="pcGo">Continue: stop ${Math.max(cur, 0) + 1} \u2192</button><button class="pc-alt" id="pcRestart">Start the path over</button>`
+    : `<button class="pc-go" id="pcGo">Start the Study Path \u2192</button>`;
+  document.getElementById("pcGo").onclick = () => SP.go(Math.max(cur, 0));
+  const r = document.getElementById("pcRestart"); if (r) r.onclick = () => SP.start();
 })();
 </script>
 </body>
