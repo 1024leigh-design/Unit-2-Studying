@@ -160,10 +160,10 @@
   .backlink::before{content:"\2190  "}
 
   /* SVG text */
-  .t12{font-size:12px;font-weight:700;fill:#343b4a}
-  .t13{font-size:13px;font-weight:700;fill:#343b4a}
-  .t15{font-size:15px;font-weight:700;fill:#343b4a}
-  .t18{font-size:18px;font-weight:700;fill:#343b4a}
+  .t12{font-size:14px;font-weight:700;fill:#343b4a}
+  .t13{font-size:15px;font-weight:700;fill:#343b4a}
+  .t15{font-size:17px;font-weight:700;fill:#343b4a}
+  .t18{font-size:20px;font-weight:700;fill:#343b4a}
   .mid{text-anchor:middle} .end{text-anchor:end}
   .muted{fill:#5a6376} .it{font-style:italic}
   .wht{fill:#fff}
@@ -256,10 +256,10 @@
   .hintbox.good{background:var(--good-soft);border-color:#9fd3b5}
   .sptrackwrap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px 18px;overflow-x:auto}
   .spstage{font-weight:700;color:var(--muted);font-size:.9rem;margin-bottom:6px}
-  .sptrack{position:relative;display:flex;align-items:center;min-width:620px;padding-top:44px}
+  .sptrack{position:relative;display:flex;align-items:center;min-width:900px;padding-top:44px}
   .sgm{flex:0 0 auto;transition:flex-basis .6s ease,transform .6s ease,opacity .6s ease,border-radius .6s ease,margin .6s ease}
-  .sgm.exon{height:46px;border:0;border-radius:10px;background:var(--c);color:var(--ink);font:700 .92rem var(--font);cursor:pointer;padding:0 6px}
-  .sgm.intron{flex-basis:150px;height:30px;display:flex;align-items:center;gap:3px;background:#e3e6ee;border-radius:8px;padding:0 3px;margin:0 2px}
+  .sgm.exon{height:46px;border:0;border-radius:999px;background:radial-gradient(ellipse at 32% 28%,color-mix(in srgb,var(--c) 60%,#fff),var(--c));color:var(--ink);font:700 .88rem var(--font);cursor:pointer;padding:0 6px}
+  .sgm.intron{flex-basis:112px;height:30px;display:flex;align-items:center;gap:3px;background:#e3e6ee;border-radius:999px;padding:0 3px;margin:0 2px}
   .sgm.intron.pend{background:#efe7fb;box-shadow:0 0 0 3px #b9a6ee}
   .ss{font:700 .74rem var(--font);border-radius:6px;border:2px solid #8e5bd0;background:#fff;color:#6b4bb8;cursor:pointer;padding:2px 5px;line-height:1.1}
   .ss.on{background:#8e5bd0;color:#fff}
@@ -333,8 +333,10 @@
   @keyframes spark{0%{transform:translate(-50%,-50%) scale(0) rotate(0)}50%{transform:translate(-50%,-50%) scale(1.3) rotate(40deg)}100%{transform:translate(-50%,-50%) scale(0) rotate(80deg);opacity:0}}
   @media (prefers-reduced-motion:reduce){ .spark{animation:none;display:none} .trna.nope{animation:none} }
 
-  /* Nucleus frame for the Splice Lab */
-  .nucbox{border:3px solid #8e5bd0;background:#efe7fb;border-radius:28px;padding:12px 14px 14px;display:grid;gap:10px}
+  /* Cell + nucleus frame for the Splice Lab */
+  .spcellwrap{position:relative;background:#fbf9ff;border:3px solid #c9b9ee;border-radius:60px;padding:34px 20px 20px}
+  .spcelltag{position:absolute;top:12px;right:34px;font-size:.8rem;font-weight:700;color:#8e6fc9}
+  .nucbox{border:3px solid #8e5bd0;background:#efe7fb;border-radius:50px/38px;padding:12px 14px 14px;display:grid;gap:10px}
   .nuctag{font-size:.88rem;font-weight:700;color:var(--more);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .nuctag span{background:#8e5bd0;color:#fff;border-radius:999px;padding:3px 12px}
   .sntray{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -342,6 +344,16 @@
   .sntoken.lifted{opacity:.35}
   .sntoken.dragging{position:fixed;z-index:50;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.3)}
   .sphot{outline:3px solid #f2b134;outline-offset:2px}
+  /* Drag-to-finish: 5' cap and poly-A tail */
+  .captray{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .captoken,.tailtoken{touch-action:none;user-select:none;cursor:grab;color:#fff;font-weight:700;border-radius:999px;padding:9px 16px;box-shadow:0 3px 0 rgba(0,0,0,.2)}
+  .captoken{background:#f2b134;color:#3b2a00;box-shadow:0 3px 0 #a8760f}
+  .tailtoken{background:#2f9e63;box-shadow:0 3px 0 #1b7f4e}
+  .captoken.lifted,.tailtoken.lifted{opacity:.35}
+  .captoken.dragging,.tailtoken.dragging{position:fixed;z-index:50;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.3)}
+  .capslot,.tailslot{flex:0 0 auto;height:30px;min-width:60px;border:2px dashed #c9a15a;border-radius:999px;display:grid;place-items:center;color:#a8760f;font-size:.72rem;font-weight:700;padding:0 8px;margin:0 2px}
+  .tailslot{border-color:#7fbf9c;color:#1b7f4e}
+  .capslot.over,.tailslot.over{background:var(--good-soft);box-shadow:0 0 0 3px var(--good-soft)}
   /* miRNA processing steps */
   .msteps{display:flex;flex-wrap:wrap;gap:6px}
   .mstep{font-size:.8rem;font-weight:700;border-radius:999px;padding:4px 10px;background:#eef1f5;color:var(--muted)}
@@ -404,13 +416,17 @@
     <div class="labwrap">
       <div class="labhead">
         <h2>Splice Lab</h2>
-        <p>This pre-mRNA has 4 exons and 3 introns. Be the snRNP: cut out the introns, and try skipping exons 2 or 3 too. Each combination makes a different protein from the very same gene. Can you find all 4?</p>
+        <p>This pre-mRNA has 6 exons and 5 introns. Be the snRNP: drag it onto an intron to cut the intron out (tapping works too), or drop it on a <b>GU</b> splice site and then an <b>AG</b> farther right to skip whole exons in between. Once every intron is gone, drag the 5' cap and poly-A tail onto the ends to finish the mature mRNA, then export it and see what protein you built. Different exon combinations make different proteins from the very same gene &mdash; how many can you find?</p>
       </div>
-      <div class="hintbox" id="spPrompt" aria-live="polite"></div>
-      <div class="nucbox">
-        <div class="nuctag"><span>Nucleus</span> Eukaryotes only: splicing happens here, before the mRNA can leave</div>
-        <div class="sntray"><span class="sntoken" id="spToken" role="button" tabindex="0" aria-label="snRNP: drag onto an intron to cut it out">snRNP</span><span class="muted-s">Drag the snRNP onto an intron to cut it out. To skip an exon, drop it on a <b>GU</b>, then on an <b>AG</b> farther right. (Tapping works too.)</span></div>
-        <div class="sptrackwrap"><div class="spstage" id="spStage"></div><div class="sptrack" id="spTrack"></div></div>
+      <div class="spcellwrap">
+        <div class="spcelltag">Eukaryotic cell</div>
+        <div class="nucbox">
+          <div class="nuctag"><span>Nucleus</span> splicing happens here, before the mRNA can leave</div>
+          <div class="hintbox" id="spPrompt" aria-live="polite" hidden></div>
+          <div class="sntray"><span class="sntoken" id="spToken" role="button" tabindex="0" aria-label="snRNP: drag onto an intron to cut it out">snRNP</span></div>
+          <div class="sptrackwrap"><div class="spstage" id="spStage"></div><div class="sptrack" id="spTrack"></div></div>
+          <div class="captray" id="spCapTray" hidden></div>
+        </div>
       </div>
       <div class="actions"><button class="btn primary" id="spGo">Export it to the cytoplasm and translate</button><button class="btn secondary" id="spNew">New pre-mRNA</button></div>
       <div id="spOut"></div>
@@ -463,7 +479,6 @@
   /* ================= Blanks ================= */
   const BL = window.__BL = {
     transcription:{show:"transcription", ans:["transcription"], fuzzy:true},
-    energy:{show:"energy", ans:["energy","atp","time","effort"], fuzzy:true},
     introns:{show:"introns", ans:["introns","intron"], fuzzy:true},
     exons:{show:"exons", ans:["exons","exon"], fuzzy:true},
     snrnps:{show:"snRNPs", ans:["snrnps","snrnp","snurps","snurp"], fuzzy:true},
@@ -481,12 +496,12 @@
 
   /* ================= Learn more ================= */
   const MORE = {
-    why:{title:"Layers of control, from DNA to protein", html:`<p>Cells can regulate at every step: whether the DNA is even reachable (chromatin), whether transcription starts (operons, enhancers), what happens to the mRNA after it's made (this module), how fast it's translated, and whether the finished protein gets activated or destroyed.</p><p>Controlling transcription saves the most energy, but post-transcriptional control is faster. If conditions change suddenly, a cell can silence mRNAs it has already made instead of waiting for them to run out.</p>`},
-    introns:{title:"Why do introns exist at all?", html:`<p>Introns were discovered in 1977 by Phillip Sharp and Richard Roberts, who shared the 1993 Nobel Prize for it. Human genes average about 8 introns each, and introns make up far more of a gene than exons do. The dystrophin gene is 2.2 million bases long, but its mature mRNA is only about 14,000 bases.</p><p>One big payoff is <b>alternative splicing</b>: by keeping different combinations of exons, one gene can make many different proteins. Roughly 95% of human multi-exon genes are alternatively spliced, which is how about 20,000 genes make a far larger number of proteins.</p><p>Bacteria almost never have introns in their protein-coding genes, which is part of why their mRNA is ready to translate immediately.</p>`},
+    why:{title:"One gene, controlled at every level: insulin", html:`<p>Insulin is a great example of a single gene controlled at every layer this diagram shows. In cells outside the pancreas, the insulin gene's chromatin is packed shut, so it isn't even reachable for transcription. In pancreatic beta cells it's open, but transcription still only ramps up when rising blood glucose activates a transcription factor called PDX1.</p><p>Post-transcriptionally, the territory of this module, insulin mRNA is unusually stable when glucose is high (a protein binds it and protects it from being broken down) and gets degraded quickly once glucose drops, so the cell isn't stuck making mRNA it no longer needs.</p><p>Even the finished protein isn't ready to go: it's first made as an inactive precursor called proinsulin and stored in vesicles. Only a fresh glucose signal triggers enzymes to cut it into active insulin and release it. Four separate layers of control, all on one gene.</p>`},
+    introns:{title:"Why do introns exist at all?", html:`<p>Human genes average about 8 introns each, and introns make up far more of a gene than exons do. The dystrophin gene is 2.2 million bases long, but its mature mRNA is only about 14,000 bases; well over 99% of that gene gets spliced out.</p><p>The huge payoff is <b>alternative splicing</b>: by keeping different combinations of exons (exactly what you'll do in the Splice Lab), one gene can make many different proteins. Roughly 95% of human multi-exon genes are alternatively spliced. That's the main reason the human genome, with only about 20,000 genes, can still build several hundred thousand different proteins, and it's a big part of why human cells can be so wildly different from each other (a neuron and a skin cell) while sharing the exact same DNA.</p><p>Bacteria are a sharp contrast: their protein-coding genes almost never have introns at all. With nothing to splice out, their mRNA is ready to translate the instant it's made, which suits a cell that needs to grow and divide fast.</p>`},
     snrnps:{title:"Inside the spliceosome", html:`<p>snRNPs (small nuclear ribonucleoproteins, said "snurps") each contain a small nuclear RNA plus proteins. Five of them, U1, U2, U4, U5, and U6, assemble into the <b>spliceosome</b>, one of the largest machines in the cell.</p><p>U1 recognizes the start of the intron and U2 binds a branch point inside it. The intron is looped out into a shape called a lariat, cut free, and broken down. Like the ribosome, the spliceosome's catalytic core is RNA, not protein.</p><p>In the autoimmune disease lupus, patients often make antibodies against snRNPs. Those "anti-Sm" antibodies were actually the tool used to discover them.</p>`},
     self:{title:"Self-splicing introns", html:`<p>Some introns need no spliceosome at all. Thomas Cech found that an intron in <i>Tetrahymena</i> rRNA splices itself out, proving RNA can act as an enzyme. He and Sidney Altman won the 1989 Nobel Prize for discovering ribozymes.</p><p>Group I and group II self-splicing introns show up in some bacteria, mitochondria, and chloroplasts. Group II introns are thought to be the ancestors of the spliceosome.</p>`},
-    capTail:{title:"What the cap and tail actually do", html:`<p>The 5' cap is a modified guanine (7-methylguanosine) attached backwards through an unusual 5'-to-5' linkage, which is exactly why enzymes that chew RNA from the 5' end can't grab it. It's also the handle the small ribosomal subunit uses to load onto the mRNA.</p><p>The poly-A tail is 100 to 250 adenines long. It slowly gets trimmed in the cytoplasm, so the tail works like a countdown timer for how long the mRNA survives. Both features are added while transcription is still going.</p><p>mRNA vaccines are built with a cap and a poly-A tail for the same reasons: stability and efficient translation.</p>`},
-    exit:{title:"Quality control at the nuclear pore", html:`<p>Only properly processed mRNAs get exported. Unspliced or damaged transcripts are held back and destroyed by an RNA-degrading complex called the exosome.</p><p>Once in the cytoplasm, a surveillance system called nonsense-mediated decay checks for premature stop codons and destroys those mRNAs before they can make shortened proteins.</p>`},
+    capTail:{title:"What the cap and tail actually do", html:`<div style="text-align:center;margin:4px 0 12px"><svg viewBox="0 0 340 130" width="340" style="max-width:100%;height:auto" role="img" aria-label="A 5' cap attached backwards to the first nucleotide, and a long poly-A tail at the 3' end"><text x="10" y="20" font-size="11" font-weight="700" fill="#5a6376">5' cap (backwards 5'-5' link)</text><circle cx="30" cy="55" r="16" fill="#f2b134" stroke="#a8760f" stroke-width="1.5"/><text x="30" y="59" font-size="12" font-weight="700" fill="#3b2a00" text-anchor="middle">Gm</text><path d="M46,55 H70" stroke="#a8760f" stroke-width="3"/><text x="58" y="48" font-size="9" fill="#a8760f" text-anchor="middle">5'-5'</text>${[0,1,2].map(i => `<rect x="${76 + i * 30}" y="43" width="24" height="24" rx="5" fill="${["#2f9e63","#3b7dd8","#8e5bd0"][i]}"/>`).join("")}<path d="M100,55 H106 M130,55 H136" stroke="#5a6376" stroke-width="2.5"/><text x="176" y="59" font-size="12" fill="#5a6376">• • •</text><text x="200" y="90" font-size="10" fill="#5a6376">rest of the mRNA</text><rect x="255" y="43" width="24" height="24" rx="5" fill="#d9534f"/><path d="M279,55 H286" stroke="#5a6376" stroke-width="2.5"/>${[0,1,2,3].map(i => `<circle cx="${300 + i * 12}" cy="55" r="7" fill="#2f9e63"/>`).join("")}<text x="330" y="59" font-size="10" fill="#5a6376">…</text><text x="300" y="20" font-size="11" font-weight="700" fill="#5a6376">3' poly-A tail (100–250 A's)</text><text x="60" y="112" font-size="10" fill="#5a6376" text-anchor="middle">unusual backwards link</text><text x="300" y="112" font-size="10" fill="#5a6376" text-anchor="middle">many adenines in a row</text></svg></div><p>The 5' cap is a modified guanine (7-methylguanosine) attached backwards through that unusual 5'-to-5' linkage shown above, which is exactly why enzymes that chew RNA from the 5' end can't grab it. It's also the handle the small ribosomal subunit uses to load onto the mRNA.</p><p>The poly-A tail is 100 to 250 adenines long, all added by an enzyme after the very end of the gene's own sequence; it isn't copied from the DNA at all. It slowly gets trimmed in the cytoplasm, so the tail works like a countdown timer for how long the mRNA survives. Both features are added while transcription is still going.</p><p>mRNA vaccines are built with a cap and a poly-A tail for the same reasons: stability and efficient translation.</p>`},
+    exit:{title:"Quality control at the nuclear pore", html:`<p>Only properly processed mRNAs get exported. Unspliced or damaged transcripts are held back and destroyed by an RNA-degrading complex called the exosome.</p><p>Successful splicing actually leaves a mark: a group of proteins called the <b>exon junction complex</b> gets deposited at each spot where two exons were joined. That mark is one of the signals the cell checks for before letting an mRNA leave, and it travels with the mRNA into the cytoplasm, where it also helps the first round of translation get checked for errors.</p><p>Export itself isn't passive diffusion. A dedicated protein complex called TREX escorts the mRNA to the nuclear pore, and the whole process is powered by a small energy-carrying protein called Ran, which is kept in different "charged" states inside versus outside the nucleus so that traffic mostly flows the right direction: mRNA out, and proteins needed for transcription in.</p><p>Once in the cytoplasm, a surveillance system called nonsense-mediated decay checks for premature stop codons (often using leftover exon junction complexes as a clue) and destroys those mRNAs before they can make shortened, potentially harmful proteins.</p>`},
     ribo:{title:"Riboswitches in medicine and engineering", html:`<p>Riboswitches sit in the untranslated region of an mRNA and bind small molecules directly: no protein needed. Known ones sense thiamine (vitamin B1), riboflavin, vitamin B12, glycine, purines, and more. Usually the cell's own product turns its synthesis genes off, a neat form of feedback.</p><p>Because they're common in bacteria and rare in us, riboswitches are being explored as antibiotic targets. Synthetic biologists also build custom riboswitches to switch engineered genes on with a chosen chemical.</p><p>The trp operon's attenuator works on the same principle: an mRNA that folds two different ways.</p>`},
     mirna:{title:"RNA interference", html:`<p>miRNAs are cut out of longer hairpin transcripts by enzymes called Drosha and Dicer, then loaded into a protein complex called RISC. RISC uses the miRNA as a guide to find matching mRNAs. A close match gets the mRNA cut and destroyed; a loose match mostly just blocks translation.</p><p>Humans have over 2,000 miRNAs, and a single one can regulate hundreds of mRNAs. Andrew Fire and Craig Mello won the 2006 Nobel Prize for discovering RNA interference in <i>C. elegans</i>.</p><p>This is now a drug class: siRNA medicines like patisiran silence a disease-causing mRNA in patients.</p>`},
     compare:{title:"How bacteria do it instead", html:`<p>Bacteria have no nucleus and no splicing, so their post-transcriptional control works differently: riboswitches, attenuation, and <b>small RNAs (sRNAs)</b> that pair with target mRNAs with help from a protein called Hfq. Some sRNAs hide the ribosome binding site and block translation; others open up a folded mRNA and turn translation on.</p><p>Bacterial mRNAs are also destroyed quickly by RNase E, so simply stopping transcription is already a fast off switch.</p>`}
@@ -507,17 +522,30 @@
   /* Corner badge so eukaryote-only and prokaryote scenes can't be confused */
   function badge(text, fill, x){ x = x || 18; const w = text.length * 8.7 + 30; return `<g><rect x="${x}" y="14" width="${f1(w)}" height="26" rx="13" fill="${fill}"/><text x="${f1(x + w / 2)}" y="31.5" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing=".5">${text}</text></g>`; }
   const EUK_ONLY = () => badge("EUKARYOTES ONLY", "#6b4bb8");
+  function mito(x, y, s){
+    s = s || 1;
+    const rx = 32 * s, ry = 19 * s;
+    let o = `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(rx)}" ry="${f1(ry)}" fill="#e29a76" stroke="#a8461f" stroke-width="2"/>`;
+    for (let i = -1; i <= 1; i++){ const cx1 = x + i * rx * 0.42; o += `<path d="M${f1(cx1)},${f1(y - ry * .68)} q${f1(rx * .34)},${f1(ry * .68)} 0,${f1(ry * 1.36)}" fill="none" stroke="#c4532f" stroke-width="2"/>`; }
+    return o;
+  }
+  function erLines(x, y, w){ let d = ""; for (let n = 0; n < 3; n++){ let p = `M${x},${y + n * 13}`; for (let px = x; px < x + w; px += 15) p += ` q7,-9 15,0`; d += `<path d="${p}" fill="none" stroke="#c9b9ee" stroke-width="2.5"/>`; } return d; }
   function eukCell(dim){
     /* dim: "cyto" dims the nucleus */
     const nd = dim === "cyto" ? .55 : 1;
-    let o = `<rect x="12" y="66" width="976" height="394" rx="34" fill="#fbf9ff" stroke="#c9b9ee" stroke-width="3"/>`;
+    let o = `<rect x="12" y="66" width="976" height="394" rx="90" fill="#fbf9ff" stroke="#c9b9ee" stroke-width="3"/>`;
     o += `<text x="964" y="88" class="t12 end muted">Eukaryotic cell (plasma membrane, no cell wall)</text>`;
-    o += `<rect x="620" y="98" width="356" height="350" rx="26" fill="#fff7f1" opacity=".9"/>`;
-    o += `<rect x="36" y="96" width="572" height="340" rx="60" fill="#efe7fb" stroke="#8e5bd0" stroke-width="3" opacity="${nd}"/><rect x="44" y="104" width="556" height="324" rx="54" fill="none" stroke="#b9a6ee" stroke-width="1.5" opacity="${nd}"/>`;
-    [200, 300].forEach(py => { o += `<rect x="598" y="${py - 14}" width="16" height="28" fill="#fbf9ff"/><path d="M598,${py - 14} h16 M598,${py + 14} h16" stroke="#8e5bd0" stroke-width="4" stroke-linecap="round"/>`; });
-    o += `<rect x="58" y="112" width="112" height="28" rx="14" fill="#8e5bd0"/><text x="114" y="131" class="t15 mid wht">Nucleus</text>`;
-    o += `<rect x="736" y="112" width="128" height="28" rx="14" fill="#c4532f"/><text x="800" y="131" class="t15 mid wht">Cytoplasm</text>`;
-    o += `<text x="624" y="334" class="t12 muted">◀ Nuclear pore</text>`;
+    const ncx = 322, ncy = 266, nrx = 286, nry = 170;
+    o += `<ellipse cx="${ncx}" cy="${ncy}" rx="${nrx}" ry="${nry}" fill="#efe7fb" stroke="#8e5bd0" stroke-width="3" opacity="${nd}"/><ellipse cx="${ncx}" cy="${ncy}" rx="${nrx - 9}" ry="${nry - 9}" fill="none" stroke="#b9a6ee" stroke-width="1.5" opacity="${nd}"/>`;
+    [-25, 25].forEach(deg => {
+      const a = deg * Math.PI / 180, px = ncx + nrx * Math.cos(a), py = ncy + nry * Math.sin(a);
+      o += `<circle cx="${f1(px)}" cy="${f1(py)}" r="9" fill="#fbf9ff"/><path d="M${f1(px)},${f1(py - 9)} v18" stroke="#8e5bd0" stroke-width="4" stroke-linecap="round"/>`;
+    });
+    o += mito(668, 112, .78);
+    o += erLines(626, 225, 78);
+    o += `<text x="860" y="118" class="t12 muted">Cytoplasm</text>`;
+    o += `<ellipse cx="${ncx}" cy="${ncy - nry - 8}" rx="70" ry="17" fill="#8e5bd0"/><text x="${ncx}" y="${ncy - nry - 3}" class="t15 mid wht">Nucleus</text>`;
+    o += `<text x="622" y="188" class="t12 muted">Nuclear pore</text><text x="622" y="206" class="t12 muted">(one of many, not to scale)</text>`;
     return o + EUK_ONLY();
   }
   const inNucleus = body => `<g transform="translate(-26 96) scale(0.74)">${body}</g>`;
@@ -526,11 +554,7 @@
     let o = `<defs><pattern id="pgWall" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#b9d3a6"/><path d="M0,6 H12 M6,0 V12" stroke="#7fa468" stroke-width="2"/></pattern></defs>`;
     o += `<rect x="34" y="80" width="932" height="364" rx="182" fill="url(#pgWall)" stroke="#5f8a4f" stroke-width="2.5"/>`;
     o += `<rect x="50" y="96" width="900" height="332" rx="166" fill="#f1f7ec" stroke="#c9a15a" stroke-width="3"/><rect x="56" y="102" width="888" height="320" rx="160" fill="none" stroke="#e3c98f" stroke-width="1.5"/>`;
-    o += `<path d="M880,88 L922,64" stroke="#5f8a4f" stroke-width="2"/><text x="990" y="60" class="t12 end" style="fill:#4d7a3d">Cell wall</text>`;
-    o += `<path d="M905,396 L940,452" stroke="#a88338" stroke-width="2"/><text x="936" y="466" class="t12 end" style="fill:#8a6a24">Plasma membrane</text>`;
-    o += `<path d="M760,300 C790,262 860,270 860,300 C860,336 792,340 772,318 C760,304 802,290 826,304" fill="none" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/>`;
-    o += `<text x="810" y="356" class="t12 mid" style="fill:#0f766e">Nucleoid: DNA, no nucleus</text>`;
-    o += `<text x="500" y="126" class="t13 mid" fill="#4d7a3d" style="fill:#4d7a3d">Bacterial cell: no nucleus, so mRNA sits right in the cytoplasm</text>`;
+    o += `<circle cx="838" cy="380" r="42" fill="#e7f1de" stroke="#0f766e" stroke-width="3"/>`;
     return o + badge(tag || "PROKARYOTE", "#4d7a3d");
   }
   const SC = {
@@ -550,7 +574,7 @@
     },
     premrna:t => {
       let o = `<text x="500" y="44" class="t18 mid">Eukaryotic genes are interrupted</text>` + eukCell("nuc");
-      let b = `<text x="465" y="120" class="t18 mid">Pre-mRNA, fresh from transcription</text>` + preMRNA(214, t, true);
+      let b = `<text x="465" y="176" class="t18 mid">Pre-mRNA, fresh from transcription</text>` + preMRNA(214, t, true);
       b += `<path d="M110,262 H820" stroke="none"/><text x="465" y="330" class="t15 mid muted">Exons (orange) code for the protein. Introns (gray) do not.</text>`;
       o += inNucleus(b);
       o += `<text x="800" y="250" class="t13 mid muted">Nothing leaves until</text><text x="800" y="270" class="t13 mid muted">the introns are out</text>`;
@@ -603,20 +627,33 @@
       const bind = smooth(seg(tt, 2, 3.4)), flip = smooth(seg(tt, 3.4, 4.8)), back = smooth(seg(tt, 8, 9.4));
       const on = clamp(bind - back, 0, 1), sh = clamp(flip - back, 0, 1);
       let o = bactCell("BACTERIAL EXAMPLE (ALSO IN EUKARYOTES)") + `<text x="500" y="62" class="t18 mid">A riboswitch: the mRNA is its own sensor</text>`;
-      const y = 250, hx = 300;
+      const y = 250, hx = 300, bx = 560;
       o += `<path d="M120,${y} H${hx - 40}" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
       const h = lerp(52, 96, sh), wdt = lerp(58, 30, sh);
       o += `<path d="M${hx - 40},${y} C${hx - 40},${f1(y - h)} ${f1(hx - 40 + wdt)},${f1(y - h)} ${f1(hx - 40 + wdt)},${y}" fill="none" stroke="${ORANGE}" stroke-width="5"/>`;
-      o += `<path d="M${f1(hx - 40 + wdt)},${y} H720" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
+      o += `<path d="M${f1(hx - 40 + wdt)},${y} H${bx - 30}" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
       o += `<text x="${f1(hx - 40 + wdt / 2)}" y="${f1(y - h - 14)}" class="t12 mid">${resolved("riboswitch") ? "Riboswitch" : "?"}</text>`;
-      const mx = lerp(840, hx - 40 + wdt / 2, on), my = lerp(170, y - h + 16, on);
+      /* the substrate enters from just outside the cell wall, a short trip to the riboswitch, not a trek across the whole cytoplasm */
+      const mx = lerp(6, hx - 40 + wdt / 2, on), my = lerp(y - 26, y - h + 16, on);
       o += `<g opacity="${f3(Math.max(on, smooth(seg(tt, .6, 1.4)) * (1 - back)))}"><polygon points="${[0,1,2,3,4,5].map(i => { const a = Math.PI / 6 + i * Math.PI / 3; return f1(mx + 12 * Math.cos(a)) + "," + f1(my + 12 * Math.sin(a)); }).join(" ")}" fill="${TEAL}" stroke="#0a6e7a" stroke-width="1.5"/></g>`;
-      if (on < .9) o += `<text x="${f1(mx - 20)}" y="${f1(my + 5)}" class="t12 end" opacity="${f3(1 - on)}">Substrate molecule</text>`;
+      if (on < .9) o += `<text x="${f1(mx + 20)}" y="${f1(my + 5)}" class="t12" opacity="${f3(1 - on)}">Substrate molecule</text>`;
+      /* downstream binding site: folds into a hairpin that physically covers it as sh rises, so the ribosome can no longer dock there */
+      const foldH = 44 * sh, foldW = 22;
+      o += `<path d="M${bx - 30},${y} H${bx - foldW}" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
+      if (sh > .02) o += `<path d="M${bx - foldW},${y} C${bx - foldW},${f1(y - foldH)} ${f1(bx + foldW)},${f1(y - foldH)} ${bx + foldW},${y}" fill="none" stroke="${ORANGE}" stroke-width="5" opacity="${f3(sh)}"/>`;
+      if (sh < .98) o += `<path d="M${bx - foldW * (1 - sh)},${y} H${bx + foldW * (1 - sh)}" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round" opacity="${f3(1 - sh)}"/>`;
+      o += `<path d="M${bx + foldW},${y} H720" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
       const blocked = sh > .5;
-      o += ribo(560, y - 22, 1.15, 1);
-      if (blocked) o += pill(560, y - 84, "Translation blocked", RED, (sh - .5) * 2);
-      else o += pill(560, y - 84, "Translation goes ahead", GREEN, 1 - sh * 2);
-      o += `<text x="500" y="392" class="t15 mid muted">Binding a substrate changes the mRNA's shape, which can stop OR start translation.</text><text x="500" y="414" class="t12 mid muted">(Riboswitches work in eukaryotes too.)</text>`;
+      if (blocked){
+        /* ribosome can't dock: it's pushed off to the side, faint, with a no-entry mark right over the folded site */
+        o += ribo(bx + 90, y - 70, .9, .55 * sh);
+        o += `<circle cx="${bx}" cy="${f1(y - foldH - 8)}" r="16" fill="none" stroke="${RED}" stroke-width="3.5" opacity="${f3(sh)}"/><line x1="${bx - 11}" y1="${f1(y - foldH - 19)}" x2="${bx + 11}" y2="${f1(y - foldH + 3)}" stroke="${RED}" stroke-width="3.5" stroke-linecap="round" opacity="${f3(sh)}"/>`;
+        o += pill(bx, y - foldH - 40, "Ribosome blocked", RED, (sh - .5) * 2);
+      } else {
+        o += ribo(bx, y - 22, 1.15, 1 - sh * 2);
+        o += pill(bx, y - 84, "Translation goes ahead", GREEN, 1 - sh * 2);
+      }
+      o += `<text x="500" y="392" class="t15 mid muted">Binding a substrate folds the mRNA, and that fold can physically cover the ribosome's landing site.</text><text x="500" y="414" class="t12 mid muted">(Riboswitches work in eukaryotes too.)</text>`;
       return o;
     },
     exit:t => {
@@ -638,7 +675,7 @@
       const go = smooth(seg(tt, 8.2, 9.8)), pair = smooth(seg(tt, 9.8, 10.8)), cut = smooth(seg(tt, 11.4, 12.8)), gone = smooth(seg(tt, 13.2, 14.4)), fade = 1 - smooth(seg(tt, 16.2, 17));
       let o = `<text x="500" y="44" class="t18 mid">${resolved("mirna") ? "microRNA" : "?"}: from hairpin to mRNA destroyer</text>` + eukCell();
       const TOP = "AGCAUUC", BOT = "UCGUAAG", LOOP = "GUAAUCA", N = 7, DX = 17;
-      const nt = (x, y, b, op, r) => `<g opacity="${f3(op)}"><rect x="${f1(x - (r || 7))}" y="${f1(y - (r || 7))}" width="${2 * (r || 7)}" height="${2 * (r || 7)}" rx="3" fill="${BCOL[b]}"/></g>`;
+      const nt = (x, y, b, op, r) => { r = r || 7; const fs = Math.max(7, r * 1.15); return `<g opacity="${f3(op)}"><rect x="${f1(x - r)}" y="${f1(y - r)}" width="${2 * r}" height="${2 * r}" rx="3" fill="${BCOL[b]}"/><text x="${f1(x)}" y="${f1(y + fs * .35)}" font-size="${f1(fs)}" font-weight="700" fill="${b === "G" ? "#3b2a00" : "#fff"}" text-anchor="middle">${b}</text></g>`; };
       /* hairpin position: nucleus -> pore (y 300) -> cytoplasm */
       const hx = out < .5 ? lerp(210, 470, out * 2) : lerp(470, 660, (out - .5) * 2), hy = out < .5 ? lerp(250, 300, out * 2) : lerp(300, 210, (out - .5) * 2);
       let h = "";
@@ -716,7 +753,7 @@
     d:["microRNA (miRNA)","Binds a target mRNA so the double-stranded RNA gets degraded","Eukaryotes (bacteria use sRNAs)"]}};
   const STEPS = [
     {part:P1, title:"Why control after transcription?", v:"layers", more:"why", links:[["Pre-transcriptional control","pretranscriptional-control.html"]],
-     text:`Pre-transcriptional control decides whether an mRNA gets made at all. Post-transcriptional control is everything that happens <i>after</i> {{transcription}}, while the mRNA still exists. Why bother? It lets the cell fine-tune gene expression after the mRNA is made, and it's a fast way to respond when conditions change. Stopping transcription in the first place saves more {{energy}}, but this is the quicker brake.`},
+     text:`Pre-transcriptional control decides whether an mRNA gets made at all. Post-transcriptional control is everything that happens <i>after</i> {{transcription}}, while the mRNA still exists. A cell can pull the brakes at every step: whether the DNA is even reachable (chromatin), whether transcription starts (operons, enhancers), what happens to the mRNA after it's made (this module), how fast it's translated, and whether the finished protein gets activated or destroyed. Stopping transcription saves energy, but post-transcriptional control acts faster: a cell can silence mRNA it has already made instead of waiting for it to run out.`},
     {part:P2, title:"Introns and exons", v:"premrna", more:"introns",
      text:`Eukaryotic genes are interrupted. The noncoding regions are {{introns}} and they get removed. The coding regions are {{exons}} and they get spliced together to form the mature mRNA. Bacteria skip all of this: their mRNA is ready to translate the moment it's made.`,
      after:`INtrons are IN the way. EXons are EXpressed.`, links:[["Try the Splice Lab","#splice"]]},
@@ -1008,28 +1045,32 @@
 (function(){
   const $ = id => document.getElementById(id);
   const EX = {
-    E1:{n:1, col:"#f2b134", ink:"#3b2a00", part:"start", w:78},
-    E2:{n:2, col:"#3b7dd8", ink:"#fff", part:"square", w:70},
-    E3:{n:3, col:"#2f9e63", ink:"#fff", part:"triangle", w:70},
-    E4:{n:4, col:"#d9534f", ink:"#fff", part:"end", w:78}
-
+    E1:{n:1, col:"#f2b134", ink:"#3b2a00", part:"start", w:56},
+    E2:{n:2, col:"#3b7dd8", ink:"#fff", part:"square", w:52},
+    E3:{n:3, col:"#2f9e63", ink:"#fff", part:"triangle", w:52},
+    E4:{n:4, col:"#8e5bd0", ink:"#fff", part:"hex", w:52},
+    E5:{n:5, col:"#e8744f", ink:"#fff", part:"diamond", w:52},
+    E6:{n:6, col:"#d9534f", ink:"#fff", part:"end", w:56}
   };
-  const START = ["E1","I1","E2","I2","E3","I3","E4"];
-  let segs, pending, busy, made, found = [];
+  const GOAL = 6;
+  const START = ["E1","I1","E2","I2","E3","I3","E4","I4","E5","I5","E6"];
+  let segs, pending, busy, made, capped, tailed, found = [];
 
-  function reset(){ segs = START.slice(); pending = null; busy = false; made = false; say(); render(); }
+  function reset(){ segs = START.slice(); pending = null; busy = false; made = false; capped = false; tailed = false; say(); render(); }
   const introns = () => segs.filter(s => s[0] === "I");
   const exonsLeft = () => segs.filter(s => s[0] === "E");
+  const spliced = () => !introns().length;
+  const mature = () => spliced() && capped && tailed;
   const key = () => exonsLeft().map(e => EX[e].n).join("-");
 
   function say(msg, cls){
     const p = $("spPrompt");
-    if (msg){ p.innerHTML = msg; p.className = "hintbox " + (cls || ""); return; }
-    if (made) p.innerHTML = `Nice splicing! Tap <b>New pre-mRNA</b> to try a different combination of exons.`;
-    else if (!introns().length) p.innerHTML = `All introns are out! The 5' cap and poly-A tail are on, so this mature mRNA is ready to leave the nucleus. Send it to the ribosome!`;
-    else if (pending) p.innerHTML = `Loop started at the <b>GU</b> of intron ${pending.slice(1)}. Now tap an <b>AG</b> at or to the right of it to close the loop. (Tap the same GU again to cancel.)`;
-    else p.innerHTML = `You're the snRNP! Tap an intron to cut it out. To skip an exon, tap a <b>GU</b> splice site, then an <b>AG</b> splice site farther right: everything in between loops out.`;
-    p.className = "hintbox";
+    if (msg){ p.hidden = false; p.innerHTML = msg; p.className = "hintbox " + (cls || ""); return; }
+    if (made){ p.hidden = false; p.innerHTML = `Nice splicing! Tap <b>New pre-mRNA</b> to try a different combination of exons.`; p.className = "hintbox"; return; }
+    if (spliced() && !mature()){ p.hidden = false; p.innerHTML = `All introns are out! Now drag the 5' cap and poly-A tail onto the two ends.`; p.className = "hintbox"; return; }
+    if (spliced()){ p.hidden = false; p.innerHTML = `Capped and tailed! This mature mRNA is ready to leave the nucleus. Send it to the ribosome!`; p.className = "hintbox"; return; }
+    if (pending){ p.hidden = false; p.innerHTML = `Loop started at the <b>GU</b> of intron ${pending.slice(1)}. Now tap an <b>AG</b> at or to the right of it to close the loop. (Tap the same GU again to cancel.)`; p.className = "hintbox"; return; }
+    p.hidden = true; p.innerHTML = "";
   }
 
   function cut(a, b){
@@ -1061,18 +1102,18 @@
   function clickExon(id){
     if (busy || made) return;
     const n = EX[id].n;
-    if (n === 1 || n === 4) say(`Exon ${n} holds the ${n === 1 ? "start" : "stop"} codon, so every version of this protein keeps it.`, "warn");
+    if (n === 1 || n === GOAL) say(`Exon ${n} holds the ${n === 1 ? "start" : "stop"} codon, so every version of this protein keeps it.`, "warn");
     else say(`snRNPs don't cut in the middle of exons. They cut at splice sites. To skip exon ${n}, tap the GU just before it, then the AG just after it.`, "warn");
   }
 
   function translate(){
-    if (busy || introns().length || made) return;
+    if (busy || introns().length || !mature() || made) return;
     made = true;
     const k = key();
     const isNew = !found.includes(k);
     if (isNew) found.push(k);
-    const all = found.length === 4;
-    toast(isNew ? (all ? "You found all 4 proteins from one gene. Splicing superstar!" : found.length === 1 ? "Your first protein! Can you make a different one from the same gene?" : `New protein discovered! ${found.length} of 4.`) : "You already made this one. Try skipping different exons!", isNew);
+    const all = found.length >= GOAL;
+    toast(isNew ? (all ? `You found ${found.length} proteins from one gene. Splicing superstar!` : found.length === 1 ? "Your first protein! Can you make a different one from the same gene?" : `New protein discovered! ${found.length} of at least ${GOAL}.`) : "You already made this one. Try skipping different exons!", isNew);
     say(); render();
   }
 
@@ -1085,6 +1126,7 @@
       if (e.part === "start" || e.part === "end") s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${e.col}"/>`;
       else if (e.part === "square") s += `<rect x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" rx="${r * .25}" fill="${e.col}"/>`;
       else if (e.part === "triangle") s += `<polygon points="${x},${y - r * 1.1} ${x + r * 1.1},${y + r * .85} ${x - r * 1.1},${y + r * .85}" fill="${e.col}"/>`;
+      else if (e.part === "diamond") s += `<polygon points="${x},${y - r * 1.25} ${x + r * 1.25},${y} ${x},${y + r * 1.25} ${x - r * 1.25},${y}" fill="${e.col}"/>`;
       else s += `<polygon points="${[0,1,2,3,4,5].map(j => { const a = Math.PI / 6 + j * Math.PI / 3; return (x + r * 1.1 * Math.cos(a)).toFixed(1) + "," + (y + r * 1.1 * Math.sin(a)).toFixed(1); }).join(" ")}" fill="${e.col}"/>`;
     });
     return s + `</svg>`;
@@ -1092,9 +1134,11 @@
 
   function toast(msg, good){ const t = $("spToast"); t.textContent = msg; t.style.background = good ? "" : "#5a6376"; t.hidden = false; t.classList.remove("pop"); void t.offsetWidth; t.classList.add("pop"); clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 3200); }
 
+  function dropCap(){ if (capped) return; capped = true; say(); render(); }
+  function dropTail(){ if (tailed) return; tailed = true; say(); render(); }
   function render(){
-    const mature = !introns().length;
-    let h = `<div class="cap5${mature ? " on" : ""}" title="5' cap">G</div>`;
+    const done = spliced(), mat = mature();
+    let h = done && !capped ? `<div class="capslot" data-drop="cap" aria-label="Drop the 5' cap here">5' cap?</div>` : `<div class="cap5${mat ? " on" : ""}" title="5' cap">G</div>`;
     segs.forEach(id => {
       if (id[0] === "E"){
         const e = EX[id];
@@ -1104,22 +1148,65 @@
         h += `<div class="sgm intron${pend ? " pend" : ""}" data-seg="${id}"><button class="ss gu${pend ? " on" : ""}" data-gu="${id}" aria-label="GU splice site of intron ${n}">GU</button><button class="ibody" data-in="${id}" aria-label="Cut out intron ${n}">intron ${n}</button><button class="ss ag" data-ag="${id}" aria-label="AG splice site of intron ${n}">AG</button></div>`;
       }
     });
-    h += `<div class="tail3${mature ? " on" : ""}" title="poly-A tail"><span>A</span><span>A</span><span>A</span><span>A</span></div>`;
+    h += done && !tailed ? `<div class="tailslot" data-drop="tail" aria-label="Drop the poly-A tail here">tail?</div>` : `<div class="tail3${mat ? " on" : ""}" title="poly-A tail"><span>A</span><span>A</span><span>A</span><span>A</span></div>`;
     $("spTrack").innerHTML = h + `<div class="snrnp" id="spSnrnp" hidden>snRNP</div>`;
     $("spTrack").querySelectorAll("[data-gu]").forEach(b => b.addEventListener("click", () => clickGU(b.dataset.gu)));
     $("spTrack").querySelectorAll("[data-ag]").forEach(b => b.addEventListener("click", () => clickAG(b.dataset.ag)));
     $("spTrack").querySelectorAll("[data-in]").forEach(b => b.addEventListener("click", () => clickIntron(b.dataset.in)));
     $("spTrack").querySelectorAll(".sgm.exon").forEach(b => b.addEventListener("click", () => clickExon(b.dataset.seg)));
-    $("spStage").textContent = made ? "Exported! Translated by a ribosome in the cytoplasm" : mature ? "Mature mRNA: exons only, plus cap and tail. Ready for export" : "Pre-mRNA: one gene, 4 exons and 3 introns";
-    $("spGo").disabled = !mature || made;
-    $("spOut").innerHTML = made ? `<div class="made">${protein(key(), true)}<div><b>Built from exons ${key().split("-").join(", ")}</b><div class="muted-s">${exonsLeft().length === 4 ? "The full-length protein, with every piece." : `Missing the ${[2,3].filter(n => !key().split("-").includes(String(n))).map(n => "exon " + n).join(" and ")} piece${4 - exonsLeft().length > 1 ? "s" : ""}, so this protein has a different shape and maybe a different job.`}</div></div></div>` : "";
-    $("spCount").textContent = `Proteins discovered: ${found.length} of 4`;
+    const capSlotEl = $("spTrack").querySelector(".capslot"), tailSlotEl = $("spTrack").querySelector(".tailslot");
+    if (capSlotEl) capSlotEl.addEventListener("click", dropCap);
+    if (tailSlotEl) tailSlotEl.addEventListener("click", dropTail);
+    $("spStage").textContent = made ? "Exported! Translated by a ribosome in the cytoplasm" : mat ? "Mature mRNA: ready for export" : done ? "Spliced: add the cap and tail" : "Pre-mRNA";
+    $("spGo").disabled = !mat || made;
+    const missing = [2,3,4,5].filter(n => !key().split("-").includes(String(n)));
+    $("spOut").innerHTML = made ? `<div class="made">${protein(key(), true)}<div><b>Built from exons ${key().split("-").join(", ")}</b><div class="muted-s">${!missing.length ? "The full-length protein, with every piece." : `Missing the ${missing.map(n => "exon " + n).join(", ")} piece${missing.length > 1 ? "s" : ""}, so this protein has a different shape and maybe a different job.`}</div></div></div>` : "";
+    $("spCount").textContent = `Proteins discovered: ${found.length}${found.length < GOAL ? " of at least " + GOAL : ""}`;
     let g = "";
-    for (let i = 0; i < 4; i++){
+    for (let i = 0; i < Math.max(GOAL, found.length); i++){
       const k = found[i];
       g += k ? `<div class="slot got">${protein(k)}<span>Exons ${k.split("-").join(", ")}</span></div>` : `<div class="slot">?</div>`;
     }
     $("spGrid").innerHTML = g;
+    renderCapTray();
+  }
+  /* draggable 5' cap and poly-A tail tokens: drop them on the matching end slot (tap also works) */
+  function renderCapTray(){
+    const el = $("spCapTray");
+    if (!(spliced() && (!capped || !tailed))){ el.hidden = true; el.innerHTML = ""; return; }
+    el.hidden = false;
+    let h = `<span class="rowlbl">Finish it:</span>`;
+    if (!capped) h += `<span class="captoken" id="capTok" role="button" tabindex="0" aria-label="5 prime cap: drag onto the start of the mRNA">5' cap (G)</span>`;
+    if (!tailed) h += `<span class="tailtoken" id="tailTok" role="button" tabindex="0" aria-label="Poly-A tail: drag onto the end of the mRNA">poly-A tail</span>`;
+    el.innerHTML = h;
+    const wireTok = (id, slotClass, drop) => {
+      const tok = document.getElementById(id); if (!tok) return;
+      const targetAt = (x, y) => { const p = document.elementFromPoint(x, y); return p && p.closest ? p.closest("." + slotClass) : null; };
+      const place = () => { drop(); };
+      tok.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); place(); } });
+      tok.addEventListener("pointerdown", e => {
+        if (e.button > 0) return; e.preventDefault();
+        const r = tok.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+        let moved = false, clone = null, over = null;
+        const move = ev => {
+          if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6){ moved = true; clone = tok.cloneNode(true); clone.removeAttribute("id"); clone.classList.add("dragging"); document.body.appendChild(clone); tok.classList.add("lifted"); }
+          if (!clone) return;
+          clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px";
+          over = targetAt(ev.clientX, ev.clientY);
+          document.querySelectorAll("." + slotClass).forEach(z => z.classList.toggle("over", z === over));
+        };
+        const up = () => {
+          document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
+          if (clone) clone.remove(); tok.classList.remove("lifted");
+          document.querySelectorAll("." + slotClass).forEach(z => z.classList.remove("over"));
+          if (!moved){ place(); return; }
+          if (over) place();
+        };
+        document.addEventListener("pointermove", move); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+      });
+    };
+    wireTok("capTok", "capslot", dropCap);
+    wireTok("tailTok", "tailslot", dropTail);
   }
 
   /* snRNP token: drag it onto an intron (cut), or onto GU then AG (skip exons) */
@@ -1159,7 +1246,7 @@
   $("spNew").addEventListener("click", reset);
   document.addEventListener("keydown", e => { if (e.key === "Escape" && pending && document.body.dataset.view === "lab"){ pending = null; say(); render(); } });
   reset();
-  window.__sp = {cut, clickGU, clickAG, clickIntron, clickExon, translate, reset, get found(){ return found; }, get segs(){ return segs; }};
+  window.__sp = {cut, clickGU, clickAG, clickIntron, clickExon, translate, reset, dropCap, dropTail, get found(){ return found; }, get segs(){ return segs; }, get capped(){ return capped; }, get tailed(){ return tailed; }, get mature(){ return mature(); }};
 })();
 </script>
 <script>
