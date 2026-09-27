@@ -326,8 +326,8 @@
      text:`This is a short stretch of bacterial DNA. The top strand runs 5' to 3' and the bottom strand runs 3' to 5', so the two strands are <b>antiparallel</b>. Look at the regions along the bottom. The {{promoter}} is the site where the enzyme that builds RNA binds to start transcription. Next is the <b>operator</b>. Nothing is bound to it right now, so the path into the gene is open. After the <b>gene</b> comes a stop signal you'll name later.`},
     {title:"The enzyme arrives", state:S[1], more:"tataBox",
      text:`The enzyme that builds RNA, {{rnapol}}, finds the promoter and binds to it. No repressor protein is sitting on the operator, so nothing blocks its path forward.`},
-    {title:"Opening the helix", state:S[2], more:"polVsHelicase",
-     text:`RNA polymerase slides to the start of the gene and pulls the strands apart by breaking the {{hydrogen}} bonds between base pairs. This open section is the <b>transcription bubble</b>. RNA polymerase unwinds the DNA itself, so no helicase is needed.`},
+    {title:"Opening the helix", state:S[2], more:"polVsHelicase", slider:true, sliderRange:[S[0].a, S[2].a],
+     text:`RNA polymerase slides to the start of the gene and pulls the strands apart by breaking the {{hydrogen}} bonds between base pairs. This open section is the <b>transcription bubble</b>. RNA polymerase unwinds the DNA itself, so no helicase is needed. Drag the slider below to slide RNA polymerase along the DNA yourself, and watch the bubble open ahead of it and reclose behind it.`},
     {title:"Pick a strand", state:S[3], more:"strandChoice",
      text:`Only one DNA strand gets copied. The strand RNA polymerase reads is called the {{template}} strand. The other one is the <b>coding strand</b>. Its sequence matches the new RNA, except for one base you'll meet next. Remember that the two strands are antiparallel, so which strand is "template" depends entirely on which <b>direction</b> a gene faces along the DNA.`},
     {title:"Building RNA", state:S[4], gate:"build", more:"buildingRNA",
@@ -547,7 +547,7 @@
     // RNA polymerase
     if (s.polShow > 0.01 && s.polLeave < 0.99){
       const cx = X(s.a - 1.2) + s.polLeave * 300;
-      const cy = 165 - (1 - s.polShow) * 300 - s.polLeave * 310;
+      const cy = 272 - (1 - s.polShow) * 300 - s.polLeave * 310;
       const op = s.polShow * (1 - s.polLeave);
       const px = clamp(cx, 90, 910);
       o += polymeraseIcon(px, cy, op, resolved("rnapol") ? "RNA polymerase" : "?");
@@ -782,7 +782,7 @@
     const el = $("polSlide"), st = STEPS[idx];
     if (!st.slider){ el.hidden = true; el.innerHTML = ""; return; }
     el.hidden = false;
-    const lo = S[4].a, hi = GE;
+    const [lo, hi] = st.sliderRange || [S[4].a, GE];
     el.innerHTML = `<span class="plbl">Slide RNA polymerase:</span><input type="range" id="polRange" min="${lo}" max="${hi}" step="0.2" value="${clamp(cur.a, lo, hi)}">`;
     $("polRange").addEventListener("input", e => { tw = null; cur.a = +e.target.value; dirty = true; });
   }

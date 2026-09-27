@@ -673,7 +673,7 @@
      after:`DNA to mRNA to protein to product, and the product loops back to flip the switch!`},
     {part:P2, title:"Two separate questions", v:T("ctrlsummary"), more:"ctrlquestions",
      cta:[{label:"Next: Inducible operons", view:"ind"}],
-     text:`Before moving on, let's untangle two ideas that are easy to mix up. "Positive vs. negative control" asks HOW a protein controls the operon: a repressor BLOCKS transcription (negative, a stop sign), while an activator HELPS transcription (positive, gas in the tank). "Inducible vs. repressible" asks something totally different: what's the operon's DEFAULT state? Inducible operons are normally OFF until an inducer switches them on. Repressible operons are normally ON until a corepressor switches them off. Every operon has an answer to BOTH questions, and the answers are independent of each other!`,
+     text:`Before moving on, let's untangle two ideas that are easy to mix up. Every operon needs its own answer to <b>both</b> questions below, and the two answers are completely independent of each other.<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px"><div style="flex:1;min-width:230px;background:#fbe8e7;border:2px solid #b83a34;border-radius:14px;padding:10px 14px"><b style="color:#b83a34">Question 1: HOW does it control?</b><br>Negative control: a repressor <i>blocks</i> transcription (a stop sign). Positive control: an activator <i>helps</i> transcription (gas in the tank).</div><div style="flex:1;min-width:230px;background:#e1f3e8;border:2px solid #1b7f4e;border-radius:14px;padding:10px 14px"><b style="color:#1b7f4e">Question 2: WHAT's the default?</b><br>Inducible: normally OFF, an inducer turns it ON. Repressible: normally ON, a corepressor turns it OFF.</div></div>`,
      after:`Two separate questions, two separate answers, for every operon you'll meet.`},
     {part:P3, title:"Meet the lac operon", v:O("lac", {repShow:1, rep:1}, "blocked"), more:"lacgenes",
      text:`<i>E. coli</i>'s favorite food is glucose, but it can also eat lactose, the sugar in milk. The lac operon holds a set of lac genes for using lactose. (You don't need to memorize the individual gene names.) It's an {{inducible2}} operon: OFF until lactose shows up. For now, ignore the CAP site on the DNA. We'll come back to it!`},
@@ -1191,7 +1191,7 @@
     let x = cx0, y = 314, op = s.carShow, tilt = 0, extra = "";
     if (carMode === "blocked"){
       x = cx0 + 6 * Math.abs(Math.sin(ct * 3));
-      if ((ct % 2.4) < 1.2) extra += pill(cx0 - 10, L.blockY || 222, L.blockMsg || "Stop sign ahead!", RED, s.carShow);
+      if ((ct % 2.4) < 1.2) extra += pill(cx0 - 10, L.blockY || 178, L.blockMsg || "Stop sign ahead!", RED, s.carShow);
     } else if (carMode === "low" || carMode === "trace"){
       const P = 2.8, n = carMode === "low" ? 3 : 6, k = Math.floor(ct / P), p = ct % P;
       const success = k % n === n - 1;
@@ -1620,24 +1620,34 @@
       + `<g opacity="${f3(fade)}">` + duoLane(190, "ind", tt, labels) + duoLane(410, "rep", tt, labels) + `</g>`;
   }
 
+  function miniSwitch(cx, y, offFirst, molLabel, molCol){
+    const w = 50, h = 24;
+    const A = offFirst ? {t:"OFF!", c:"#b83a34"} : {t:"ON!", c:"#1b7f4e"};
+    const B = offFirst ? {t:"ON!", c:"#1b7f4e"} : {t:"OFF!", c:"#b83a34"};
+    const x1 = cx - 92, x2 = cx, x3 = cx + 92;
+    let o = `<rect x="${x1-w/2}" y="${y-h/2}" width="${w}" height="${h}" rx="12" fill="${A.c}"/><text x="${x1}" y="${y+5}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">${A.t}</text>`;
+    o += `<path d="M${x1+w/2+4},${y} H${x2-14}" stroke="#9aa3b5" stroke-width="2.5" marker-end="url(#msArr)"/>`;
+    o += `<circle cx="${x2}" cy="${y}" r="12" fill="${molCol}" stroke="#00000022" stroke-width="1.5"/><text x="${x2}" y="${y+30}" font-size="10" font-weight="700" text-anchor="middle" fill="#5a6376">${molLabel}</text>`;
+    o += `<path d="M${x2+14},${y} H${x3-w/2-4}" stroke="#9aa3b5" stroke-width="2.5" marker-end="url(#msArr)"/>`;
+    o += `<rect x="${x3-w/2}" y="${y-h/2}" width="${w}" height="${h}" rx="12" fill="${B.c}"/><text x="${x3}" y="${y+5}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">${B.t}</text>`;
+    return o;
+  }
   function ctrlSummaryScene(){
     const card = (x, y, w, h, fill, stroke) => `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="18" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>`;
-    let o = `<text x="500" y="34" class="t18 mid">Two separate questions about any operon</text>`;
-    o += `<text x="250" y="66" class="t15 mid" style="fill:#b83a34">Q1: How does the protein control it?</text>`;
-    o += card(250, 168, 420, 190, "#fbe8e7", "#b83a34");
-    o += stopSign(165, 140, 1, 1, .8);
-    o += `<text x="165" y="192" class="t13 mid">Negative control</text><text x="165" y="212" class="t12 mid muted">a repressor</text><text x="165" y="228" class="t12 mid muted">BLOCKS transcription</text><text x="165" y="244" class="t12 mid muted">(stop sign)</text>`;
-    o += gasCan(345, 143, 1, "Activator", 1, true);
-    o += `<text x="345" y="192" class="t13 mid">Positive control</text><text x="345" y="212" class="t12 mid muted">an activator</text><text x="345" y="228" class="t12 mid muted">HELPS transcription</text><text x="345" y="244" class="t12 mid muted">(gas)</text>`;
-    o += `<text x="750" y="66" class="t15 mid" style="fill:#1b7f4e">Q2: What's the default state?</text>`;
-    o += card(750, 168, 420, 190, "#e1f3e8", "#1b7f4e");
-    o += `<text x="680" y="150" class="t15 mid" font-weight="700">Inducible</text><text x="680" y="174" class="t12 mid muted">normally OFF</text><text x="680" y="194" class="t12 mid muted">an inducer</text><text x="680" y="212" class="t12 mid muted">turns it ON</text>`;
-    o += `<text x="830" y="150" class="t15 mid" font-weight="700">Repressible</text><text x="830" y="174" class="t12 mid muted">normally ON</text><text x="830" y="194" class="t12 mid muted">a corepressor</text><text x="830" y="212" class="t12 mid muted">turns it OFF</text>`;
-    o += `<rect x="90" y="300" width="820" height="140" rx="18" fill="#fff8e6" stroke="#e0b64a" stroke-width="2.5"/>`;
-    o += `<text x="500" y="328" class="t15 mid" font-weight="700">These two questions are independent!</text>`;
-    o += `<text x="500" y="358" class="t13 mid">The <tspan class="it">lac</tspan> operon is negatively controlled (a repressor) AND inducible (normally off, lactose turns it on).</text>`;
-    o += `<text x="500" y="380" class="t13 mid">The <tspan class="it">trp</tspan> operon is negatively controlled (a repressor) AND repressible (normally on, tryptophan turns it off).</text>`;
-    o += `<text x="500" y="402" class="t13 mid">The <tspan class="it">lac</tspan> operon is ALSO positively controlled by CAP — one operon, two separate control questions!</text>`;
+    let o = `<text x="500" y="30" class="t18 mid">Two separate questions about any operon</text>`;
+    o += `<text x="250" y="62" class="t15 mid" style="fill:#b83a34">Q1: How does the protein control it?</text>`;
+    o += card(250, 180, 420, 210, "#fbe8e7", "#b83a34");
+    o += stopSign(165, 150, 1, 1, .85);
+    o += `<text x="165" y="210" class="t13 mid" font-weight="700">Negative control</text><text x="165" y="230" class="t12 mid muted">Repressor</text>`;
+    o += gasCan(345, 155, 1, "", 1, false);
+    o += `<text x="345" y="210" class="t13 mid" font-weight="700">Positive control</text><text x="345" y="230" class="t12 mid muted">Activator</text>`;
+    o += `<text x="750" y="62" class="t15 mid" style="fill:#1b7f4e">Q2: What's the default state?</text>`;
+    o += card(750, 180, 420, 210, "#e1f3e8", "#1b7f4e");
+    o += `<text x="750" y="140" class="t13 mid" font-weight="700">Inducible: normally OFF</text>`;
+    o += miniSwitch(750, 170, true, "inducer", GOLD);
+    o += `<text x="750" y="222" class="t13 mid" font-weight="700">Repressible: normally ON</text>`;
+    o += miniSwitch(750, 252, false, "corepressor", PURPLE);
+    o += `<defs><marker id="msArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#9aa3b5"/></marker></defs>`;
     return o;
   }
   const MIXCOL = (on) => i => (i % 5 < 3 ? on : "white");
@@ -2050,7 +2060,7 @@
     const L = LABS.lac, out = L.out(p), row = L.row(p);
     const camp = !p.glu, capOn = !p.glu, repOn = !p.lac;
     const combos = [["GL","Both sugars"],["Gl","Glucose only"],["gL","Lactose only"],["gl","Neither"]];
-    let h = `<div class="play${p.done ? " done" : ""}"><div class="ptitle">${p.done ? "✓ You ran the lac operon through all four situations!" : "Your turn: control the lac operon yourself"}</div>`;
+    let h = `<div class="play${p.done ? " done" : ""}">`;
     h += `<div class="draghint">\u261D Drag glucose and lactose from the top of the diagram into the cell (or back out). Watch glucose shut off the cAMP maker, and allolactose pull the repressor off.</div>`;
     h += `<div class="readout"><span class="chip ${camp ? "on" : "off"}">cAMP: ${camp ? "HIGH" : "LOW"}</span><span class="chip ${capOn ? "on" : "off"}">CAP-cAMP: ${capOn ? "bound to DNA (gas)" : "can't bind (no gas)"}</span><span class="chip ${repOn ? "off" : "on"}">Repressor: ${repOn ? "on the operator" : "released by allolactose"}</span><span class="chip ${out.lv}">lac genes: ${lvlName[out.lv]}</span></div>`;
     h += `<p class="explain">${out.msg}</p>`;
@@ -2068,7 +2078,6 @@
       else playMsg(`${name} ${v ? "added" : "removed"}.${fresh ? " New situation!" : ""} ${k === "glu" ? (v ? "cAMP drops, so CAP lets go of the DNA." : "cAMP rises, binds CAP, and CAP grabs the DNA.") : (v ? "Allolactose forms and pulls the repressor off the operator." : "No allolactose, so the repressor lands back on the operator.")}`, "good");
     };
     playSetter = set;
-    if (!p.done && Object.keys(p.seen).length === 1) playMsg("Try all four situations: both sugars, glucose only, lactose only, and neither!", "");
   }
 
   /* ================= Lab UI ================= */
