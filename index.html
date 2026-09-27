@@ -117,7 +117,7 @@
     <div class="pc-text">
       <div class="pc-tag">New? Start here</div>
       <h2>The Study Path</h2>
-      <p>The Study Path will take you through every module to study Chapters 8 and 5, in order. Just keep tapping Next.</p>
+      <p>The Study Path will take you through every Chapter 8 module, in order. Just keep tapping Next.</p>
       <div class="pc-stops" id="pcStops"></div>
     </div>
     <div class="pc-actions" id="pcActions"></div>
@@ -217,7 +217,7 @@
         ["\u26A1","<b>Enzymes</b> are biological catalysts (mostly proteins). They speed up reactions without being used up."],
         ["\u{1F3AF}","Substrates bind at the <b>active site</b>. The site changes shape slightly to fit: the <b>induced fit</b> model."],
         ["\u{1F39B}\uFE0F","Inhibitors and activators bind at a separate <b>allosteric site</b>. That's exactly how repressors and activators work in operons!"]],
-      mods:["enzymes","translation"]},
+      mods:["translation"]},
     plasmid:{title:"Plasmids", kick:"Extra circular DNA", col:RED, side:"left", top:"44%", hero:"plasmid",
       facts:[
         ["\u267B\uFE0F","Small, circular, <b>self-replicating</b> DNA, separate from the chromosome."],
@@ -231,12 +231,12 @@
         ["\u26A1","Bacteria have <b>no mitochondria</b>, so the electron transport chain runs in the <b>plasma membrane</b>."],
         ["\u26A0\uFE0F","The outer membrane carries <b>LPS</b> (endotoxin)."],
         ["\u{1F49C}","That thin peptidoglycan is why Gram-negative cells stain <b>pink</b>, not purple."]],
-      mods:["krebs","ferment"]},
+      mods:[]},
     flagellum:{title:"Flagellum", kick:"How it swims", col:"#6b5f45", side:"left", top:"56%", hero:"flag",
       facts:[
         ["\u2699\uFE0F","A rotary motor powered by protons, spinning hundreds of times per second."],
         ["\u{1F3C3}","Spin one way to run straight, reverse to tumble and pick a new direction (chemotaxis)."],
-        ["\u{1F524}","The protein is flagellin, the <b>H antigen</b>, as in E. coli O157:<b>H7</b>."]],
+        ["\u{1F524}","The protein is flagellin, the <b>H antigen</b>, as in <i>E. coli</i> O157:<b>H7</b>."]],
       mods:[]}
   };
 
@@ -534,9 +534,20 @@
     const CH8 = ["pretx","transcription","posttx","translation","mutations"];
     const LABS_DIR = ["build","lab","splice","editor"];
     const CH5 = ["enzymes","energy","glycolysis","krebs","ferment"];
+    /* Chapter 5 pages haven't been revised yet, so their tab/tiles are hidden for now.
+       Flip this to true (and restore the Chapter 5 stops in studypath.js) once they're ready. */
+    const CH5_ENABLED = false;
     const t = k => tileHTML(k, {noDesc:true, noWide:true});
     const el = document.getElementById("modDir");
     if (!el) return;
+    if (!CH5_ENABLED){
+      el.innerHTML = `<h2>Chapter 8: From DNA to Protein</h2>
+        <div class="grid">${CH8.map(t).join("")}</div>
+        <h2>Practice labs</h2>
+        <p class="moddesc">Ready to put it to the test? These hands-on labs let you test your knowledge and explore the material at your own pace.</p>
+        <div class="grid">${LABS_DIR.map(t).join("")}</div>`;
+      return;
+    }
     el.innerHTML = `<div class="modtabs" role="tablist">
         <button class="modtab" data-tab="ch8" aria-selected="true">Chapter 8: From DNA to Protein</button>
         <button class="modtab" data-tab="ch5" aria-selected="false">Chapter 5: Microbial Metabolism</button>
@@ -626,7 +637,7 @@
   const idxed = SP.STOPS.map((s, i) => ({s, i}));
   const ch8 = idxed.filter(x => !x.s.area.startsWith("Chapter 5")), ch5 = idxed.filter(x => x.s.area.startsWith("Chapter 5"));
   const bucket = (arr, label) => { const n = arr.filter(x => d.includes(x.i)).length; return `<span class="bucket${n === arr.length ? " done" : ""}"><b>${label}</b>: ${n} of ${arr.length}</span>`; };
-  document.getElementById("pcStops").innerHTML = bucket(ch8, "Chapter 8") + bucket(ch5, "Chapter 5");
+  document.getElementById("pcStops").innerHTML = bucket(ch8, "Chapter 8") + (ch5.length ? bucket(ch5, "Chapter 5") : "");
   const A = document.getElementById("pcActions");
   A.innerHTML = cur >= 0 || d.length
     ? `<button class="pc-go" id="pcGo">Continue: stop ${Math.max(cur, 0) + 1} \u2192</button><button class="pc-alt" id="pcRestart">Start the path over</button>`
