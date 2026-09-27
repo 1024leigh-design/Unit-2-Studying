@@ -265,6 +265,44 @@
   .donetoast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:30}
   @media (prefers-reduced-motion:reduce){ input.blank{animation:none} }
   .modehint:empty{display:none}
+
+  /* ===== Hands-on gates (Ames test, step 6 frame drag) ===== */
+  .gate{margin-top:14px;border:2px solid #f0d99a;background:#fffbef;border-radius:14px;padding:12px 14px;display:grid;gap:10px}
+  .gate.done{border-color:#9fd3b5;background:var(--good-soft)}
+  .gate .gtitle{font-weight:700;color:#8a5a00}
+  .gate.done .gtitle{color:var(--good)}
+  .gate .gmsg{font-weight:700;min-height:1.2em;font-size:.95rem}
+  .gate .gmsg.bad{color:var(--bad)} .gate .gmsg.good{color:var(--good)}
+  .amrow{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+  .amtray{display:flex;flex-wrap:wrap;gap:10px}
+  .amtok{touch-action:none;user-select:none;cursor:grab;background:#fff;border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-weight:700;font-size:.92rem;display:flex;align-items:center;gap:8px;box-shadow:0 2px 0 var(--line)}
+  .amtok.lifted{opacity:.35}
+  .amtok.dragging{position:fixed;z-index:50;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.3)}
+  .amtok:disabled,.amtok[aria-disabled="true"]{opacity:.35;cursor:not-allowed}
+  .amvessel{min-width:150px;min-height:90px;border:3px dashed var(--accent);border-radius:14px 14px 20px 20px;background:var(--accent-soft);display:grid;place-items:center;gap:4px;padding:10px;text-align:center;font-weight:700;color:#2c3796}
+  .amvessel.over{background:#d9dcfb;box-shadow:0 0 0 4px var(--accent-soft)}
+  .amvessel .amin{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .amchip{background:#fff;border:1.5px solid var(--accent);border-radius:999px;padding:3px 10px;font-size:.82rem}
+  .amplates{display:flex;flex-wrap:wrap;gap:20px;margin-top:6px}
+  .amplate{min-width:170px;min-height:100px;border:3px dashed #b8b0a0;border-radius:50%/40%;background:#f6ecd2;display:grid;place-items:center;padding:14px;text-align:center;font-weight:700;color:#6b5f45}
+  .amplate.over{background:#efe0b0;box-shadow:0 0 0 4px #e6dcc2}
+  .amplate.filled{border-style:solid}
+  .radios2{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+  .radios2 button{font:700 .92rem var(--font);border-radius:12px;padding:10px 14px;border:2px solid var(--line);background:#fff;cursor:pointer;color:var(--ink);max-width:280px;text-align:left}
+  .radios2 button:hover{border-color:var(--accent)}
+  .radios2 button.correct{border-color:var(--good);background:var(--good-soft);color:var(--good)}
+  .radios2 button.wrong{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+  .radios2 button:disabled{cursor:default}
+
+  /* DNA Editor: integrated drag tray */
+  .edtray{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px dashed var(--line)}
+  .edtray .lbl{font-size:.82rem;font-weight:700;color:var(--muted)}
+  .dragbase{touch-action:none;user-select:none;cursor:grab;width:38px;height:38px;border-radius:9px;display:grid;place-items:center;font:700 1.1rem var(--font);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.2)}
+  .dragbase.lifted{opacity:.35}
+  .dragbase.dragging{position:fixed;z-index:60;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.3);transform:scale(1.1)}
+  .edgap{display:inline-block;width:8px;align-self:stretch;border-radius:4px;margin:0 -1px;cursor:pointer}
+  .edgap.over{background:var(--good);width:14px}
+  .b.over{box-shadow:0 0 0 3px var(--good),0 0 0 2px #fff inset;transform:translateY(-2px)}
 </style>
 </head>
 <body data-view="walk">
@@ -299,6 +337,7 @@
     <div class="title" id="stepTitle"></div>
     <p class="text" id="stepText"></p>
     <p class="after" id="stepAfter" hidden></p>
+    <div class="gate" id="gate" hidden></div>
     <div class="feedback" id="feedback"></div>
     <div class="check-row" id="checkRow" hidden>
       <button class="btn primary" id="checkBtn">Check</button>
@@ -318,29 +357,27 @@
     <div class="labwrap">
       <div class="labhead">
         <h2>DNA Editor</h2>
-        <p>You're in charge of this gene! Tap any base on the DNA template strand, then swap it, insert a new base, or delete it. The mRNA and protein change right away, and the editor tells you what kind of mutation you made.</p>
+        <p>Drag a base from the tray onto a DNA letter to swap it, or onto a gap between two letters to insert it. Tap a base to select it, then use Delete below to remove it. The mRNA and protein update instantly, and the editor tells you what kind of mutation you made.</p>
       </div>
       <div class="missions" id="edMissions"></div>
       <div class="hintbox" id="edHint" hidden></div>
-      <div class="editor"><div class="strip" id="edStrip"></div></div>
+      <div class="editor">
+        <div class="edtray" id="edTray"></div>
+        <div class="strip" id="edStrip"></div>
+      </div>
       <div class="tools">
         <div class="selinfo" id="edSel"></div>
-        <div class="toolrow"><span class="rowlbl">Swap it for</span>
-          <button class="tb base bA" data-swap="A">A</button><button class="tb base bT" data-swap="T">T</button><button class="tb base bG" data-swap="G">G</button><button class="tb base bC" data-swap="C">C</button>
-        </div>
-        <div class="toolrow"><span class="rowlbl">Insert a base after it</span>
-          <button class="tb base bA" data-ins="A" aria-label="Insert A">+A</button><button class="tb base bT" data-ins="T" aria-label="Insert T">+T</button><button class="tb base bG" data-ins="G" aria-label="Insert G">+G</button><button class="tb base bC" data-ins="C" aria-label="Insert C">+C</button>
-        </div>
         <div class="toolrow"><span class="rowlbl">Other tools</span>
           <button class="tb danger" id="edDel">Delete it</button>
           <button class="tb zap" id="edZap">Zap with nitrous acid</button>
           <button class="tb" id="edUndo">Undo</button>
           <button class="tb" id="edReset">Reset gene</button>
         </div>
-        <div class="keyhint">Keyboard: type A, T, G, or C to swap. Shift plus a letter inserts. Delete removes. Arrow keys move.</div>
+        <div class="keyhint">Keyboard: type A, T, G, or C to swap the selected base. Shift plus a letter inserts. Delete removes. Arrow keys move.</div>
       </div>
       <div class="verdict" id="edVerdict" aria-live="polite"></div>
       <div class="compare" id="edCompare"></div>
+      <div class="note">Tip: try to create all 5 kinds of mutation — silent, missense, nonsense, and both kinds of frameshift — to complete every mission above.</div>
     </div>
   </div>
 </div>
@@ -372,6 +409,7 @@
   const THREE = {F:"Phe",L:"Leu",S:"Ser",Y:"Tyr","*":"Stop",C:"Cys",W:"Trp",P:"Pro",H:"His",Q:"Gln",R:"Arg",I:"Ile",M:"Met",T:"Thr",N:"Asn",K:"Lys",V:"Val",A:"Ala",D:"Asp",E:"Glu",G:"Gly"};
   const CODE = {}; { let n = 0; for (const a of B4) for (const b of B4) for (const c of B4) CODE[a + b + c] = THREE[ONE[n++]]; }
   const TODNA = {A:"T", U:"A", G:"C", C:"G"};
+  const FULLNAME = {Phe:"Phenylalanine",Leu:"Leucine",Ser:"Serine",Tyr:"Tyrosine",Stop:"Stop codon: translation ends here",Cys:"Cysteine",Trp:"Tryptophan",Pro:"Proline",His:"Histidine",Gln:"Glutamine",Arg:"Arginine",Ile:"Isoleucine",Met:"Methionine (the start codon)",Thr:"Threonine",Asn:"Asparagine",Lys:"Lysine",Val:"Valine",Ala:"Alanine",Asp:"Aspartate",Glu:"Glutamate",Gly:"Glycine"};
   function tile(x, y, b, op, ring){
     const c = BASE[b] || BASE["?"];
     let o = `<g opacity="${f3(op === undefined ? 1 : op)}">`;
@@ -383,11 +421,112 @@
     const fill = state === "stop" ? "#fbe8e7" : state === "diff" ? "#fdeee5" : state === "none" ? "#eef1f5" : "#e1f3e8";
     const stroke = state === "stop" ? RED : state === "diff" ? ORANGE : state === "none" ? "#c9cfdb" : GREEN;
     const col = state === "stop" ? RED : state === "diff" ? "#a8461f" : state === "none" ? "#5a6376" : "#1b7f4e";
-    return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - 36)}" y="${f1(y - 17)}" width="72" height="34" rx="17" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/><text x="${f1(x)}" y="${f1(y + 5)}" font-size="15" font-weight="700" fill="${col}" text-anchor="middle">${aa}</text></g>`;
+    return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - 36)}" y="${f1(y - 17)}" width="72" height="34" rx="17" fill="${fill}" stroke="${stroke}" stroke-width="2.5"><title>${FULLNAME[aa] || aa}</title></rect><text x="${f1(x)}" y="${f1(y + 5)}" font-size="15" font-weight="700" fill="${col}" text-anchor="middle">${aa}<title>${FULLNAME[aa] || aa}</title></text></g>`;
   }
   function pill(x, y, text, fill, op){ const w = text.length * 8.3 + 30; return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - w/2)}" y="${f1(y - 15)}" width="${f1(w)}" height="28" rx="14" fill="${fill}"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">${text}</text></g>`; }
   const arrow = (x1, y1, x2, y2, op) => `<g opacity="${f3(op === undefined ? 1 : op)}"><path d="M${f1(x1)},${f1(y1)} L${f1(x2)},${f1(y2)}" stroke="#7a8292" stroke-width="3" stroke-linecap="round"/><path d="M${f1(x2)},${f1(y2)} l-10,-6 l0,12 z" fill="#7a8292" transform="rotate(${f1(Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI)} ${f1(x2)} ${f1(y2)})"/></g>`;
   const translate = m => { const out = []; for (let i = 0; i + 3 <= m.length; i += 3){ const a = CODE[m.substr(i, 3)]; out.push(a); if (a === "Stop") break; } return out; };
+  const FRAME_GATE = {done:false, dragXY:null};
+  const FRAME_SLOT = {x:388, y:270}, FRAME_HOME = {x:388, y:198};
+  const AMES_GATE = {stage:0, have:{}, growStart:null, showQ:false, timerSet:false, answer:null};
+  /* Generic drag-or-tap: works for any token dropped onto any of getTargets(). A tap (no movement) always succeeds since there's one clear destination. */
+  function wireDragTap(el, getTargets, onDrop){
+    let startX, startY, dragging = false, moved = false, clone = null;
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); onDrop(); } });
+    el.addEventListener("pointerdown", e => {
+      if (e.button > 0) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect(); startX = e.clientX; startY = e.clientY;
+      const dx = e.clientX - r.left, dy = e.clientY - r.top;
+      dragging = true; moved = false;
+      const move = ev => {
+        if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) > 6){
+          moved = true; clone = el.cloneNode(true); clone.classList.add("dragging"); clone.style.width = r.width + "px"; document.body.appendChild(clone); el.classList.add("lifted");
+        }
+        if (clone){ clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px";
+          const over = getTargets().find(z => { const q = z.getBoundingClientRect(); return ev.clientX > q.left && ev.clientX < q.right && ev.clientY > q.top && ev.clientY < q.bottom; });
+          getTargets().forEach(z => z.classList.toggle("over", z === over));
+        }
+      };
+      const up = () => {
+        document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
+        if (clone) clone.remove(); el.classList.remove("lifted"); getTargets().forEach(z => z.classList.remove("over"));
+        dragging = false; onDrop();
+      };
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+    });
+  }
+  const GATES = {
+    frame:{
+      title:"", doneText:"Nice! You saw exactly how one inserted letter throws off every group after it.",
+      html:() => "", wire:() => {}
+    },
+    ames:{
+      title:"Run the Ames test yourself",
+      doneText:"Great science! You ran a full Ames test and read the results.",
+      html(){
+        const st = AMES_GATE.stage || 0, have = AMES_GATE.have || {};
+        if (st === 0 || st === 1){
+          return `<div class="amrow">
+            <div class="amtray">
+              ${!have.bact ? `<div class="amtok" id="amBact" role="button" tabindex="0" aria-label="Salmonella his minus bacteria: drag or tap to move into the tube">\u{1F9EA} <span>Salmonella (his⁻)</span></div>` : ""}
+              ${have.bact && !have.enz ? `<div class="amtok" id="amEnz" role="button" tabindex="0" aria-label="Activation enzymes: drag or tap to move into the tube">⚗️ <span>Activation enzymes</span></div>` : ""}
+            </div>
+            <div class="amvessel${have.bact || have.enz ? " filled" : ""}" data-drop="tube"><div>Tube</div><div class="amin">${have.bact ? '<span class="amchip">Bacteria</span>' : ""}${have.enz ? '<span class="amchip">Enzymes</span>' : ""}</div></div>
+          </div>`;
+        }
+        if (st === 2){
+          return `<div class="amrow">
+            <div class="amvessel filled"><div>Tube</div><div class="amin"><span class="amchip">Bacteria</span><span class="amchip">Enzymes</span></div></div>
+            <button class="btn primary" id="amMix">Mix</button>
+          </div>`;
+        }
+        if (st === 3){
+          return `<div class="amrow">
+            <div class="amtray"><div class="amtok" id="amTubeTok" role="button" tabindex="0" aria-label="Mixed tube: drag or tap to pour onto the plate">\u{1F9EA} <span>Mixed tube</span></div></div>
+            <div class="amplates"><div class="amplate" data-drop="plate">Plate: no histidine</div></div>
+          </div>`;
+        }
+        /* st === 4: growing, then the question */
+        if (!AMES_GATE.showQ) return `<div class="gmsg" style="font-weight:400"><em>Poured! Watching the colonies grow on both plates…</em></div>`;
+        const a = AMES_GATE.answer;
+        const btn = (key, label) => `<button data-a="${key}" ${a ? "disabled" : ""} class="${a === key ? (key === "chem" ? "correct" : "wrong") : (a && key === "chem" ? "correct" : "")}">${label}</button>`;
+        return `<div class="gtitle" style="color:#8a5a00">Which plate has more revertants, and is therefore potentially more carcinogenic?</div>
+          <div class="radios2">${btn("control", "Control<br><span style=\"font-weight:400\">(no chemical): 5 colonies</span>")}${btn("chem", "Chemical + activation enzymes<br><span style=\"font-weight:400\">46 colonies</span>")}</div>`;
+      },
+      wire(g){
+        const st = AMES_GATE.stage || 0, have = AMES_GATE.have || {};
+        if (st === 0 || st === 1){
+          const bactEl = g.querySelector("#amBact"), enzEl = g.querySelector("#amEnz");
+          const targets = () => [...g.querySelectorAll("[data-drop]")];
+          if (bactEl) wireDragTap(bactEl, targets, () => { have.bact = true; AMES_GATE.stage = have.enz ? 2 : 1; gateMsg("Bacteria added to the tube.", "good"); renderGate(); });
+          if (enzEl) wireDragTap(enzEl, targets, () => { have.enz = true; AMES_GATE.stage = have.bact ? 2 : 1; gateMsg("Activation enzymes added: they convert the chemical into a form that can damage DNA, just like our liver would.", "good"); renderGate(); });
+          if (!bactEl && !enzEl) gateMsg("", "");
+        } else if (st === 2){
+          g.querySelector("#amMix").addEventListener("click", () => { AMES_GATE.stage = 3; gateMsg("Mixed! Now pour the tube onto the plate.", "good"); renderGate(); });
+        } else if (st === 3){
+          const tok = g.querySelector("#amTubeTok"), targets = () => [...g.querySelectorAll("[data-drop]")];
+          wireDragTap(tok, targets, () => {
+            AMES_GATE.stage = 4; AMES_GATE.growStart = performance.now(); AMES_GATE.timerSet = false;
+            gateMsg("Poured onto the plate without histidine. Only cells that mutate back to normal (revertants) can grow here.", "good");
+            renderGate();
+          });
+        } else if (st === 4){
+          if (!AMES_GATE.showQ && !AMES_GATE.timerSet){
+            AMES_GATE.timerSet = true;
+            setTimeout(() => { AMES_GATE.showQ = true; renderGate(); }, 4600);
+          }
+          g.querySelectorAll("[data-a]").forEach(b => b.addEventListener("click", () => {
+            if (AMES_GATE.answer) return;
+            AMES_GATE.answer = b.dataset.a;
+            renderGate();
+            if (b.dataset.a === "chem"){ gateMsg("Right! The chemical + enzymes plate grew far more revertant colonies (46 vs. 5), so this chemical is likely mutagenic and possibly carcinogenic.", "good"); setTimeout(passGate, 1100); }
+            else gateMsg("Not quite: the control plate only shows the normal spontaneous mutation rate. Compare the colony counts again.", "bad");
+          }));
+        }
+      }
+    }
+  };
 
   /* ================= Blanks ================= */
   const BL = window.__BL = {
@@ -408,6 +547,7 @@
     mutagens:{show:"mutagens", ans:["mutagens","mutagen"], fuzzy:true},
     physical:{show:"physical", ans:["physical","radiation"], fuzzy:true},
     cytosine:{show:"cytosine", ans:["cytosine","c"], fuzzy:true},
+    thymine:{show:"thymine", ans:["thymine","t"], fuzzy:true},
     gc:{show:"G-C", ans:["gc","cg","guaninecytosine","cytosineguanine"]},
     dimer:{show:"dimer", ans:["dimer","dimers"], fuzzy:true},
     ionizing:{show:"Ionizing", ans:["ionizing","ionising","ionization"], fuzzy:true},
@@ -418,7 +558,7 @@
   /* ================= Learn more ================= */
   const MORE = {
     rate:{title:"How often do mutations happen?", html:`<p>DNA polymerase is an amazing copier. With proofreading, it makes roughly one mistake for every billion (10<sup>9</sup>) bases it copies. That sounds tiny, but a bacterial culture can hold billions of cells, so a flask of <i>E. coli</i> contains mutants for almost every gene.</p><p>Mutagens can raise that rate 10 to 1,000 times. And because bacteria divide so fast, a rare helpful mutation, like one that makes an antibiotic stop working, can take over a population in days.</p>`},
-    code:{title:"Why so many silent mutations?", html:`<p>There are 64 codons but only 20 amino acids, so most amino acids have several codons. The extras usually differ only in the third base. Alanine, for example, is GCU, GCC, GCA, and GCG: the third base doesn't matter at all!</p><p>This "wobble" in the third position means a lot of random substitutions there change nothing about the protein. It's like a built-in cushion against mistakes.</p>`},
+    code:{title:"Why so many silent mutations?", html:`<p>There are 64 codons but only 20 standard amino acids, so most amino acids have several codons. The extras usually differ only in the third base. Alanine, for example, is GCU, GCC, GCA, and GCG: the third base doesn't matter at all!</p><p>This "wobble" in the third position means a lot of random substitutions there change nothing about the protein. It's like a built-in cushion against mistakes.</p><p>Those 20 are considered universal, but since we're studying microbiology, it's worth knowing they're not the whole story for bacteria. Some bacteria (and archaea) reassign a stop codon to sneak in a 21st amino acid, selenocysteine, and a few even use a 22nd, pyrrolysine. So while your cells stick to 20, certain microbes have a slightly bigger toolkit.</p>`},
     sickle:{title:"One letter, one disease: sickle cell", html:`<p>In sickle cell disease, one base in the hemoglobin gene changes, turning the codon GAG into GUG. That swaps glutamic acid for valine at one spot in the protein.</p><p>Valine is oily (hydrophobic), so the altered hemoglobin molecules stick together into long fibers when oxygen is low. The red blood cells bend into a sickle shape and can block small blood vessels. One missense mutation, huge effect!</p><p>Not every missense mutation is harmful, though. If the new amino acid is similar to the old one, or sits in an unimportant part of the protein, the protein may work just fine.</p>`},
     nmd:{title:"What happens to a nonsense mRNA?", html:`<p>A premature stop codon gives a shortened (truncated) protein. The closer the stop is to the start, the less of the protein gets made.</p><p>Eukaryotic cells also have a clean-up crew called nonsense-mediated decay that spots mRNAs with early stops and destroys them. Many cases of Duchenne muscular dystrophy and some cases of cystic fibrosis come from nonsense mutations, and researchers are testing drugs that coax the ribosome to read past the early stop.</p>`},
     crick:{title:"How we learned codons are triplets", html:`<p>In 1961, Francis Crick and Sydney Brenner used frameshift mutations in a bacteriophage. One inserted base wrecked the gene. Two insertions still wrecked it. But three insertions close together, or one insertion plus one deletion, brought the protein back!</p><p>The only explanation: the code is read in groups of three, starting from a fixed point. You can recreate their trick in the DNA Editor with the "Rescue the frame" mission.</p>`},
@@ -435,9 +575,10 @@
   const GENE = "AUGGCAUUCGGAUAA";
   const L_Y = {dna:118, rna:210, aa:318};
   function rowLabels(x){
-    return `<text x="${x}" y="${L_Y.dna + 14}" class="t13 end">DNA template</text><text x="${x}" y="${L_Y.dna + 30}" class="t12 end muted">3' to 5'</text>`
-      + `<text x="${x}" y="${L_Y.rna + 14}" class="t13 end">mRNA</text><text x="${x}" y="${L_Y.rna + 30}" class="t12 end muted">5' to 3'</text>`
-      + `<text x="${x}" y="${L_Y.aa + 5}" class="t13 end">Protein</text>`;
+    const lx = x + 62;
+    return `<text x="${lx}" y="${L_Y.dna + 14}" font-size="16" font-weight="700" fill="#343b4a" text-anchor="end">DNA template 3' to 5'</text>`
+      + `<text x="${lx}" y="${L_Y.rna + 14}" font-size="16" font-weight="700" fill="#343b4a" text-anchor="end">mRNA 5' to 3'</text>`
+      + `<text x="${lx}" y="${L_Y.aa + 5}" font-size="16" font-weight="700" fill="#343b4a" text-anchor="end">Protein</text>`;
   }
   /* strip of codons. m = mRNA string, hi = set of changed base indexes, aaState(k) */
   function strip(m, o){
@@ -492,10 +633,15 @@
     intro:t => {
       const T = 9, tt = t % T, flip = smooth(seg(tt, 1.6, 2.6)), pass = smooth(seg(tt, 3.6, 4.4));
       const top = "ATGCCATTAG", bot = "TACGGTAATC", mi = 5;
+      const xs = []; for (let i = 0; i < 10; i++) xs.push(230 + i * 60);
       let s = `<text x="500" y="56" class="t18 mid">${resolved("mutation") ? "A mutation" : "A ?"} is a permanent change in the base sequence</text>`;
-      s += `<path d="M190,170 H810 M190,300 H810" stroke="#9aa3b5" stroke-width="6" stroke-linecap="round"/>`;
+      /* sugar-phosphate backbone: a gentle zigzag with a phosphate node at every sugar, not just a plain bar */
+      const backbone = (y, dir) => { let d = `M${xs[0] - 24},${f1(y)}`; xs.forEach(x => { d += ` L${f1(x - 16)},${f1(y)} Q${f1(x)},${f1(y + dir * 9)} ${f1(x + 16)},${f1(y)}`; }); return d + ` L${xs[xs.length - 1] + 24},${f1(y)}`; };
+      s += `<path d="${backbone(170, -1)}" fill="none" stroke="#9aa3b5" stroke-width="6" stroke-linecap="round"/><path d="${backbone(300, 1)}" fill="none" stroke="#9aa3b5" stroke-width="6" stroke-linecap="round"/>`;
+      xs.forEach(x => { s += `<circle cx="${x}" cy="170" r="5" fill="#eef1f5" stroke="#5a6376" stroke-width="2"/><circle cx="${x}" cy="300" r="5" fill="#eef1f5" stroke="#5a6376" stroke-width="2"/>`; });
+      s += `<path d="M${xs[0] - 14},146 q-30,-8 -46,-30" stroke="#7a8292" stroke-width="2" fill="none" stroke-dasharray="3 4"/><text x="${xs[0] - 66}" y="106" class="t12 muted">Sugar-phosphate backbone</text>`;
       for (let i = 0; i < 10; i++){
-        const x = 230 + i * 60;
+        const x = xs[i];
         let a = top[i], b = bot[i];
         const hot = i === mi;
         if (hot && flip > .5){ a = "G"; b = "C"; }
@@ -505,17 +651,16 @@
           s += `<g transform="translate(${x} 0) scale(${f3(Math.max(.05, w))} 1) translate(${-x} 0)">${tile(x, 176, a, 1)}${tile(x, 264, b, 1)}</g>`;
         } else s += tile(x, 176, a, 1, hot && flip >= 1 ? ORANGE : null) + tile(x, 264, b, 1, hot && flip >= 1 ? ORANGE : null);
       }
-      s += `<text x="500" y="352" class="t13 mid muted" opacity="${f3(flip)}">An A-T pair became a G-C pair</text>`;
-      s += pill(500, 410, "Copied into every daughter cell from now on", BLUE, pass);
+      s += `<text x="500" y="356" class="t15 mid muted" opacity="${f3(flip)}">An A-T pair became a G-C pair</text>`;
+      s += pill(500, 412, "Copied into every daughter cell from now on", BLUE, pass);
       return s;
     },
     subs3:t => {
       const EX = [["silent","Silent","GCA","GCG","Ala","Ala",GREEN],["missense","Missense","UUC","UCC","Phe","Ser",ORANGE],["nonsense","Nonsense","GGA","UGA","Gly","Stop",RED]];
-      const on = Math.floor((t / 2.2) % 3);
       let s = `<text x="500" y="52" class="t18 mid">One ${resolved("substitution") ? "substitution" : "?"}, three possible outcomes</text>`;
       EX.forEach((e, p) => {
-        const cx = 180 + p * 320, hot = p === on;
-        s += `<rect x="${cx - 150}" y="84" width="300" height="320" rx="20" fill="${hot ? "#f7f8ff" : "#fafbfd"}" stroke="${hot ? e[6] : "#dde2ea"}" stroke-width="${hot ? 3 : 1.5}"/>`;
+        const cx = 180 + p * 320;
+        s += `<rect x="${cx - 150}" y="84" width="300" height="320" rx="20" fill="#fafbfd" stroke="${e[6]}" stroke-width="1.5"/>`;
         s += `<text x="${cx}" y="122" class="t18 mid">${resolved(e[0]) ? e[1] : "?"}</text>`;
         s += `<text x="${cx}" y="160" class="t12 mid muted">mRNA codon</text>`;
         for (let j = 0; j < 3; j++){
@@ -534,10 +679,13 @@
     missense:t => subScene(t, 2, 1, "C", "Missense: Phe became Ser", ORANGE),
     nonsense:t => subScene(t, 3, 0, "U", "Nonsense: an early stop codon", RED),
     frame:t => {
-      const T = 9, tt = t % T, ins = smooth(seg(tt, 2, 3.2)), re = smooth(seg(tt, 3.4, 4.2));
+      const gateDone = FRAME_GATE.done;
+      const tt = gateDone ? Math.max(0, (performance.now() - (FRAME_GATE.doneAt || performance.now())) / 1000) : 0;
+      const ins = gateDone ? smooth(seg(tt, 0, .6)) : 1;
+      const re = gateDone ? smooth(seg(tt, .8, 1.6)) : 0;
       const W = 30, G = 18;
       const pos = (i, x0) => x0 + i * W + Math.floor(i / 3) * G;
-      const orig = "THECATATETHERAT", neu = "THEXCATATETHERAT";
+      const orig = "THECATATETHERAT";
       let s = `<text x="500" y="52" class="t18 mid">Reading in threes: the reading ${resolved("frame") ? "frame" : "?"}</text>`;
       s += `<text x="230" y="138" class="t15 end">Original</text>`;
       const x1 = 280;
@@ -556,8 +704,18 @@
         const x = lerp(pos(i, x2), pos(ni, x2), ins);
         s += `<text x="${f1(x)}" y="${y2}" font-size="22" font-weight="700" fill="#1d2433" text-anchor="middle">${orig[i]}</text>`;
       }
-      if (ins > 0) s += `<text x="${f1(pos(3, x2))}" y="${f1(lerp(y2 - 90, y2, ins))}" font-size="22" font-weight="700" fill="${ORANGE}" text-anchor="middle" opacity="${f3(ins)}">X</text>`;
-      s += pill(500, 370, "THE XCA TAT ETH ERA T: nonsense after the change!", ORANGE, re);
+      if (!gateDone){
+        /* Interactive: the student must slide the new letter into the gap themselves before anything shifts */
+        const p = FRAME_GATE.dragXY || FRAME_HOME;
+        s += `<rect x="${FRAME_SLOT.x - 15}" y="${FRAME_SLOT.y - 20}" width="30" height="40" rx="8" fill="#fff" stroke="${ORANGE}" stroke-width="2.5" stroke-dasharray="5 4"/>`;
+        s += `<path d="M${FRAME_HOME.x},${FRAME_HOME.y + 26} V${FRAME_SLOT.y - 34}" stroke="#c9cfdb" stroke-width="3" stroke-dasharray="4 5" marker-end="url(#frArrow)"/>`;
+        s += `<defs><marker id="frArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#c9cfdb"/></marker></defs>`;
+        s += `<g id="frameTile" style="cursor:grab" opacity="1"><rect x="${f1(p.x - 17)}" y="${f1(p.y - 22)}" width="34" height="44" rx="9" fill="${ORANGE}" stroke="#a8461f" stroke-width="2"/><text x="${f1(p.x)}" y="${f1(p.y + 8)}" font-size="24" font-weight="700" fill="#fff" text-anchor="middle">X</text></g>`;
+        s += `<text x="500" y="352" class="t15 mid" fill="${ORANGE}">Drag (or tap) the new letter down into the gap</text>`;
+      } else {
+        if (ins > 0) s += `<text x="${f1(pos(3, x2))}" y="${f1(lerp(y2 - 90, y2, ins))}" font-size="22" font-weight="700" fill="${ORANGE}" text-anchor="middle" opacity="${f3(ins)}">X</text>`;
+        s += pill(500, 370, "THE XCA TAT ETH ERA T: nonsense after the change!", ORANGE, re);
+      }
       s += `<text x="500" y="430" class="t13 mid muted">Every group after the insertion is read wrong.</text>`;
       return s;
     },
@@ -602,6 +760,9 @@
       const T = 11, tt = t % T;
       const come = smooth(seg(tt, .8, 2)), mod = smooth(seg(tt, 2, 2.8)), s2 = smooth(seg(tt, 3.4, 4.4)), s3 = smooth(seg(tt, 5.4, 6.4)), v = smooth(seg(tt, 7, 7.6));
       let s = `<text x="500" y="52" class="t18 mid">A base-modifying agent (nitrous acid) turns A-T into G-C</text>`;
+      s += `<defs><pattern id="analogHatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="${GOLD}"/><line x1="0" y1="0" x2="0" y2="8" stroke="#a8760f" stroke-width="3"/></pattern></defs>`;
+      s += `<rect x="895" y="66" width="34" height="34" rx="7" fill="url(#analogHatch)" stroke="#a8760f" stroke-width="2.5"/><text x="912" y="88" font-size="14" font-weight="700" fill="#3b2a00" text-anchor="middle">A*</text>`;
+      s += `<text x="912" y="118" class="t12 mid muted">Nucleoside analog:</text><text x="912" y="134" class="t12 mid muted">looks like a real base,</text><text x="912" y="150" class="t12 mid muted">but pairs incorrectly</text>`;
       const X = [190, 500, 810];
       s += `<text x="${X[0]}" y="112" class="t15 mid">1. Normal pair</text>`;
       s += tile(X[0], 170, "A", 1, mod > .5 ? ORANGE : null);
@@ -652,7 +813,9 @@
       return s;
     },
     ames:t => {
-      const T = 10, tt = t % T, grow = seg(tt, 1, 5), v = smooth(seg(tt, 5.4, 6));
+      const growing = (AMES_GATE.stage || 0) >= 4;
+      const gt = growing ? Math.max(0, (performance.now() - (AMES_GATE.growStart || performance.now())) / 1000) : 0;
+      const grow = growing ? seg(gt, 0, 4) : 0;
       let s = `<text x="500" y="46" class="t18 mid">The Ames test: count the comeback colonies</text>`;
       const P = [[290,"Control: no chemical",5],[710,"Chemical + activation enzymes",46]];
       let seed = 7; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
@@ -667,7 +830,7 @@
         }
       });
       s += `<text x="500" y="394" class="t13 mid muted">Both plates: <tspan class="it">Salmonella</tspan> his⁻ on medium without ${resolved("histidine") ? "histidine" : "?"}</text>`;
-      s += pill(500, 430, "More revertants = more mutagenic = possibly carcinogenic", BLUE, v);
+      if (!growing) s += `<text x="500" y="430" class="t13 mid muted">Complete the steps below to run the experiment.</text>`;
       return s;
     },
     review:t => {
@@ -702,13 +865,13 @@
     {part:P2, title:"Base substitutions", v:"subs3", more:"code",
      text:`The most common mutation is a base {{substitution}}, also called a point mutation: one base pair is swapped for a different one. When that gene is transcribed and translated, the change can end three different ways. Let's look at each one!`},
     {part:P2, title:"Silent mutations", v:"silent", more:"code", links:[ED],
-     text:`Here the third base of codon 2 changes, so the mRNA codon GCA becomes GCG. Both codons code for alanine! This is a {{silent}} mutation: the DNA changed, but the protein is exactly the same. It works because most amino acids have more than one codon.`,
+     text:`A {{silent}} mutation happens when the DNA changes, but the resulting amino acid and protein stay the same. This works because most amino acids have more than one codon. In the diagram, the third base of codon 2 changes, so the mRNA codon GCA becomes GCG. Both codons code for alanine, so nothing about the protein is different!`,
      after:`Same protein, no harm done.`},
     {part:P2, title:"Missense mutations", v:"missense", more:"sickle", links:[ED],
-     text:`Now codon 3 changes from UUC to UCC, which codes for serine instead of phenylalanine. One amino acid is swapped for another: a {{missense}} mutation. The protein might still work, work less well, or not work at all, depending on where the change lands.`},
+     text:`A {{missense}} mutation happens when the DNA changes, and it changes the mRNA codon enough that a different amino acid gets built into the protein. The protein might still work, work less well, or not work at all, depending on where the change lands. In the diagram, codon 3 changes from UUC to UCC, which codes for serine instead of phenylalanine: one amino acid swapped for another.`},
     {part:P2, title:"Nonsense mutations", v:"nonsense", more:"nmd", links:[ED],
-     text:`This time codon 4 changes from GGA to UGA, which is a {{stop}} codon. Translation ends early, so the protein is cut short. That's a {{nonsense}} mutation, and the shortened protein usually can't do its job.`},
-    {part:P3, title:"The reading frame", v:"frame", more:"crick",
+     text:`A {{nonsense}} mutation happens when the DNA changes so that the mRNA codon becomes a {{stop}} codon earlier than it should. Translation ends there, so the protein is cut short, and a shortened protein usually can't do its job. In the diagram, codon 4 changes from GGA to UGA, which is a stop codon, so translation ends early.`},
+    {part:P3, title:"The reading frame", v:"frame", more:"crick", gate:"frame",
      text:`The ribosome reads codons three bases at a time, starting at the start codon. That grouping is called the reading {{frame}}. Insert or delete one letter and every group after it shifts, just like adding one letter to this sentence.`},
     {part:P3, title:"Insertions and deletions", v:"indel", more:"indel", links:[ED],
      text:`A {{frameshift}} mutation happens when nucleotides are inserted or deleted, which shifts the reading frame of codons. Every codon {{downstream}} of the change is read in the wrong groups, so the amino acids after it are all different. This usually wrecks the protein, which is why frameshifts are so damaging.`,
@@ -716,11 +879,11 @@
     {part:P4, title:"Mutagens", v:"mutagens", more:"mutagen",
      text:`{{mutagens}} are agents in the environment that cause permanent changes in DNA. They raise the mutation rate above the spontaneous rate. There are two types: {{physical}} mutagens, which are forms of radiation, and chemical mutagens.`},
     {part:P4, title:"Chemical mutagens", v:"nitrous", more:"chem",
-     text:`There are three kinds of chemical mutagens. Nucleoside {{analogs}} are incorporated into DNA in place of normal bases. {{basemod}} agents alter existing bases: nitrous acid, for example, makes adenine pair with {{cytosine}} instead of thymine, so after replication an A-T pair becomes a G-C pair. Frameshift mutagens cause insertions or deletions.`},
+     text:`There are three kinds of chemical mutagens. Nucleoside {{analogs}} are incorporated into DNA in place of normal bases. {{basemod}} agents alter existing bases: nitrous acid, for example, makes adenine pair with cytosine instead of {{thymine}}, so after replication an A-T pair becomes a G-C pair. Frameshift mutagens cause insertions or deletions.`},
     {part:P4, title:"Physical mutagens: radiation", v:"uv", more:"uv",
      text:`{{ionizing}} radiation, like X-rays and gamma rays, causes the formation of ions and free radicals that react with DNA. UV radiation is nonionizing: it causes bonding between adjacent thymines, forming a pyrimidine {{dimer}}. The kink blocks replication until the cell repairs it.`},
-    {part:P5, title:"The Ames test", v:"ames", more:"ames",
-     text:`The Ames test is a rapid, inexpensive way to identify potential chemical carcinogens. It uses <i>Salmonella</i> his⁻ mutants, which cannot make {{histidine}}. Mix the bacteria with the chemical plus activation enzymes, then plate them on medium without histidine. Only cells that mutate back to normal can grow, and these colonies are called {{revertants}}. A higher reversion rate means more mutagenic and possibly carcinogenic: 90% of substances mutagenic in the Ames test are also {{carcinogens}} in animals.`},
+    {part:P5, title:"The Ames test", v:"ames", more:"ames", gate:"ames",
+     text:`The Ames test is a rapid, inexpensive way to identify potential chemical carcinogens. It uses <i>Salmonella</i> his⁻ mutants, which cannot make {{histidine}}. Mix the bacteria with the chemical plus activation enzymes, then plate them on medium without histidine. Only cells that mutate back to normal can grow, and these colonies are called {{revertants}}. A higher reversion rate means more mutagenic and possibly carcinogenic: 90% of substances mutagenic in the Ames test are also {{carcinogens}} in animals. Run the test yourself below!`},
     {part:P5, title:"Putting it together", v:"review", more:"review", table:TABLE, links:[ED,["Translation module","translation.html"]],
      text:`Awesome work! Substitutions change one base and can be silent, missense, or nonsense. Frameshifts insert or delete bases and scramble everything downstream. Head to the DNA Editor to make each kind yourself and complete the missions.`,
      after:`You're a mutation expert now!`}
@@ -735,12 +898,44 @@
   const nextBtn = $("nextBtn"), backBtn = $("backBtn"), bubble = $("bubble");
   window.__resolvedRef = id => mode === "learn" || !!bl[id];
   const blanksOf = st => (st.text.match(/\{\{(\w+)\}\}/g) || []).map(m => m.slice(2, -2));
-  const stepResolved = i => mode === "learn" || blanksOf(STEPS[i]).every(id => bl[id]);
+  const gates = {};
+  const gateDone = i => !STEPS[i].gate || !!gates[i];
+  const stepResolved = i => (mode === "learn" || blanksOf(STEPS[i]).every(id => bl[id])) && gateDone(i);
 
   function render(){ svg.innerHTML = SC[scene] ? SC[scene](frozen ? 0 : sceneT) : ""; }
   let last = performance.now();
   const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   function frame(now){ const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; if (!frozen && !reduced) sceneT += dt; render(); requestAnimationFrame(frame); }
+
+  /* ================= Step 6 gate: drag the new letter into the reading frame ================= */
+  (function(){
+    function svgPoint(e){
+      const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      const ctm = svg.getScreenCTM(); if (!ctm) return {x:0, y:0};
+      const p = pt.matrixTransform(ctm.inverse()); return {x:p.x, y:p.y};
+    }
+    let dragging = false, moved = false;
+    svg.addEventListener("pointerdown", e => {
+      if (scene !== "frame" || FRAME_GATE.done) return;
+      const p = svgPoint(e), home = FRAME_GATE.dragXY || FRAME_HOME;
+      if (Math.hypot(p.x - home.x, p.y - home.y) > 34) return;
+      e.preventDefault(); dragging = true; moved = false;
+      svg.setPointerCapture(e.pointerId);
+    });
+    svg.addEventListener("pointermove", e => {
+      if (!dragging) return;
+      moved = true;
+      FRAME_GATE.dragXY = svgPoint(e);
+    });
+    const finish = () => {
+      if (!dragging) return;
+      dragging = false;
+      FRAME_GATE.done = true; FRAME_GATE.dragXY = null; FRAME_GATE.doneAt = performance.now();
+      if (STEPS[idx] && STEPS[idx].gate === "frame") passGate();
+    };
+    svg.addEventListener("pointerup", finish);
+    svg.addEventListener("pointercancel", finish);
+  })();
 
   /* ================= Answers ================= */
   function lev(a, b){ const m = a.length, n = b.length, d = []; for (let i = 0; i <= m; i++) d[i] = [i]; for (let j = 0; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1)); return d[m][n]; }
@@ -775,8 +970,26 @@
   function showAfter(){ const st = STEPS[idx]; if (st.after && stepResolved(idx)){ afterEl.textContent = st.after; afterEl.hidden = false; } else afterEl.hidden = true; }
   function updateButtons(){
     const openB = mode === "test" && !!textEl.querySelector("input.blank");
-    checkRow.hidden = !openB; nextBtn.disabled = openB; backBtn.disabled = idx === 0;
+    checkRow.hidden = !openB; nextBtn.disabled = openB || !gateDone(idx); backBtn.disabled = idx === 0;
     nextBtn.textContent = idx === LAST ? "Start over" : "Next";
+  }
+  function passGate(){
+    gates[idx] = true; renderGate();
+    if (stepResolved(idx)) furthest = Math.max(furthest, idx + 1);
+    updateButtons(); renderNav(); showAfter();
+  }
+  function gateMsg(t, cls){ const m = $("gateMsg"); if (m){ m.className = "gmsg " + (cls || ""); m.innerHTML = t; } }
+  function renderGate(){
+    const g = $("gate"), st = STEPS[idx];
+    if (!g) return;
+    if (!st.gate){ g.hidden = true; g.innerHTML = ""; return; }
+    g.hidden = false;
+    const G = GATES[st.gate];
+    g.className = "gate" + (gates[idx] ? " done" : "");
+    if (gates[idx]){ g.innerHTML = `<div class="gtitle">✓ ${G.doneText}</div>`; return; }
+    if (!G.title && !G.html()){ g.hidden = true; g.innerHTML = ""; return; }
+    g.innerHTML = `<div class="gtitle">${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
+    G.wire(g);
   }
   function renderBubble(){
     const st = STEPS[idx];
@@ -810,7 +1023,7 @@
     if (res) furthest = Math.max(furthest, i + 1);
     if (changed) sceneT = 0;
     scene = st.v; frozen = !res;
-    renderBubble(); renderNav(); renderTable(); render();
+    renderBubble(); renderNav(); renderTable(); render(); renderGate();
   }
   const goTo = i => enterStep(clamp(i, 0, LAST));
   function resolvedNow(){
@@ -853,7 +1066,7 @@
       : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
     enterStep(idx, true);
   }
-  function restart(){ bl = {}; furthest = 0; enterStep(0, true); }
+  function restart(){ bl = {}; furthest = 0; for (const k in gates) delete gates[k]; FRAME_GATE.done = false; FRAME_GATE.dragXY = null; AMES_GATE.stage = 0; AMES_GATE.answer = null; enterStep(0, true); }
 
   $("learnBtn").addEventListener("click", () => setMode("learn"));
   $("testBtn").addEventListener("click", () => setMode("test"));
@@ -885,6 +1098,7 @@
   const THREE = {F:"Phe",L:"Leu",S:"Ser",Y:"Tyr","*":"Stop",C:"Cys",W:"Trp",P:"Pro",H:"His",Q:"Gln",R:"Arg",I:"Ile",M:"Met",T:"Thr",N:"Asn",K:"Lys",V:"Val",A:"Ala",D:"Asp",E:"Glu",G:"Gly"};
   const CODE = {}; { let n = 0; for (const a of B4) for (const b of B4) for (const c of B4) CODE[a + b + c] = THREE[ONE[n++]]; }
   const TORNA = {A:"U", T:"A", G:"C", C:"G"}, TODNA = {A:"T", U:"A", G:"C", C:"G"};
+  const FULLNAME = {Phe:"Phenylalanine",Leu:"Leucine",Ser:"Serine",Tyr:"Tyrosine",Stop:"Stop codon: translation ends here",Cys:"Cysteine",Trp:"Tryptophan",Pro:"Proline",His:"Histidine",Gln:"Glutamine",Arg:"Arginine",Ile:"Isoleucine",Met:"Methionine (the start codon)",Thr:"Threonine",Asn:"Asparagine",Lys:"Lysine",Val:"Valine",Ala:"Alanine",Asp:"Aspartate",Glu:"Glutamate",Gly:"Glycine"};
 
   /* The gene starts just like the one in Transcription and Translation (Met, Ala, Phe, Gly), then keeps going.
      The bases after the stop codon are "downstream" DNA that is not normally read. */
@@ -893,7 +1107,7 @@
   const translate = m => { const out = []; for (let i = 0; i + 3 <= m.length; i += 3){ const a = CODE[m.substr(i, 3)]; out.push(a); if (a === "Stop") break; } return out; };
   const ORIG_P = translate(GENE_MRNA);
 
-  let bases, sel, hist, stats, note = "", done = {};
+  let bases, sel, hist, stats, note = "", done = {}, pickedBase = null;
   const MISSIONS = [
     {id:"silent", label:"Silent", hint:"Change the third base of a codon. The Ala (GCA) and Gly (GGA) codons are good places to start."},
     {id:"missense", label:"Missense", hint:"Change the first or second base of a codon and watch one amino acid swap."},
@@ -904,7 +1118,7 @@
   ];
   let hintFor = null;
 
-  function reset(){ bases = [...ORIG].map(b => ({b, o:b})); sel = 3; hist = []; stats = {ins:0, del:0, sub:0}; note = ""; render(); }
+  function reset(){ bases = [...ORIG].map(b => ({b, o:b})); sel = 3; hist = []; stats = {ins:0, del:0, sub:0}; note = ""; pickedBase = null; render(); }
   const snap = () => { hist.push({bases:bases.map(x => ({...x})), sel, stats:{...stats}}); if (hist.length > 60) hist.shift(); };
   function undo(){ const h = hist.pop(); if (!h) return; bases = h.bases; sel = h.sel; stats = h.stats; note = ""; render(); }
   const dnaStr = () => bases.map(x => x.b).join("");
@@ -912,6 +1126,8 @@
 
   function swap(b){ if (sel == null || bases[sel].b === b) return; snap(); bases[sel].b = b; stats.sub++; note = ""; render(); }
   function insert(b){ if (sel == null) return; snap(); bases.splice(sel + 1, 0, {b, o:null}); sel = sel + 1; stats.ins++; note = ""; render(); }
+  function swapAt(i, b){ if (bases[i].b === b) return; snap(); bases[i].b = b; sel = i; stats.sub++; note = ""; render(); }
+  function insertAfter(i, b){ snap(); bases.splice(i + 1, 0, {b, o:null}); sel = i + 1; stats.ins++; note = ""; render(); }
   function del(){ if (sel == null || bases.length < 4) return; snap(); bases.splice(sel, 1); sel = Math.min(sel, bases.length - 1); stats.del++; note = ""; render(); }
   function zap(){
     const as = bases.map((x, i) => x.b === "A" && i > 2 && i < 33 ? i : -1).filter(i => i >= 0);
@@ -976,6 +1192,39 @@
 
   function toast(msg){ const t = $("edToast"); t.textContent = msg; t.hidden = false; t.classList.remove("pop"); void t.offsetWidth; t.classList.add("pop"); clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 3200); }
 
+  /* Drag a base tile from the tray onto a DNA letter (swap) or onto a gap between letters (insert).
+     A tap with nothing dragged either swaps the currently selected base, or "picks" the tile so the next tap on a letter/gap acts on it. */
+  function stripTargets(){ return [...document.querySelectorAll("#edStrip button.b, #edStrip .edgap")]; }
+  function useTile(over, b){
+    if (over.dataset.i !== undefined) swapAt(+over.dataset.i, b);
+    else if (over.dataset.after !== undefined) insertAfter(+over.dataset.after, b);
+  }
+  function wireBaseDrag(el, b){
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); pickedBase = pickedBase === b ? null : b; render(); } });
+    el.addEventListener("pointerdown", e => {
+      if (e.button > 0) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+      let moved = false, clone = null;
+      const move = ev => {
+        if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6){ moved = true; clone = el.cloneNode(true); clone.classList.add("dragging"); clone.style.width = r.width + "px"; clone.style.height = r.height + "px"; document.body.appendChild(clone); el.classList.add("lifted"); }
+        if (!clone) return;
+        clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px";
+        const targets = stripTargets(), over = targets.find(z => { const q = z.getBoundingClientRect(); return ev.clientX > q.left && ev.clientX < q.right && ev.clientY > q.top && ev.clientY < q.bottom; });
+        targets.forEach(z => z.classList.toggle("over", z === over));
+      };
+      const up = ev => {
+        document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
+        if (clone) clone.remove(); el.classList.remove("lifted");
+        const targets = stripTargets(); targets.forEach(z => z.classList.remove("over"));
+        if (!moved){ if (sel != null) swap(b); else { pickedBase = pickedBase === b ? null : b; render(); } return; }
+        const over = targets.find(z => { const q = z.getBoundingClientRect(); return ev.clientX > q.left && ev.clientX < q.right && ev.clientY > q.top && ev.clientY < q.bottom; });
+        if (over) useTile(over, b);
+      };
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+    });
+  }
+
   function render(){
     const m = mrnaStr(), P = translate(m), stopK = P.indexOf("Stop");
     const n = Math.ceil(bases.length / 3);
@@ -986,24 +1235,34 @@
       const chg = idxs.some(i => bases[i].o === null || bases[i].b !== bases[i].o);
       h += `<div class="cod${after ? " after" : ""}${chg ? " chg" : ""}"><div class="cn">${k + 1}</div><div class="bases">`;
       idxs.forEach(i => { const x = bases[i], mut = x.o === null || x.b !== x.o;
-        h += `<button class="b b${x.b}${mut ? " mut" : ""}${i === sel ? " sel" : ""}" data-i="${i}" aria-label="DNA base ${i + 1}: ${x.b}${mut ? ", mutated" : ""}">${x.b}</button>`; });
+        h += `<button class="b b${x.b}${mut ? " mut" : ""}${i === sel ? " sel" : ""}" data-i="${i}" aria-label="DNA base ${i + 1}: ${x.b}${mut ? ", mutated" : ""}">${x.b}</button>`;
+        h += `<span class="edgap" data-after="${i}" role="button" tabindex="0" aria-label="Insert a base after position ${i + 1}"></span>`; });
       h += `</div><div class="bases">`;
       idxs.forEach(i => { const u = TORNA[bases[i].b]; h += `<span class="b b${u}${bases[i].o === null || bases[i].b !== bases[i].o ? " mut" : ""}">${u}</span>`; });
       h += `</div>`;
       if (idxs.length === 3 && !after && P[k] !== undefined){
         const a = P[k], st = a === "Stop" ? "stop" : a !== ORIG_P[k] ? "diff" : "same";
-        h += `<div class="aa ${st}">${a}</div>`;
+        h += `<div class="aa ${st}" title="${FULLNAME[a] || a}">${a}</div>`;
       } else h += `<div class="aa none">${after ? "not read" : idxs.length < 3 ? "leftover" : "no stop"}</div>`;
       h += `</div>`;
     }
     $("edStrip").innerHTML = h;
-    $("edStrip").querySelectorAll("button.b").forEach(b => b.addEventListener("click", () => { sel = +b.dataset.i; render(); }));
+    $("edStrip").querySelectorAll("button.b").forEach(b => b.addEventListener("click", () => {
+      if (pickedBase){ useTile(b, pickedBase); pickedBase = null; return; }
+      sel = +b.dataset.i; render();
+    }));
+    $("edStrip").querySelectorAll(".edgap").forEach(g => g.addEventListener("click", () => {
+      if (!pickedBase){ note = "Pick a base from the tray above first, then tap a gap to insert it there."; render(); return; }
+      useTile(g, pickedBase); pickedBase = null;
+    }));
+
+    /* drag tray */
+    $("edTray").innerHTML = `<span class="lbl">Drag onto the DNA, or tap to pick:</span>` + ["A","T","G","C"].map(b => `<div class="dragbase b${b}${pickedBase === b ? " sel" : ""}" data-b="${b}" role="button" tabindex="0" aria-label="${b} base: drag onto a DNA letter to swap it, or onto a gap to insert it">${b}</div>`).join("");
+    $("edTray").querySelectorAll(".dragbase").forEach(el => wireBaseDrag(el, el.dataset.b));
 
     /* tools */
     const cur = sel != null ? bases[sel] : null;
-    $("edSel").innerHTML = cur ? `Selected: base ${sel + 1} (<b class="bt-inline b${cur.b}">${cur.b}</b> on the DNA, codon ${Math.floor(sel / 3) + 1})` : "Tap a DNA base to select it.";
-    document.querySelectorAll("[data-swap]").forEach(b => { b.disabled = !cur || cur.b === b.dataset.swap; });
-    document.querySelectorAll("[data-ins]").forEach(b => { b.disabled = !cur; });
+    $("edSel").innerHTML = cur ? `Selected: base ${sel + 1} (<b class="bt-inline b${cur.b}">${cur.b}</b> on the DNA, codon ${Math.floor(sel / 3) + 1})` : "Tap a DNA base to select it, or drag a tray base onto the DNA.";
     $("edDel").disabled = !cur || bases.length < 4;
     $("edUndo").disabled = !hist.length;
 
@@ -1011,7 +1270,7 @@
     const r = classify(), T = TYPE[r.type];
     const v = $("edVerdict"); v.className = "verdict " + T[1];
     v.innerHTML = `<div class="vbadge">${T[0]}</div>${note ? `<p class="vnote">${note}</p>` : ""}<p>${explain(r)}</p>`;
-    const chips = (arr, ref) => arr.map((a, k) => `<span class="mchip ${a === "Stop" ? "stop" : ref && a !== ref[k] ? "diff" : "same"}">${a}</span>`).join("");
+    const chips = (arr, ref) => arr.map((a, k) => `<span class="mchip ${a === "Stop" ? "stop" : ref && a !== ref[k] ? "diff" : "same"}" title="${FULLNAME[a] || a}">${a}</span>`).join("");
     $("edCompare").innerHTML = `<div class="crow"><span class="clbl">Original protein</span>${chips(ORIG_P)}</div><div class="crow"><span class="clbl">Your protein</span>${chips(P, ORIG_P)}${P.includes("Stop") ? "" : `<span class="mchip none">no stop</span>`}</div>`;
 
     /* missions */
@@ -1031,8 +1290,6 @@
     $("edHint").hidden = !hm; if (hm) $("edHint").innerHTML = `<b>Hint:</b> ${hm.hint}`;
   }
 
-  document.querySelectorAll("[data-swap]").forEach(b => b.addEventListener("click", () => swap(b.dataset.swap)));
-  document.querySelectorAll("[data-ins]").forEach(b => b.addEventListener("click", () => insert(b.dataset.ins)));
   $("edDel").addEventListener("click", del);
   $("edUndo").addEventListener("click", undo);
   $("edReset").addEventListener("click", reset);
