@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DNA Replication: Copying the Genome</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d2433; --muted:#5a6376; --page:#eef1f5; --card:#ffffff; --line:#d9dee7;
+    --accent:#3f4cc0; --accent-soft:#e7e9fb;
+    --good:#1b7f4e; --good-soft:#e1f3e8; --warn:#9a6212; --warn-soft:#fbefd9; --bad:#b83a34;
+    --more:#5b3fb0; --more-soft:#f3effd;
+    --font:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font)}
+  .wrap{max-width:1060px;margin:0 auto;padding:18px 16px 30px}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px}
+  h1{font-size:1.55rem;line-height:1.15;margin:0;letter-spacing:-0.01em}
+  .sub{color:var(--muted);font-size:.92rem;margin-top:3px}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .seg{display:inline-flex;background:#dfe4ec;border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:700 .95rem var(--font);padding:8px 18px;border-radius:999px;color:var(--muted);cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(29,36,51,.18)}
+  .ghost{border:1px solid var(--line);background:var(--card);font:700 .9rem var(--font);padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--muted)}
+  .modehint{color:var(--muted);font-size:.92rem;margin:0 0 10px}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  svg{display:block;width:100%;height:auto;font-family:var(--font)}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:8px 16px 12px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;font-style:normal;font-weight:700;font-size:.78rem}
+  .bubble-foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .bubble-foot:empty{margin-top:0}
+  .more-btn{font:700 .92rem var(--font);border-radius:999px;padding:7px 14px;cursor:pointer;border:2px solid #cbbdf2;background:var(--more-soft);color:var(--more)}
+  .overlay{position:fixed;inset:0;background:rgba(29,36,51,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+  .overlay[hidden]{display:none}
+  .panel{background:#fff;border-radius:18px;max-width:680px;width:100%;max-height:88vh;overflow:auto;padding:20px 22px;border-top:6px solid var(--more)}
+  .panel .ptag{display:inline-block;background:var(--more-soft);color:var(--more);font-weight:700;font-size:.85rem;border-radius:999px;padding:4px 12px}
+  .panel h2{margin:10px 0 8px;font-size:1.3rem}
+  .panel h3{font-size:1.02rem;margin:14px 0 4px;color:var(--more)}
+  .panel p{margin:0 0 8px;line-height:1.6}
+  .panel .close{margin-top:10px}
+  .polslide{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .polslide input[type=range]{flex:1}
+  .polslide .plbl{font-size:.85rem;font-weight:700;color:var(--muted);white-space:nowrap}
+
+  .bubble{position:relative;margin-top:18px;background:var(--card);border:2px solid var(--accent);border-radius:16px;padding:16px 20px 16px}
+  .bubble::before{content:"";position:absolute;top:-11px;left:52px;width:18px;height:18px;background:var(--card);border-left:2px solid var(--accent);border-top:2px solid var(--accent);transform:rotate(45deg)}
+  .bubble.pop{animation:pop .32s cubic-bezier(.2,.9,.3,1.25)}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .stepno{font-size:.88rem;color:var(--accent);font-weight:700}
+  .title{font-size:1.2rem;font-weight:700;margin:2px 0 8px}
+  .text{font-size:1.06rem;line-height:1.65;margin:0;max-width:78ch}
+  .after{margin:10px 0 0;font-weight:700;color:var(--accent)}
+  .term{background:var(--accent-soft);color:#2c3796;padding:1px 6px;border-radius:6px;white-space:nowrap}
+  .term.correct{background:var(--good-soft);color:var(--good)}
+  .term.revealed{background:var(--warn-soft);color:var(--warn)}
+  input.blank{font:700 1rem var(--font);border:0;border-bottom:2px solid var(--accent);background:#f3f4fd;padding:2px 6px;border-radius:6px 6px 0 0;color:var(--ink);min-width:3em;max-width:100%}
+  input.blank:focus{outline:2px solid var(--accent);outline-offset:1px;background:var(--accent-soft)}
+  input.blank.wrong{border-bottom-color:var(--bad);background:#fbe8e7;animation:shake .32s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .check-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+  .check-row[hidden]{display:none}
+  .btn{font:700 .96rem var(--font);border-radius:999px;padding:9px 20px;cursor:pointer;border:2px solid var(--accent)}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.secondary{background:#fff;color:var(--accent)}
+  .btn:disabled{opacity:.38;cursor:not-allowed}
+  .feedback{font-weight:700;font-size:.96rem;margin-top:10px;min-height:1.2em}
+  .feedback.good{color:var(--good)} .feedback.bad{color:var(--bad)} .feedback.warn{color:var(--warn)}
+  nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex:1}
+  .dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:#fff;font:700 .8rem var(--font);color:var(--muted);cursor:pointer;padding:0}
+  .dot.seen{border-color:var(--accent);color:var(--accent)}
+  .dot.current{background:var(--accent);border-color:var(--accent);color:#fff}
+  .dot:disabled{opacity:.35;cursor:not-allowed}
+  .navbtns{display:flex;gap:8px}
+  [hidden]{display:none !important}
+  button:focus-visible{outline:3px solid #f2b134;outline-offset:2px}
+  @media (max-width:640px){
+    h1{font-size:1.3rem}
+    .dot{width:24px;height:24px;font-size:.7rem}
+    .text{font-size:1rem}
+    .bubble{padding:14px 14px}
+  }
+  @media (prefers-reduced-motion:reduce){ .bubble.pop,input.blank.wrong{animation:none} }
+
+  .backlink{display:inline-block;font-size:.88rem;font-weight:700;color:var(--accent);text-decoration:none;margin-bottom:4px}
+  .backlink::before{content:"\2190  "}
+
+  /* SVG text */
+  .bt{font-size:14px;font-weight:700;text-anchor:middle}
+  .prime{font-size:14px;font-weight:700;fill:#5a6376;text-anchor:middle}
+  .pill{font-size:12px;font-weight:700;fill:#fff;text-anchor:middle}
+  .lbl{font-size:13px;font-weight:700;fill:#343b4a}
+  .small{font-size:12px;font-weight:700;fill:#4a5263}
+  .mid{text-anchor:middle} .end{text-anchor:end}
+  .region{font-size:16px;font-weight:700;fill:#6b5a92;text-anchor:middle}
+
+  /* ===== Study helpers (hint, checkmarks, bridge) ===== */
+  input.blank{border:2px solid var(--accent);border-bottom-width:3px;background:#fff7d6;border-radius:8px;padding:3px 8px;animation:blankpulse 1.8s ease-in-out infinite}
+  input.blank:focus{animation:none;background:#fff}
+  input.blank::placeholder{color:#9a8a55;letter-spacing:.12em;font-weight:700}
+  @keyframes blankpulse{0%,100%{box-shadow:0 0 0 0 rgba(63,76,192,.0)}50%{box-shadow:0 0 0 5px rgba(63,76,192,.18)}}
+  .btn.hint{border-color:#e5c56a;background:#fff8e6;color:#8a5a00}
+  .dot{position:relative}
+  body:has(#testBtn[aria-pressed="true"]) .dot.seen::after{content:"\2713";position:absolute;right:-5px;top:-6px;width:14px;height:14px;border-radius:50%;background:var(--good);color:#fff;font-size:.56rem;line-height:14px;text-align:center;box-shadow:0 0 0 2px var(--page)}
+  .bridge{margin-top:14px;border:2px dashed #b9a6ee;background:var(--more-soft);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .bridge b{color:var(--more);margin-right:6px}
+  .bridge[hidden]{display:none}
+  .donetoast{position:fixed;left:50%;top:16px;transform:translateX(-50%);background:var(--good);color:#fff;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 6px 18px rgba(29,36,51,.25);z-index:30}
+  @media (prefers-reduced-motion:reduce){ input.blank{animation:none} }
+
+  /* ===== Hands-on gates ===== */
+  .gate{margin-top:14px;border:2px solid #f0d99a;background:#fffbef;border-radius:14px;padding:12px 14px;display:grid;gap:10px}
+  .gate.done{border-color:#9fd3b5;background:var(--good-soft)}
+  .gate .gtitle{font-weight:700;color:#8a5a00}
+  .gate.done .gtitle{color:var(--good)}
+  .gate .gmsg{font-weight:700;min-height:1.2em;font-size:.95rem}
+  .gate .gmsg.bad{color:var(--bad)} .gate .gmsg.good{color:var(--good)}
+
+  /* Meselson-Stahl tubes */
+  .mstubes{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+  .mscol{display:grid;gap:6px;justify-items:center}
+  .mscol .mslbl{font-size:.8rem;font-weight:700;color:var(--muted)}
+  .mstube{position:relative;width:44px;height:92px;border:2px solid #9aa3b5;border-radius:0 0 10px 10px;background:#f4f6f9}
+  .msband{position:absolute;left:3px;right:3px;height:9px;border-radius:4px}
+  .msband.heavy{background:#343b4a}
+  .msband.hybrid{background:#8e6fd8}
+  .msband.light{background:#f2b134}
+  .mschoices{display:flex;gap:10px;flex-wrap:wrap}
+  .mschoice{border:2px solid var(--line);border-radius:14px;padding:10px 12px;background:#fff;cursor:pointer;display:grid;gap:8px;justify-items:center;text-align:center}
+  .mschoice:hover{border-color:var(--accent)}
+  .mschoice.picked{border-color:var(--accent);background:var(--accent-soft)}
+  .mschoice .mcname{font-weight:700;font-size:.9rem}
+  .msactual{border:2px solid var(--good);background:var(--good-soft);border-radius:14px;padding:10px 12px;display:grid;gap:8px;justify-items:center}
+  .msactual .mcname{font-weight:700;font-size:.9rem;color:var(--good)}
+
+  /* Two-column comparison boxes (reused text-embedded pattern) */
+  .cmpwrap{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .cmpbox{flex:1;min-width:230px;border-radius:14px;padding:10px 14px}
+
+  /* Next-module callout on the last step */
+  .bridge.callout{border:2px solid var(--more);background:var(--more-soft);padding:16px 20px;display:grid;gap:10px;justify-items:start}
+  .bridge.callout b{font-size:1.1rem}
+  .bridge.callout p{margin:0;color:var(--ink);line-height:1.55;max-width:70ch}
+  .bridge.callout .links{display:flex;flex-wrap:wrap;gap:8px}
+  .bridge.callout a.go{background:var(--more);border-color:var(--more);color:#fff;font-size:1.02rem}
+  .bridge a.btn{text-decoration:none;display:inline-block}
+  .modehint:empty{display:none}
+</style>
+</head>
+<body data-next-label="Ready to see how DNA gets read?" data-next-text="Once the genome is copied, cells use one strand at a time as instructions. Transcription is the next step: turning a gene's DNA sequence into mRNA." data-next='[["Head to the Transcription Module →", "transcription.html"], ["Pre-transcriptional control", "pretranscriptional-control.html"], ["Mutations", "mutations.html"]]'>
+<div class="wrap">
+  <header>
+    <div>
+      <a class="backlink" href="index.html">All modules</a>
+      <h1>DNA Replication: Copying the Genome</h1>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="learnBtn" aria-pressed="true">Learn</button>
+        <button id="testBtn" aria-pressed="false">Test</button>
+      </div>
+      <button class="ghost" id="restartBtn">Restart</button>
+    </div>
+  </header>
+  <p class="modehint" id="modeHint"></p>
+
+  <div class="stage">
+    <svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="Animated diagram of DNA replication"></svg>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <section class="bubble" id="bubble" aria-live="polite">
+    <div class="stepno" id="stepNo"></div>
+    <div class="title" id="stepTitle"></div>
+    <p class="text" id="stepText"></p>
+    <p class="after" id="stepAfter" hidden></p>
+    <div class="polslide" id="polSlide" hidden></div>
+    <div class="gate" id="gate" hidden></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="check-row" id="checkRow" hidden>
+      <button class="btn primary" id="checkBtn">Check</button>
+      <button class="btn secondary" id="moveOnBtn">Move on</button>
+    </div>
+    <div class="bubble-foot" id="bubbleFoot"></div>
+  </section>
+
+  <nav>
+    <div class="navbtns"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="replayBtn">Replay</button></div>
+    <div class="dots" id="dots"></div>
+    <div class="navbtns"><button class="btn primary" id="nextBtn">Next</button></div>
+  </nav>
+</div>
+
+<div class="overlay" id="moreOverlay" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
+    <span class="ptag">Learn more: just for the curious, not on the exam</span>
+    <h2 id="moreTitle"></h2>
+    <div id="moreBody"></div>
+    <button class="btn primary close" id="moreClose">Back to the module</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- Sequence and layout ---------- */
+  const CODING = "GTATAACGCATGGCATTCGGACGTAACTAAGCGCAT";
+  const COMP = {A:"T", T:"A", G:"C", C:"G"};
+  const TEMPLATE = CODING.split("").map(b => COMP[b]).join("");
+  const N = CODING.length;
+  const ORIGIN = 0, END = N - 6;             // fork travels from the origin to END; a few bases beyond stay unreplicated (more genome to go)
+  const FL = 6;                              // Okazaki fragment length, in base-index units
+  const X0 = 70, DX = 24;
+  const X = i => X0 + i * DX;
+
+  const BASE = {A:["#2f9e63","#fff"], T:["#d9534f","#fff"], G:["#f2b134","#3b2a00"], C:["#3b7dd8","#fff"]};
+
+  /* ---------- Helpers ---------- */
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const lerp = (a,b,t) => a + (b - a) * t;
+  const smooth = t => { t = clamp(t,0,1); return t * t * (3 - 2 * t); };
+  const seg = (t,a,b) => clamp((t - a) / (b - a), 0, 1);
+  const f1 = v => v.toFixed(1);
+  const f3 = v => v.toFixed(3);
+
+  /* ---------- Blanks ---------- */
+  const BL = window.__BL = {
+    semiconservative: {show:"semi-conservative", ans:["semiconservative","semiconservativereplication"], fuzzy:true},
+    origin:    {show:"origin of replication", ans:["originofreplication","origin","ori"], fuzzy:true},
+    helicase:  {show:"DNA helicase", ans:["dnahelicase","helicase"], fuzzy:true},
+    primase:   {show:"primase", ans:["primase","rnaprimase"], fuzzy:true},
+    okazaki:   {show:"Okazaki fragments", ans:["okazakifragments","okazaki"], fuzzy:true},
+    ligase:    {show:"DNA ligase", ans:["dnaligase","ligase"], fuzzy:true},
+    multiple:  {show:"multiple", ans:["multiple","many","several"], fuzzy:true}
+  };
+
+  /* ---------- Learn more ---------- */
+  const MORE = {
+    msExperiment:{title:"How Meselson and Stahl actually did it", html:`<p>In 1958, Matthew Meselson and Franklin Stahl grew <i>E. coli</i> for many generations in a medium containing only "heavy" nitrogen (<sup>15</sup>N) so that every base in every DNA strand incorporated the heavier isotope. They then switched the bacteria to ordinary "light" nitrogen (<sup>14</sup>N) medium and let them divide.</p><p>After each generation, they spun a sample of DNA in a centrifuge tube filled with a dense salt solution (cesium chloride). DNA of different densities settles at different heights in the tube: heavier DNA sinks lower, lighter DNA stays higher. This technique, <b>density gradient centrifugation</b>, let them "weigh" the DNA without ever looking at a single strand directly.</p><p>Their results ruled out the conservative model immediately (there was never a heavy band left over after one generation) and, one generation later, ruled out the dispersive model too, since two distinct bands appeared instead of one steadily-lightening smear.</p>`},
+    originSequence:{title:"What makes a stretch of DNA an origin?", html:`<p>An origin of replication is usually rich in adenine and thymine base pairs. Since A-T pairs are held by only two hydrogen bonds (versus three for G-C), an A-T-rich stretch takes less energy to pull apart, which is exactly what helicase needs to do to get started.</p><p>In bacteria like <i>E. coli</i>, specific initiator proteins recognize the origin sequence directly and recruit helicase to it. In eukaryotes, origins are chosen less by exact sequence and more by which parts of the chromosome are loosely packaged (open chromatin) and accessible at a given time, which is part of why eukaryotic origins are harder to pin down to one exact sequence.</p>`},
+    topoisomerase:{title:"The tangle helicase leaves behind", html:`<p>DNA is a coiled helix, not a loose noodle, so prying two strands apart at the fork twists the DNA ahead of it tighter, a problem called <b>supercoiling</b>. Left unchecked, this buildup of twisting strain would eventually stop helicase in its tracks, like trying to unscrew a lid that's wound itself shut.</p><p><b>Topoisomerase</b> (called DNA gyrase in many bacteria) relieves that strain by cutting one or both DNA strands ahead of the fork, letting the helix swivel to release tension, then resealing the cut. It's a repair-and-release job happening continuously just ahead of every moving replication fork.</p>`},
+    whyPrimer:{title:"Why can't DNA polymerase just start on its own?", html:`<p>DNA polymerase can only add a new nucleotide onto an existing 3'-OH (hydroxyl) end; it has no ability to link the very first two free nucleotides together from scratch. That means every new strand needs a short starter piece already in place before DNA polymerase can take over.</p><p><b>Primase</b> is a specialized RNA polymerase that solves this by laying down a short RNA primer (about 5 to 10 nucleotides) that DNA polymerase can then extend. Later, a different enzyme activity removes each RNA primer and fills the resulting gap with DNA, which is why the finished molecule contains no leftover RNA at all.</p>`},
+    laggingDetail:{title:"Why one strand has to be built backward", html:`<p>The two parental strands are antiparallel, but DNA polymerase can only build a new strand 5' to 3'. At a fork moving in one direction, that geometry works out perfectly for one template (the leading strand can be built continuously, chasing the fork) but not for the other.</p><p>For the lagging strand's template, the only way to build 5' to 3' is to work <i>away</i> from the fork, back toward the previous fragment. So the cell repeats a short cycle over and over as the fork opens up new template: lay a new RNA primer close to the fork, extend it backward with DNA polymerase until it bumps into the previous fragment, then start again on a fresh stretch of exposed template. Each of these short pieces is an <b>Okazaki fragment</b>, named for Reiji and Tsuneko Okazaki, who first detected them in the 1960s.</p>`},
+    ligaseDetail:{title:"Finishing the lagging strand", html:`<p>Once an Okazaki fragment's DNA polymerase runs into the RNA primer ahead of it, a different enzyme activity chews out that RNA primer and fills the gap with DNA nucleotides. That leaves two DNA pieces sitting right next to each other with a nick, a broken spot in the sugar-phosphate backbone, but no bond connecting them yet.</p><p><b>DNA ligase</b> seals that nick by forming the final phosphodiester bond between the two fragments, turning a row of separate pieces into one continuous strand. Ligase is the same general type of enzyme used in molecular biology labs to paste DNA fragments together when building recombinant DNA.</p>`},
+    originsCompare:{title:"Why eukaryotes need so many origins", html:`<p>A bacterial chromosome is small (a few million base pairs) and circular, so a single origin with two forks racing away from each other in opposite directions can copy the whole thing quickly, at roughly 1000 nucleotides per second per fork.</p><p>A human chromosome can be hundreds of millions of base pairs long, and each fork moves much slower in eukaryotic cells (roughly 50 nucleotides per second). If eukaryotes relied on just one origin per chromosome, replicating a single chromosome could take weeks. Instead, hundreds to thousands of origins fire in a coordinated, time-staggered pattern across the genome during S phase, each opening its own small replication bubble; these bubbles expand and eventually merge as neighboring forks meet, finishing the whole chromosome in only a few hours.</p>`},
+    semiconservativeMore:{title:"Why \"semi-conservative\" matters beyond the exam", html:`<p>Because each new DNA molecule keeps one original strand, any copying error in the other strand is checked against a still-correct template, which is part of why DNA replication is so much more accurate than it would be if both strands were built fresh at once (the dispersive model) or thrown away and rebuilt as loose fragments.</p><p>This one-old-one-new pattern is also the reason repair enzymes can often tell which strand is the "trusted" old one and which is the newly made strand that's more likely to contain a mistake, at least briefly after replication, before the new strand is chemically marked as mature.</p>`}
+  };
+  function openMore(key){
+    const m = MORE[key]; if (!m) return;
+    $("moreTitle").textContent = m.title; $("moreBody").innerHTML = m.html;
+    $("moreOverlay").hidden = false; $("moreClose").focus();
+  }
+  function closeMore(){ $("moreOverlay").hidden = true; }
+
+  /* ---------- Scene states ---------- */
+  const B = {a:ORIGIN, gene:1, origins:0, originLabel:0, helicase:0, leadOn:0, lagOn:0, zoom:0};
+  const S = [];
+  S[0] = {...B};
+  S[1] = {...S[0], originLabel:1};
+  S[2] = {...S[1], a:8, helicase:1};
+  S[3] = {...S[2], a:16, leadOn:1};
+  S[4] = {...S[3], a:24, lagOn:1};
+  S[5] = {...S[4], a:END};
+  S[6] = {...S[5]};
+  S[7] = {...S[6], gene:0, origins:1};
+  S[8] = {...S[6]};
+
+  const STEPS = [
+    {title:"Copying the genome", state:S[0], gate:"msmodel", more:"msExperiment",
+     text:`Before a cell divides, it must copy its entire genome so each daughter cell gets a full set of instructions. Each new DNA molecule ends up with one original (old) strand and one brand-new strand, a pattern called {{semiconservative}} replication. Try the activity below: it's exactly how scientists first proved this.`},
+    {title:"Finding the origin", state:S[1], more:"originSequence",
+     text:`Replication doesn't start just anywhere. It begins at a specific DNA sequence called the {{origin}} of replication. In real DNA, two replication forks usually form here and travel in opposite directions at once (this diagram simplifies things by following just one fork moving to the right).`},
+    {title:"Unwinding the double helix", state:S[2], more:"topoisomerase",
+     text:`{{helicase}} arrives at the origin and pries the two strands apart, breaking the hydrogen bonds between base pairs. Ahead of the fork, an enzyme called topoisomerase relieves the twisting strain this creates, so the helix can keep unwinding smoothly.`},
+    {title:"The leading strand", state:S[3], more:"whyPrimer",
+     text:`DNA polymerase can't start a new strand from scratch, so {{primase}} lays down a short RNA primer once, right at the fork. From there, DNA polymerase builds the new strand continuously, adding nucleotides 5' to 3' as it chases the fork down the template.`},
+    {title:"The lagging strand", state:S[4], more:"laggingDetail",
+     text:`The other template strand runs the opposite direction, so DNA polymerase can't simply chase the fork here. Instead, primase lays a new primer every time enough template is exposed, and each short new piece is built backward, away from the fork. These short pieces are called {{okazaki}}.`},
+    {title:"Sealing the gaps", state:S[5], more:"ligaseDetail",
+     text:`Once the fork finishes, each RNA primer on the lagging strand is chewed out and replaced with DNA, leaving a small nick between neighboring fragments. {{ligase}} seals each nick, joining every fragment into one continuous new strand.`},
+    {title:"Leading vs. lagging, side by side", state:S[6],
+     text:`Both new strands are built by the same DNA polymerase enzyme, reading a template 3' to 5' and building 5' to 3', but the fork's direction makes the two jobs look completely different.<div class="cmpwrap"><div class="cmpbox" style="background:#e1f3e8;border:2px solid #1b7f4e"><b style="color:#1b7f4e">Leading strand</b><br>Built continuously, in one long piece, chasing the fork. Needs only <b>one</b> RNA primer, right at the start.</div><div class="cmpbox" style="background:#fbe8e7;border:2px solid #b83a34"><b style="color:#b83a34">Lagging strand</b><br>Built in short, separate Okazaki fragments, moving away from the fork. Needs a <b>new</b> primer for every fragment, later removed and sealed by ligase.</div></div>`},
+    {title:"How many origins?", state:S[7], more:"originsCompare",
+     text:`A small circular bacterial chromosome only needs a single origin. Large linear eukaryotic chromosomes use {{multiple}} origins firing at once, so the whole chromosome finishes in a reasonable time.`},
+    {title:"Putting it all together", state:S[8], slider:true, sliderRange:[ORIGIN, END], more:"semiconservativeMore",
+     text:`Drag the slider below to replay the whole fork yourself: watch helicase open the helix, the leading strand build in one continuous piece, and the lagging strand fill in as separate Okazaki fragments that finally get sealed together by ligase.`,
+     after:`Every new DNA molecule: one old strand, one new strand. That's semi-conservative replication.`}
+  ];
+  const LAST = STEPS.length - 1;
+
+  /* ---------- App state ---------- */
+  let mode = "learn", idx = 0, furthest = 0;
+  let bl = {};
+  let cur = {...S[0]}, tw = null, dirty = true;
+  const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const $ = id => document.getElementById(id);
+  const svg = $("scene"), stage = svg.parentNode;
+  const textEl = $("stepText"), afterEl = $("stepAfter"), fb = $("feedback"), checkRow = $("checkRow");
+  const nextBtn = $("nextBtn"), backBtn = $("backBtn"), replayBtn = $("replayBtn"), bubble = $("bubble");
+
+  const resolved = id => mode === "learn" || !!bl[id];
+  const stepBlanks = i => (STEPS[i].text.match(/\{\{(\w+)\}\}/g) || []).map(m => m.slice(2, -2));
+  const stepResolved = i => (mode === "learn" || stepBlanks(i).every(id => bl[id])) && gateDone(i);
+
+  /* ================= Hands-on gates ================= */
+  const gates = {};
+  const gateDone = i => !STEPS[i].gate || !!gates[i];
+  function passGate(){ gates[idx] = true; renderGate(); if (stepResolved(idx)) resolvedNow(); else updateButtons(); }
+  function gateMsg(t, cls){ const m = document.getElementById("gateMsg"); if (m){ m.className = "gmsg " + (cls || ""); m.innerHTML = t; } }
+  function renderGate(){
+    const g = document.getElementById("gate"), st = STEPS[idx];
+    if (!g) return;
+    if (!st.gate){ g.hidden = true; g.innerHTML = ""; return; }
+    g.hidden = false;
+    const G = GATES[st.gate];
+    g.className = "gate" + (gates[idx] ? " done" : "");
+    if (gates[idx]){ g.innerHTML = `<div class="gtitle">✓ ${G.doneText}</div>`; return; }
+    g.innerHTML = `<div class="gtitle">${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
+    G.wire(g);
+  }
+  function tube(bands){
+    return `<div class="mstube">${bands.map(b => `<div class="msband ${b.cls}" style="top:${b.top}px"></div>`).join("")}</div>`;
+  }
+  const GATES = {
+    msmodel:{
+      title:"Which model matches the real Meselson-Stahl result?",
+      doneText:"Semi-conservative replication: exactly what Meselson and Stahl found.",
+      html:() => {
+        const models = [
+          {key:"conservative", name:"Conservative", g1:[{cls:"heavy",top:68},{cls:"light",top:6}], g2:[{cls:"heavy",top:68},{cls:"light",top:6}]},
+          {key:"semiconservative", name:"Semi-conservative", g1:[{cls:"hybrid",top:34}], g2:[{cls:"hybrid",top:34},{cls:"light",top:6}]},
+          {key:"dispersive", name:"Dispersive", g1:[{cls:"hybrid",top:34}], g2:[{cls:"light",top:18}]}
+        ];
+        let h = `<div class="msactual"><span class="mcname">Actual result</span><div class="mstubes">
+          <div class="mscol"><span class="mslbl">Generation 1</span>${tube([{cls:"hybrid",top:34}])}</div>
+          <div class="mscol"><span class="mslbl">Generation 2</span>${tube([{cls:"hybrid",top:34},{cls:"light",top:6}])}</div>
+        </div></div>`;
+        h += `<div class="mschoices">` + models.map(m => `<div class="mschoice" data-model="${m.key}">
+          <span class="mcname">${m.name}</span>
+          <div class="mstubes">
+            <div class="mscol"><span class="mslbl">Gen 1</span>${tube(m.g1)}</div>
+            <div class="mscol"><span class="mslbl">Gen 2</span>${tube(m.g2)}</div>
+          </div>
+        </div>`).join("") + `</div>`;
+        return h;
+      },
+      wire:g => {
+        g.querySelectorAll("[data-model]").forEach(c => c.addEventListener("click", () => {
+          g.querySelectorAll("[data-model]").forEach(x => x.classList.remove("picked"));
+          c.classList.add("picked");
+          const key = c.dataset.model;
+          if (key === "semiconservative"){ gateMsg("Correct! One hybrid band in Generation 1, then a hybrid band plus a light band in Generation 2, exactly matches each new molecule keeping one old strand and one new strand.", "good"); setTimeout(passGate, 900); }
+          else if (key === "conservative"){ gateMsg("Not quite: conservative predicts a heavy band AND a light band appear immediately in Generation 1, but only one (hybrid) band showed up.", "bad"); }
+          else { gateMsg("Not quite: dispersive predicts a single band that keeps drifting lighter each generation, but Generation 2 clearly shows two separate bands.", "bad"); }
+        }));
+        gateMsg("Compare each model's predicted bands to the actual result above, then click the model that matches.", "");
+      }
+    }
+  };
+
+  const prevState = i => (i > 0 ? STEPS[i-1].state : STEPS[i].state);
+
+  /* ---------- Tweening ---------- */
+  function durFor(from, to){
+    const da = Math.abs(to.a - from.a);
+    let d = Math.max(700, da * 200);
+    if (Math.abs(to.helicase - from.helicase) > 0.5) d = Math.max(d, 1000);
+    if (Math.abs(to.gene - from.gene) > 0.5) d = Math.max(d, 900);
+    return reduced ? d * 0.35 : d;
+  }
+  function animateTo(target){ tw = {from:{...cur}, to:{...target}, t0:performance.now(), dur:durFor(cur, target)}; }
+  function stepTween(now){
+    if (!tw) return false;
+    const p = clamp((now - tw.t0) / tw.dur, 0, 1);
+    for (const k in tw.to) cur[k] = lerp(tw.from[k], tw.to[k], smooth(p));
+    if (p >= 1) tw = null;
+    return true;
+  }
+
+  /* ---------- Drawing ---------- */
+  function tile(x, y, b, op){
+    const c = BASE[b];
+    const o = op === undefined ? "" : ` opacity="${f3(op)}"`;
+    return `<g${o}><rect x="${f1(x-11.5)}" y="${f1(y)}" width="23" height="26" rx="5" fill="${c[0]}"/><text x="${f1(x)}" y="${f1(y+18)}" class="bt" fill="${c[1]}">${b}</text></g>`;
+  }
+  function enzymeIcon(cx, cy, color, dark, label, op){
+    return `<g opacity="${f3(op)}"><ellipse cx="${f1(cx)}" cy="${f1(cy+13)}" rx="30" ry="24" fill="${color}22" stroke="${color}" stroke-width="2"/>`
+      + `<path d="M${f1(cx-18)},${f1(cy+3)} Q${f1(cx-23)},${f1(cy-11)} ${f1(cx-7)},${f1(cy-15)} Q${f1(cx+6)},${f1(cy-18)} ${f1(cx+16)},${f1(cy-10)} Q${f1(cx+25)},${f1(cy-2)} ${f1(cx+19)},${f1(cy+9)} Q${f1(cx+11)},${f1(cy+19)} ${f1(cx-2)},${f1(cy+17)} Q${f1(cx-14)},${f1(cy+16)} ${f1(cx-18)},${f1(cy+3)} Z" fill="${color}" stroke="${dark}" stroke-width="2"/>`
+      + `<rect x="${f1(cx-52)}" y="${f1(cy-42)}" width="104" height="22" rx="11" fill="${dark}"/><text x="${f1(cx)}" y="${f1(cy-27)}" class="pill">${label}</text></g>`;
+  }
+  function forkSVG(s){
+    const midY = 272;
+    const sep = i => smooth(clamp((s.a - i) / 4, 0, 1));
+    const topY = i => midY - 20 - 88 * sep(i);
+    const botY = i => midY + 20 + 88 * sep(i);
+    const newLeadY = i => botY(i) + 26;
+    const newLagY = i => topY(i) - 26;
+    const path = fn => { let d = ""; for (let u = 0; u <= N - 1; u += 0.2){ d += (d ? "L" : "M") + f1(X0 + u * DX) + "," + f1(fn(u)); } return d; };
+    const pathRange = (fn, a, b) => { let d = ""; for (let u = a; u <= b + 0.001; u += 0.2){ d += (d ? "L" : "M") + f1(X0 + u * DX) + "," + f1(fn(u)); } return d; };
+    let o = "";
+    // parental backbones (continuous throughout)
+    o += `<path d="${path(topY)}" fill="none" stroke="#64748b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    o += `<path d="${path(botY)}" fill="none" stroke="#0f766e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    for (let i = 0; i < N; i++){ o += tile(X(i), topY(i), CODING[i]); o += tile(X(i), botY(i), TEMPLATE[i]); }
+    o += `<text x="${X0-30}" y="${f1(topY(0)+18)}" class="prime">5'</text><text x="${X(N-1)+26}" y="${f1(topY(N-1)+18)}" class="prime">3'</text>`;
+    o += `<text x="${X0-30}" y="${f1(botY(0)+18)}" class="prime">3'</text><text x="${X(N-1)+26}" y="${f1(botY(N-1)+18)}" class="prime">5'</text>`;
+
+    if (s.originLabel > 0.01){
+      o += `<g opacity="${f3(s.originLabel)}"><path d="M${X(0)},${f1(midY-64)} v-14" stroke="#e0b45c" stroke-width="3"/><rect x="${X(0)-58}" y="${f1(midY-96)}" width="116" height="26" rx="13" fill="#fbe3b5" stroke="#e0b45c" stroke-width="2"/><text x="${X(0)}" y="${f1(midY-78)}" class="small mid">${resolved("origin") ? "Origin of replication" : "?"}</text></g>`;
+    }
+
+    const sealed = s.a >= END - 0.4;
+    // leading strand: one continuous new piece from ORIGIN to current fork position
+    if (s.leadOn > 0.01){
+      const lim = clamp(s.a, ORIGIN, END);
+      if (lim > ORIGIN + 0.05) o += `<path d="${pathRange(newLeadY, ORIGIN, lim)}" fill="none" stroke="#2f9e63" stroke-width="4" stroke-linecap="round" opacity="${f3(s.leadOn)}"/>`;
+      for (let i = 0; i <= Math.floor(lim); i++) o += tile(X(i), newLeadY(i), CODING[i], s.leadOn);
+    }
+    // lagging strand: fragments, gaps visible until sealed
+    if (s.lagOn > 0.01){
+      const lim = clamp(s.a, ORIGIN, END);
+      const nFrag = Math.ceil(lim / FL) || 0;
+      let curFragStart = null;
+      for (let k = 0; k < nFrag; k++){
+        const segStart = k * FL, segEnd = Math.min((k + 1) * FL, lim);
+        if (segEnd - segStart < 0.05) continue;
+        o += `<path d="${pathRange(newLagY, segStart, segEnd)}" fill="none" stroke="#c9532f" stroke-width="4" stroke-linecap="round" opacity="${f3(s.lagOn)}"/>`;
+        for (let i = Math.ceil(segStart); i <= Math.floor(segEnd); i++) o += tile(X(i), newLagY(i), TEMPLATE[i] === "A" ? "T" : TEMPLATE[i] === "T" ? "A" : TEMPLATE[i] === "G" ? "C" : "G", s.lagOn);
+        if (!sealed) o += `<circle cx="${f1(X(segStart)+6)}" cy="${f1(newLagY(segStart)+13)}" r="4" fill="none" stroke="#e8744f" stroke-width="2" opacity="${f3(s.lagOn)}"/>`;
+        if (segEnd < segStart + FL - 0.05) curFragStart = segStart;
+      }
+      if (sealed && nFrag > 0) o += `<path d="${pathRange(newLagY, 0, lim)}" fill="none" stroke="#c9532f" stroke-width="2" stroke-dasharray="1 5" opacity="${f3(s.lagOn*0.5)}"/>`;
+      if (!sealed && curFragStart !== null){
+        o += enzymeIcon(X(curFragStart), newLagY(curFragStart) - 30, "#8e5bd0", "#5b3fb0", "Primase", s.lagOn);
+      }
+      if (sealed) o += `<text x="${X(lim/2)}" y="${f1(newLagY(0)-30)}" class="small mid" fill="#1b7f4e">DNA ligase sealed every gap</text>`;
+    }
+    // helicase + leading polymerase at the fork tip
+    if (s.helicase > 0.01){
+      o += enzymeIcon(X(s.a + 1.6), midY, "#3b7dd8", "#1f4e8c", "DNA helicase", s.helicase);
+    }
+    if (s.leadOn > 0.01 && s.a < END - 0.1){
+      const lp = clamp(s.a - 6, ORIGIN, END);
+      o += enzymeIcon(X(lp), newLeadY(lp), "#2f9e63", "#1b7f4e", "DNA polymerase", s.leadOn);
+    }
+    return o;
+  }
+
+  function originsSVG(){
+    const card = (x, y, w, h, fill, stroke) => `<rect x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" rx="18" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>`;
+    let o = `<text x="500" y="34" class="region mid" fill="#1d2433">One origin, or many?</text>`;
+    o += card(250, 210, 420, 300, "#fbe3b5", "#e0b45c");
+    o += `<text x="250" y="90" class="small mid" font-weight="700">Prokaryotes (e.g., E. coli)</text>`;
+    o += `<circle cx="250" cy="200" r="70" fill="none" stroke="#5d7f50" stroke-width="6"/>`;
+    o += `<circle cx="250" cy="130" r="5" fill="#3f4cc0"/><text x="250" y="115" class="small mid">origin</text>`;
+    o += `<path d="M250,130 q-40,20 -55,60" fill="none" stroke="#e8744f" stroke-width="3" marker-end="url(#dh)"/>`;
+    o += `<path d="M250,130 q40,20 55,60" fill="none" stroke="#e8744f" stroke-width="3" marker-end="url(#dh)"/>`;
+    o += `<text x="250" y="318" class="small mid">Single origin → one bubble, two forks</text>`;
+    o += `<text x="250" y="336" class="small mid">Fast: ~1000 nt/sec per fork</text>`;
+    o += `<text x="250" y="354" class="small mid">Small, circular chromosome</text>`;
+    o += card(750, 210, 420, 300, "#d6efdf", "#7cc19a");
+    o += `<text x="750" y="90" class="small mid" font-weight="700">Eukaryotes (e.g., humans)</text>`;
+    o += `<line x1="600" y1="200" x2="900" y2="200" stroke="#5d7f50" stroke-width="8" stroke-linecap="round"/>`;
+    [640, 720, 800, 860].forEach(x => { o += `<circle cx="${x}" cy="200" r="5" fill="#3f4cc0"/><path d="M${x},200 q-14,16 -18,30" fill="none" stroke="#e8744f" stroke-width="2.5" marker-end="url(#dh)"/><path d="M${x},200 q14,16 18,30" fill="none" stroke="#e8744f" stroke-width="2.5" marker-end="url(#dh)"/>`; });
+    o += `<text x="750" y="318" class="small mid">${resolved("multiple") ? "Multiple" : "?"} origins → many bubbles merge</text>`;
+    o += `<text x="750" y="336" class="small mid">Slower per fork: ~50 nt/sec</text>`;
+    o += `<text x="750" y="354" class="small mid">Large, linear chromosomes</text>`;
+    return o;
+  }
+
+  const DEFS = `<defs><marker id="dh" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#e8744f"/></marker></defs>`;
+
+  function render(){
+    const narrow = stage.clientWidth > 0 && stage.clientWidth < 700;
+    const z = narrow ? cur.zoom : 0;
+    const w = 1000 - 200 * z, h = 470;
+    const focus = X(cur.a);
+    const x0 = clamp(focus - w / 2, 0, 1000 - w);
+    svg.setAttribute("viewBox", `${f1(x0)} 0 ${f1(w)} ${f1(h)}`);
+    let o = DEFS;
+    if (cur.gene > 0.01) o += `<g opacity="${f3(cur.gene)}">${forkSVG(cur)}</g>`;
+    if (cur.origins > 0.01) o += `<g opacity="${f3(cur.origins)}">${originsSVG()}</g>`;
+    svg.innerHTML = o;
+  }
+
+  let last = performance.now();
+  function frame(now){
+    if (stepTween(now)) dirty = true;
+    if (dirty){ render(); dirty = false; }
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------- Answer checking ---------- */
+  function lev(a, b){
+    const m = a.length, n = b.length; const d = [];
+    for (let i = 0; i <= m; i++){ d[i] = [i]; }
+    for (let j = 0; j <= n; j++) d[0][j] = j;
+    for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+      d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    return d[m][n];
+  }
+  function norm(s){ return s.toLowerCase().replace(/[’‘′`´]/g, "'").replace(/[^a-z0-9]/g, ""); }
+  function matches(id, val){
+    const b = BL[id], v = norm(val);
+    if (!v) return false;
+    return b.ans.some(a => a === v || (b.fuzzy && a.length >= 5 && lev(v, a) <= 1));
+  }
+
+  /* ---------- UI ---------- */
+  function termHTML(id, cls){ return `<strong class="term ${cls || ""}">${BL[id].show}</strong>`; }
+  function termEl(id, cls){ const s = document.createElement("strong"); s.className = "term " + cls; s.textContent = BL[id].show; return s; }
+  function blankHTML(id){
+    if (mode === "learn") return termHTML(id);
+    if (bl[id]) return termHTML(id, bl[id]);
+    const size = Math.max(3, BL[id].show.length + 1);
+    return `<input class="blank" data-id="${id}" size="${size}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Fill in the blank">`;
+  }
+
+  function renderLegend(){
+    $("legend").innerHTML = ["A","T","G","C"].map(b => `<span><i style="background:${BASE[b][0]};color:${BASE[b][1]}">${b}</i>${{A:"Adenine",T:"Thymine",G:"Guanine",C:"Cytosine"}[b]}</span>`).join("");
+  }
+
+  function renderBubble(){
+    const st = STEPS[idx];
+    $("stepNo").textContent = `Step ${idx + 1} of ${STEPS.length}`;
+    $("stepTitle").textContent = st.title;
+    textEl.innerHTML = st.text.replace(/\{\{(\w+)\}\}/g, (m, id) => blankHTML(id));
+    textEl.querySelectorAll("input.blank").forEach(inp => {
+      inp.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); check(); } });
+      inp.addEventListener("input", () => inp.classList.remove("wrong"));
+    });
+    showAfter();
+    $("bubbleFoot").innerHTML = st.more ? `<button class="more-btn" data-more="${st.more}">Learn more</button>` : "";
+    $("bubbleFoot").querySelectorAll("[data-more]").forEach(b => b.addEventListener("click", () => openMore(b.dataset.more)));
+    fb.textContent = ""; fb.className = "feedback";
+    updateButtons();
+    bubble.classList.remove("pop"); void bubble.offsetWidth; bubble.classList.add("pop");
+    const firstInput = textEl.querySelector("input.blank");
+    if (firstInput && mode === "test") firstInput.focus({preventScroll:true});
+  }
+  function showAfter(){
+    const st = STEPS[idx];
+    if (st.after && stepResolved(idx)){ afterEl.textContent = st.after; afterEl.hidden = false; }
+    else { afterEl.hidden = true; }
+  }
+
+  function updateButtons(){
+    const open = mode === "test" && !!textEl.querySelector("input.blank");
+    checkRow.hidden = !open;
+    nextBtn.disabled = open || !gateDone(idx);
+    backBtn.disabled = idx === 0;
+    replayBtn.disabled = idx === 0;
+    nextBtn.textContent = idx === LAST ? "Start over" : "Next";
+  }
+
+  function renderNav(){
+    const dots = $("dots"); dots.innerHTML = "";
+    STEPS.forEach((st, i) => {
+      const b = document.createElement("button");
+      b.className = "dot" + (i === idx ? " current" : (i < furthest || i < idx ? " seen" : ""));
+      b.textContent = i + 1;
+      b.setAttribute("aria-label", `Go to step ${i + 1}: ${st.title}`);
+      b.disabled = mode === "test" && i > furthest;
+      b.addEventListener("click", () => goTo(i));
+      dots.appendChild(b);
+    });
+    renderLegend();
+  }
+
+  function renderSlider(){
+    const el = $("polSlide"), st = STEPS[idx];
+    if (!st.slider){ el.hidden = true; el.innerHTML = ""; return; }
+    el.hidden = false;
+    const [lo, hi] = st.sliderRange;
+    el.innerHTML = `<span class="plbl">Move the replication fork:</span><input type="range" id="polRange" min="${lo}" max="${hi}" step="0.2" value="${clamp(cur.a, lo, hi)}">`;
+    $("polRange").addEventListener("input", e => { tw = null; cur.a = +e.target.value; dirty = true; });
+  }
+  function enterStep(i){
+    idx = i;
+    const st = STEPS[i], res = stepResolved(i);
+    if (res) furthest = Math.max(furthest, i + 1);
+    animateTo(res ? st.state : prevState(i));
+    renderBubble(); renderNav(); renderGate(); renderSlider(); dirty = true;
+  }
+  function goTo(i){ enterStep(clamp(i, 0, LAST)); }
+
+  function resolvedNow(){
+    if (!stepResolved(idx)){ updateButtons(); renderNav(); renderGate(); return; }
+    furthest = Math.max(furthest, idx + 1);
+    updateButtons(); renderNav(); showAfter();
+    animateTo(STEPS[idx].state);
+    dirty = true;
+    nextBtn.focus({preventScroll:true});
+  }
+
+  function check(){
+    const inputs = [...textEl.querySelectorAll("input.blank")];
+    let wrong = 0, empty = 0;
+    inputs.forEach(inp => {
+      const id = inp.dataset.id;
+      if (!inp.value.trim()){ empty++; wrong++; return; }
+      if (matches(id, inp.value)){ bl[id] = "correct"; inp.replaceWith(termEl(id, "correct")); }
+      else { wrong++; inp.classList.remove("wrong"); void inp.offsetWidth; inp.classList.add("wrong"); }
+    });
+    if (wrong){
+      fb.className = "feedback bad";
+      fb.textContent = empty === wrong ? "Type an answer in each blank, or tap Move on to see it." : "Not quite. Try again, or tap Move on to see the answer.";
+      const nextInput = textEl.querySelector("input.blank.wrong") || textEl.querySelector("input.blank");
+      if (nextInput) nextInput.focus({preventScroll:true});
+      updateButtons();
+      if (!textEl.querySelector("input.blank")) resolvedNow();
+    } else {
+      fb.className = "feedback good"; fb.textContent = "Correct!";
+      resolvedNow();
+    }
+  }
+  function moveOn(){
+    textEl.querySelectorAll("input.blank").forEach(inp => { const id = inp.dataset.id; bl[id] = "revealed"; inp.replaceWith(termEl(id, "revealed")); });
+    fb.className = "feedback warn"; fb.textContent = "Here's the answer. Read it over, then tap Next.";
+    resolvedNow();
+  }
+
+  function setMode(m){
+    mode = m;
+    $("learnBtn").setAttribute("aria-pressed", m === "learn");
+    $("testBtn").setAttribute("aria-pressed", m === "test");
+    $("modeHint").textContent = m === "learn"
+      ? ""
+      : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
+    if (m === "test") furthest = Math.max(furthest, 0);
+    enterStep(idx);
+  }
+  function restart(){
+    for (const k in gates) delete gates[k];
+    bl = {}; furthest = 0; idx = 0;
+    cur = {...S[0]}; tw = null;
+    enterStep(0);
+  }
+  function replay(){
+    if (idx === 0) return;
+    cur = {...prevState(idx)};
+    if (stepResolved(idx)) animateTo(STEPS[idx].state);
+    dirty = true;
+  }
+
+  $("learnBtn").addEventListener("click", () => setMode("learn"));
+  $("testBtn").addEventListener("click", () => setMode("test"));
+  $("restartBtn").addEventListener("click", restart);
+  $("checkBtn").addEventListener("click", check);
+  $("moveOnBtn").addEventListener("click", moveOn);
+  backBtn.addEventListener("click", () => goTo(idx - 1));
+  replayBtn.addEventListener("click", replay);
+  nextBtn.addEventListener("click", () => { if (idx === LAST) restart(); else goTo(idx + 1); });
+  $("moreClose").addEventListener("click", closeMore);
+  $("moreOverlay").addEventListener("click", e => { if (e.target.id === "moreOverlay") closeMore(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !$("moreOverlay").hidden){ closeMore(); return; }
+    if (e.target && e.target.tagName === "INPUT") return;
+    if (e.key === "ArrowRight" && !nextBtn.disabled && idx < LAST) goTo(idx + 1);
+    if (e.key === "ArrowLeft" && idx > 0) goTo(idx - 1);
+  });
+  window.addEventListener("resize", () => { dirty = true; });
+
+  setMode("learn");
+  requestAnimationFrame(frame);
+
+  // exposed for testing only
+  window.__rep = {goTo, check, moveOn, setMode, openMore, closeMore, get idx(){return idx;}, get cur(){return cur;}, get bl(){return bl;}, matches, GATES};
+})();
+</script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const PAGE = (location.pathname.split("/").pop() || "index.html");
+  const testing = () => { const t = $("testBtn"); return t && t.getAttribute("aria-pressed") === "true"; };
+
+  const row = $("checkRow"), moveOn = $("moveOnBtn");
+  if (row && moveOn && window.__BL){
+    const hb = document.createElement("button");
+    hb.className = "btn hint"; hb.id = "hintBtn"; hb.textContent = "Hint";
+    row.insertBefore(hb, moveOn);
+    hb.addEventListener("click", () => {
+      const ins = [...document.querySelectorAll("#stepText input.blank")];
+      ins.forEach(inp => {
+        const b = window.__BL[inp.dataset.id]; if (!b) return;
+        const w = b.show, lvl = Math.min((+inp.dataset.hint || 0) + 1, Math.max(1, Math.ceil(w.length / 2)));
+        inp.dataset.hint = lvl;
+        if (inp.classList.contains("wrong")) inp.value = "";
+        inp.placeholder = w.slice(0, lvl) + w.slice(lvl).replace(/[^\s-]/g, "_");
+        inp.size = Math.max(inp.size || 3, w.length + 1);
+      });
+      const fb = $("feedback");
+      if (fb && ins.length){ fb.className = "feedback warn"; fb.textContent = "Hint: the first letter" + (ins.some(i => +i.dataset.hint > 1) ? "s are" : " is") + " shown, and each dash is one letter. Tap Hint again for more."; }
+      const f = ins[0]; if (f) f.focus({preventScroll:true});
+    });
+  }
+
+  let links = []; try { links = JSON.parse(document.body.dataset.next || "[]"); } catch (e) {}
+  const bubble = $("bubble");
+  let bridge = null;
+  if (links.length && bubble){
+    bridge = document.createElement("div"); bridge.className = "bridge callout"; bridge.hidden = true; bridge.setAttribute("role", "note");
+    bridge.innerHTML = `<b>${document.body.dataset.nextLabel || "Where to next?"}</b>` + (document.body.dataset.nextText ? `<p>${document.body.dataset.nextText}</p>` : "")
+      + `<div class="links">` + links.map((l, i) => `<a class="btn ${i ? "secondary" : "primary go"}" href="${l[1]}">${l[0]}</a>`).join("") + `</div>`;
+    bubble.insertAdjacentElement("afterend", bridge);
+  }
+
+  const next = $("nextBtn");
+  let toasted = false;
+  function watch(){
+    if (!next) return;
+    const last = next.textContent.trim() === "Start over";
+    if (bridge) bridge.hidden = !last;
+    if (last && testing() && !next.disabled){
+      let was = false; try { was = localStorage.getItem("bio112-done:" + PAGE) === "1"; localStorage.setItem("bio112-done:" + PAGE, "1"); } catch (e) {}
+      if (!toasted && !was){
+        toasted = true;
+        const t = document.createElement("div"); t.className = "donetoast"; t.setAttribute("role", "status");
+        t.textContent = "Module complete! It now has a checkmark on the home page.";
+        document.body.appendChild(t); setTimeout(() => t.remove(), 3600);
+      }
+    }
+  }
+  if (next){ new MutationObserver(watch).observe(next, {attributes:true, childList:true, characterData:true, subtree:true}); watch(); }
+})();
+</script>
+<script src="studypath.js"></script>
+</body>
+</html>

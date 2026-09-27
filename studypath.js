@@ -2,6 +2,7 @@
    While the path is on, each page shows a banner with the current stop and a button to the next one. */
 (function(){
   const STOPS = [
+    {page:"dna-replication.html", title:"DNA Replication", area:"DNA Replication"},
     {page:"pretranscriptional-control.html", view:"euk", title:"Gene regulation in eukaryotes", area:"Pre-transcriptional control"},
     {page:"pretranscriptional-control.html", view:["basics","ind","rep"], title:"Operons: lac & trp", area:"Pre-transcriptional control"},
     {page:"transcription.html", title:"Transcription", area:"Transcription"},
