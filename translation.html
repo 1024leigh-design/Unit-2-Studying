@@ -389,6 +389,7 @@
       let x = CX(i) + 170, y = -240, o = 0;
       if (m === "dock" || m === "dock0"){ x = CX(i); y = 0; o = 1; }
       if (m === "float"){ x = CX(i) + 20; y = -95; o = 1; }
+      if (m === "side"){ x = CX(i) + 300; y = -110; o = 1; }
       if (m === "exit"){ x = CX(i) - 170; y = -240; o = 0; }
       st["x" + i] = x; st["y" + i] = y; st["o" + i] = o; st["a" + i] = m === "dock0" ? 0 : 1;
     }
@@ -400,6 +401,7 @@
   const F_TFLOAT = S({t:{0:"float"}});
   const F_TDOCK = S({t:{0:"dock"}});
   const F_INIT = S({...ASM, t:{0:"dock"}});
+  const F_TSIDE = S({...ASM, t:{0:"side"}});
   const F_ARRIVE = S({...ASM, t:{0:"dock", 1:"dock"}});
   const F_BOND1 = S({...ASM, t:{0:"dock0", 1:"dock0"}, chainX:CX(1), chainN:2});
   const F_MOVE1 = S({...ASM, rp:1, t:{0:"dock0", 1:"dock0"}, chainX:CX(1), chainN:2});
@@ -453,10 +455,10 @@
      text:`The genetic code is the relationship between DNA, mRNA codons, and amino acids. Translation always begins at the start codon, {{start}}, which codes for methionine (Met). Three codons, UAA, UAG, and UGA, don't code for any amino acid. These stop codons are also called {{nonsense}} codons. There are 64 codons but only 20 amino acids, so most amino acids have more than one codon. Tap "Codon chart" up top to see them all!`},
     {part:P1, title:"Meet the ribosome", v:M([F_RIBO], {subLabels:true}), more:"anatomy",
      text:`A ribosome has two subunits, one small and one large, that clamp around the mRNA. Both are made of {{rrna}} (ribosomal RNA) and proteins. Inside are three docking sites. New tRNAs carrying amino acids arrive at the {{asite}} site. The P site holds the tRNA with the growing polypeptide chain. The E site is where empty tRNAs exit.`},
-    {part:P1, title:"tRNA: the delivery driver", v:M([F_TFLOAT, F_TDOCK], {trnaLabels:true}), pre:M([F_TFLOAT], {trnaLabels:true}), more:"trna",
-     text:`Transfer RNA (tRNA) delivers amino acids to the ribosome. One end carries an amino acid. The other end has three bases called the {{anticodon}}, which pairs with a matching codon on the mRNA using base pairing rules (A with U, G with C). That's how the right amino acid lands in the right spot.`},
-    {part:P2, title:"Initiation: assembling at the start codon", v:M([S({asmS:1, t:{0:"dock"}}), F_INIT]), more:"init",
-     text:`Translation starts when the two ribosomal subunits, the mRNA, and the first tRNA come together. The start codon is AUG, so the first tRNA has the anticodon {{uac}} and carries methionine. The start codon is positioned properly in the P site, and the ribosome is ready to go!`},
+    {part:P1, title:"tRNA: the delivery driver", v:M([F_TSIDE, F_INIT], {trnaLabels:true}), pre:M([F_TSIDE], {trnaLabels:true}), more:"trna",
+     text:`Transfer RNA (tRNA) delivers amino acids to the ribosome. One end carries an amino acid. The other end has three bases called the {{anticodon}}, which pairs with a matching codon on the mRNA using base pairing rules (A with U, G with C). That's how the right amino acid lands in the right spot. Watch the first tRNA slide into the P site of the ribosome.`},
+    {part:P2, title:"Initiation: assembling at the start codon", v:M([S({asmS:1}), S({asmS:1, t:{0:"dock"}}), F_INIT]), pre:M([F_OVER]), more:"init",
+     text:`Translation starts when the two ribosomal subunits, the mRNA, and the first tRNA come together. Watch the order: the small subunit grabs the mRNA, the first tRNA pairs with the start codon, then the large subunit clamps on top. The start codon is AUG, so the first tRNA has the anticodon {{uac}} and carries methionine. The start codon is positioned properly in the P site, and the ribosome is ready to go!`},
     {part:P3, title:"Elongation: a new tRNA arrives", v:M([F_ARRIVE]), more:"arrive", gate:"trna",
      text:`The next codon, GCA, sits in the empty A site. Only a tRNA whose anticodon is {{complementary}} to the codon can pair with it. Look at the codon, then find the tRNA whose anticodon pairs with every base.`},
     {part:P3, title:"Making a peptide bond", v:M([F_BOND1], {bond:true}), more:"bond", gate:"bond",
@@ -467,7 +469,7 @@
      text:`Elongation keeps cycling: a tRNA arrives, a peptide bond forms, and the ribosome moves. UUC brings phenylalanine (Phe) and GGA brings glycine (Gly). Proteins are built in one direction. Met, the first amino acid, is the {{nterm}}-terminus, and new amino acids are always added to the C-terminus end.`,
      after:`mRNA is read 5' to 3'. Proteins are built N-terminus to C-terminus.`},
     {part:P4, title:"Termination: the stop codon", v:M(TERM), more:"term",
-     text:`Finally, the stop codon UAA reaches the A site. No tRNA has an anticodon that matches a {{stop}} codon, so no new amino acid arrives. The finished polypeptide is released, the last tRNA leaves, and the two ribosomal subunits come apart. Your new protein: Met-Ala-Phe-Gly!`},
+     text:`Finally, the stop codon UAA reaches the A site. Know all three stop codons: <b>UAA, UAG, and UGA</b>. No tRNA has an anticodon that matches a {{stop}} codon, so no new amino acid arrives. The finished polypeptide is released, the last tRNA leaves, and the two ribosomal subunits come apart. Your new protein: Met-Ala-Phe-Gly!`},
     {part:P4, title:"Prokaryotes vs. eukaryotes", v:{scene:"compare"}, more:"compare", table:TBL_CMP, links:[["Transcription module","transcription.html"],["Pre-transcriptional control module","pretranscriptional-control.html"]],
      text:`Bacteria have no nucleus, so transcription and translation happen in the same place, the cytoplasm. Ribosomes can hop onto an mRNA and start translating before transcription is even {{complete}}. In eukaryotes, the mRNA is made and processed in the nucleus first, then exported to ribosomes in the cytoplasm.`,
      after:`You just went from DNA to protein. Amazing work!`}
@@ -717,7 +719,7 @@
     }
     // chain
     if (s.chainN > 0){
-      const n = Math.round(s.chainN), ax = s.chainX + s.chainFree * 150, ay = 180 - s.chainFree * 95;
+      const n = Math.round(s.chainN), ax = s.chainX - s.chainFree * 330, ay = 180 - s.chainFree * 60;
       for (let j = 0; j < n; j++){
         const aa = AAS[n - 1 - j];
         const lx2 = ax + (j % 2 ? 10 : -10), ly2 = ay - j * 26;
@@ -732,9 +734,14 @@
         const k = t > 1.1 && t < 2.5 ? Math.sin(Math.PI * (t - 1.1) / 1.4) : 0;
         if (k > .02){ const pts = []; for (let q = 0; q < 10; q++){ const r = (q % 2 ? 7 : 20) * k, a = -Math.PI / 2 + q * Math.PI / 5; pts.push(f1(ax + r * Math.cos(a)) + "," + f1(ay - 13 + r * Math.sin(a))); } o += `<polygon points="${pts.join(" ")}" fill="#fff6b0" stroke="#f2b134" stroke-width="2.5"/>`; }
       }
-      if (s.protein > .5) o += `<text x="${f1(ax - 40)}" y="${f1(ay - 34)}" class="t15 end" fill="${GREEN}" style="fill:${GREEN}" opacity="${f3((s.protein - .5) * 2)}">New protein! Met-Ala-Phe-Gly</text>`;
+      if (s.protein > .5) o += `<text x="${f1(ax)}" y="${f1(ay + 34)}" class="t15 mid" fill="${GREEN}" style="fill:${GREEN}" opacity="${f3((s.protein - .5) * 2)}">New protein! Met-Ala-Phe-Gly</text>`;
     }
-    if (s.stopPill > .01) o += pill(CX(4), 280, "Stop codon: no tRNA matches!", RED, s.stopPill * (1 - s.protein));
+    if (s.stopPill > .01){
+      const so = s.stopPill * (1 - s.protein), x1 = BX(12) - 16, x2 = BX(14) + 16;
+      o += `<rect x="${x1}" y="336" width="${x2 - x1}" height="38" rx="8" fill="none" stroke="${RED}" stroke-width="3" opacity="${f3(so)}"/>`;
+      o += pill(CX(4) + 90, 110, "Stop codon UAA: no tRNA matches!", RED, so);
+      o += `<text x="${CX(4) + 90}" y="146" class="t13 mid" style="fill:#b83a34" opacity="${f3(so)}">The 3 stop codons: UAA, UAG, UGA</text>`;
+    }
     return o;
   }
 
@@ -752,7 +759,7 @@
       if (k === 4) o += `<text x="${x}" y="330" class="t13 mid red" style="fill:#b83a34">Stop codon</text>`;
     }
     o += `<defs><marker id="cdA" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#9aa3b5"/></marker></defs>`;
-    o += `<text x="500" y="392" class="t13 mid muted">64 codons, 20 amino acids: most amino acids have more than one codon.</text><text x="500" y="414" class="t13 mid muted">Stop codons: UAA, UAG, UGA</text>`;
+    o += `<text x="500" y="392" class="t13 mid muted">64 codons, 20 amino acids: most amino acids have more than one codon.</text><text x="500" y="420" class="t15 mid" style="fill:#b83a34;font-weight:700">The 3 stop codons: UAA, UAG, UGA</text>`;
     return o;
   }
 
