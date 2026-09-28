@@ -8,6 +8,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="metab.css">
+<style>
+  .eqlink{position:absolute;left:50%;top:2.2%;transform:translateX(-50%);display:grid;justify-items:center;gap:2px;text-decoration:none;color:var(--ink,#1d2433);background:#fff;border:2px solid #c7cdf5;border-radius:14px;padding:6px 16px;box-shadow:0 2px 0 #dfe3f7;white-space:nowrap}
+  .eqlink .eq{font-weight:700;font-size:clamp(.95rem,2.3vw,1.3rem)}
+  .eqlink .hint{font-size:clamp(.7rem,1.5vw,.82rem);color:#3f4cc0;font-weight:700}
+  .eqlink:hover,.eqlink:focus-visible{border-color:#3f4cc0;background:#f4f5ff}
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -41,26 +47,79 @@
   };
 
   /* ================= Scenes ================= */
-  function redoxScene(t, R){
-    const T = 6, tt = t % T, p = smooth(seg(tt, 1, 2.8));
-    let o = A.tx(500, 46, `${R("redox") === "?" ? "?" : "Redox"}: one loses electrons, the other gains them`, "t20 mid");
-    o += blob(250, 250, "Donor", "#3f4cc0") + blob(750, 250, "Acceptor", "#d9443a");
-    for (let k = 0; k < 2; k++){ const x = lerp(300 + k * 20, 690 + k * 20, p), y = 210 - Math.sin(p * Math.PI) * 90 + k * 14; o += A.eDot(x, y, 12); }
-    o += A.arrow(340, 150, 660, 150, "#a8760f", 2.5, "7 6") + A.tx(500, 132, "electrons move", "t14 mid", `style="fill:#8a5a00"`);
-    o += A.op(p, A.pill(250, 350, `${R("oxidized") === "?" ? "?" : "Oxidized"}: lost e⁻`, "#3f4cc0", 1) + A.pill(750, 350, `${R("reduced") === "?" ? "?" : "Reduced"}: gained e⁻`, "#d9443a", 1));
-    o += A.tx(500, 420, "OIL RIG: Oxidation Is Loss, Reduction Is Gain", "t20 mid", `style="fill:#5b3fb0"`);
-    o += A.tx(500, 450, "LEO the lion says GER: Lose Electrons = Oxidation, Gain Electrons = Reduction", "t14 mid muted");
+  /* Step 1 is hands-on right in the diagram: drag the electrons, then drag the labels onto the molecules */
+  const RX = {don:230, acc:770, y:262, rx:135, ry:88};
+  const hitMol = p => { for (const k of ["don", "acc"]){ const x = RX[k]; if (((p.x - x) / (RX.rx + 10)) ** 2 + ((p.y - RX.y) / (RX.ry + 10)) ** 2 <= 1) return k; } return null; };
+  const CHIP = {Oxidized:[500, 262], Reduced:[500, 322]};
+  function redoxScene(t, R, g, done){
+    const st = g || {}, drag = st.drag && st.drag.moved ? st.drag : null;
+    const moved = done || st.moved, tags = done ? {don:"Oxidized", acc:"Reduced"} : (st.tags || {});
+    const pulse = .5 + .5 * Math.sin(t * 4);
+    let o = A.tx(500, 40, `${R("redox") === "?" ? "?" : "Redox"}: one molecule loses electrons, the other gains them`, "t20 mid");
+    o += `<defs><radialGradient id="rdA" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#8f99ea"/><stop offset="1" stop-color="#3f4cc0"/></radialGradient><radialGradient id="rdB" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#f09a90"/><stop offset="1" stop-color="#c7362c"/></radialGradient></defs>`;
+    const mol = (k, fill, name, role) => {
+      const x = RX[k], over = drag && hitMol(drag) === k;
+      let m = `<ellipse cx="${x}" cy="${RX.y}" rx="${RX.rx}" ry="${RX.ry}" fill="url(#${fill})" stroke="${over ? C.gold : "#343b4a"}" stroke-width="${over ? 6 : 2}"/>`;
+      m += `<ellipse cx="${x - 40}" cy="${RX.y - 48}" rx="46" ry="14" fill="#fff" opacity=".22"/>`;
+      m += A.tx(x, RX.y - 10, name, "t20 mid", `style="fill:#fff"`) + A.tx(x, RX.y + 16, role, "t14 mid", `style="fill:#fff"`);
+      if (tags[k]){ const ox = tags[k] === "Oxidized"; m += `<rect x="${x - 98}" y="${RX.y + 34}" width="196" height="34" rx="17" fill="#fff" stroke="${ox ? "#2c3796" : "#9b2c24"}" stroke-width="2.5"/>` + A.tx(x, RX.y + 57, ox ? "Oxidized: lost e⁻" : "Reduced: gained e⁻", "t16 mid", `style="fill:${ox ? "#2c3796" : "#9b2c24"}"`); }
+      return m;
+    };
+    o += mol("don", "rdA", "Molecule A", "electron donor") + mol("acc", "rdB", "Molecule B", "electron acceptor");
+    /* the electrons */
+    let ex = moved ? RX.acc : RX.don, ey = RX.y - RX.ry + 6;
+    if (drag && drag.kind === "e"){ ex = drag.x; ey = drag.y; }
+    if (!moved) o += `<circle cx="${f1(ex)}" cy="${f1(ey)}" r="${f1(34 + 6 * pulse)}" fill="none" stroke="${C.gold}" stroke-width="3" opacity="${f3(.35 + .5 * pulse)}"/>`;
+    o += `<g data-drag="e" style="cursor:${moved ? "default" : "grab"}"><circle cx="${f1(ex)}" cy="${f1(ey)}" r="40" fill="#fff" opacity="0"/>${A.eDot(ex - 15, ey, 14)}${A.eDot(ex + 15, ey, 14)}</g>`;
+    if (!moved){
+      o += A.arrow(RX.don + 60, 112, RX.acc - 60, 112, "#a8760f", 3.5, "9 7");
+      o += A.tx(500, 96, "Move the electrons!", "t20 mid", `style="fill:#8a5a00" opacity="${f3(.65 + .35 * pulse)}"`);
+      o += A.tx(500, 140, "Drag them from the donor to the acceptor", "t14 mid muted");
+    } else if (!tags.don || !tags.acc){
+      o += A.tx(500, 96, "Now label the molecules!", "t20 mid", `style="fill:#8a5a00"`) + A.tx(500, 124, "Drag each label onto the molecule it describes", "t14 mid muted");
+      ["Oxidized", "Reduced"].forEach(w => {
+        if (tags.don === w || tags.acc === w) return;
+        let [cx, cy] = CHIP[w];
+        if (drag && drag.kind === w){ cx = drag.x; cy = drag.y; }
+        const sel = st.pick === w;
+        o += `<g data-drag="${w}" style="cursor:grab"><rect x="${f1(cx - 66)}" y="${f1(cy - 20)}" width="132" height="40" rx="20" fill="#fff" stroke="${sel ? C.gold : "#5b3fb0"}" stroke-width="${sel ? 5 : 2.5}"/>` + A.tx(cx, cy + 6, w, "t16 mid", `style="fill:#5b3fb0"`) + `</g>`;
+      });
+    } else {
+      o += A.tx(500, 104, "They always happen together!", "t20 mid", `style="fill:#1b7f4e"`);
+    }
+    o += A.tx(500, 412, "OIL RIG: Oxidation Is Loss, Reduction Is Gain", "t20 mid", `style="fill:#5b3fb0"`);
+    o += A.tx(500, 446, "LEO the lion says GER: Lose Electrons = Oxidation, Gain Electrons = Reduction", "t14 mid muted");
     return o;
   }
-  function glucoseScene(t, R){
-    const T = 7, tt = t % T, p = smooth(seg(tt, 1, 3.5));
-    let o = A.tx(500, 44, "C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O", "t20 mid");
-    o += A.glucoseRing(220, 190, {r:12}) + A.tx(220, 290, "Glucose", "t16 mid");
-    o += A.o2(760, 170) + A.o2(820, 210) + A.o2(740, 230) + A.tx(780, 290, "Oxygen", "t16 mid");
-    for (let k = 0; k < 4; k++){ const q = clamp(p * 1.3 - k * .1, 0, 1), x = lerp(270, 700 + k * 18, q), y = 180 + k * 12 - Math.sin(q * Math.PI) * 70; o += A.eDot(x, y, 11); }
-    o += A.op(p, `<rect x="90" y="315" width="260" height="120" rx="16" fill="#e7e9fb"/>` + A.tx(220, 346, `Glucose is ${R("oxidized")}`, "t16 mid", `style="fill:#2c3796"`) + A.tx(220, 374, "loses electrons (and H)", "t14 mid") + A.tx(220, 404, "carbon: −1 → +4", "t16 mid", `style="fill:#2c3796"`));
-    o += A.op(p, `<rect x="650" y="315" width="260" height="120" rx="16" fill="#fbe8e7"/>` + A.tx(780, 346, `Oxygen is ${R("reduced")}`, "t16 mid", `style="fill:#b83a34"`) + A.tx(780, 374, "gains electrons (and H)", "t14 mid") + A.tx(780, 404, "oxygen: 0 → −2", "t16 mid", `style="fill:#b83a34"`));
-    o += A.tx(500, 450, "Hydrogen stays +1. Charge going UP = lost electrons = oxidized.", "t14 mid muted");
+  /* Step 2: electrons flow carbon (glucose) -> NAD+ -> oxygen, on a loop from the moment the step opens */
+  function glucoseScene(t, R, done){
+    const T = 6.5, tt = t % T;
+    const p1 = smooth(seg(tt, .6, 2.2)), p2 = smooth(seg(tt, 3.2, 4.8)), back = smooth(seg(tt, 6, 6.5));
+    const full = p1 >= 1 && p2 < .02, water = smooth(seg(tt, 4.6, 5.2)) * (1 - back);
+    const X = [170, 500, 830], Y = 250;
+    const big = (x, y, k, body) => `<g transform="translate(${x} ${y}) scale(${k}) translate(${-x} ${-y})">${body}</g>`;
+    let o = "";
+    o += A.glucoseRing(X[0], Y, {r:16}) + A.tx(X[0], Y + 68, "Carbon", "t16 mid") + A.tx(X[0], Y + 88, "(in glucose)", "t12 mid muted");
+    o += big(X[1], Y, 1.7, A.carrier(X[1], Y, "NAD", full, {e:false})) + A.tx(X[1], Y + 68, "NAD⁺ / NADH", "t16 mid") + A.tx(X[1], Y + 88, "electron carrier", "t12 mid muted");
+    o += A.op(1 - water, big(X[2], Y, 2.2, A.o2(X[2], Y))) + A.op(water, big(X[2], Y, 1.7, A.h2o(X[2] - 22, Y + 4) + A.h2o(X[2] + 22, Y - 4)));
+    o += A.tx(X[2], Y + 68, "Oxygen", "t16 mid") + A.op(water, A.tx(X[2], Y + 88, "becomes water", "t12 mid muted"));
+    o += A.arrow(X[0] + 80, Y, X[1] - 90, Y, "#c9cfdb", 2.5) + A.arrow(X[1] + 90, Y, X[2] - 70, Y, "#c9cfdb", 2.5);
+    for (let k = 0; k < 2; k++){
+      let x, y, show = 1;
+      if (p1 < 1){ x = lerp(X[0] - 10 + k * 22, X[1] - 12 + k * 26, p1); y = Y - 60 - Math.sin(p1 * Math.PI) * 45; }
+      else if (p2 > 0){ x = lerp(X[1] - 12 + k * 26, X[2] - 12 + k * 26, p2); y = Y - 50 - Math.sin(p2 * Math.PI) * 45 + (p2 * 10 - 10) * 0; }
+      else { x = X[1] - 12 + k * 26; y = Y - 50; }
+      if (p2 >= 1) show = 1 - smooth(seg(tt, 4.8, 5.4));
+      o += A.op(show, A.eDot(x, y, 13));
+    }
+    const cap = tt < 3 ? "NAD⁺ picks up electrons from carbon and becomes NADH" : "NADH drops the electrons off at oxygen and becomes NAD⁺ again";
+    o += A.tx(500, 124, cap, "t16 mid", `style="fill:#8a5a00"`);
+    if (done){
+      o += `<rect x="60" y="358" width="220" height="62" rx="14" fill="#e7e9fb"/>` + A.tx(170, 382, "Carbon is oxidized", "t16 mid", `style="fill:#2c3796"`) + A.tx(170, 406, "0 → +4 (lost e⁻)", "t14 mid", `style="fill:#2c3796"`);
+      o += `<rect x="370" y="358" width="260" height="62" rx="14" fill="#e3f4ea"/>` + A.tx(500, 382, "NAD⁺ → NADH: reduced", "t14 mid", `style="fill:#1b7f4e"`) + A.tx(500, 406, "NADH → NAD⁺: oxidized", "t14 mid", `style="fill:#1b7f4e"`);
+      o += `<rect x="720" y="358" width="220" height="62" rx="14" fill="#fbe8e7"/>` + A.tx(830, 382, "Oxygen is reduced", "t16 mid", `style="fill:#b83a34"`) + A.tx(830, 406, "0 → −2 (gained e⁻)", "t14 mid", `style="fill:#b83a34"`);
+    } else o += A.tx(500, 392, "Watch the electrons, then sort the cards below: oxidized or reduced?", "t16 mid", `style="fill:#3f4cc0"`);
+    o += A.tx(500, 446, "Hydrogen stays +1. Charge going UP = lost electrons = oxidized.", "t14 mid muted");
     return o;
   }
   function carrierScene(t, R){
@@ -138,23 +197,38 @@
 
   /* ================= Activities ================= */
   const GATES = {
-    redox:{title:"Your turn: move the electrons and label the molecules", done:"The donor lost electrons (oxidized) and the acceptor gained them (reduced).",
-      init:() => ({moved:false, tags:{}}),
-      html:st => `<div class="zones"><div class="zone" data-zone="don"><span class="zl">Molecule A (donor)${st.tags.don ? ": " + st.tags.don : ""}</span><div class="zin">${!st.moved ? `<span class="tok" data-e="1" style="background:#fff6d6;border-color:#f2b134">e⁻ e⁻</span>` : ""}</div></div>
-        <div class="zone ${st.moved ? "ok" : ""}" data-zone="acc"><span class="zl">Molecule B (acceptor)${st.tags.acc ? ": " + st.tags.acc : ""}</span><div class="zin">${st.moved ? `<span class="tok placed">e⁻ e⁻</span>` : ""}</div></div></div>
-        ${st.moved ? `<div class="row">${!st.tags.don ? `<span class="tok" data-t="Oxidized">Oxidized</span>` : ""}${!st.tags.acc ? `<span class="tok" data-t="Reduced">Reduced</span>` : ""}</div>` : ""}`,
+    redox:{title:"Your turn: work right on the diagram above", done:"The donor lost electrons (oxidized) and the acceptor gained them (reduced).",
+      init:() => ({moved:false, tags:{}, drag:null, pick:null}),
+      html:st => `<div style="font-size:.95rem">${!st.moved ? "<b>1.</b> Drag the electrons (e⁻) on the diagram from molecule A to molecule B. You can also just tap them." : "<b>2.</b> Drag the <b>Oxidized</b> and <b>Reduced</b> labels onto the molecules in the diagram. (Or tap a label, then tap a molecule.)"}</div>`,
       wire:(g, st, api) => {
-        const e = g.querySelector("[data-e]");
-        if (e) api.dragify(e, {tap:() => move(), drop:z => z.dataset.zone === "acc" ? move() : false});
-        function move(){ st.moved = true; api.redraw(); api.msg("Electrons moved from A to B. Now drag each label onto the right molecule.", "good"); }
-        g.querySelectorAll("[data-t]").forEach(el => api.dragify(el, {tap:() => { st.pick = el.dataset.t; api.msg("Now tap the molecule it describes.", ""); }, drop:z => tag(el.dataset.t, z.dataset.zone)}));
-        g.querySelectorAll("[data-zone]").forEach(z => z.addEventListener("click", () => { if (st.pick){ tag(st.pick, z.dataset.zone); st.pick = null; } }));
-        function tag(t, z){ const want = t === "Oxidized" ? "don" : "acc"; if (z !== want){ api.msg(t === "Oxidized" ? "OIL: Oxidation Is Loss. Which molecule LOST electrons?" : "RIG: Reduction Is Gain. Which molecule GAINED electrons?", "bad"); return false; } st.tags[z] = t; api.redraw(); if (st.tags.don && st.tags.acc){ api.msg("OIL RIG! They always happen together.", "good"); setTimeout(api.pass, 1000); } return true; }
-        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the electrons from molecule A to molecule B (or tap them).", "");
+        const svg = api.svg; svg.style.touchAction = "none";
+        const toSVG = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+        function move(){ st.moved = true; api.redraw(); api.msg("The electrons moved from A to B! Now label each molecule on the diagram.", "good"); }
+        function tag(t, z){ const want = t === "Oxidized" ? "don" : "acc"; if (z !== want){ api.msg(t === "Oxidized" ? "OIL: Oxidation Is Loss. Which molecule LOST electrons?" : "RIG: Reduction Is Gain. Which molecule GAINED electrons?", "bad"); return; } st.tags[z] = t; st.pick = null; api.redraw(); if (st.tags.don && st.tags.acc){ api.msg("OIL RIG! A lost electrons and B gained them. Oxidation and reduction always happen together.", "good"); setTimeout(api.pass, 1000); } else api.msg(`Yes! Molecule ${z === "don" ? "A" : "B"} is ${t.toLowerCase()}. Now the other label.`, "good"); }
+        svg.onpointerdown = e => {
+          const d = e.target.closest && e.target.closest("[data-drag]");
+          if (!d){ if (st.pick && st.moved){ const m = hitMol(toSVG(e)); if (m) tag(st.pick, m); } return; }
+          if (d.dataset.drag === "e" && st.moved) return;
+          e.preventDefault(); const p = toSVG(e);
+          st.drag = {kind:d.dataset.drag, x:p.x, y:p.y, sx:p.x, sy:p.y, moved:false};
+          try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+        };
+        svg.onpointermove = e => { const d = st.drag; if (!d) return; const p = toSVG(e); d.x = p.x; d.y = p.y; if (Math.hypot(p.x - d.sx, p.y - d.sy) > 8) d.moved = true; };
+        svg.onpointerup = svg.onpointercancel = e => {
+          const d = st.drag; if (!d) return; st.drag = null;
+          const m = hitMol(toSVG(e));
+          if (d.kind === "e"){
+            if (!d.moved || m === "acc") move();
+            else api.msg(m === "don" ? "Those electrons are already on the donor. Drop them on the acceptor, molecule B." : "Drop the electrons right onto molecule B, the acceptor.", "bad");
+          } else if (!d.moved){ st.pick = d.kind; api.msg(`Now tap the molecule that was ${d.kind.toLowerCase()}.`, ""); }
+          else if (m) tag(d.kind, m);
+          else api.msg("Drop the label right onto a molecule.", "bad");
+        };
+        if (!g.querySelector("#gateMsg").textContent) api.msg("", "");
       }},
-    glucose:Metab.sortGate({title:"Your turn: oxidized or reduced?", done:"Glucose (and its carbons) is oxidized; oxygen is reduced.", tip:"Use the charges: going up = lost electrons. Drag each card.",
+    glucose:Metab.sortGate({title:"Your turn: oxidized or reduced?", done:"Carbon is oxidized, oxygen is reduced, and NAD⁺/NADH shuttles the electrons between them.", tip:"Use the charges: going up = lost electrons. Drag each card.",
       bins:[["ox","Oxidized (lost e⁻)"],["red","Reduced (gained e⁻)"]],
-      cards:[["g","Glucose","ox","Glucose loses electrons and hydrogen as it is broken down."],["c","Carbon: −1 → +4","ox","The charge went UP. That means it lost negative electrons."],["o","Oxygen: 0 → −2","red","The charge went DOWN (more negative). It gained electrons."],["o2","O₂","red","O₂ picks up electrons and hydrogen to become water."],["n","NAD⁺ → NADH","red","NAD⁺ picks up electrons to become NADH. Gaining = reduction."]]}),
+      cards:[["c","Carbon: 0 → +4","ox","The charge went UP (more positive). Losing negative electrons does that."],["o","Oxygen: 0 → −2","red","The charge went DOWN (more negative). It gained electrons."],["n","NAD⁺ → NADH","red","NAD⁺ picks up electrons to become NADH. Gaining = reduction."],["d","NADH → NAD⁺","ox","NADH drops off its electrons at the end. Losing = oxidation."]]}),
     carriers:{title:"Your turn: load the electron carriers", done:"Loaded! NAD⁺ → NADH and FAD → FADH₂ now carry high-energy electrons.",
       init:() => ({nad:0, fad:0}),
       html:st => `<div class="row"><span class="tok" data-e="1" style="background:#fff6d6;border-color:#f2b134">2 e⁻ + H⁺</span><span class="tok" data-e="2" style="background:#fff6d6;border-color:#f2b134">2 e⁻ + 2 H⁺</span></div>
@@ -174,11 +248,12 @@
 
   const P1 = "Redox reactions", P2 = "Energy and ATP", P3 = "The big picture";
   const STEPS = [
-    {part:P1, title:"Oxidation and reduction", scene:(t, c) => redoxScene(t, c.R), gate:GATES.redox, more:"oil",
-     text:`{{oxidation}} is the LOSS of electrons, and it releases energy. {{reduction}} is the GAIN of electrons, and it requires energy input. They always happen together, so they're called {{redox}} reactions: electrons move from a donor to an acceptor. Remember OIL RIG: Oxidation Is Loss, Reduction Is Gain.`,
+    {part:P1, title:"Oxidation and reduction", scene:(t, c) => redoxScene(t, c.R, c.g, c.done), live:true, gate:GATES.redox, more:"oil",
+     text:`Cells get their energy from chemical reactions. In a reaction, two molecules meet and their atoms rearrange: covalent bonds (pairs of shared electrons) break, and new ones form. Often, electrons move from one molecule, the electron donor, to the other, the electron acceptor. {{oxidation}} is the LOSS of electrons, and it releases energy. {{reduction}} is the GAIN of electrons, and it requires energy input. The two always happen together, so these are called {{redox}} reactions. Remember OIL RIG: Oxidation Is Loss, Reduction Is Gain.`,
      after:`OIL RIG! Oxidation Is Loss, Reduction Is Gain.`},
-    {part:P1, title:"Redox in cellular respiration", scene:(t, c) => glucoseScene(t, c.R), gate:GATES.glucose,
-     text:`In C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O, glucose is {{oxidized}}: it loses electrons (and hydrogen). Oxygen is {{reduced}}: it gains electrons (and hydrogen). Follow the charges: carbon goes from −1 to +4 (lost electrons), oxygen goes from 0 to −2 (gained electrons), and hydrogen stays +1.`},
+    {part:P1, title:"Redox in cellular respiration", scene:(t, c) => glucoseScene(t, c.R, c.done), live:true, gate:GATES.glucose,
+     stageHTML:`<a class="eqlink" href="oxidation-numbers.html"><span class="eq">C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O</span><span class="hint">Tap to see how the charges are figured out (bonus)</span></a>`,
+     text:`Cellular respiration is one big redox reaction: C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O. The carbon from glucose is {{oxidized}}: it loses electrons (and hydrogen). Oxygen is {{reduced}}: it gains electrons (and hydrogen) and becomes water. The electrons don't jump straight across. NAD⁺ picks them up (becoming NADH) and carries them to oxygen. Follow the charges: carbon goes from 0 to +4 (lost electrons), oxygen goes from 0 to −2 (gained electrons), and hydrogen stays +1.`},
     {part:P1, title:"Electron carriers", scene:(t, c) => carrierScene(t, c.R), gate:GATES.carriers, more:"vit",
      text:`Cells use electron carriers to shuttle high-energy electrons. {{nad}} accepts electrons and becomes NADH. Its main role is in catabolism, and it's made from niacin (a B vitamin). {{fad}} accepts TWO electrons and becomes FADH₂ (another B vitamin). {{nadp}} accepts electrons and becomes NADPH, and its main role is in anabolism.`,
      after:`Picking up electrons = the carrier is reduced.`},

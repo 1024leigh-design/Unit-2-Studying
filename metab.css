@@ -22,7 +22,9 @@ h1{font-size:1.55rem;line-height:1.15;margin:0;letter-spacing:-0.01em}
 .ghost{border:1px solid var(--line);background:var(--card);font:700 .9rem var(--font);padding:8px 14px;border-radius:999px;cursor:pointer;color:var(--muted)}
 .modehint{color:var(--muted);font-size:.92rem;margin:0 0 10px}
 .modehint:empty{display:none}
-.stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+.stagelay{position:absolute;inset:0;pointer-events:none}
+.stagelay > *{pointer-events:auto}
 #scene{display:block;width:100%;height:auto;font-family:var(--font)}
 
 .tablewrap{margin-top:12px;overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}

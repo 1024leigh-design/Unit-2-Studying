@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assigning Oxidation Numbers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="metab.css">
+<style>
+  .notexam{background:var(--warn-soft);border:2px solid #e5c56a;border-radius:14px;padding:10px 14px;margin:0 0 12px;font-size:.98rem;color:#6b4a00}
+  .notexam b{color:#8a5a00}
+  .rules{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin:0 0 12px}
+  .rules h2{font-size:1.02rem;margin:0 0 6px}
+  .rules ol{margin:0;padding-left:1.3em;line-height:1.6}
+  .rules li.on{background:#fff6d6;border-radius:6px;font-weight:700}
+  .onav{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-top:14px}
+  .onav .count{font-weight:700;color:var(--muted);font-size:.9rem}
+  #oxCap{font-size:1.06rem;line-height:1.6;margin:0;max-width:80ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div><a class="backlink" href="energy-chemistry.html#step-2">Back to Redox in cellular respiration</a><h1>Assigning oxidation numbers<span class="chap">Bonus</span></h1></div></header>
+  <p class="notexam"><b>Just for the curious:</b> you do <b>not</b> need to know how to assign oxidation numbers for the test. This page shows where the "carbon goes from 0 to +4" and "oxygen goes from 0 to −2" numbers come from.</p>
+  <div class="rules">
+    <h2>Four bookkeeping rules</h2>
+    <ol>
+      <li data-rule="1">An element by itself (like O₂) is <b>0</b>.</li>
+      <li data-rule="2">Hydrogen in a compound is usually <b>+1</b>.</li>
+      <li data-rule="3">Oxygen in a compound is usually <b>−2</b>.</li>
+      <li data-rule="4">The numbers in a neutral molecule <b>add up to 0</b>.</li>
+    </ol>
+  </div>
+  <div class="stage"><svg id="ox" viewBox="0 0 1000 470" role="img" aria-label="Animated oxidation numbers for the cellular respiration equation"></svg></div>
+  <section class="bubble">
+    <div class="stepno" id="oxNo"></div>
+    <p id="oxCap"></p>
+    <div class="onav">
+      <div class="navbtns"><button class="btn secondary" id="oxBack">Back</button> <button class="btn secondary" id="oxPlay">Pause</button></div>
+      <button class="btn primary" id="oxNext">Next</button>
+    </div>
+  </section>
+</div>
+<script>
+(function(){
+  const f1 = v => (+v).toFixed(1), clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const ease = t => { t = clamp(t, 0, 1); return 1 - Math.pow(1 - t, 3); };
+  const svg = document.getElementById("ox");
+  /* Formula pieces: [id, label (sub-scripts as <tspan>), x] */
+  const sub = s => `<tspan font-size="24" dy="8">${s}</tspan>`;
+  const PIECES = [
+    ["gC", "C" + sub("6"), 100], ["gH", "H" + sub("12"), 178], ["gO", "O" + sub("6"), 262],
+    ["p1", "+", 322], ["n1", "6", 364], ["oO", "O" + sub("2"), 412],
+    ["ar", "→", 490], ["n2", "6", 548], ["cC", "C", 594], ["cO", "O" + sub("2"), 641],
+    ["p2", "+", 706], ["n3", "6", 748], ["wH", "H" + sub("2"), 800], ["wO", "O", 849]
+  ];
+  const X = Object.fromEntries(PIECES.map(p => [p[0], p[2]]));
+  const MOL = {glu:[60, 305, "glucose"], o2:[345, 455, "oxygen"], co2:[528, 685, "carbon dioxide"], h2o:[728, 890, "water"]};
+  const STAGES = [
+    {cap:`Every atom gets an <b>oxidation number</b>: the charge it would have if the electrons in its bonds went completely to whichever atom pulls harder on them. Let's work through the respiration equation one molecule at a time.`, show:{}},
+    {cap:`<b>Oxygen gas (O₂)</b> is an element by itself, so each oxygen atom is <b>0</b>.`, rule:1, focus:"o2", show:{oO:"0"}, calc:["O₂ is pure oxygen, so each O = 0"]},
+    {cap:`Now <b>glucose</b>. Hydrogen in a compound is <b>+1</b>. Glucose has 12 hydrogens, so they add <b>+12</b>.`, rule:2, focus:"glu", show:{oO:"0", gH:"+1"}, calc:["12 H × (+1) = +12"]},
+    {cap:`Oxygen in a compound is <b>−2</b>. Glucose has 6 oxygens, so they add <b>−12</b>.`, rule:3, focus:"glu", show:{oO:"0", gH:"+1", gO:"−2"}, calc:["12 H × (+1) = +12", "6 O × (−2) = −12"]},
+    {cap:`Glucose has no overall charge, so everything must add up to 0. The hydrogens and oxygens already cancel out (+12 and −12), so the 6 carbons add up to 0: each <b>carbon is 0</b>.`, rule:4, focus:"glu", show:{oO:"0", gH:"+1", gO:"−2", gC:"0"}, calc:["6 C + (+12) + (−12) = 0", "so 6 C = 0, and each C = 0"]},
+    {cap:`<b>Carbon dioxide (CO₂)</b>: each oxygen is −2, so two oxygens are −4. To add up to 0, the <b>carbon must be +4</b>.`, rule:4, focus:"co2", show:{oO:"0", gH:"+1", gO:"−2", gC:"0", cO:"−2", cC:"+4"}, calc:["2 O × (−2) = −4", "C + (−4) = 0, so C = +4"]},
+    {cap:`<b>Water (H₂O)</b>: two hydrogens are +2, so the <b>oxygen is −2</b>. It adds up to 0.`, rule:4, focus:"h2o", show:{oO:"0", gH:"+1", gO:"−2", gC:"0", cO:"−2", cC:"+4", wH:"+1", wO:"−2"}, calc:["2 H × (+1) = +2", "(+2) + O = 0, so O = −2"]},
+    {cap:`Now compare before and after. <b>Carbon went from 0 to +4</b>: the number went UP because it lost electrons, so carbon is <b>oxidized</b>. <b>Oxygen went from 0 to −2</b>: the number went DOWN because it gained electrons, so oxygen is <b>reduced</b>. Hydrogen stayed +1.`, focus:null, summary:true, show:{oO:"0", gH:"+1", gO:"−2", gC:"0", cO:"−2", cC:"+4", wH:"+1", wO:"−2"}}
+  ];
+  let k = 0, t0 = performance.now(), playing = true;
+  const DUR = 5200;
+  const col = v => v.indexOf("+") === 0 ? "#3f4cc0" : v.indexOf("−") === 0 ? "#d9443a" : "#5a6376";
+  function draw(now){
+    const S = STAGES[k], prev = STAGES[k - 1] || {show:{}}, t = now - t0;
+    let o = `<text x="500" y="46" class="t20 mid">C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O</text>`;
+    for (const m in MOL){
+      const b = MOL[m], on = S.focus === m;
+      o += `<rect x="${b[0]}" y="84" width="${b[1] - b[0]}" height="150" rx="16" fill="${on ? "#fff6d6" : "#f7f8fb"}" stroke="${on ? "#f2b134" : "#e3e7ee"}" stroke-width="${on ? 3 : 1.5}"/>`;
+      o += `<text x="${(b[0] + b[1]) / 2}" y="222" class="mid" font-size="14" font-weight="700" fill="#5a6376">${b[2]}</text>`;
+    }
+    PIECES.forEach(p => { o += `<text x="${p[2]}" y="186" font-size="40" font-weight="700" fill="#1d2433" text-anchor="middle">${p[1]}</text>`; });
+    for (const id in S.show){
+      const v = S.show[id], fresh = !(id in prev.show), s = fresh ? ease((t - 250) / 450) : 1;
+      if (s <= 0) continue;
+      const x = X[id], y = 122;
+      o += `<g transform="translate(${x} ${y}) scale(${f1(s)})"><circle r="21" fill="#fff" stroke="${col(v)}" stroke-width="3"/><text y="6" font-size="17" font-weight="700" fill="${col(v)}" text-anchor="middle">${v}</text></g>`;
+    }
+    if (S.calc) S.calc.forEach((line, i) => {
+      const a = ease((t - 700 - i * 900) / 500);
+      o += `<text x="500" y="${300 + i * 44}" class="t20 mid" opacity="${f1(a)}" style="fill:#2c3796">${line}</text>`;
+    });
+    if (S.summary){
+      const a1 = ease((t - 300) / 800), a2 = ease((t - 1300) / 800);
+      o += `<defs><marker id="mk" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="context-stroke"/></marker></defs>`;
+      o += `<path d="M${X.gC},248 C${X.gC},300 ${X.cC},300 ${X.cC},248" fill="none" stroke="#3f4cc0" stroke-width="3" marker-end="url(#mk)" opacity="${f1(a1)}"/>`;
+      o += `<path d="M${X.oO},250 C${X.oO},330 ${X.wO},330 ${X.wO},250" fill="none" stroke="#d9443a" stroke-width="3" marker-end="url(#mk)" opacity="${f1(a2)}"/>`;
+      o += `<text x="500" y="370" class="t20 mid" style="fill:#2c3796" opacity="${f1(a1)}">Carbon: 0 → +4 (up = lost electrons = OXIDIZED)</text>`;
+      o += `<text x="500" y="410" class="t20 mid" style="fill:#b83a34" opacity="${f1(a2)}">Oxygen: 0 → −2 (down = gained electrons = REDUCED)</text>`;
+      o += `<text x="500" y="446" class="mid" font-size="16" font-weight="700" fill="#5a6376" opacity="${f1(a2)}">Hydrogen: +1 → +1 (no change)</text>`;
+    }
+    svg.innerHTML = o;
+    if (playing && t > DUR && k < STAGES.length - 1) go(k + 1, true);
+    requestAnimationFrame(draw);
+  }
+  function go(i, auto){
+    k = clamp(i, 0, STAGES.length - 1); t0 = performance.now();
+    if (!auto) setPlay(false);
+    if (k === STAGES.length - 1) setPlay(false);
+    const S = STAGES[k];
+    document.getElementById("oxNo").textContent = `Step ${k + 1} of ${STAGES.length}`;
+    document.getElementById("oxCap").innerHTML = S.cap;
+    document.querySelectorAll("[data-rule]").forEach(li => li.classList.toggle("on", +li.dataset.rule === S.rule));
+    document.getElementById("oxBack").disabled = k === 0;
+    const nx = document.getElementById("oxNext");
+    nx.textContent = k === STAGES.length - 1 ? "Back to the module" : "Next";
+  }
+  function setPlay(p){ playing = p; document.getElementById("oxPlay").textContent = p ? "Pause" : (k === STAGES.length - 1 ? "Replay" : "Play"); }
+  document.getElementById("oxBack").addEventListener("click", () => go(k - 1));
+  document.getElementById("oxNext").addEventListener("click", () => { if (k === STAGES.length - 1) location.href = "energy-chemistry.html#step-2"; else go(k + 1); });
+  document.getElementById("oxPlay").addEventListener("click", () => {
+    if (playing) setPlay(false);
+    else { if (k === STAGES.length - 1) go(0, true); t0 = performance.now(); setPlay(true); }
+  });
+  go(0, true); setPlay(true);
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
