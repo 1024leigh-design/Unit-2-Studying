@@ -535,10 +535,10 @@
   (function(){
     const CH8 = ["replication","pretx","transcription","posttx","translation","mutations"];
     const LABS_DIR = ["build","lab","splice","editor"];
-    const CH5 = ["enzymes","energy","glycolysis","krebs","ferment"];
-    /* Chapter 5 pages haven't been revised yet, so their tab/tiles are hidden for now.
-       Flip this to true (and restore the Chapter 5 stops in studypath.js) once they're ready. */
-    const CH5_ENABLED = false;
+    /* Chapter 5 modules appear here as each one is revised. Still to come: enzymes, glycolysis, krebs, ferment
+       (restore their stops in studypath.js when they go live). */
+    const CH5 = ["energy"];
+    const CH5_ENABLED = true;
     const t = k => tileHTML(k, {noDesc:true, noWide:true});
     const el = document.getElementById("modDir");
     if (!el) return;
@@ -562,6 +562,7 @@
       </div>
       <div class="modpanel" data-panel="ch5" hidden>
         <div class="grid">${CH5.map(t).join("")}</div>
+        <p class="moddesc">More Chapter 5 modules are on the way!</p>
       </div>`;
     el.querySelectorAll(".modtab").forEach(b => b.addEventListener("click", () => {
       el.querySelectorAll(".modtab").forEach(x => x.setAttribute("aria-selected", String(x === b)));
