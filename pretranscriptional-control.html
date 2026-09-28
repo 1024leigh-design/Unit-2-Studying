@@ -651,9 +651,9 @@
   const P2 = "Operon basics", P3 = "The lac operon", P4 = "The trp operon";
   const PRO = [
     {part:P2, title:"The parts of an operon", v:O("generic", {}, "park", {termHelp:true}), more:"parts",
-     text:`Meet our road trip crew! <span class="tagword" style="background:#dbe3fb;color:#28348f" data-term="car">RNA polymerase</span> is the car, and DNA is the road. Tap the highlighted words (or the diagram) to see what they mean! An operon has three parts in a row: the <span class="tagword" style="background:#fbe3b5;color:#8a5a12" data-term="promoter">promoter</span>, where the car parks to start; the {{operator}}, a short on/off switch right next to it; and the <span class="tagword" style="background:#d6efdf;color:#1b6b45" data-term="genes">structural genes</span>, which code for the proteins.`},
-    {part:P2, title:"The regulatory gene", v:O("generic", {repShow:1, made:1}, "park"), pre:O("generic", {repShow:1, made:0}, "park"), more:"regulatory",
-     text:`Upstream of the operon sits the {{regulatory}} gene (also called the repressor gene). It is not part of the operon, but it codes for the protein that controls it: the repressor.`},
+     text:`Meet our road trip crew! RNA polymerase is the car, and DNA is the road. <b>Click the glowing icons on the diagram</b> (or the highlighted words here) to read about <span class="tagword" style="background:#dbe3fb;color:#28348f" data-term="car">RNA polymerase</span>, the <span class="tagword" style="background:#fbe3b5;color:#8a5a12" data-term="promoter">promoter</span>, the <span class="tagword" style="background:#fde2e0;color:#9b2c24" data-term="operator">on/off switch</span>, and the <span class="tagword" style="background:#d6efdf;color:#1b6b45" data-term="genes">structural genes</span>. An operon has three parts in a row: the promoter, the {{operator}}, and the structural genes.`},
+    {part:P2, title:"The regulatory gene", v:O("generic", {repShow:1, made:1}, "park"), more:"regulatory", play:"regmake",
+     text:`Upstream of the operon sits the {{regulatory}} gene (also called the repressor gene). It is not part of the operon, but it codes for the protein that controls it: the repressor. Transcribe it yourself below!`},
     {part:P2, title:"Cis or trans?", v:O("generic", {repShow:0, carShow:0}, "park", {cistrans:true}), more:"cistrans",
      text:`The regulatory gene can sit right next to the operon (like lacI) or far away on the chromosome (like trpR). Either way works, because the <span class="tagword" style="background:#f7dce7;color:#b83a34">repressor</span> is a protein that travels through the cytoplasm to find the operator. A DNA site that only controls the genes right next to it is {{cis}}-acting, like the <span class="tagword" style="background:#dbe3fb;color:#28348f">operator</span>. A product that can float over and act anywhere is {{trans}}-acting, like the repressor.`},
     {part:P2, title:"Negative control: the stop sign", v:O("generic", {repShow:1, rep:1}, "blocked"), more:"negative", play:"repressor",
@@ -876,6 +876,10 @@
     else playMsg(on ? "Gas in the tank! RNA polymerase grabs the promoter and holds tight. Vroom!" : "No gas now. RNA polymerase can still start sometimes, but it usually stalls.", "good");
   }
   const PLAYS = {
+    regmake:{
+      start:() => ({made:false}),
+      def:p => O("generic", {repShow:p.made ? 1 : 0, made:p.made ? 1 : 0}, "park", {regGlow:!p.made})
+    },
     repressor:{
       start:() => ({on:false, did:{}}),
       def:p => O("generic", {repShow:1, rep:p.on ? 1 : 0, repAct:1}, p.on ? "blocked" : "drive", {dragToken:{
@@ -1264,7 +1268,8 @@
     if (L.brk) o += dnaLadder(40, 190, 330) + dnaLadder(290, 960, 330) + `<text x="240" y="336" class="t18 mid muted">\u2215\u2215</text>`;
     else o += dnaLadder(40, 960, 330);
     L.segs.forEach(sg => {
-      const hint = def.flags.termHelp && (sg.below === "Promoter" ? "promoter" : (sg.txt && sg.txt.indexOf("Gene") === 0 ? "genes" : null));
+      const hint = def.flags.termHelp && (sg.below === "Promoter" ? "promoter" : sg.below === "op" ? "operator" : (sg.txt && sg.txt.indexOf("Gene") === 0 ? "genes" : null));
+      if (def.flags.regGlow && sg.below === "reg") o += `<rect x="${sg.x1 - 6}" y="306" width="${sg.x2 - sg.x1 + 12}" height="48" rx="10" fill="none" stroke="#f2b134" stroke-width="4" opacity="${f3(.45 + .45 * Math.sin(t * 4))}"/>`;
       o += `<rect x="${sg.x1}" y="316" width="${sg.x2 - sg.x1}" height="28" rx="5" fill="${sg.fill}" fill-opacity=".62" stroke="#8b93a3" stroke-width="1"${hint ? ` data-hint="${hint}" style="cursor:pointer"` : ""}/>`;
       if (sg.txt) o += `<text x="${(sg.x1 + sg.x2) / 2}" y="335" class="t12 mid${sg.it ? " it" : ""}">${sg.txt}</text>`;
       if (sg.below){
@@ -1366,27 +1371,46 @@
     }
     if (def.flags.bgal && carMode === "drive" && carT > 2.5) o += pill(690, 206, "\u03b2-galactosidase made!", "#9a6212", Math.min(1, carT - 2.5));
     if (def.flags.drag) o += dragOverlay(L, s);
-    if (def.flags.termHelp && termActive){
-      const age = (performance.now() - termActive.t0) / 1000;
-      if (age < 3){
-        const pr = 50 + 6 * Math.sin(age * 6);
-        if (termActive.key === "car") o += `<circle cx="${L.carX}" cy="296" r="${f1(pr)}" fill="none" stroke="${BLUE}" stroke-width="4" opacity=".85"/>` + pill(L.carX, 200, "Reads DNA, makes RNA", BLUE, 1);
-        else if (termActive.key === "promoter"){
-          const sg = L.segs.find(x => x.below === "Promoter"), cx = (sg.x1 + sg.x2) / 2;
-          o += `<rect x="${sg.x1 - 6}" y="304" width="${sg.x2 - sg.x1 + 12}" height="52" rx="10" fill="none" stroke="#c98a2e" stroke-width="4" opacity=".85"/>` + pill(cx, 250, "Site where RNA polymerase binds", "#9a6212", 1);
-        } else if (termActive.key === "genes"){
-          const gs = L.segs.filter(x => x.txt && x.txt.indexOf("Gene") === 0), gx1 = gs[0].x1, gx2 = gs[gs.length - 1].x2, cx = (gx1 + gx2) / 2;
-          o += `<rect x="${gx1 - 6}" y="304" width="${gx2 - gx1 + 12}" height="52" rx="10" fill="none" stroke="#1b6b45" stroke-width="4" opacity=".85"/>` + pill(cx, 250, "Code for the operon's proteins", "#1b6b45", 1);
-        }
-      }
-    }
+    if (def.flags.termHelp) o += termLayer(L, t);
     return o;
   }
 
 
   /* ================= Draggable molecules in the operon scene ================= */
   let molDrag = null, playSetter = null, stageDrag = null, termActive = null;
-  function activateTerm(key){ termActive = {key, t0:performance.now()}; }
+  function activateTerm(key){ termActive = termActive && termActive.key === key ? null : {key, t0:performance.now()}; }
+  const TERMINFO = {
+    car:["RNA polymerase", "The car that drives down the road (DNA)", "Enzyme that reads DNA and makes mRNA", BLUE],
+    promoter:["Promoter", "The parking spot where the car starts", "DNA where RNA polymerase binds to start", "#9a6212"],
+    operator:["Operator", "The spot where a stop sign can go", "DNA switch where the repressor can bind", "#b83a34"],
+    genes:["Structural genes", "The destination: the whole point of the trip", "Code for the proteins the operon makes", "#1b6b45"]
+  };
+  /* Step 1: glowing "?" badges on each part, and a box that pops up on the diagram when one is clicked */
+  function termLayer(L, t){
+    const pro = L.segs.find(x => x.below === "Promoter"), op = L.segs.find(x => x.below === "op"), gs = L.segs.filter(x => x.txt && x.txt.indexOf("Gene") === 0);
+    const box = {car:[L.carX - 48, 244, 96, 64], promoter:[pro.x1 - 4, 310, pro.x2 - pro.x1 + 8, 62], operator:[op.x1 - 4, 310, op.x2 - op.x1 + 8, 62], genes:[gs[0].x1 - 4, 310, gs[gs.length - 1].x2 - gs[0].x1 + 8, 62]};
+    const badge = {car:[L.carX + 58, 250], promoter:[pro.x1 + 16, 296], operator:[(op.x1 + op.x2) / 2 + 22, 296], genes:[(gs[0].x1 + gs[gs.length - 1].x2) / 2, 296]};
+    const pulse = .5 + .5 * Math.sin(t * 4);
+    let o = "";
+    if (!termActive) o += `<text x="500" y="60" class="t16 mid" style="fill:#8a5a00" font-weight="700">Click the glowing ? icons to learn about each part!</text>`;
+    for (const k in TERMINFO){
+      const [bx, by, bw, bh] = box[k], on = termActive && termActive.key === k, col = TERMINFO[k][3];
+      o += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="10" fill="${on ? "rgba(255,246,176,.35)" : "none"}" stroke="${on ? col : "#f2b134"}" stroke-width="${on ? 4 : 2.5}" stroke-dasharray="${on ? "" : "6 5"}" opacity="${on ? 1 : f3(.4 + .5 * pulse)}" data-hint="${k}" style="cursor:pointer;pointer-events:all"/>`;
+      const [cx, cy] = badge[k];
+      o += `<g data-hint="${k}" style="cursor:pointer"><circle cx="${cx}" cy="${cy}" r="${f1(15 + 3 * pulse)}" fill="#f2b134" opacity="${f3(.25 + .25 * pulse)}"/><circle cx="${cx}" cy="${cy}" r="13" fill="${on ? col : "#fff"}" stroke="${col}" stroke-width="2.5"/><text x="${cx}" y="${cy + 5}" font-size="15" font-weight="700" fill="${on ? "#fff" : col}" text-anchor="middle">?</text></g>`;
+    }
+    if (termActive){
+      const k = termActive.key, info = TERMINFO[k], [bx, by, bw] = box[k], tx = bx + bw / 2;
+      const name = k === "operator" && !resolved("operator") ? "? (fill in the blank)" : info[0];
+      const w = 500, h = 112, x = clamp(tx - w / 2, 16, 1000 - w - 16), y = 96, px = clamp(tx, x + 30, x + w - 30);
+      o += `<g data-hint="close" style="cursor:pointer"><rect x="${f1(x)}" y="${y}" width="${w}" height="${h}" rx="14" fill="#fff" stroke="${info[3]}" stroke-width="2.5"/>`;
+      o += `<path d="M${f1(px - 13)},${y + h - 1.5} L${f1(px)},${y + h + 16} L${f1(px + 13)},${y + h - 1.5} Z" fill="#fff"/><path d="M${f1(px - 13)},${y + h} L${f1(px)},${y + h + 16} L${f1(px + 13)},${y + h}" fill="none" stroke="${info[3]}" stroke-width="2.5" stroke-linejoin="round"/>`;
+      o += `<text x="${f1(x + 18)}" y="${y + 30}" font-size="18" font-weight="700" fill="${info[3]}">${name}</text><text x="${f1(x + w - 18)}" y="${y + 28}" font-size="18" font-weight="700" fill="#9aa3b5" text-anchor="end">×</text>`;
+      o += `<text x="${f1(x + 18)}" y="${y + 60}" font-size="15" fill="#1d2433"><tspan font-weight="700">🚗 Road trip: </tspan>${info[1]}</text>`;
+      o += `<text x="${f1(x + 18)}" y="${y + 90}" font-size="15" fill="#1d2433"><tspan font-weight="700">🔬 In the cell: </tspan>${info[2]}</text></g>`;
+    }
+    return o;
+  }
   function wireStageDrag(){
     const active = () => vis && vis.scene === "operon" && vis.flags && vis.flags.dragToken;
     svg.addEventListener("pointerdown", e => {
@@ -1411,9 +1435,11 @@
       else cfg.onDrop && cfg.onDrop(d.x, d.y);
     };
     svg.addEventListener("pointerup", end); svg.addEventListener("pointercancel", () => { stageDrag = null; });
-    svg.addEventListener("click", e => {
+    svg.addEventListener("pointerdown", e => {
       if (!(vis && vis.flags && vis.flags.termHelp)) return;
-      const g = e.target.closest("[data-hint]"); if (g) activateTerm(g.dataset.hint);
+      const g = e.target.closest && e.target.closest("[data-hint]");
+      if (!g){ termActive = null; return; }
+      if (g.dataset.hint === "close") termActive = null; else activateTerm(g.dataset.hint);
     });
   }
   const MOLICON = {glu:(x, y) => glucose(x, y, 1), lac:(x, y) => disacc(x, y, 1), ara:(x, y) => arabinose(x, y, 1), mal:(x, y) => maltose(x, y, 1), trp:(x, y) => trpChip(x, y, 1)};
@@ -1637,20 +1663,27 @@
     return o;
   }
   function ctrlSummaryScene(){
-    const card = (x, y, w, h, fill, stroke) => `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="18" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>`;
-    let o = `<text x="500" y="30" class="t18 mid">Two separate questions about any operon</text>`;
-    o += `<text x="250" y="62" class="t15 mid" style="fill:#b83a34">Q1: How does the protein control it?</text>`;
-    o += card(250, 180, 420, 210, "#fbe8e7", "#b83a34");
-    o += stopSign(165, 150, 1, 1, .85);
-    o += `<text x="165" y="210" class="t13 mid" font-weight="700">Negative control</text><text x="165" y="230" class="t12 mid muted">Repressor</text>`;
-    o += gasCan(345, 155, 1, "", 1, false);
-    o += `<text x="345" y="210" class="t13 mid" font-weight="700">Positive control</text><text x="345" y="230" class="t12 mid muted">Activator</text>`;
-    o += `<text x="750" y="62" class="t15 mid" style="fill:#1b7f4e">Q2: What's the default state?</text>`;
-    o += card(750, 180, 420, 210, "#e1f3e8", "#1b7f4e");
-    o += `<text x="750" y="140" class="t13 mid" font-weight="700">Inducible: normally OFF</text>`;
-    o += miniSwitch(750, 170, true, "inducer", GOLD);
-    o += `<text x="750" y="222" class="t13 mid" font-weight="700">Repressible: normally ON</text>`;
-    o += miniSwitch(750, 252, false, "corepressor", PURPLE);
+    const card = (x, y, w, h, fill, stroke) => `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="20" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>`;
+    const big = (x, y, k, body) => `<g transform="translate(${x} ${y}) scale(${k}) translate(${-x} ${-y})">${body}</g>`;
+    let o = `<text x="500" y="36" class="t18 mid">Two separate questions about any operon</text>`;
+    /* Q1 */
+    o += card(255, 250, 440, 370, "#fbe8e7", "#b83a34");
+    o += `<text x="255" y="100" class="t16 mid" style="fill:#b83a34" font-weight="700">Q1: HOW does the protein control it?</text>`;
+    o += `<line x1="255" y1="140" x2="255" y2="360" stroke="#e7b9b5" stroke-width="2" stroke-dasharray="6 6"/>`;
+    o += stopSign(150, 205, 1, 1, 1.5);
+    o += `<text x="150" y="286" class="t15 mid" font-weight="700">Negative control</text><text x="150" y="310" class="t13 mid muted">A repressor</text><text x="150" y="330" class="t13 mid muted">blocks the road</text>`;
+    o += big(360, 205, 1.45, gasCan(360, 230, 1, "", 1, false));
+    o += `<text x="360" y="286" class="t15 mid" font-weight="700">Positive control</text><text x="360" y="310" class="t13 mid muted">An activator</text><text x="360" y="330" class="t13 mid muted">adds gas</text>`;
+    o += `<text x="255" y="398" class="t13 mid" style="fill:#b83a34">Stop sign or gas pedal?</text>`;
+    /* Q2 */
+    o += card(745, 250, 440, 370, "#e1f3e8", "#1b7f4e");
+    o += `<text x="745" y="100" class="t16 mid" style="fill:#1b7f4e" font-weight="700">Q2: WHAT is the default state?</text>`;
+    o += `<text x="745" y="152" class="t15 mid" font-weight="700">Inducible: normally OFF</text>`;
+    o += big(745, 196, 1.35, miniSwitch(745, 196, true, "inducer", GOLD));
+    o += `<line x1="555" y1="258" x2="935" y2="258" stroke="#b7dcc6" stroke-width="2" stroke-dasharray="6 6"/>`;
+    o += `<text x="745" y="298" class="t15 mid" font-weight="700">Repressible: normally ON</text>`;
+    o += big(745, 342, 1.35, miniSwitch(745, 342, false, "corepressor", PURPLE));
+    o += `<text x="745" y="410" class="t13 mid" style="fill:#1b7f4e">A small molecule flips the switch</text>`;
     o += `<defs><marker id="msArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#9aa3b5"/></marker></defs>`;
     return o;
   }
@@ -2006,6 +2039,22 @@
     const st = isTrack(view) && steps()[idx()];
     if (!st || !st.play) return;
     const p = playState(), A = $("labArea");
+    if (st.play === "regmake"){
+      let h = `<div class="play${p.done ? " done" : ""}"><div class="ptitle">${p.done ? "✓ You made the repressor!" : "Your turn: make the repressor"}</div>`;
+      h += p.done ? `<div>RNA polymerase transcribed the regulatory gene into mRNA, and ribosomes translated it into the repressor protein (the stop sign). Now it can float off to find the operator.</div>`
+        : `<div><button class="btn primary" id="regMakeBtn" type="button">Transcribe the regulatory gene</button></div>`;
+      h += `<div class="gmsg" id="playMsg"></div></div>`;
+      h += `<div class="play" style="border-color:#c9b8ef;background:#f6f2fe;margin-top:12px"><div class="ptitle" style="color:#5b3fb0">But wait!? Is there a repressor for the repressor gene?</div>
+        <div>Yes, there can be! The genes that make regulators are regulated too. Some repressors even control their <i>own</i> gene: the trp repressor (made by <i>trpR</i>) turns down <i>trpR</i> itself when there's plenty of it, so the cell doesn't make too much. Other regulator genes are switched by different regulators, forming chains and networks: one regulator controls another, which controls another. Others, like <i>lacI</i>, are simply left on at a low, steady level, so the cell always has about 10 lac repressors ready to go.</div></div>`;
+      A.innerHTML = h;
+      const btn = $("regMakeBtn");
+      if (btn) btn.addEventListener("click", () => {
+        p.made = true; p.done = true;
+        applyVisual(PLAYS.regmake.def(p)); renderPlay(); updateButtons();
+        playMsg("The repressor comes off the regulatory gene!", "good");
+      });
+      return;
+    }
     if (st.play === "repressor"){
       let h = `<div class="play${p.done ? " done" : ""}"><div class="ptitle">${p.done ? "✓ You controlled the operon with one protein!" : "Your turn: be the repressor"}</div>`;
       h += `<div class="readout"><span class="chip ${p.on ? "off" : "on"}">Operator: ${p.on ? "blocked by repressor" : "open"}</span><span class="chip ${p.on ? "off" : "on"}">RNA polymerase: ${p.on ? "stuck at the promoter" : "transcribing"}</span></div>`;
