@@ -1535,82 +1535,127 @@
     if (lo > .01) o += disacc(555, 135, lo) + disacc(595, 115, lo) + `<text x="575" y="93" class="t15 mid" opacity="${f3(lo)}">Lactose shows up!</text>`;
     return o + `<text x="500" y="390" class="t15 mid muted">Energy spent only on genes the cell needs right now</text>`;
   }
+  /* ===== Shared look for the eukaryote slides: glossy proteins, real double helices, soft panels ===== */
+  const EU_DEFS = `<defs>
+    <radialGradient id="euHis" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#e3d8fb"/><stop offset=".55" stop-color="#a48ad6"/><stop offset="1" stop-color="#6d53a8"/></radialGradient>
+    <radialGradient id="euTeal" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#9fe3da"/><stop offset="1" stop-color="#0f8a80"/></radialGradient>
+    <radialGradient id="euGold" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffe3a3"/><stop offset="1" stop-color="#d9941a"/></radialGradient>
+    <radialGradient id="euRose" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffc2d4"/><stop offset="1" stop-color="#c2446d"/></radialGradient>
+    <linearGradient id="euNuc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7f4fe"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+    <filter id="euSh" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#1d2433" flood-opacity=".22"/></filter>
+  </defs>`;
+  const chip = (x, y, text, fill) => { const w = text.length * 8 + 26; return `<rect x="${f1(x - w / 2)}" y="${f1(y - 14)}" width="${f1(w)}" height="26" rx="13" fill="${fill}"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="13.5" font-weight="800" fill="#fff" text-anchor="middle">${text}</text>`; };
+  const helixDNA = (x1, x2, y, o) => window.BioArt.helix(x1, x2, y, {amp:8, per:38, col:"#0f766e", back:"#9fd4cc", width:3.4, ...(o || {})});
+  /* a nucleosome: histone core with DNA wrapped about twice around it */
+  function nucleosome(cx, cy, r, op, rot){
+    rot = rot || -14; op = op === undefined ? 1 : op;
+    const wrap = dy => `M${f1(cx - r * 1.12)},${f1(cy + dy)} A${f1(r * 1.12)},${f1(r * .42)} 0 0 0 ${f1(cx + r * 1.12)},${f1(cy + dy)}`;
+    const back = dy => `M${f1(cx - r * 1.12)},${f1(cy + dy)} A${f1(r * 1.12)},${f1(r * .42)} 0 0 1 ${f1(cx + r * 1.12)},${f1(cy + dy)}`;
+    let o = `<g opacity="${f3(op)}" transform="rotate(${rot} ${f1(cx)} ${f1(cy)})">`;
+    o += `<path d="${back(-r * .28)}${back(r * .28)}" fill="none" stroke="#7fbfb6" stroke-width="${f1(r * .2)}" stroke-linecap="round"/>`;
+    o += `<ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="${f1(r)}" ry="${f1(r * .86)}" fill="url(#euHis)" stroke="#5b4494" stroke-width="1.5"/>`;
+    o += `<ellipse cx="${f1(cx - r * .28)}" cy="${f1(cy - r * .4)}" rx="${f1(r * .38)}" ry="${f1(r * .16)}" fill="#fff" opacity=".45"/>`;
+    o += `<path d="${wrap(-r * .28)}${wrap(r * .28)}" fill="none" stroke="#0f766e" stroke-width="${f1(r * .22)}" stroke-linecap="round"/>`;
+    return o + `</g>`;
+  }
   function compareSVG(t){
     let o = `<rect x="20" y="30" width="465" height="410" rx="24" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="3"/><rect x="515" y="30" width="465" height="410" rx="24" fill="#f5f1fb" stroke="#8f7fb0" stroke-width="3"/>`;
     o += `<text x="252" y="70" class="t18 mid">Prokaryote: operon</text><text x="747" y="70" class="t18 mid">Eukaryote: one gene at a time</text>`;
     const cols = [ORANGE, BLUE, GREEN];
-    o += dnaLadder(50, 460, 320) + `<rect x="60" y="306" width="60" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="90" y="325" class="t12 mid">P</text><rect x="120" y="306" width="40" height="28" rx="5" fill="#fde2e0" stroke="#8b93a3"/><text x="140" y="325" class="t12 mid">O</text>`;
-    for (let i = 0; i < 3; i++) o += `<rect x="${160 + i * 95}" y="306" width="95" height="28" rx="5" fill="${cols[i]}" opacity=".8"/><text x="${207 + i * 95}" y="325" class="t12 mid wht">Gene ${i + 1}</text>`;
+    const Y = 290;
+    o += dnaLadder(50, 460, Y) + `<rect x="60" y="${Y - 14}" width="60" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="90" y="${Y + 5}" class="t12 mid">P</text><rect x="120" y="${Y - 14}" width="40" height="28" rx="5" fill="#fde2e0" stroke="#8b93a3"/><text x="140" y="${Y + 5}" class="t12 mid">O</text>`;
+    for (let i = 0; i < 3; i++) o += `<rect x="${160 + i * 95}" y="${Y - 14}" width="95" height="28" rx="5" fill="${cols[i]}" opacity=".8"/><text x="${207 + i * 95}" y="${Y + 5}" class="t12 mid wht">Gene ${i + 1}</text>`;
     const len = clamp((t % 4) / 3.2, 0, 1) * 285;
-    for (let i = 0; i < 3; i++){ const a = 160 + i * 95, b = Math.min(a + 95, 160 + len); if (b > a) o += `<line x1="${a}" y1="240" x2="${f1(b)}" y2="240" stroke="${cols[i]}" stroke-width="8"/>`; }
-    if (len > 2) o += car(160 + len, 306, clamp(len / 15, 0, 1));
-    o += `<text x="252" y="220" class="t12 mid">one mRNA, three genes</text><text x="252" y="390" class="t13 mid muted">One promoter controls all three genes</text>`;
+    for (let i = 0; i < 3; i++){ const a = 160 + i * 95, b = Math.min(a + 95, 160 + len); if (b > a) o += `<line x1="${a}" y1="210" x2="${f1(b)}" y2="210" stroke="${cols[i]}" stroke-width="8" stroke-linecap="round"/>`; }
+    if (len > 2) o += car(160 + len, Y - 14, clamp(len / 15, 0, 1));
+    o += `<text x="252" y="186" class="t13 mid">one mRNA, three genes</text><text x="252" y="370" class="t13 mid muted">One promoter controls all three genes</text>`;
     for (let i = 0; i < 3; i++){
       const y = 150 + i * 100;
       o += dnaLadder(560, 940, y) + `<rect x="580" y="${y - 14}" width="60" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="610" y="${y + 5}" class="t12 mid">P</text><rect x="640" y="${y - 14}" width="130" height="28" rx="5" fill="${cols[i]}" opacity=".8"/><text x="705" y="${y + 5}" class="t12 mid wht">Gene ${i + 1}</text>`;
       const q = clamp(((t + i * 1.1) % 4) / 2.6, 0, 1);
-      if (q > 0){ o += `<line x1="640" y1="${y - 30}" x2="${f1(640 + q * 130)}" y2="${y - 30}" stroke="${cols[i]}" stroke-width="7"/>`; o += car(640 + q * 130, y - 16, clamp(q / .15, 0, 1)); }
+      if (q > 0){ o += `<line x1="640" y1="${y - 30}" x2="${f1(640 + q * 130)}" y2="${y - 30}" stroke="${cols[i]}" stroke-width="7" stroke-linecap="round"/>`; o += car(640 + q * 130, y - 16, clamp(q / .15, 0, 1)); }
     }
     return o + `<text x="747" y="405" class="t13 mid muted">Each gene has its own promoter,</text><text x="747" y="425" class="t13 mid muted">its own RNA polymerase, and its own mRNA</text>`;
   }
   function chromatinSVG(t){
-    const HB = [[150,300],[190,280],[230,300],[270,282],[310,300],[170,248],[210,244],[250,250],[290,246],[190,215],[230,212],[270,218],[210,184],[250,186],[330,270],[130,265]];
-    let o = "";
-    /* heterochromatin: DNA wound tight around each histone bead, beads linked in a packed chain */
-    let hd = `M${HB[0][0]},${HB[0][1]}`; for (let i = 1; i < HB.length; i++) hd += ` L${HB[i][0]},${HB[i][1]}`;
-    o += `<path d="${hd}" fill="none" stroke="#0f766e" stroke-width="4" stroke-linejoin="round" opacity=".55"/>`;
-    HB.forEach(p => { const rot = (p[0] * 3 + p[1]) % 180;
-      o += `<ellipse cx="${p[0]}" cy="${p[1]}" rx="25" ry="13" fill="none" stroke="#0f766e" stroke-width="4" transform="rotate(${rot} ${p[0]} ${p[1]})"/>`;
-      o += `<circle cx="${p[0]}" cy="${p[1]}" r="19" fill="#9a88c2" stroke="#6d5a97" stroke-width="2"/>`;
-    });
-    o += `<text x="230" y="130" class="t15 mid">Tightly packed (heterochromatin)</text><text x="230" y="152" class="t13 mid red">Genes OFF</text>`;
-    o += `<text x="230" y="392" class="t12 mid muted">DNA wound tight around each histone</text>`;
-    /* euchromatin: DNA runs open and straight, histones just resting on top, gene reachable */
-    o += `<path d="M420,300 H960" stroke="#0f766e" stroke-width="5"/>`;
-    [520, 600, 680, 900].forEach(x => { o += `<circle cx="${x}" cy="300" r="22" fill="#9a88c2" stroke="#6d5a97" stroke-width="2"/><path d="M${x - 22},296 q22,-14 44,0" stroke="#0f766e" stroke-width="3" fill="none"/>`; });
-    o += `<text x="600" y="352" class="t12 mid pur">${resolved("histones") ? "Histones" : "?"}</text><path d="M586,340 L600,324 M614,340 L600,324" stroke="#6b4bb8" stroke-width="1.5"/>`;
-    o += `<rect x="730" y="288" width="130" height="24" rx="5" fill="#d6efdf" stroke="#8b93a3"/><text x="795" y="305" class="t12 mid">Gene</text>`;
-    o += `<text x="730" y="130" class="t15 mid">Loosely packed (euchromatin)</text><text x="730" y="152" class="t13 mid grn">Genes ON</text>`;
-    /* both cars travel the same direction (left to right): one gets through, one is blocked before it can enter the packed DNA */
-    const p = (t % 3) / 3;
-    o += car(lerp(490, 830, smooth(p)), 286, 1 - smooth(seg(p, .85, 1))) + mrna(740, lerp(740, 800, smooth(p)), 250, 1);
-    return o + car(90 + Math.abs(Math.sin(t * 3)) * 8, 286, 1) + pill(90, 216, "Can't get in!", "#7a8292", 1);
+    let o = EU_DEFS;
+    o += `<rect x="16" y="20" width="474" height="430" rx="22" fill="#f4f0fb" stroke="#c9b8ef" stroke-width="2"/><rect x="510" y="20" width="474" height="430" rx="22" fill="#eef8f3" stroke="#9fd3b5" stroke-width="2"/>`;
+    o += `<text x="253" y="58" class="t18 mid">Tightly packed</text><text x="253" y="80" class="t13 mid muted">heterochromatin</text>` + chip(253, 108, "Genes OFF", "#b83a34");
+    o += `<text x="747" y="58" class="t18 mid">Loosely packed</text><text x="747" y="80" class="t13 mid muted">euchromatin</text>` + chip(747, 108, "Genes ON", "#1b7f4e");
+    /* heterochromatin: nucleosomes coiled into a thick, packed fiber (drawn back to front) */
+    const beads = [];
+    for (let k = 0; k < 20; k++){ const a = k * 1.15 + t * .25; beads.push({x:170 + k * 13.5, y:262 + Math.sin(a) * 58, z:Math.cos(a)}); }
+    let link = ""; beads.forEach((b, k) => { link += (k ? "L" : "M") + f1(b.x) + "," + f1(b.y); });
+    o += helixDNA(30, 176, 262, {amp:6, per:30});
+    o += `<path d="${link}" fill="none" stroke="#7fbfb6" stroke-width="4" stroke-linejoin="round"/>`;
+    beads.slice().sort((p, q) => p.z - q.z).forEach(b => { o += nucleosome(b.x, b.y, 24 + 6 * b.z, .72 + .28 * (b.z + 1) / 2, -14 + b.z * 10); });
+    const bump = Math.abs(Math.sin(t * 3)) * 7;
+    o += `<g filter="url(#euSh)">${car(92 + bump, 254, 1)}</g>` + pill(96, 184, "Can't get in!", "#7a8292", 1);
+    /* euchromatin: beads on a string, with an open stretch of DNA where the gene can be read */
+    o += `<rect x="752" y="238" width="206" height="48" rx="12" fill="#bfe6cf" opacity=".6"/><text x="855" y="312" class="t13 mid grn">Gene</text>`;
+    o += helixDNA(526, 970, 262);
+    [590, 690].forEach(x => { o += nucleosome(x, 258, 30, 1); });
+    o += `<text x="640" y="336" class="t13 mid pur" font-weight="700">${resolved("histones") ? "Histones" : "?"}</text><path d="M628,322 L603,292 M652,322 L678,292" stroke="#6b4bb8" stroke-width="1.6"/>`;
+    const p = (t % 3.4) / 3.4;
+    o += mrna(760, lerp(760, 900, smooth(p)), 206, 1) + `<g filter="url(#euSh)">${car(lerp(770, 930, smooth(p)), 254, 1 - smooth(seg(p, .85, 1)))}</g>`;
+    o += `<text x="253" y="420" class="t13 mid muted">DNA coiled tightly around histones</text><text x="747" y="420" class="t13 mid muted">DNA open between histones</text>`;
+    return o;
   }
   function tfSVG(t){
-    const tt = t % 7;
-    let o = dnaLadder(40, 960, 330);
-    o += `<rect x="300" y="316" width="170" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="385" y="364" class="t12 mid">Promoter</text><rect x="470" y="316" width="440" height="28" rx="5" fill="#d6efdf" stroke="#8b93a3"/><text x="690" y="335" class="t12 mid">Gene</text>`;
-    const tfs = [[320, TEAL, .4],[360, GOLD, .9],[400, PURPLE, 1.4]];
-    tfs.forEach(f => { const q = smooth(seg(tt, f[2], f[2] + .5)); const y = lerp(120, 296, q); o += `<rect x="${f[0] - 18}" y="${f1(y - 20)}" width="36" height="40" rx="14" fill="${f[1]}" opacity="${f3(Math.max(.15, q))}"/>`; });
-    o += `<text x="360" y="232" class="t13 mid pur" opacity="${f3(smooth(seg(tt, 1.9, 2.3)))}">${resolved("factors") ? "Transcription factors" : "?"}</text>`;
-    let x, op = 1;
-    if (tt < 2.2){ x = 120; op = 0; }
-    else if (tt < 3.0){ x = lerp(120, 468, smooth((tt - 2.2) / .8)); op = smooth((tt - 2.2) / .3); }
-    else if (tt < 3.4) x = 468;
-    else { const q = seg(tt, 3.4, 5.8); x = lerp(468, 890, smooth(q)); op = 1 - seg(tt, 5.8, 6.2); o += mrna(480, Math.max(480, x - 50), 272, 1); }
-    return o + car(x, 314, op);
+    const T = 9, tt = t % T;
+    let o = EU_DEFS + `<rect x="16" y="20" width="968" height="430" rx="26" fill="url(#euNuc)" stroke="#d9d0f0" stroke-width="2"/>`;
+    o += `<text x="40" y="52" class="t13" style="fill:#6b4bb8" font-weight="700">Inside the nucleus</text>`;
+    const Y = 330;
+    o += `<rect x="250" y="${Y - 26}" width="220" height="52" rx="14" fill="#fbe3b5" opacity=".75"/><rect x="470" y="${Y - 26}" width="470" height="52" rx="14" fill="#d6efdf" opacity=".75"/>`;
+    o += `<rect x="382" y="${Y - 26}" width="56" height="52" rx="10" fill="#f6c86a" opacity=".6"/><text x="410" y="${Y + 66}" class="t12 mid muted">TATA box</text><path d="M410,${Y + 28} V${Y + 52}" stroke="#c98a2e" stroke-width="1.5"/>`;
+    o += helixDNA(30, 970, Y, {amp:9, per:40});
+    o += `<text x="330" y="${Y + 46}" class="t13 mid" font-weight="700">Promoter</text><text x="705" y="${Y + 46}" class="t13 mid" font-weight="700">Gene</text>`;
+    /* step caption */
+    const stage = tt < 2.4 ? 0 : tt < 4.2 ? 1 : 2;
+    const caps = ["1. Transcription factors find the promoter", "2. They guide RNA polymerase into place", "3. Transcription begins!"];
+    o += chip(500, 90, caps[stage], ["#6b4bb8", "#3f4cc0", "#1b7f4e"][stage]);
+    /* three transcription factors drop onto the promoter one after another */
+    const TF = [[300, "euTeal", 30, .3], [352, "euGold", 26, .9], [410, "euRose", 32, 1.5]];
+    TF.forEach((f, i) => {
+      const q = smooth(seg(tt, f[3], f[3] + .7)), y = lerp(150, Y - 12 - f[2] * .7, q), wob = (1 - q) * 6 * Math.sin(t * 4 + i);
+      const pts = window.BioArt.blob(f[0] + wob, y, f[2], f[2] * .82, 0.12, 11 + i * 7, 16);
+      o += `<g filter="url(#euSh)" opacity="${f3(.25 + .75 * q)}"><path d="${window.BioArt.smoothClosed(pts)}" fill="url(#${f[1]})" stroke="#00000030" stroke-width="1.5"/><ellipse cx="${f1(f[0] + wob - f[2] * .3)}" cy="${f1(y - f[2] * .35)}" rx="${f1(f[2] * .3)}" ry="${f1(f[2] * .14)}" fill="#fff" opacity=".45"/></g>`;
+    });
+    o += `<g opacity="${f3(smooth(seg(tt, 2.0, 2.5)))}"><path d="M268,236 v-10 H452 v10" fill="none" stroke="#6b4bb8" stroke-width="2"/><text x="360" y="216" class="t15 mid" style="fill:#6b4bb8" font-weight="800">${resolved("factors") ? "Transcription factors" : "?"}</text></g>`;
+    /* RNA polymerase is guided in, then drives off making mRNA */
+    let cx = 150, cy = 170, op = 0;
+    if (tt >= 2.4 && tt < 4.2){ const q = smooth(seg(tt, 2.4, 4.0)); cx = lerp(150, 500, q); cy = lerp(170, Y - 16, q); op = smooth(seg(tt, 2.4, 2.8)); if (q < .95) o += `<path d="M${f1(cx + 40)},${f1(cy + 6)} Q470,220 500,${Y - 44}" fill="none" stroke="#3f4cc0" stroke-width="2.5" stroke-dasharray="6 6" opacity=".6"/>`; }
+    else if (tt >= 4.2){ const q = seg(tt, 4.4, 8.2); cx = lerp(500, 900, smooth(q)); cy = Y - 16; op = 1 - seg(tt, 8.2, 8.8); o += mrna(500, Math.max(500, cx - 52), Y - 72, op); }
+    if (op > .01) o += `<g filter="url(#euSh)">${car(cx, cy, op)}</g>`;
+    return o;
   }
+
   function laneES(y, kind, loop, t, go){
+    /* DNA drawn as a ribbon that bends into a loop, so the distant enhancer/silencer reaches the promoter */
     let o = "";
     const ex = lerp(120, 372, loop), h = 150 * loop;
-    o += `<path d="M40,${y} L${f1(ex)},${y} M${f1(ex + 80)},${y} C${f1(ex + 60)},${f1(y - h)} 500,${f1(y - h)} 476,${y} L950,${y}" fill="none" stroke="#0f766e" stroke-width="5"/>`;
+    const d = `M40,${y} L${f1(ex)},${y} M${f1(ex + 80)},${y} C${f1(ex + 60)},${f1(y - h)} 500,${f1(y - h)} 476,${y} L950,${y}`;
+    o += `<path d="${d}" fill="none" stroke="#0f766e" stroke-width="11" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#8fd3c7" stroke-width="5" stroke-dasharray="2 6"/>`;
     const lbl = kind === "enh" ? (resolved("enhancers") ? "Enhancer" : "?") : (resolved("silencers") ? "Silencer" : "?");
-    o += `<rect x="${f1(ex)}" y="${y - 14}" width="80" height="28" rx="5" fill="${kind === "enh" ? "#d7efe3" : "#fde2e0"}" stroke="#8b93a3"/><text x="${f1(ex + 40)}" y="${y + 5}" class="t12 mid">${lbl}</text>`;
-    o += `<rect x="476" y="${y - 14}" width="84" height="28" rx="5" fill="#fbe3b5" stroke="#8b93a3"/><text x="518" y="${y + 5}" class="t12 mid">Promoter</text><rect x="560" y="${y - 14}" width="340" height="28" rx="5" fill="#d6efdf" stroke="#8b93a3"/><text x="730" y="${y + 5}" class="t12 mid">Gene</text>`;
+    o += `<rect x="${f1(ex)}" y="${y - 16}" width="80" height="32" rx="8" fill="${kind === "enh" ? "#bfe6cf" : "#f7c9c5"}" stroke="${kind === "enh" ? "#1b7f4e" : "#b83a34"}" stroke-width="2"/><text x="${f1(ex + 40)}" y="${y + 5}" class="t12 mid" font-weight="800">${lbl}</text>`;
+    o += `<rect x="476" y="${y - 16}" width="84" height="32" rx="8" fill="#fbe3b5" stroke="#c98a2e" stroke-width="2"/><text x="518" y="${y + 5}" class="t12 mid" font-weight="800">Promoter</text><rect x="560" y="${y - 16}" width="340" height="32" rx="8" fill="#d6efdf" stroke="#6fb18c" stroke-width="2"/><text x="730" y="${y + 5}" class="t12 mid" font-weight="800">Gene</text>`;
     if (kind === "enh"){
-      o += gasCan(ex + 40, y - 16, 1, "Activator", 1, true);
+      o += `<g filter="url(#euSh)">${gasCan(ex + 40, y - 18, 1, "Activator", 1, true)}</g>`;
       let x = 518, op = 1;
-      if (go){ const p = ((t - 2.6) % 1.8) / 1.8; x = lerp(518, 880, smooth(p)); op = 1 - smooth(seg(p, .85, 1)); o += mrna(560, Math.max(560, x - 50), y - 58, 1); }
-      o += car(x, y - 16, op);
+      if (go){ const p = ((t - 2.6) % 1.8) / 1.8; x = lerp(518, 880, smooth(p)); op = 1 - smooth(seg(p, .85, 1)); o += mrna(560, Math.max(560, x - 50), y - 60, 1); }
+      o += `<g filter="url(#euSh)">${car(x, y - 18, op)}</g>`;
     } else {
-      o += stopSign(ex + 40, y - 46, 1, 1, .85) + `<text x="${f1(ex + 40)}" y="${y - 82}" class="t12 mid">Repressor</text>`;
-      o += car(518 + (loop > .9 ? 4 * Math.abs(Math.sin(t * 3)) : 0), y - 16, 1);
+      o += `<g filter="url(#euSh)">${stopSign(ex + 40, y - 48, 1, 1, .85)}</g><text x="${f1(ex + 26)}" y="${y - 84}" class="t12 mid" font-weight="700">Repressor</text>`;
+      o += `<g filter="url(#euSh)">${car(518 + (loop > .9 ? 4 * Math.abs(Math.sin(t * 3)) : 0), y - 18, 1)}</g>`;
     }
     return o;
   }
   function enhancerSVG(t){
     const tt = t % 7, loop = smooth(seg(tt, .8, 2.3)) * (1 - smooth(seg(tt, 6.2, 7)));
-    return `<text x="30" y="46" class="t15">Enhancer + activator: transcription boosted</text><text x="30" y="266" class="t15">Silencer + repressor: transcription turned down</text>` + laneES(200, "enh", loop, tt, tt > 2.6 && tt < 6.2) + laneES(420, "sil", loop, tt, false);
+    let o = EU_DEFS + `<rect x="12" y="12" width="976" height="216" rx="20" fill="#eef8f3" stroke="#9fd3b5" stroke-width="2"/><rect x="12" y="240" width="976" height="218" rx="20" fill="#fbeeed" stroke="#efb9b4" stroke-width="2"/>`;
+    o += chip(150, 40, "Enhancer + activator", "#1b7f4e") + `<text x="262" y="45" font-size="14" style="fill:#1b7f4e" font-weight="700">transcription boosted</text>`;
+    o += chip(150, 268, "Silencer + repressor", "#b83a34") + `<text x="262" y="273" font-size="14" style="fill:#b83a34" font-weight="700">transcription turned down</text>`;
+    return o + laneES(196, "enh", loop, tt, tt > 2.6 && tt < 6.2) + laneES(424, "sil", loop, tt, false);
   }
   function seesawSVG(t, still){
     let g = .5, cap = "";
