@@ -291,6 +291,7 @@
   </div>
 </div>
 
+<script src="bioart.js"></script>
 <script>
 (function(){
   /* ================= Helpers ================= */
@@ -321,13 +322,27 @@
   function tile(x, y, b, op){ const c = BASE[b] || BASE["?"]; return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - 15)}" y="${f1(y)}" width="30" height="30" rx="6" fill="${c[0]}"/><text x="${f1(x)}" y="${f1(y + 20)}" class="bt" fill="${c[1]}">${b}</text></g>`; }
   function pill(x, y, text, fill, op){ const w = text.length * 7.2 + 18; return `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - w/2)}" y="${f1(y - 14)}" width="${f1(w)}" height="24" rx="12" fill="${fill}"/><text x="${f1(x)}" y="${f1(y + 3)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">${text}</text></g>`; }
   function bead(x, y, aa, op, r){ r = r || 15; return `<g opacity="${f3(op === undefined ? 1 : op)}"><circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="${AACOL[aa] || "#9aa3b5"}" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + r * .28)}" font-size="${r > 20 ? 14 : 10}" font-weight="700" fill="${aa === "Met" ? "#3b2a00" : "#fff"}" text-anchor="middle">${aa}</text></g>`; }
+  const BA = window.BioArt;
+  /* Ribosome subunits: organic, slightly lumpy shapes drawn once around (0,0) and moved with a transform */
+  const LSU_D = BA.smoothClosed(BA.blob(0, 0, 185, 100, 0.06, 31, 44, 0.8));
+  const LSU_IN = BA.smoothClosed(BA.blob(0, -6, 150, 70, 0.07, 9, 36, 0.85));
+  const SSU_D = BA.smoothClosed(BA.blob(0, 0, 175, 30, 0.07, 17, 40, 0.72));
+  const RIBO_DEFS = `<defs><radialGradient id="lsuG" cx=".42" cy=".32" r=".8"><stop offset="0" stop-color="#fbe6d4"/><stop offset="1" stop-color="#e7ab82"/></radialGradient><radialGradient id="ssuG" cx=".45" cy=".3" r=".9"><stop offset="0" stop-color="#f6cfab"/><stop offset="1" stop-color="#d9955f"/></radialGradient></defs>`;
+  /* tRNA as a cloverleaf: acceptor stem up to the amino acid, two side loops, and the anticodon arm cradling three bases */
   function trna(i, x, ty, op, showAA, antiShown){
     const y = ty;
     const anti = antiShown ? ANTI[i] : "???";
+    const C = "#4fb3ad", D = "#2c8f8a", L = "#c9ebe8";
+    const arm = (x1, y1, x2, y2) => `<path d="M${f1(x1)},${f1(y1)} L${f1(x2)},${f1(y2)}" stroke="${C}" stroke-width="14" stroke-linecap="round"/><path d="M${f1(x1)},${f1(y1)} L${f1(x2)},${f1(y2)}" stroke="#eefaf9" stroke-width="2" stroke-dasharray="3 3"/>`;
+    const loop = (cx, cy, r) => `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${r}" fill="${L}" stroke="${C}" stroke-width="5"/>`;
+    const jy = 238 + y;
     let o = `<g opacity="${f3(op)}">`;
-    o += `<path d="M${f1(x - 13)},${f1(300 + y)} V${f1(250 + y)} M${f1(x + 13)},${f1(300 + y)} V${f1(250 + y)}" stroke="#2c8f8a" stroke-width="5"/>`;
-    o += `<rect x="${f1(x - 13)}" y="${f1(196 + y)}" width="26" height="106" rx="10" fill="#4fb3ad"/>`;
-    o += `<circle cx="${f1(x - 32)}" cy="${f1(236 + y)}" r="15" fill="#4fb3ad"/><circle cx="${f1(x + 32)}" cy="${f1(236 + y)}" r="15" fill="#4fb3ad"/>`;
+    o += `<path d="M${f1(x)},${f1(203 + y)} q7,-7 2,-15" stroke="${D}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    o += arm(x, 204 + y, x, jy);
+    o += arm(x, jy, x - 26, jy - 6) + loop(x - 38, jy - 9, 12);
+    o += arm(x, jy, x + 26, jy - 6) + loop(x + 38, jy - 9, 12);
+    o += arm(x, jy, x, 282 + y);
+    o += `<path d="M${f1(x - 52)},${f1(304 + y)} Q${f1(x - 50)},${f1(283 + y)} ${f1(x)},${f1(283 + y)} Q${f1(x + 50)},${f1(283 + y)} ${f1(x + 52)},${f1(304 + y)}" fill="none" stroke="${C}" stroke-width="6" stroke-linecap="round"/>`;
     for (let j = 0; j < 3; j++) o += tile(x + (j - 1) * 36, 302 + y, anti[j]);
     o += `</g>`;
     if (showAA > .01) o += bead(x, 180 + y, AAS[i], op * showAA);
@@ -336,7 +351,7 @@
   function mrnaStrip(){
     let o = `<path d="M112,338 H840" stroke="${ORANGE}" stroke-width="4"/>`;
     for (let j = 0; j < MRNA.length; j++) o += tile(BX(j), 340, MRNA[j]);
-    o += `<text x="100" y="360" class="t15 mid muted">5'</text><text x="858" y="360" class="t15 mid muted">3'</text><text x="22" y="362" class="t13 muted">mRNA</text>`;
+    o += `<text x="106" y="344" class="t15 end muted">5'</text><text x="848" y="344" class="t15 muted">3'</text><text x="870" y="344" class="t13 muted">mRNA</text>`;
     return o;
   }
 
@@ -650,7 +665,7 @@
     const xr = CX(s.rp);
     // small subunit
     const sy = 352 + (1 - s.asmS) * 58;
-    o += `<rect x="${f1(xr - 175 + (1 - s.asmS) * 110)}" y="${f1(sy)}" width="350" height="58" rx="28" fill="#e3a877" stroke="#c98c5a" stroke-width="2"/>`;
+    o += RIBO_DEFS + `<path d="${SSU_D}" transform="translate(${f1(xr + (1 - s.asmS) * 110)} ${f1(sy + 29)})" fill="url(#ssuG)" stroke="#c07e4c" stroke-width="2"/>`;
     o += mrnaStrip();
     if (flags.codons){
       const hl = Math.floor(t / 1.2) % 5;
@@ -662,7 +677,7 @@
     }
     // large subunit
     const lx = xr - 185 + (1 - s.asmL) * 110, ly = 132 - (1 - s.asmL) * 126;
-    o += `<rect x="${f1(lx)}" y="${f1(ly)}" width="370" height="200" rx="70" fill="#d98a5a" fill-opacity=".2" stroke="#b8683c" stroke-width="3"/>`;
+    o += `<g transform="translate(${f1(lx + 185)} ${f1(ly + 100)})"><path d="${LSU_D}" fill="url(#lsuG)" fill-opacity=".55" stroke="#b8683c" stroke-width="3"/><path d="${LSU_IN}" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="3"/></g>`;
     if (s.asmL > .8 && s.asmS > .8){
       const sites = [["E", s.rp - 1], ["P", s.rp], ["A", s.rp + 1]];
       sites.forEach(q => { const x = CX(q[1]); o += `<rect x="${f1(x - 40)}" y="420" width="80" height="24" rx="12" fill="#fff" stroke="#b8683c" opacity="${f3((s.asmL - .8) * 5)}"/><text x="${f1(x)}" y="437" class="t12 mid" opacity="${f3((s.asmL - .8) * 5)}">${q[0]} site</text>`; });
@@ -727,23 +742,37 @@
   }
 
   function compareSVG(t){
-    let o = `<rect x="20" y="30" width="465" height="410" rx="24" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="3"/><rect x="515" y="30" width="465" height="410" rx="24" fill="#f7f5fb" stroke="#8f7fb0" stroke-width="3"/>`;
-    o += `<text x="252" y="66" class="t18 mid">Prokaryote</text><text x="252" y="88" class="t13 mid muted">everything in the cytoplasm</text><text x="747" y="66" class="t18 mid">Eukaryote</text><text x="747" y="88" class="t13 mid muted">nucleus first, then cytoplasm</text>`;
-    // prokaryote: coupled
-    const p = (t % 6) / 6, px = 80 + p * 340;
-    o += `<path d="M50,330 H455" stroke="#0f766e" stroke-width="5"/><ellipse cx="${f1(px)}" cy="330" rx="26" ry="20" fill="rgba(108,122,224,.45)" stroke="${BLUE}" stroke-width="2"/>`;
-    const L = Math.max(0, px - 80);
-    if (L > 5) o += `<path d="M80,230 H${f1(Math.max(80, px - 40))} Q${f1(px - 14)},230 ${f1(px - 8)},312" fill="none" stroke="${ORANGE}" stroke-width="4"/>`;
-    for (let r = 0; r < 3; r++){ const rx = 110 + r * 90; if (rx < px - 60) o += `<ellipse cx="${rx}" cy="218" rx="20" ry="13" fill="#c97b4a"/><ellipse cx="${rx}" cy="240" rx="17" ry="6" fill="#e3a877"/><circle cx="${rx}" cy="196" r="6" fill="${GREEN}"/><circle cx="${rx + 6}" cy="184" r="6" fill="#f2b134"/>`; }
-    o += `<text x="252" y="380" class="t13 mid">Ribosomes translate while RNA polymerase transcribes</text>`;
-    // eukaryote
-    o += `<ellipse cx="660" cy="260" rx="120" ry="130" fill="#ebe4f5" stroke="#7e6aa8" stroke-width="3"/><text x="660" y="160" class="t13 mid pur">Nucleus</text><path d="M590,300 H730" stroke="#0f766e" stroke-width="5"/>`;
+    /* organic cells: a rod-shaped bacterium (wall + membrane) and a eukaryotic cell with a nucleus */
+    const pk = BA.capsule(252, 222, 226, 162, 0.03, 12);
+    let o = `<defs><pattern id="pgW" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#c6dcb5"/><path d="M0,5 H10 M5,0 V10" stroke="#93b57d" stroke-width="1.5"/></pattern></defs>`;
+    o += BA.outline(BA.grow(pk, 11), "url(#pgW)", "#5f8a4f", 2) + BA.bilayer(pk, {fill:"#f1f7ec", head:"#c9a15a", tail:"#f4e8cc", gap:4, r:2.3, step:7.5}, "tlP");
+    o += BA.bilayer(BA.blob(747, 232, 226, 190, 0.035, 23, 80, 0.7), {fill:"#fbf9ff", head:"#b9a6ee", tail:"#eee8fb", gap:4, r:2.3, step:7.5}, "tlE");
+    o += `<text x="252" y="80" class="t18 mid">Prokaryote</text><text x="252" y="102" class="t13 mid muted">everything in the cytoplasm</text><text x="747" y="76" class="t18 mid">Eukaryote</text><text x="747" y="98" class="t13 mid muted">nucleus first, then cytoplasm</text>`;
+    // prokaryote: coupled transcription and translation on the same DNA
+    const p = (t % 6) / 6, px = 90 + p * 320;
+    o += BA.helix(78, 428, 326, {amp:6, per:30});
+    o += `<ellipse cx="${f1(px)}" cy="326" rx="26" ry="20" fill="rgba(108,122,224,.5)" stroke="${BLUE}" stroke-width="2"/>`;
+    const L = Math.max(0, px - 90);
+    if (L > 5) o += `<path d="M90,230 H${f1(Math.max(90, px - 40))} Q${f1(px - 14)},230 ${f1(px - 8)},308" fill="none" stroke="${ORANGE}" stroke-width="4"/>`;
+    for (let r = 0; r < 3; r++){ const rx = 120 + r * 88; if (rx < px - 60) o += miniRibo(rx, 222) + `<circle cx="${rx}" cy="196" r="6" fill="${GREEN}"/><circle cx="${rx + 6}" cy="184" r="6" fill="#f2b134"/>`; }
+    // eukaryote: nucleus with a pore; the mRNA leaves before it meets a ribosome
+    const nk = BA.blob(660, 250, 118, 122, 0.03, 5, 60), nko = BA.grow(nk, 6);
+    o += BA.outline(nko, "#efe7fb", "#8e5bd0", 2.6) + BA.outline(nk, "none", "#b9a6ee", 1.5);
+    let k = 0; nk.forEach((pt, i) => { if (Math.abs(pt[1] - 240) + (pt[0] < 660 ? 999 : 0) < Math.abs(nk[k][1] - 240) + (nk[k][0] < 660 ? 999 : 0)) k = i; });
+    const gx = (nk[k][0] + nko[k][0]) / 2, gy = (nk[k][1] + nko[k][1]) / 2;
+    o += `<circle cx="${f1(gx)}" cy="${f1(gy)}" r="8" fill="#f6f2fd"/><path d="M${f1(gx)},${f1(gy - 9)} v5 M${f1(gx)},${f1(gy + 4)} v5" stroke="#8e5bd0" stroke-width="3.5" stroke-linecap="round"/>`;
+    o += `<text x="660" y="160" class="t13 mid pur">Nucleus</text>`;
+    o += BA.helix(588, 732, 300, {amp:6, per:30});
     const q = (t % 6) / 6, mx = lerp(620, 860, smooth(seg(q, .3, .8)));
-    o += `<path d="M${f1(mx - 50)},240 H${f1(mx + 30)}" stroke="${ORANGE}" stroke-width="4"/>`;
-    if (q > .8) o += `<ellipse cx="880" cy="228" rx="20" ry="13" fill="#c97b4a"/><ellipse cx="880" cy="250" rx="17" ry="6" fill="#e3a877"/><circle cx="880" cy="204" r="6" fill="${GREEN}"/>`;
-    o += `<text x="747" y="410" class="t13 mid">mRNA is processed, exported, then translated</text>`;
+    o += `<path d="M${f1(mx - 50)},240 H${f1(mx + 30)}" stroke="${ORANGE}" stroke-width="4" stroke-linecap="round"/>`;
+    if (q > .8) o += miniRibo(880, 236) + `<circle cx="880" cy="204" r="6" fill="${GREEN}"/>`;
+    o += `<text x="252" y="458" class="t13 mid">Ribosomes translate while RNA polymerase transcribes</text>`;
+    o += `<text x="747" y="458" class="t13 mid">mRNA is processed, exported, then translated</text>`;
     return o;
   }
+  /* small two-lobed ribosome icon */
+  const MINI_L = BA.smoothClosed(BA.blob(0, 0, 21, 13, 0.08, 3, 16)), MINI_S = BA.smoothClosed(BA.blob(0, 0, 18, 7, 0.08, 6, 14));
+  function miniRibo(x, y){ return `<path d="${MINI_L}" transform="translate(${x} ${y - 6})" fill="#d4905e" stroke="#b8683c" stroke-width="1.5"/><path d="${MINI_S}" transform="translate(${x} ${y + 14})" fill="#ecb98f" stroke="#c07e4c" stroke-width="1.5"/>`; }
 
   function render(){
     const d = vis, t = frozen ? 0 : sceneT;

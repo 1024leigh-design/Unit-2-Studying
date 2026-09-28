@@ -375,6 +375,7 @@
   </div>
 </div>
 
+<script src="bioart.js"></script>
 <script>
 (function(){
   /* ================= Helpers ================= */
@@ -1248,7 +1249,7 @@
         if (on > .05){
           o += `<path d="M${M[0] - 44},${M[1] + 8} L${f1(capx + 34)},${f1(capy + 6)}" stroke="${TEAL}" stroke-width="3" stroke-dasharray="7 6" opacity="${f3(on * .7)}" marker-end="url(#cmpArr)"/>`;
           for (let k = 0; k < 5; k++){ const ph = (t * .45 + k / 5) % 1, x = lerp(M[0] - 44, capx + 34, ph), y = lerp(M[1] + 8, capy + 6, ph); o += camp(x, y, on * Math.sin(Math.PI * ph)); }
-          o += `<text x="${f1((M[0] + capx) / 2 + 20)}" y="${f1((M[1] + capy) / 2 + 36)}" class="t12 mid" style="fill:#0a6e7a" opacity="${f3(on)}">cAMP → CAP</text>`;
+          o += `<text x="${f1((M[0] + capx) / 2 - 34)}" y="${f1((M[1] + capy) / 2 - 12)}" class="t12 mid" style="fill:#0a6e7a" opacity="${f3(on)}">cAMP → CAP</text>`;
         }
         o += `<defs><marker id="cmpArr" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="${TEAL}"/></marker></defs>`;
         gm += s.glu > .05 ? `<g opacity="${f3(s.glu)}"><rect x="${M[0] - 22}" y="${M[1] - 40}" width="44" height="20" rx="10" fill="${RED}"/><text x="${M[0]}" y="${M[1] - 25}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">OFF</text><text x="${M[0] + 72}" y="${M[1] - 2}" class="t13">Glucose turns</text><text x="${M[0] + 72}" y="${M[1] + 16}" class="t13">it OFF</text></g>`
@@ -1283,7 +1284,7 @@
 
     if (def.flags.cistrans){
       const gx = 120, gy = 316, ox = L.opX, oy = 284;
-      o += `<text x="10" y="90" class="t12 muted">(the regulatory gene could also sit far away, like trpR)</text>`;
+      o += `<text x="14" y="448" class="t12 muted">(the regulatory gene could also sit far away, like <tspan font-style="italic">trpR</tspan>)</text>`;
       const mx = (gx + ox) / 2, my = Math.min(gy, oy) - 100;
       o += `<path d="M${gx},${gy - 20} Q${mx},${my} ${ox},${oy + 22}" fill="none" stroke="${RED}" stroke-width="3" marker-end="url(#repArr)"/>`;
       o += `<defs><marker id="repArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="${RED}"/></marker></defs>`;
@@ -1293,7 +1294,7 @@
       o += pill(gx, gy - 46, resolved("trans") ? "trans-acting protein" : "? protein", RED, 1);
       const opSeg = L.segs.find(sg => sg.below === "op");
       o += `<rect x="${opSeg.x1 - 4}" y="312" width="${opSeg.x2 - opSeg.x1 + 8}" height="36" rx="8" fill="none" stroke="${BLUE}" stroke-width="3" stroke-dasharray="5 4"/>`;
-      o += pill(ox, 244, resolved("cis") ? "cis-acting site" : "? site", BLUE, 1);
+      o += `<path d="M${ox + 62},258 L${opSeg.x2},312" stroke="${BLUE}" stroke-width="2"/>` + pill(ox + 130, 258, resolved("cis") ? "cis-acting site" : "? site", BLUE, 1);
     }
 
     // CAP / generic activator
@@ -1422,7 +1423,9 @@
     const instr = names.length > 1 ? `Drag the ${names.slice(0, -1).join(", ")} or the ${names[names.length - 1]} down into the cell!` : `Drag the ${names[0]} down into the cell!`;
     let o = `<text x="500" y="16" class="t16 mid" font-weight="700">${instr}</text>`;
     o += `<text x="18" y="44" class="t13 muted">Outside the cell</text>`;
-    o += `<path d="M12,108 H988 M12,115 H988" stroke="#c9a15a" stroke-width="3"/>`;
+    /* the cell membrane, drawn as a phospholipid bilayer: a pale tail layer between two rows of heads */
+    let heads = ""; for (let x = 16; x <= 984; x += 8) heads += `M${x - 2.6},104.5a2.6,2.6 0 1,0 5.2,0a2.6,2.6 0 1,0 -5.2,0M${x - 2.6},118.5a2.6,2.6 0 1,0 5.2,0a2.6,2.6 0 1,0 -5.2,0`;
+    o += `<rect x="12" y="104" width="976" height="15" fill="#f4e8cc"/><path d="${heads}" fill="#c9a15a"/>`;
     o += `<text x="18" y="136" class="t13 muted">Inside the cell</text>`;
     DRAG.forEach((d, i) => {
       const k = d[0], x = 400 + i * 230, y = 62, here = s[k] > .5, lifted = molDrag && molDrag.moved && molDrag.key === k && !molDrag.present;
@@ -1485,7 +1488,8 @@
 
   /* ================= Other scenes ================= */
   function genesSVG(t){
-    let o = `<rect x="40" y="50" width="920" height="370" rx="170" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="6"/>` + dnaLadder(110, 890, 235);
+    const cell = window.BioArt.capsule(500, 236, 458, 182, 0.03, 4);
+    let o = window.BioArt.outline(window.BioArt.grow(cell, 11), "#d7e7c9", "#6f9a5f", 2.5) + window.BioArt.bilayer(cell, {fill:"#f1f7ec", head:"#c9a15a", tail:"#f4e8cc"}, "opWhy") + dnaLadder(110, 890, 235);
     const tt = t % 6;
     const COLS = [GREEN, "#3b7dd8", ORANGE, PURPLE, TEAL, "#c97b4a"];
     for (let i = 0; i < 6; i++){
@@ -1503,7 +1507,7 @@
     }
     const lo = smooth(seg(tt, .8, 1.4)) * (1 - smooth(seg(tt, 4.2, 4.8)));
     if (lo > .01) o += disacc(555, 135, lo) + disacc(595, 115, lo) + `<text x="575" y="93" class="t15 mid" opacity="${f3(lo)}">Lactose shows up!</text>`;
-    return o + `<text x="500" y="404" class="t15 mid muted">Energy spent only on genes the cell needs right now</text>`;
+    return o + `<text x="500" y="390" class="t15 mid muted">Energy spent only on genes the cell needs right now</text>`;
   }
   function compareSVG(t){
     let o = `<rect x="20" y="30" width="465" height="410" rx="24" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="3"/><rect x="515" y="30" width="465" height="410" rx="24" fill="#f5f1fb" stroke="#8f7fb0" stroke-width="3"/>`;
@@ -1589,9 +1593,9 @@
     let o = `<polygon points="${px - 36},${py + 70} ${px + 36},${py + 70} ${px},${py}" fill="#c9cdd6"/><g transform="translate(${px},${py}) rotate(${f1(-ang)})"><rect x="-320" y="-8" width="640" height="16" rx="8" fill="#8b93a3"/>`;
     o += `<g transform="translate(-280,-8) rotate(${f1(ang)})"><rect x="-70" y="-10" width="140" height="10" rx="5" fill="#b0873a"/>`;
     for (let i = 0; i < 7; i++) o += glucose(-54 + (i % 4) * 34 + (i > 3 ? 17 : 0), -24 - (i > 3 ? 22 : 0), clamp(g * 7 - i, 0, 1));
-    o += `<text x="0" y="28" class="t15 mid">Glucose</text></g><g transform="translate(280,-8) rotate(${f1(ang)})"><rect x="-70" y="-10" width="140" height="10" rx="5" fill="#0a6e7a"/>`;
+    o += `<text x="0" y="-72" class="t15 mid">Glucose</text></g><g transform="translate(280,-8) rotate(${f1(ang)})"><rect x="-70" y="-10" width="140" height="10" rx="5" fill="#0a6e7a"/>`;
     for (let i = 0; i < 7; i++) o += camp(-54 + (i % 4) * 34 + (i > 3 ? 17 : 0), -22 - (i > 3 ? 22 : 0), clamp((1 - g) * 7 - i, 0, 1));
-    o += `<text x="0" y="28" class="t15 mid">cAMP</text></g></g>`;
+    o += `<text x="0" y="-72" class="t15 mid">cAMP</text></g></g>`;
     if (cap) o += `<text x="500" y="80" class="t18 mid">${cap}</text>`;
     return o + `<text x="500" y="440" class="t13 mid muted">cAMP is made from ATP. Glucose entering the cell slows that down.</text>`;
   }
@@ -1747,7 +1751,7 @@
     o += `<defs><marker id="fbAh0" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="#b7bfcc"/></marker><marker id="fbAh1" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0L10,5L0,10z" fill="${BLUE}"/></marker></defs>`;
     o += arrow(292, 80, 372, 80, "", act === 0) + arrow(622, 80, 702, 80, "", act === 1);
     o += arrow(830, 146, 830, 290, "", act === 2) + arrow(702, 360, 622, 360, "", act === 3) + arrow(372, 360, 292, 360, "", act === 4);
-    o += arrow(170, 290, 170, 150, "", act === 5) + `<text x="185" y="225" class="t12 ${act === 5 ? "blu" : "muted"}">${trp ? "Tryptophan used up:" : "Product used up:"}</text><text x="185" y="241" class="t12 ${act === 5 ? "blu" : "muted"}">gene turns back ON</text>`;
+    o += arrow(170, 290, 170, 150, "", act === 5) + `<text x="185" y="186" class="t12 ${act === 5 ? "blu" : "muted"}">${trp ? "Tryptophan used up:" : "Product used up:"}</text><text x="185" y="202" class="t12 ${act === 5 ? "blu" : "muted"}">gene turns back ON</text>`;
     N.forEach((n, i) => {
       const on = i === act;
       o += `<rect x="${n.x - 120}" y="${n.y - 62}" width="240" height="124" rx="16" fill="${on ? "#eef0fd" : "#fff"}" stroke="${on ? BLUE : "#d9dee7"}" stroke-width="${on ? 3 : 2}"/>`;

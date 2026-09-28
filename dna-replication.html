@@ -223,6 +223,7 @@
   </div>
 </div>
 
+<script src="bioart.js"></script>
 <script>
 (function(){
   /* ---------- Sequence and layout ---------- */
@@ -581,7 +582,11 @@
     o += `<text x="${X0-30}" y="${f1(botY(0)+18)}" class="prime">3'</text><text x="${X(N-1)+26}" y="${f1(botY(N-1)+18)}" class="prime">5'</text>`;
 
     if (s.originLabel > 0.01){
-      o += `<g opacity="${f3(s.originLabel)}"><path d="M${X(0)},${f1(midY-64)} v-14" stroke="#e0b45c" stroke-width="3"/><rect x="${X(0)-58}" y="${f1(midY-96)}" width="116" height="26" rx="13" fill="#fbe3b5" stroke="#e0b45c" stroke-width="2"/><text x="${X(0)}" y="${f1(midY-78)}" class="small mid">${resolved("origin") ? "Origin of replication" : "?"}</text></g>`;
+      /* above the DNA while it's closed; once the fork opens, it slides into the empty gap between the two arms */
+      const op = sep(0), lx = X(0) + lerp(62, 72, op), ly = lerp(midY - 66, midY, op);
+      o += `<g opacity="${f3(s.originLabel)}">`;
+      if (op < 0.5) o += `<path d="M${X(0)},${f1(midY - 22)} L${f1(lx - 50)},${f1(ly + 13)}" stroke="#e0b45c" stroke-width="3" opacity="${f3(1 - op * 2)}"/>`;
+      o += `<rect x="${f1(lx - 78)}" y="${f1(ly - 13)}" width="156" height="26" rx="13" fill="#fbe3b5" stroke="#e0b45c" stroke-width="2"/><text x="${f1(lx)}" y="${f1(ly + 5)}" class="small mid">${resolved("origin") ? "Origin of replication" : "?"}</text></g>`;
     }
 
     const sealed = s.a >= END - 0.4;
@@ -622,21 +627,31 @@
   }
 
   function originsSVG(){
+    const BA = window.BioArt;
     const card = (x, y, w, h, fill, stroke) => `<rect x="${x - w/2}" y="${y - h/2}" width="${w}" height="${h}" rx="18" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>`;
     let o = `<text x="500" y="34" class="region mid" fill="#1d2433">One origin, or many?</text>`;
-    o += card(250, 210, 420, 300, "#fbe3b5", "#e0b45c");
-    o += `<text x="250" y="90" class="small mid" font-weight="700">Prokaryotes (e.g., E. coli)</text>`;
-    o += `<circle cx="250" cy="200" r="70" fill="none" stroke="#5d7f50" stroke-width="6"/>`;
-    o += `<circle cx="250" cy="130" r="5" fill="#3f4cc0"/><text x="250" y="115" class="small mid">origin</text>`;
-    o += `<path d="M250,130 q-40,20 -55,60" fill="none" stroke="#e8744f" stroke-width="3" marker-end="url(#dh)"/>`;
-    o += `<path d="M250,130 q40,20 55,60" fill="none" stroke="#e8744f" stroke-width="3" marker-end="url(#dh)"/>`;
+    /* prokaryote: a rod-shaped cell with one circular chromosome and one origin */
+    o += card(250, 210, 420, 300, "#fdf3e1", "#e0b45c");
+    o += `<text x="250" y="86" class="small mid" font-weight="700">Prokaryotes (e.g., <tspan font-style="italic">E. coli</tspan>)</text>`;
+    const bc = BA.capsule(250, 196, 172, 92, 0.03, 6);
+    o += BA.outline(BA.grow(bc, 8), "#dfe9d3", "#6f9a5f", 2) + BA.bilayer(bc, {fill:"#f4f8ef", head:"#c9a15a", tail:"#f4e8cc", gap:3, r:1.9, step:6}, "orB");
+    o += BA.helixLoop(250, 200, 70, {ry:48, amp:4, turns:22});
+    o += `<path d="M232,153 A70,48 0 0,0 186,176" fill="none" stroke="#e8744f" stroke-width="3" marker-end="url(#dh)"/><path d="M268,153 A70,48 0 0,1 314,176" fill="none" stroke="#e8744f" stroke-width="3" marker-end="url(#dh)"/>`;
+    o += `<circle cx="250" cy="152" r="6" fill="#3f4cc0" stroke="#fff" stroke-width="2"/><text x="250" y="138" class="small mid">origin</text>`;
     o += `<text x="250" y="318" class="small mid">Single origin → one bubble, two forks</text>`;
     o += `<text x="250" y="336" class="small mid">Fast: ~1000 nt/sec per fork</text>`;
     o += `<text x="250" y="354" class="small mid">Small, circular chromosome</text>`;
-    o += card(750, 210, 420, 300, "#d6efdf", "#7cc19a");
-    o += `<text x="750" y="90" class="small mid" font-weight="700">Eukaryotes (e.g., humans)</text>`;
-    o += `<line x1="600" y1="200" x2="900" y2="200" stroke="#5d7f50" stroke-width="8" stroke-linecap="round"/>`;
-    [640, 720, 800, 860].forEach(x => { o += `<circle cx="${x}" cy="200" r="5" fill="#3f4cc0"/><path d="M${x},200 q-14,16 -18,30" fill="none" stroke="#e8744f" stroke-width="2.5" marker-end="url(#dh)"/><path d="M${x},200 q14,16 18,30" fill="none" stroke="#e8744f" stroke-width="2.5" marker-end="url(#dh)"/>`; });
+    /* eukaryote: a long linear chromosome in the nucleus, with many replication bubbles */
+    o += card(750, 210, 420, 300, "#eef7f1", "#7cc19a");
+    o += `<text x="750" y="86" class="small mid" font-weight="700">Eukaryotes (e.g., humans)</text>`;
+    const nc = BA.blob(750, 200, 186, 90, 0.03, 14, 64);
+    o += BA.outline(BA.grow(nc, 6), "#efe7fb", "#8e5bd0", 2.4) + BA.outline(nc, "none", "#b9a6ee", 1.4);
+    o += `<text x="750" y="132" class="small mid" style="fill:#6b4bb8">Nucleus</text>`;
+    o += BA.helix(598, 902, 205, {amp:5, per:24});
+    [638, 712, 788, 862].forEach(x => {
+      o += `<path d="M${x - 20},205 Q${x},180 ${x + 20},205 Q${x},230 ${x - 20},205 Z" fill="#fff" fill-opacity=".85" stroke="#e8744f" stroke-width="2.5"/>`;
+      o += `<circle cx="${x}" cy="205" r="4.5" fill="#3f4cc0"/>`;
+    });
     o += `<text x="750" y="318" class="small mid">${resolved("multiple") ? "Multiple" : "?"} origins → many bubbles merge</text>`;
     o += `<text x="750" y="336" class="small mid">Slower per fork: ~50 nt/sec</text>`;
     o += `<text x="750" y="354" class="small mid">Large, linear chromosomes</text>`;
