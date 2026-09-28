@@ -279,6 +279,16 @@
   .amtok.lifted{opacity:.35}
   .amtok.dragging{position:fixed;z-index:50;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.3)}
   .amtok:disabled,.amtok[aria-disabled="true"]{opacity:.35;cursor:not-allowed}
+  .amstage{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:center}
+  .amtube{display:grid;justify-items:center;gap:4px;padding:8px 12px;border-radius:16px;border:2px solid transparent;font-weight:700;font-size:.88rem;color:#2c3796;text-align:center;min-width:130px;transition:background .15s}
+  .amtube.over{background:var(--accent-soft);border-color:var(--accent)}
+  .amtube .sub{font-weight:400;color:var(--muted);font-size:.8rem}
+  .amdish{display:grid;justify-items:center;gap:4px;padding:8px;border-radius:18px;border:2px solid transparent;font-weight:700;font-size:.88rem;color:#6b5f45;text-align:center}
+  .amdish.over{background:#f6ecd2;border-color:#c9a860}
+  .amdish .sub{font-weight:400;color:var(--muted);font-size:.8rem}
+  .aminstr{background:#fff;border:1.5px solid #f0d99a;border-radius:12px;padding:8px 12px;font-size:.95rem}
+  .aminstr b{color:#8a5a00}
+  .radios2 button.plateans{display:grid;justify-items:center;gap:6px;text-align:center;max-width:220px}
   .amvessel{min-width:150px;min-height:90px;border:3px dashed var(--accent);border-radius:14px 14px 20px 20px;background:var(--accent-soft);display:grid;place-items:center;gap:4px;padding:10px;text-align:center;font-weight:700;color:#2c3796}
   .amvessel.over{background:#d9dcfb;box-shadow:0 0 0 4px var(--accent-soft)}
   .amvessel .amin{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
@@ -429,30 +439,83 @@
   const translate = m => { const out = []; for (let i = 0; i + 3 <= m.length; i += 3){ const a = CODE[m.substr(i, 3)]; out.push(a); if (a === "Stop") break; } return out; };
   const FRAME_GATE = {done:false, dragXY:null};
   const FRAME_SLOT = {x:388, y:270}, FRAME_HOME = {x:388, y:198};
-  const AMES_GATE = {stage:0, have:{}, growStart:null, showQ:false, timerSet:false, answer:null};
+  const AMES_GATE = {};
+  function resetAmes(){ Object.assign(AMES_GATE, {stage:0, tubes:{control:{}, test:{}}, poured:{}, mixed:false, growStart:null, showQ:false, timerSet:false, answer:null, wrong:null, msg:null}); }
+  resetAmes();
+  const AMES_COL = {bact:"#e0c170", enz:"#c9785c", chem:"#9b6bd3"};
+  const ICON = {
+    bact:`<svg width="30" height="22" viewBox="0 0 30 22" aria-hidden="true"><rect x="2" y="3" width="16" height="8" rx="4" fill="#e7cf86" stroke="#9a7b2c" stroke-width="1.5"/><rect x="11" y="12" width="16" height="8" rx="4" fill="#e7cf86" stroke="#9a7b2c" stroke-width="1.5" transform="rotate(-12 19 16)"/></svg>`,
+    enz:`<svg width="26" height="24" viewBox="0 0 26 24" aria-hidden="true"><path d="M3,10 C3,3 13,1 20,4 C26,7 24,15 17,18 C11,21 3,18 3,10 z" fill="#b8604a" stroke="#7d3a2a" stroke-width="1.5"/><path d="M8,8 C11,6 15,6 18,8" stroke="#e7a08c" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+    chem:`<svg width="22" height="26" viewBox="0 0 22 26" aria-hidden="true"><path d="M8,2 h6 v6 l6,12 a3,3 0 0 1 -3,4 h-12 a3,3 0 0 1 -3,-4 l6,-12 z" fill="#e9dcf8" stroke="#6b3fa8" stroke-width="1.5"/><path d="M4.5,17 h13 l2,3.6 a2,2 0 0 1 -2,2.4 h-13 a2,2 0 0 1 -2,-2.4 z" fill="#9b6bd3"/></svg>`
+  };
+  /* A glass test tube; layers stack up from the bottom, or blend together once mixed */
+  function tubeSVG(have, mixed, h){
+    const w = Math.round(h * .5), keys = ["bact", "enz", "chem"].filter(k => have[k]);
+    const bx = 14, bw = 22, top = 10, bot = 104, lh = 18;
+    let o = `<svg width="${w}" height="${h}" viewBox="0 0 50 116" aria-hidden="true">`;
+    const clip = `M${bx},${top} V${bot - bw / 2} a${bw / 2},${bw / 2} 0 0 0 ${bw},0 V${top} z`;
+    const id = "tc" + Math.random().toString(36).slice(2, 8);
+    o += `<defs><clipPath id="${id}"><path d="${clip}"/></clipPath></defs>`;
+    o += `<path d="${clip}" fill="#f5f8fc"/>`;
+    if (mixed && keys.length){
+      const col = have.chem ? "#b99bd6" : "#d9a98f";
+      o += `<rect x="${bx}" y="${bot - keys.length * lh - 4}" width="${bw}" height="${keys.length * lh + 20}" fill="${col}" clip-path="url(#${id})"/>`;
+      for (let i = 0; i < 5; i++) o += `<circle cx="${bx + 5 + (i * 7) % 14}" cy="${bot - 6 - i * 9}" r="1.6" fill="#fff" opacity=".7"/>`;
+    } else keys.forEach((k, i) => { o += `<rect x="${bx}" y="${bot - (i + 1) * lh + (i === 0 ? 0 : 0)}" width="${bw}" height="${lh + (i === 0 ? 12 : 0)}" fill="${AMES_COL[k]}" clip-path="url(#${id})"/>`; });
+    o += `<path d="${clip}" fill="none" stroke="#7d8aa3" stroke-width="2.5"/>`;
+    o += `<rect x="${bx - 5}" y="${top - 5}" width="${bw + 10}" height="7" rx="3.5" fill="#fff" stroke="#7d8aa3" stroke-width="2.5"/>`;
+    o += `<path d="M${bx + 5},${top + 10} V${bot - 16}" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/>`;
+    return o + `</svg>`;
+  }
+  /* Colony positions shared by the big plates and the answer buttons, so they match */
+  function colonyPts(n, seed){
+    const pts = []; let q = seed;
+    const rnd = () => { q = (q * 9301 + 49297) % 233280; return q / 233280; };
+    for (let i = 0; i < n; i++){ const a = rnd() * Math.PI * 2, rr = Math.sqrt(rnd()) * .8; pts.push([rr * Math.cos(a), rr * Math.sin(a), rnd(), .75 + rnd() * .5]); }
+    return pts;
+  }
+  /* A Petri dish seen from above: lid rim, agar, glare, a label strip, and colonies (grow 0..1) */
+  function plateInner(cx, cy, R, n, id, filled, grow){
+    let o = `<defs><radialGradient id="ag${id}" cx=".42" cy=".38" r=".75"><stop offset="0" stop-color="#fbf3dc"/><stop offset="1" stop-color="${filled ? "#ead7a4" : "#f1e7cc"}"/></radialGradient></defs>`;
+    o += `<ellipse cx="${cx + R * .04}" cy="${cy + R * .08}" rx="${R * 1.02}" ry="${R * 1.02}" fill="#1d2433" opacity=".10"/>`;
+    o += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#eef2f7" stroke="#aab4c4" stroke-width="${Math.max(2, R * .035)}"/>`;
+    o += `<circle cx="${cx}" cy="${cy}" r="${R * .9}" fill="url(#ag${id})" stroke="#d3c08a" stroke-width="${Math.max(1, R * .015)}"/>`;
+    const seed = n > 20 ? 91 : 17;
+    colonyPts(n, seed).forEach(p => {
+      const g = grow === undefined ? 1 : smooth(clamp((grow - p[2] * .7) * 3, 0, 1));
+      if (g <= 0) return;
+      const x = cx + p[0] * R, y = cy + p[1] * R, r = R * .055 * p[3] * g;
+      o += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(r)}" fill="#fbf8ee" stroke="#b39a5c" stroke-width="${f1(Math.max(1, R * .012))}"/><circle cx="${f1(x - r * .3)}" cy="${f1(y - r * .3)}" r="${f1(r * .35)}" fill="#fff"/>`;
+    });
+    o += `<path d="M${f1(cx - R * .62)},${f1(cy - R * .5)} A${R * .8},${R * .8} 0 0 1 ${f1(cx - R * .1)},${f1(cy - R * .8)}" fill="none" stroke="#fff" stroke-width="${f1(R * .06)}" stroke-linecap="round" opacity=".8"/>`;
+    return o;
+  }
+  function plateSVG(size, n, id, filled){
+    return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">${plateInner(50, 50, 46, n, id, filled)}</svg>`;
+  }
   /* Generic drag-or-tap: works for any token dropped onto any of getTargets(). A tap (no movement) always succeeds since there's one clear destination. */
   function wireDragTap(el, getTargets, onDrop){
-    let startX, startY, dragging = false, moved = false, clone = null;
-    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); onDrop(); } });
+    let startX, startY, dragging = false, moved = false, clone = null, lastOver = null;
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); onDrop(null, false); } });
     el.addEventListener("pointerdown", e => {
       if (e.button > 0) return;
       e.preventDefault();
       const r = el.getBoundingClientRect(); startX = e.clientX; startY = e.clientY;
       const dx = e.clientX - r.left, dy = e.clientY - r.top;
-      dragging = true; moved = false;
+      dragging = true; moved = false; lastOver = null;
       const move = ev => {
         if (!moved && Math.hypot(ev.clientX - startX, ev.clientY - startY) > 6){
           moved = true; clone = el.cloneNode(true); clone.classList.add("dragging"); clone.style.width = r.width + "px"; document.body.appendChild(clone); el.classList.add("lifted");
         }
         if (clone){ clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px";
           const over = getTargets().find(z => { const q = z.getBoundingClientRect(); return ev.clientX > q.left && ev.clientX < q.right && ev.clientY > q.top && ev.clientY < q.bottom; });
-          getTargets().forEach(z => z.classList.toggle("over", z === over));
+          getTargets().forEach(z => z.classList.toggle("over", z === over)); lastOver = over || null;
         }
       };
       const up = () => {
         document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
         if (clone) clone.remove(); el.classList.remove("lifted"); getTargets().forEach(z => z.classList.remove("over"));
-        dragging = false; onDrop();
+        dragging = false; onDrop(lastOver, moved);
       };
       document.addEventListener("pointermove", move); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
     });
@@ -464,67 +527,105 @@
     },
     ames:{
       title:"Run the Ames test yourself",
-      doneText:"Great science! You ran a full Ames test and read the results.",
+      doneText:"Great science! You ran a full Ames test, with a control, and read the results.",
       html(){
-        const st = AMES_GATE.stage || 0, have = AMES_GATE.have || {};
-        if (st === 0 || st === 1){
-          return `<div class="amrow">
-            <div class="amtray">
-              ${!have.bact ? `<div class="amtok" id="amBact" role="button" tabindex="0" aria-label="Salmonella his minus bacteria: drag or tap to move into the tube">\u{1F9EA} <span>Salmonella (his⁻)</span></div>` : ""}
-              ${have.bact && !have.enz ? `<div class="amtok" id="amEnz" role="button" tabindex="0" aria-label="Activation enzymes: drag or tap to move into the tube">⚗️ <span>Activation enzymes</span></div>` : ""}
-            </div>
-            <div class="amvessel${have.bact || have.enz ? " filled" : ""}" data-drop="tube"><div>Tube</div><div class="amin">${have.bact ? '<span class="amchip">Bacteria</span>' : ""}${have.enz ? '<span class="amchip">Enzymes</span>' : ""}</div></div>
+        const A = AMES_GATE, st = A.stage || 0, T = A.tubes;
+        if (st === 0){
+          const need = k => k === "chem" ? !T.test.chem : !(T.control[k] && T.test[k]);
+          return `<div class="aminstr"><b>Step 1:</b> Drag each ingredient into a test tube. <b>Both</b> tubes get bacteria and liver enzymes. Only the <b>test tube</b> gets the chemical. The control tube shows how often bacteria mutate on their own.</div>
+          <div class="amtray">
+            ${need("bact") ? `<div class="amtok" data-item="bact" role="button" tabindex="0" aria-label="Salmonella his minus bacteria: drag into a tube">${ICON.bact} <span><i>Salmonella</i> (his⁻)</span></div>` : ""}
+            ${need("enz") ? `<div class="amtok" data-item="enz" role="button" tabindex="0" aria-label="Liver enzymes: drag into a tube">${ICON.enz} <span>Liver enzymes</span></div>` : ""}
+            ${need("chem") ? `<div class="amtok" data-item="chem" role="button" tabindex="0" aria-label="Test chemical: drag into the test tube">${ICON.chem} <span>Test chemical</span></div>` : ""}
+          </div>
+          <div class="amstage">
+            <div class="amtube" data-drop="control">${tubeSVG(T.control, false, 120)}<div>Control tube</div><div class="sub">no chemical</div></div>
+            <div class="amtube" data-drop="test">${tubeSVG(T.test, false, 120)}<div>Test tube</div><div class="sub">with chemical</div></div>
+          </div>`;
+        }
+        if (st === 1){
+          return `<div class="aminstr"><b>Step 2:</b> Both tubes are loaded. Mix them so the bacteria are exposed to everything in the tube.</div>
+          <div class="amstage">
+            <div class="amtube">${tubeSVG(T.control, false, 120)}<div>Control tube</div></div>
+            <div class="amtube">${tubeSVG(T.test, false, 120)}<div>Test tube</div></div>
+            <button class="btn primary" id="amMix">Mix both tubes</button>
           </div>`;
         }
         if (st === 2){
-          return `<div class="amrow">
-            <div class="amvessel filled"><div>Tube</div><div class="amin"><span class="amchip">Bacteria</span><span class="amchip">Enzymes</span></div></div>
-            <button class="btn primary" id="amMix">Mix</button>
+          const P = A.poured;
+          return `<div class="aminstr"><b>Step 3:</b> Drag each <b>mixed tube</b> onto its matching plate. Both plates have <b>no histidine</b>, so only bacteria that mutate back to normal can grow.</div>
+          <div class="amtray">
+            ${!P.control ? `<div class="amtok" data-item="control" role="button" tabindex="0" aria-label="Mixed control tube: drag onto the control plate">${tubeSVG(T.control, true, 40)} <span>Control tube</span></div>` : ""}
+            ${!P.test ? `<div class="amtok" data-item="test" role="button" tabindex="0" aria-label="Mixed test tube: drag onto the test plate">${tubeSVG(T.test, true, 40)} <span>Test tube</span></div>` : ""}
+          </div>
+          <div class="amstage">
+            <div class="amdish" data-drop="control">${plateSVG(150, 0, "c", P.control)}<div>Control plate</div><div class="sub">no histidine${P.control ? " ✓ poured" : ""}</div></div>
+            <div class="amdish" data-drop="test">${plateSVG(150, 0, "t", P.test)}<div>Test plate</div><div class="sub">no histidine${P.test ? " ✓ poured" : ""}</div></div>
           </div>`;
         }
-        if (st === 3){
-          return `<div class="amrow">
-            <div class="amtray"><div class="amtok" id="amTubeTok" role="button" tabindex="0" aria-label="Mixed tube: drag or tap to pour onto the plate">\u{1F9EA} <span>Mixed tube</span></div></div>
-            <div class="amplates"><div class="amplate" data-drop="plate">Plate: no histidine</div></div>
-          </div>`;
-        }
-        /* st === 4: growing, then the question */
-        if (!AMES_GATE.showQ) return `<div class="gmsg" style="font-weight:400"><em>Poured! Watching the colonies grow on both plates…</em></div>`;
-        const a = AMES_GATE.answer;
-        const btn = (key, label) => `<button data-a="${key}" ${a ? "disabled" : ""} class="${a === key ? (key === "chem" ? "correct" : "wrong") : (a && key === "chem" ? "correct" : "")}">${label}</button>`;
+        /* st === 3: incubating, then the question */
+        if (!A.showQ) return `<div class="gmsg" style="font-weight:400"><em>Incubating both plates… watch the colonies grow in the picture above.</em></div>`;
+        const a = A.answer;
+        const btn = (key, label, n, id) => `<button data-a="${key}" ${a ? "disabled" : ""} class="plateans ${a === key ? "correct" : A.wrong === key ? "wrong" : ""}">${plateSVG(130, n, id, true)}<span>${label}</span></button>`;
         return `<div class="gtitle" style="color:#8a5a00">Which plate has more revertants, and is therefore potentially more carcinogenic?</div>
-          <div class="radios2">${btn("control", "Control<br><span style=\"font-weight:400\">(no chemical): 5 colonies</span>")}${btn("chem", "Chemical + activation enzymes<br><span style=\"font-weight:400\">46 colonies</span>")}</div>`;
+          <div class="radios2">${btn("control", "Control plate<br><span style=\"font-weight:400\">no chemical</span>", 5, "qc")}${btn("chem", "Test plate<br><span style=\"font-weight:400\">chemical + liver enzymes</span>", 46, "qt")}</div>`;
       },
       wire(g){
-        const st = AMES_GATE.stage || 0, have = AMES_GATE.have || {};
-        if (st === 0 || st === 1){
-          const bactEl = g.querySelector("#amBact"), enzEl = g.querySelector("#amEnz");
-          const targets = () => [...g.querySelectorAll("[data-drop]")];
-          if (bactEl) wireDragTap(bactEl, targets, () => { have.bact = true; AMES_GATE.stage = have.enz ? 2 : 1; gateMsg("Bacteria added to the tube.", "good"); renderGate(); });
-          if (enzEl) wireDragTap(enzEl, targets, () => { have.enz = true; AMES_GATE.stage = have.bact ? 2 : 1; gateMsg("Activation enzymes added: they convert the chemical into a form that can damage DNA, just like our liver would.", "good"); renderGate(); });
-          if (!bactEl && !enzEl) gateMsg("", "");
-        } else if (st === 2){
-          g.querySelector("#amMix").addEventListener("click", () => { AMES_GATE.stage = 3; gateMsg("Mixed! Now pour the tube onto the plate.", "good"); renderGate(); });
-        } else if (st === 3){
-          const tok = g.querySelector("#amTubeTok"), targets = () => [...g.querySelectorAll("[data-drop]")];
-          wireDragTap(tok, targets, () => {
-            AMES_GATE.stage = 4; AMES_GATE.growStart = performance.now(); AMES_GATE.timerSet = false;
-            gateMsg("Poured onto the plate without histidine. Only cells that mutate back to normal (revertants) can grow here.", "good");
+        const A = AMES_GATE, st = A.stage || 0, T = A.tubes;
+        const say = (t, c) => { A.msg = [t, c]; };
+        const targets = () => [...g.querySelectorAll("[data-drop]")];
+        if (st === 0){
+          const INFO = {
+            bact:"<i>Salmonella</i> his⁻ added. These mutants can't make histidine, so they can't grow without it.",
+            enz:"Liver enzymes added. Many chemicals only become mutagens after our liver changes them, so this mimics what happens inside your body.",
+            chem:"Test chemical added. Is it a mutagen? The plates will tell us."
+          };
+          g.querySelectorAll("[data-item]").forEach(tok => wireDragTap(tok, targets, (over, moved) => {
+            const item = tok.dataset.item;
+            let which = over ? over.dataset.drop : null;
+            if (!which){
+              if (moved){ gateMsg("Drop it onto one of the test tubes.", "bad"); return; }
+              which = item === "chem" ? "test" : (!T.control[item] ? "control" : "test");
+            }
+            if (item === "chem" && which === "control"){ gateMsg("Keep the chemical out of the control tube! The control shows how often bacteria mutate back on their own (spontaneous mutation).", "bad"); return; }
+            if (T[which][item]){ gateMsg("That tube already has it. Try the other tube.", "bad"); return; }
+            T[which][item] = true;
+            say(INFO[item], "good");
+            const full = T.control.bact && T.control.enz && T.test.bact && T.test.enz && T.test.chem;
+            if (full){ A.stage = 1; say("Both tubes are ready!", "good"); }
             renderGate();
-          });
-        } else if (st === 4){
-          if (!AMES_GATE.showQ && !AMES_GATE.timerSet){
-            AMES_GATE.timerSet = true;
-            setTimeout(() => { AMES_GATE.showQ = true; renderGate(); }, 4600);
+          }));
+        } else if (st === 1){
+          g.querySelector("#amMix").addEventListener("click", () => { A.stage = 2; A.mixed = true; say("Mixed! Now pour each tube onto its plate.", "good"); renderGate(); });
+        } else if (st === 2){
+          g.querySelectorAll("[data-item]").forEach(tok => wireDragTap(tok, targets, (over, moved) => {
+            const item = tok.dataset.item;
+            let which = over ? over.dataset.drop : null;
+            if (!which){ if (moved){ gateMsg("Drop the tube onto a plate.", "bad"); return; } which = item; }
+            if (which !== item){ gateMsg(`That's the ${item} tube. Pour it onto the ${item} plate so you can tell the results apart.`, "bad"); return; }
+            A.poured[item] = true;
+            say(item === "control" ? "Control plate poured." : "Test plate poured.", "good");
+            if (A.poured.control && A.poured.test){
+              A.stage = 3; A.growStart = performance.now(); A.timerSet = false;
+              say("Both plates poured and incubating. Only revertants (cells that mutated back to his⁺) can grow without histidine.", "good");
+            }
+            renderGate();
+          }));
+        } else if (st === 3){
+          if (!A.showQ && !A.timerSet){
+            A.timerSet = true;
+            setTimeout(() => { A.showQ = true; A.msg = null; renderGate(); }, 4600);
           }
           g.querySelectorAll("[data-a]").forEach(b => b.addEventListener("click", () => {
-            if (AMES_GATE.answer) return;
-            AMES_GATE.answer = b.dataset.a;
-            renderGate();
-            if (b.dataset.a === "chem"){ gateMsg("Right! The chemical + enzymes plate grew far more revertant colonies (46 vs. 5), so this chemical is likely mutagenic and possibly carcinogenic.", "good"); setTimeout(passGate, 1100); }
-            else gateMsg("Not quite: the control plate only shows the normal spontaneous mutation rate. Compare the colony counts again.", "bad");
+            if (A.answer) return;
+            if (b.dataset.a === "chem"){
+              A.answer = "chem";
+              say("Right! The test plate grew about 46 revertant colonies vs. about 5 on the control. The control's few colonies are spontaneous mutations; the extra ones were caused by the chemical, so it is likely mutagenic and possibly carcinogenic.", "good");
+              renderGate(); setTimeout(passGate, 1400);
+            } else { A.wrong = b.dataset.a; say("Not quite: the control plate only shows the normal spontaneous mutation rate. Count the colonies on each plate again.", "bad"); renderGate(); }
           }));
         }
+        if (A.msg) gateMsg(A.msg[0], A.msg[1]);
       }
     }
   };
@@ -758,30 +859,52 @@
       return s;
     },
     nitrous:t => {
-      const T = 11, tt = t % T;
-      const come = smooth(seg(tt, .8, 2)), mod = smooth(seg(tt, 2, 2.8)), s2 = smooth(seg(tt, 3.4, 4.4)), s3 = smooth(seg(tt, 5.4, 6.4)), v = smooth(seg(tt, 7, 7.6));
-      let s = `<text x="500" y="52" class="t18 mid">A base-modifying agent (nitrous acid) turns A-T into G-C</text>`;
+      /* Two panels: a nucleoside analog (5-bromouracil) on the left, a base-modifying agent (nitrous acid) on the right.
+         The analog story plays first, then the nitrous acid story. */
+      const T = 16, tt = t % T;
+      const a1 = smooth(seg(tt, .4, 1.2)), a2 = smooth(seg(tt, 1.6, 2.6)), a3 = smooth(seg(tt, 3.2, 4.2)), a4 = smooth(seg(tt, 4.8, 5.4));
+      const t2 = tt - 5.6;
+      const come = smooth(seg(t2, .4, 1.4)), mod = smooth(seg(t2, 1.4, 2.2)), s2 = smooth(seg(t2, 2.8, 3.8)), s3 = smooth(seg(t2, 4.6, 5.6)), v = smooth(seg(t2, 6.2, 6.8));
+      let s = `<text x="500" y="42" class="t18 mid">Chemical mutagens that swap one base pair for another</text>`;
       s += `<defs><pattern id="analogHatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="${GOLD}"/><line x1="0" y1="0" x2="0" y2="8" stroke="#a8760f" stroke-width="3"/></pattern></defs>`;
-      s += `<rect x="895" y="352" width="34" height="34" rx="7" fill="url(#analogHatch)" stroke="#a8760f" stroke-width="2.5"/><text x="912" y="374" font-size="14" font-weight="700" fill="#3b2a00" text-anchor="middle">A*</text>`;
-      s += `<text x="912" y="404" class="t12 mid muted">Nucleoside analog:</text><text x="912" y="420" class="t12 mid muted">looks like a real base,</text><text x="912" y="436" class="t12 mid muted">but pairs incorrectly</text>`;
-      const X = [190, 500, 810];
-      s += `<text x="${X[0]}" y="112" class="t15 mid">1. Normal pair</text>`;
-      s += tile(X[0], 170, "A", 1, mod > .5 ? ORANGE : null);
-      if (mod > .5) s += `<circle cx="${X[0] + 13}" cy="172" r="7" fill="${ORANGE}" stroke="#fff" stroke-width="2"/>`;
-      s += `<path d="M${X[0]},204 V234" stroke="#9aa3b5" stroke-width="3"/>` + tile(X[0], 238, "T", 1);
-      const hx = lerp(X[0] + 110, X[0] + 34, come), hy = lerp(120, 160, come);
-      s += `<g opacity="${f3(come * (1 - mod))}"><circle cx="${f1(hx)}" cy="${f1(hy)}" r="24" fill="#d6efe2" stroke="${TEAL}" stroke-width="2"/><text x="${f1(hx)}" y="${f1(hy + 5)}" class="t12 mid">HNO\u2082</text></g>`;
-      s += `<text x="${X[0]}" y="310" class="t13 mid" opacity="${f3(mod)}">A is chemically changed</text>`;
-      s += arrow(X[0] + 80, 220, X[1] - 80, 220, s2);
-      s += `<g opacity="${f3(s2)}"><text x="${X[1]}" y="112" class="t15 mid">2. Replication</text>`;
-      s += tile(X[1], 170, "A", 1, ORANGE) + `<circle cx="${X[1] + 13}" cy="172" r="7" fill="${ORANGE}" stroke="#fff" stroke-width="2"/>`;
-      s += `<path d="M${X[1]},204 V234" stroke="${ORANGE}" stroke-width="3"/>` + tile(X[1], 238, "C", 1, ORANGE);
-      s += `<text x="${X[1]}" y="310" class="t13 mid">Changed A pairs with ${resolved("cytosine") ? "C" : "?"}, not T</text></g>`;
-      s += arrow(X[1] + 80, 220, X[2] - 80, 220, s3);
-      s += `<g opacity="${f3(s3)}"><text x="${X[2]}" y="112" class="t15 mid">3. Next replication</text>`;
-      s += tile(X[2], 170, "G", 1, ORANGE) + `<path d="M${X[2]},204 V234" stroke="#9aa3b5" stroke-width="3"/>` + tile(X[2], 238, "C", 1, ORANGE);
-      s += `<text x="${X[2]}" y="310" class="t13 mid">The C gets a G partner</text></g>`;
-      s += pill(500, 400, "A-T became G-C: a permanent substitution", TEAL, v);
+      /* ---- Left column: nucleoside analog ---- */
+      s += `<rect x="18" y="62" width="324" height="396" rx="20" fill="#fff8e6" stroke="#e5c56a" stroke-width="2.5"/>`;
+      s += `<text x="180" y="94" class="t18 mid">Nucleoside ${resolved("analogs") ? "analog" : "?"}</text><text x="180" y="116" class="t13 mid muted">example: 5-bromouracil (5-BU)</text>`;
+      const bu = (x, y, op) => `<g opacity="${f3(op === undefined ? 1 : op)}"><rect x="${f1(x - 17)}" y="${f1(y)}" width="34" height="30" rx="6" fill="url(#analogHatch)" stroke="#a8760f" stroke-width="2.5"/><text x="${f1(x)}" y="${f1(y + 20)}" font-size="12" font-weight="800" fill="#3b2a00" text-anchor="middle">5-BU</text></g>`;
+      const hpair = (x1, x2, y, col, op) => `<path d="M${f1(x1 + 17)},${f1(y + 15)} H${f1(x2 - 17)}" stroke="${col}" stroke-width="3" opacity="${f3(op)}"/>`;
+      // a) look-alike
+      s += `<g opacity="${f3(a1)}">` + tile(115, 138, "T") + `<text x="115" y="186" class="t12 mid muted">real base (T)</text>`;
+      s += `<text x="180" y="159" class="t18 mid" style="fill:#8a5a00">≈</text>` + bu(245, 138) + `<text x="245" y="186" class="t12 mid muted">look-alike</text></g>`;
+      // b) sneaks in opposite A
+      s += `<text x="34" y="222" class="t13" opacity="${f3(a2)}">1. Slips into DNA where T belongs</text>`;
+      s += `<g opacity="${f3(a2)}">` + tile(145, 234, "A") + hpair(145, 215, 234, "#9aa3b5", 1) + bu(215, 234) + `</g>`;
+      // c) mispairs with G
+      s += `<text x="34" y="296" class="t13" opacity="${f3(a3)}">2. Next copy: it pairs with G by mistake</text>`;
+      s += `<g opacity="${f3(a3)}">` + tile(145, 308, "G", 1, ORANGE) + hpair(145, 215, 308, ORANGE, 1) + bu(215, 308) + `</g>`;
+      s += `<text x="34" y="370" class="t13" opacity="${f3(a3)}">3. That G then gets a C partner</text>`;
+      s += `<g opacity="${f3(a3)}">` + tile(145, 382, "G", 1, ORANGE) + hpair(145, 215, 382, "#9aa3b5", 1) + tile(215, 382, "C", 1, ORANGE) + `</g>`;
+      s += pill(180, 438, "Result: A-T became G-C", "#a8760f", a4);
+      /* ---- Right panel: base-modifying agent ---- */
+      s += `<rect x="360" y="62" width="622" height="396" rx="20" fill="#eef8f3" stroke="#7fbf9c" stroke-width="2.5"/>`;
+      s += `<text x="671" y="94" class="t18 mid">${resolved("basemod") ? "Base-modifying" : "?"} agent</text><text x="671" y="116" class="t13 mid muted">example: nitrous acid (HNO₂)</text>`;
+      const X = [470, 671, 872];
+      s += `<text x="${X[0]}" y="160" class="t15 mid">1. Normal pair</text>`;
+      s += tile(X[0], 200, "A", 1, mod > .5 ? ORANGE : null);
+      if (mod > .5) s += `<circle cx="${X[0] + 13}" cy="202" r="7" fill="${ORANGE}" stroke="#fff" stroke-width="2"/>`;
+      s += `<path d="M${X[0]},234 V264" stroke="#9aa3b5" stroke-width="3"/>` + tile(X[0], 268, "T", 1);
+      const hx = lerp(X[0] + 70, X[0] + 34, come), hy = lerp(160, 192, come);
+      s += `<g opacity="${f3(come * (1 - mod))}"><circle cx="${f1(hx)}" cy="${f1(hy)}" r="24" fill="#d6efe2" stroke="${TEAL}" stroke-width="2"/><text x="${f1(hx)}" y="${f1(hy + 5)}" class="t12 mid">HNO₂</text></g>`;
+      s += `<text x="${X[0]}" y="336" class="t13 mid" opacity="${f3(mod)}">A is chemically</text><text x="${X[0]}" y="354" class="t13 mid" opacity="${f3(mod)}">changed</text>`;
+      s += arrow(X[0] + 58, 250, X[1] - 58, 250, s2);
+      s += `<g opacity="${f3(s2)}"><text x="${X[1]}" y="160" class="t15 mid">2. Replication</text>`;
+      s += tile(X[1], 200, "A", 1, ORANGE) + `<circle cx="${X[1] + 13}" cy="202" r="7" fill="${ORANGE}" stroke="#fff" stroke-width="2"/>`;
+      s += `<path d="M${X[1]},234 V264" stroke="${ORANGE}" stroke-width="3"/>` + tile(X[1], 268, "C", 1, ORANGE);
+      s += `<text x="${X[1]}" y="336" class="t13 mid">Changed A pairs</text><text x="${X[1]}" y="354" class="t13 mid">with C, not ${resolved("thymine") ? "T" : "?"}</text></g>`;
+      s += arrow(X[1] + 58, 250, X[2] - 58, 250, s3);
+      s += `<g opacity="${f3(s3)}"><text x="${X[2]}" y="160" class="t15 mid">3. Next replication</text>`;
+      s += tile(X[2], 200, "G", 1, ORANGE) + `<path d="M${X[2]},234 V264" stroke="#9aa3b5" stroke-width="3"/>` + tile(X[2], 268, "C", 1, ORANGE);
+      s += `<text x="${X[2]}" y="336" class="t13 mid">The C gets</text><text x="${X[2]}" y="354" class="t13 mid">a G partner</text></g>`;
+      s += pill(671, 410, "A-T became G-C: a permanent substitution", TEAL, v);
       return s;
     },
     uv:t => {
@@ -824,24 +947,19 @@
       return s;
     },
     ames:t => {
-      const growing = (AMES_GATE.stage || 0) >= 4;
-      const gt = growing ? Math.max(0, (performance.now() - (AMES_GATE.growStart || performance.now())) / 1000) : 0;
+      const A = AMES_GATE, growing = (A.stage || 0) >= 3;
+      const gt = growing ? Math.max(0, (performance.now() - (A.growStart || performance.now())) / 1000) : 0;
       const grow = growing ? seg(gt, 0, 4) : 0;
-      let s = `<text x="500" y="46" class="t18 mid">The Ames test: count the comeback colonies</text>`;
-      const P = [[290,"Control: no chemical",5],[710,"Chemical + activation enzymes",46]];
-      let seed = 7; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      let s = `<text x="500" y="42" class="t18 mid">The Ames test: count the comeback colonies</text>`;
+      const P = [[290, "Control plate: no chemical", 5, "sc", !!A.poured.control], [710, "Test plate: chemical + liver enzymes", 46, "st", !!A.poured.test]];
       P.forEach(p => {
-        const cx = p[0], cy = 240;
-        s += `<text x="${cx}" y="94" class="t15 mid">${p[1]}</text>`;
-        s += `<circle cx="${cx}" cy="${cy}" r="126" fill="#f6ecd2" stroke="#b8b0a0" stroke-width="5"/><circle cx="${cx}" cy="${cy}" r="116" fill="none" stroke="#e6dcc2" stroke-width="2"/>`;
-        for (let i = 0; i < p[2]; i++){
-          const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * 100, when = rnd();
-          const g = smooth(clamp((grow - when * .7) * 3, 0, 1));
-          if (g > 0) s += `<circle cx="${f1(cx + r * Math.cos(a))}" cy="${f1(cy + r * Math.sin(a))}" r="${f1(6 * g)}" fill="#f4f1e6" stroke="#b9a877" stroke-width="1.5"/>`;
-        }
+        s += `<text x="${p[0]}" y="86" class="t15 mid">${p[1]}</text>`;
+        s += plateInner(p[0], 226, 118, p[2], p[3], p[4], grow);
+        s += `<rect x="${p[0] - 58}" y="330" width="116" height="22" rx="4" fill="#fff" stroke="#c9ced8"/><text x="${p[0]}" y="345" class="t12 mid muted">no histidine</text>`;
       });
-      s += `<text x="500" y="394" class="t13 mid muted">Both plates: <tspan class="it">Salmonella</tspan> his⁻ on medium without ${resolved("histidine") ? "histidine" : "?"}</text>`;
-      if (!growing) s += `<text x="500" y="430" class="t13 mid muted">Complete the steps below to run the experiment.</text>`;
+      s += `<text x="500" y="386" class="t13 mid muted">Both plates: <tspan class="it">Salmonella</tspan> his⁻ + liver enzymes, on medium without ${resolved("histidine") ? "histidine" : "?"}</text>`;
+      if (!growing) s += `<text x="500" y="420" class="t13 mid muted">Complete the steps below to run the experiment.</text>`;
+      else if (grow >= 1) s += `<text x="500" y="420" class="t13 mid" opacity="${f3(seg(gt, 4, 4.6))}">Every white dot is a colony grown from one revertant cell.</text>`;
       return s;
     },
     review:t => {
@@ -894,7 +1012,7 @@
     {part:P4, title:"Physical mutagens: radiation", v:"uv", more:"uv",
      text:`{{ionizing}} radiation, like X-rays and gamma rays, causes the formation of ions and free radicals that react with DNA. UV radiation is nonionizing: it causes bonding between adjacent thymines, forming a pyrimidine {{dimer}}. The kink blocks replication until the cell repairs it.`},
     {part:P5, title:"The Ames test", v:"ames", more:"ames", gate:"ames",
-     text:`The Ames test is a rapid, inexpensive way to identify potential chemical carcinogens. It uses <i>Salmonella</i> his⁻ mutants, which cannot make {{histidine}}. Mix the bacteria with the chemical plus activation enzymes, then plate them on medium without histidine. Only cells that mutate back to normal can grow, and these colonies are called {{revertants}}. A higher reversion rate means more mutagenic and possibly carcinogenic: 90% of substances mutagenic in the Ames test are also {{carcinogens}} in animals. Run the test yourself below!`},
+     text:`The Ames test is a rapid, inexpensive way to identify potential chemical carcinogens. It uses <i>Salmonella</i> his⁻ mutants, which cannot make {{histidine}}. Mix the bacteria with the chemical plus activation enzymes, then plate them on medium without histidine. The activation enzymes come from the liver, because many chemicals only become mutagens after our liver processes them. A control plate with no chemical shows how often the bacteria mutate back on their own (spontaneous mutation). Only cells that mutate back to normal can grow, and these colonies are called {{revertants}}. A higher reversion rate means more mutagenic and possibly carcinogenic: 90% of substances mutagenic in the Ames test are also {{carcinogens}} in animals. Run the test yourself below!`},
     {part:P5, title:"Putting it together", v:"review", more:"review", table:TABLE, links:[ED,["Translation module","translation.html"]],
      text:`Awesome work! Substitutions change one base and can be silent, missense, or nonsense. Frameshifts insert or delete bases and scramble everything downstream. Head to the DNA Editor to make each kind yourself and complete the missions.`,
      after:`You're a mutation expert now!`}
@@ -1077,7 +1195,7 @@
       : "Test mode: type the missing term to keep going. Stuck? Tap Move on to see the answer.";
     enterStep(idx, true);
   }
-  function restart(){ bl = {}; furthest = 0; for (const k in gates) delete gates[k]; FRAME_GATE.done = false; FRAME_GATE.dragXY = null; AMES_GATE.stage = 0; AMES_GATE.answer = null; enterStep(0, true); }
+  function restart(){ bl = {}; furthest = 0; for (const k in gates) delete gates[k]; FRAME_GATE.done = false; FRAME_GATE.dragXY = null; resetAmes(); enterStep(0, true); }
 
   $("learnBtn").addEventListener("click", () => setMode("learn"));
   $("testBtn").addEventListener("click", () => setMode("test"));
