@@ -130,6 +130,7 @@
   .msband.heavy{background:#343b4a}
   .msband.hybrid{background:#8e6fd8}
   .msband.light{background:#f2b134}
+  .msband.lightish{background:#c9a15a}
   .mschoices{display:flex;gap:10px;flex-wrap:wrap}
   .mschoice{border:2px solid var(--line);border-radius:14px;padding:10px 12px;background:#fff;cursor:pointer;display:grid;gap:8px;justify-items:center;text-align:center}
   .mschoice:hover{border-color:var(--accent)}
@@ -137,6 +138,23 @@
   .mschoice .mcname{font-weight:700;font-size:.9rem}
   .msactual{border:2px solid var(--good);background:var(--good-soft);border-radius:14px;padding:10px 12px;display:grid;gap:8px;justify-items:center}
   .msactual .mcname{font-weight:700;font-size:.9rem;color:var(--good)}
+
+  /* Meselson-Stahl incubation lab: drag a petri dish into a beaker */
+  .mslab{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-end}
+  .mstray{display:flex;gap:14px;flex-wrap:wrap;align-items:center;min-height:78px}
+  .mspetri{touch-action:none;user-select:none;cursor:grab;width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 8%,#eef1f5 9% 100%);border:3px solid #9aa3b5;display:grid;place-items:center;font-size:.72rem;font-weight:700;color:var(--muted);text-align:center}
+  .mspetri.heavylab{border-color:#1f4e8c;background:radial-gradient(circle at 35% 30%,#dbe6f5 0 8%,#8fa9cf 9% 100%);color:#1f4e8c}
+  .mspetri.dragging{position:fixed;z-index:60;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.28);cursor:grabbing}
+  .mspetri.lifted{opacity:.25}
+  .mspetri.nope{animation:shake .32s}
+  .msbeakers{display:flex;gap:22px;flex-wrap:wrap}
+  .msbeaker{width:130px;min-height:130px;border:3px solid #9aa3b5;border-top:none;border-radius:0 0 16px 16px;background:#f4f6f9;display:grid;align-content:end;justify-items:center;gap:6px;padding:10px 8px 12px;position:relative}
+  .msbeaker::before{content:"";position:absolute;left:-3px;right:-3px;top:-3px;height:8px;border:3px solid #9aa3b5;border-bottom:none;border-radius:6px 6px 0 0}
+  .msbeaker.over{border-color:var(--accent);background:var(--accent-soft)}
+  .msbeaker.heavy{border-color:#1f4e8c}
+  .msbeaker.light{border-color:#a8760f}
+  .msbeaker .mblbl{font-size:.8rem;font-weight:700;color:var(--muted);text-align:center}
+  @media (prefers-reduced-motion:reduce){ .mspetri.nope{animation:none} }
 
   /* Two-column comparison boxes (reused text-embedded pattern) */
   .cmpwrap{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
@@ -235,12 +253,16 @@
     primase:   {show:"primase", ans:["primase","rnaprimase"], fuzzy:true},
     okazaki:   {show:"Okazaki fragments", ans:["okazakifragments","okazaki"], fuzzy:true},
     ligase:    {show:"DNA ligase", ans:["dnaligase","ligase"], fuzzy:true},
-    multiple:  {show:"multiple", ans:["multiple","many","several"], fuzzy:true}
+    multiple:  {show:"multiple", ans:["multiple","many","several"], fuzzy:true},
+    heavy:     {show:"heavy", ans:["heavy","heavynitrogen","15n"], fuzzy:true},
+    light:     {show:"light", ans:["light","lightnitrogen","14n"], fuzzy:true},
+    density:   {show:"density", ans:["density","densitygradient"], fuzzy:true}
   };
 
   /* ---------- Learn more ---------- */
   const MORE = {
-    msExperiment:{title:"How Meselson and Stahl actually did it", html:`<p>In 1958, Matthew Meselson and Franklin Stahl grew <i>E. coli</i> for many generations in a medium containing only "heavy" nitrogen (<sup>15</sup>N) so that every base in every DNA strand incorporated the heavier isotope. They then switched the bacteria to ordinary "light" nitrogen (<sup>14</sup>N) medium and let them divide.</p><p>After each generation, they spun a sample of DNA in a centrifuge tube filled with a dense salt solution (cesium chloride). DNA of different densities settles at different heights in the tube: heavier DNA sinks lower, lighter DNA stays higher. This technique, <b>density gradient centrifugation</b>, let them "weigh" the DNA without ever looking at a single strand directly.</p><p>Their results ruled out the conservative model immediately (there was never a heavy band left over after one generation) and, one generation later, ruled out the dispersive model too, since two distinct bands appeared instead of one steadily-lightening smear.</p>`},
+    replicationModels:{title:"Three hypotheses, one experiment", html:`<p>Before 1958, all three ideas about how DNA copies itself, conservative, semi-conservative, and dispersive, were taken seriously. Watson and Crick's double-helix structure hinted that semi-conservative made the most chemical sense (each strand acting as a template for a new partner strand), but nobody had proven it.</p><p>Matthew Meselson and Franklin Stahl designed an experiment clever enough to distinguish all three models at once, without ever directly looking at a single DNA strand, just by tracking the overall density of whole DNA molecules across generations. It's often called "the most beautiful experiment in biology" for how cleanly it separated three competing ideas with one simple technique.</p>`},
+    msExperiment:{title:"How Meselson and Stahl actually did it", html:`<p>In 1958, Matthew Meselson and Franklin Stahl grew <i>E. coli</i> for many generations in a medium containing only "heavy" nitrogen (<sup>15</sup>N) so that every base in every DNA strand incorporated the heavier isotope. They then switched the bacteria to ordinary "light" nitrogen (<sup>14</sup>N) medium and let them divide.</p><p>After each generation, they spun a sample of DNA in a centrifuge tube filled with a dense salt solution (cesium chloride). DNA of different densities settles at different heights in the tube: heavier DNA sinks lower, lighter DNA stays higher. This technique, <b>density gradient centrifugation</b>, let them "weigh" the DNA without ever looking at a single strand directly.</p>`},
     originSequence:{title:"What makes a stretch of DNA an origin?", html:`<p>An origin of replication is usually rich in adenine and thymine base pairs. Since A-T pairs are held by only two hydrogen bonds (versus three for G-C), an A-T-rich stretch takes less energy to pull apart, which is exactly what helicase needs to do to get started.</p><p>In bacteria like <i>E. coli</i>, specific initiator proteins recognize the origin sequence directly and recruit helicase to it. In eukaryotes, origins are chosen less by exact sequence and more by which parts of the chromosome are loosely packaged (open chromatin) and accessible at a given time, which is part of why eukaryotic origins are harder to pin down to one exact sequence.</p>`},
     topoisomerase:{title:"The tangle helicase leaves behind", html:`<p>DNA is a coiled helix, not a loose noodle, so prying two strands apart at the fork twists the DNA ahead of it tighter, a problem called <b>supercoiling</b>. Left unchecked, this buildup of twisting strain would eventually stop helicase in its tracks, like trying to unscrew a lid that's wound itself shut.</p><p><b>Topoisomerase</b> (called DNA gyrase in many bacteria) relieves that strain by cutting one or both DNA strands ahead of the fork, letting the helix swivel to release tension, then resealing the cut. It's a repair-and-release job happening continuously just ahead of every moving replication fork.</p>`},
     whyPrimer:{title:"Why can't DNA polymerase just start on its own?", html:`<p>DNA polymerase can only add a new nucleotide onto an existing 3'-OH (hydroxyl) end; it has no ability to link the very first two free nucleotides together from scratch. That means every new strand needs a short starter piece already in place before DNA polymerase can take over.</p><p><b>Primase</b> is a specialized RNA polymerase that solves this by laying down a short RNA primer (about 5 to 10 nucleotides) that DNA polymerase can then extend. Later, a different enzyme activity removes each RNA primer and fills the resulting gap with DNA, which is why the finished molecule contains no leftover RNA at all.</p>`},
@@ -257,36 +279,65 @@
   function closeMore(){ $("moreOverlay").hidden = true; }
 
   /* ---------- Scene states ---------- */
-  const B = {a:ORIGIN, gene:1, origins:0, originLabel:0, helicase:0, leadOn:0, lagOn:0, zoom:0};
+  const B = {a:ORIGIN, gene:1, origins:0, originLabel:0, helicase:0, leadOn:0, lagOn:0, zoom:0, ms:0};
   const S = [];
-  S[0] = {...B};
-  S[1] = {...S[0], originLabel:1};
-  S[2] = {...S[1], a:8, helicase:1};
-  S[3] = {...S[2], a:16, leadOn:1};
-  S[4] = {...S[3], a:24, lagOn:1};
-  S[5] = {...S[4], a:END};
-  S[6] = {...S[5]};
-  S[7] = {...S[6], gene:0, origins:1};
-  S[8] = {...S[6]};
+  const MS = {...B, gene:0, ms:1};
+  S[0] = {...MS};
+  S[1] = {...MS};
+  S[2] = {...MS};
+  S[3] = {...MS};
+  S[4] = {...MS};
+  S[5] = {...B, originLabel:1};
+  S[6] = {...S[5], a:8, helicase:1};
+  S[7] = {...S[6], a:16, leadOn:1};
+  S[8] = {...S[7], a:24, lagOn:1};
+  S[9] = {...S[8], a:END};
+  S[10] = {...S[9]};
+  S[11] = {...S[10], gene:0, origins:1};
+  S[12] = {...S[10]};
+
+  /* small colored bars showing how old (heavy) vs. new (light) DNA is distributed under each model */
+  function modelStrand(kind){
+    const heavy = "#343b4a", light = "#f2b134";
+    const bar = fill => `<div style="height:9px;border-radius:5px;background:${fill}"></div>`;
+    let mols;
+    if (kind === "conservative") mols = [[heavy, heavy], [light, light]];
+    else if (kind === "semiconservative") mols = [[heavy, light], [heavy, light]];
+    else { const stripe = `repeating-linear-gradient(90deg,${heavy} 0 6px,${light} 6px 12px)`; mols = [[stripe, stripe], [stripe, stripe]]; }
+    return `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px">` + mols.map(m => `<div style="display:grid;gap:3px;width:64px">${bar(m[0])}${bar(m[1])}</div>`).join("") + `</div>`;
+  }
+  const MODEL_BOXES = `<div class="cmpwrap">
+    <div class="cmpbox" style="background:#eef1f5;border:2px solid #9aa3b5"><b>Conservative</b><br>The original double helix stays fully intact, and an entirely new copy is built alongside it.${modelStrand("conservative")}</div>
+    <div class="cmpbox" style="background:#e1f3e8;border:2px solid #1b7f4e"><b style="color:#1b7f4e">Semi-conservative</b><br>Each new molecule keeps one original strand and gains one brand-new strand.${modelStrand("semiconservative")}</div>
+    <div class="cmpbox" style="background:#fbe8e7;border:2px solid #b83a34"><b style="color:#b83a34">Dispersive</b><br>Old and new DNA are chopped up and mixed together throughout both strands.${modelStrand("dispersive")}</div>
+  </div>`;
 
   const STEPS = [
-    {title:"Copying the genome", state:S[0], gate:"msmodel", more:"msExperiment",
-     text:`Before a cell divides, it must copy its entire genome so each daughter cell gets a full set of instructions. Each new DNA molecule ends up with one original (old) strand and one brand-new strand, a pattern called {{semiconservative}} replication. Try the activity below: it's exactly how scientists first proved this.`},
-    {title:"Finding the origin", state:S[1], more:"originSequence",
+    {title:"Semi-conservative replication", state:S[0], more:"replicationModels",
+     text:`Before a cell divides, it must copy its entire genome so each daughter cell gets a full set of instructions. Each new DNA molecule ends up with one original (old) strand and one brand-new strand, a pattern called {{semiconservative}} replication. Before this was confirmed, scientists actually considered three different possibilities for how copying might work:${MODEL_BOXES}`},
+    {title:"The Meselson-Stahl experiment", state:S[1], more:"msExperiment",
+     text:`In 1958, Matthew Meselson and Franklin Stahl set out to test which model was correct. They grew bacteria for many generations in a medium containing only {{heavy}} nitrogen (¹⁵N), so every strand of DNA in the starting culture was fully heavy. Then they switched the culture to ordinary {{light}} nitrogen (¹⁴N) and let it divide. After each generation, they measured the {{density}} of the DNA in a centrifuge: heavier DNA sinks lower, lighter DNA stays higher, so each generation shows up as one or more bands.`},
+    {title:"Grow the starting culture", state:S[2], gate:"incubateHeavy",
+     text:`Let's run the experiment ourselves. Drag the petri dish of bacteria into the heavy nitrogen beaker below, then click Incubate to grow many generations there, exactly like Meselson and Stahl's starting culture.`},
+    {title:"Generation 1: switch to light nitrogen", state:S[3], gate:"incubateLight1",
+     text:`Now drag that same dish into the light nitrogen beaker and incubate it for one generation. Before you look at the result, here are three possible outcomes people once proposed. Pick the one you think actually happened (we won't name them for you, just look at the bands).`},
+    {title:"Generation 2: one more round", state:S[4], gate:"incubateLight2",
+     text:`Click Incubate once more to grow a second generation in light nitrogen. Predict the bands again. This third culture (starting heavy, then two rounds in light nitrogen) is the one that finally settles the debate.`},
+    {title:"Finding the origin", state:S[5], more:"originSequence",
      text:`Replication doesn't start just anywhere. It begins at a specific DNA sequence called the {{origin}} of replication. In real DNA, two replication forks usually form here and travel in opposite directions at once (this diagram simplifies things by following just one fork moving to the right).`},
-    {title:"Unwinding the double helix", state:S[2], more:"topoisomerase",
+    {title:"Unwinding the double helix", state:S[6], more:"topoisomerase",
      text:`{{helicase}} arrives at the origin and pries the two strands apart, breaking the hydrogen bonds between base pairs. Ahead of the fork, an enzyme called topoisomerase relieves the twisting strain this creates, so the helix can keep unwinding smoothly.`},
-    {title:"The leading strand", state:S[3], more:"whyPrimer",
+    {title:"The leading strand", state:S[7], more:"whyPrimer",
      text:`DNA polymerase can't start a new strand from scratch, so {{primase}} lays down a short RNA primer once, right at the fork. From there, DNA polymerase builds the new strand continuously, adding nucleotides 5' to 3' as it chases the fork down the template.`},
-    {title:"The lagging strand", state:S[4], more:"laggingDetail",
+    {title:"The lagging strand", state:S[8], more:"laggingDetail",
      text:`The other template strand runs the opposite direction, so DNA polymerase can't simply chase the fork here. Instead, primase lays a new primer every time enough template is exposed, and each short new piece is built backward, away from the fork. These short pieces are called {{okazaki}}.`},
-    {title:"Sealing the gaps", state:S[5], more:"ligaseDetail",
+    {title:"Sealing the gaps", state:S[9], more:"ligaseDetail",
      text:`Once the fork finishes, each RNA primer on the lagging strand is chewed out and replaced with DNA, leaving a small nick between neighboring fragments. {{ligase}} seals each nick, joining every fragment into one continuous new strand.`},
-    {title:"Leading vs. lagging, side by side", state:S[6],
+    {title:"Leading vs. lagging, side by side", state:S[10],
      text:`Both new strands are built by the same DNA polymerase enzyme, reading a template 3' to 5' and building 5' to 3', but the fork's direction makes the two jobs look completely different.<div class="cmpwrap"><div class="cmpbox" style="background:#e1f3e8;border:2px solid #1b7f4e"><b style="color:#1b7f4e">Leading strand</b><br>Built continuously, in one long piece, chasing the fork. Needs only <b>one</b> RNA primer, right at the start.</div><div class="cmpbox" style="background:#fbe8e7;border:2px solid #b83a34"><b style="color:#b83a34">Lagging strand</b><br>Built in short, separate Okazaki fragments, moving away from the fork. Needs a <b>new</b> primer for every fragment, later removed and sealed by ligase.</div></div>`},
-    {title:"How many origins?", state:S[7], more:"originsCompare",
+    {title:"How many origins?", state:S[11], more:"originsCompare",
      text:`A small circular bacterial chromosome only needs a single origin. Large linear eukaryotic chromosomes use {{multiple}} origins firing at once, so the whole chromosome finishes in a reasonable time.`},
-    {title:"Putting it all together", state:S[8], slider:true, sliderRange:[ORIGIN, END], more:"semiconservativeMore",
+    {title:"Putting it all together", state:S[12], slider:true, sliderRange:[ORIGIN, END], more:"semiconservativeMore",
      text:`Drag the slider below to replay the whole fork yourself: watch helicase open the helix, the leading strand build in one continuous piece, and the lagging strand fill in as separate Okazaki fragments that finally get sealed together by ligase.`,
      after:`Every new DNA molecule: one old strand, one new strand. That's semi-conservative replication.`}
   ];
@@ -326,39 +377,158 @@
   function tube(bands){
     return `<div class="mstube">${bands.map(b => `<div class="msband ${b.cls}" style="top:${b.top}px"></div>`).join("")}</div>`;
   }
+  /* Drag a piece (or tap it). targets() lists drop zones; drop(zone) returns false to bounce the piece back. */
+  function dragify(el, o){
+    const nope = () => { el.classList.remove("nope"); void el.offsetWidth; el.classList.add("nope"); };
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); if (o.tap() === false) nope(); } });
+    el.addEventListener("pointerdown", e => {
+      if (e.button > 0) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+      let moved = false, clone = null, over = null;
+      const hit = ev => o.targets().find(z => { const q = z.getBoundingClientRect(); return ev.clientX > q.left - 8 && ev.clientX < q.right + 8 && ev.clientY > q.top - 8 && ev.clientY < q.bottom + 8; }) || null;
+      const move = ev => {
+        if (!moved && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6){ moved = true; clone = el.cloneNode(true); clone.classList.add("dragging"); clone.style.width = r.width + "px"; clone.style.height = r.height + "px"; document.body.appendChild(clone); el.classList.add("lifted"); }
+        if (!clone) return;
+        clone.style.left = (ev.clientX - dx) + "px"; clone.style.top = (ev.clientY - dy) + "px";
+        over = hit(ev); o.targets().forEach(z => z.classList.toggle("over", z === over));
+      };
+      const up = () => {
+        document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
+        if (clone) clone.remove(); el.classList.remove("lifted"); o.targets().forEach(z => z.classList.remove("over"));
+        if (!moved){ if (o.tap() === false) nope(); return; }
+        if (o.drop(over) === false) nope();
+      };
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+    });
+  }
+  const dishHTML = (id, heavy) => `<div class="mspetri${heavy ? " heavylab" : ""}" id="${id}" tabindex="0" role="button" aria-label="Petri dish of bacteria, drag onto a beaker">${heavy ? "Heavy-labeled" : "Bacteria"}</div>`;
+  const beakersHTML = (dishIn, dishHtml) => `<div class="msbeakers">
+      <div class="msbeaker heavy" data-beaker="heavy"><span class="mblbl">Heavy nitrogen (¹⁵N)</span>${dishIn === "heavy" ? dishHtml : ""}</div>
+      <div class="msbeaker light" data-beaker="light"><span class="mblbl">Light nitrogen (¹⁴N)</span>${dishIn === "light" ? dishHtml : ""}</div>
+    </div>`;
   const GATES = {
-    msmodel:{
-      title:"Which model matches the real Meselson-Stahl result?",
-      doneText:"Semi-conservative replication: exactly what Meselson and Stahl found.",
+    incubateHeavy:{
+      title:"Grow the starting culture in heavy nitrogen",
+      doneText:"Starting culture ready: fully heavy (¹⁵N) DNA on both strands.",
       html:() => {
-        const models = [
-          {key:"conservative", name:"Conservative", g1:[{cls:"heavy",top:68},{cls:"light",top:6}], g2:[{cls:"heavy",top:68},{cls:"light",top:6}]},
-          {key:"semiconservative", name:"Semi-conservative", g1:[{cls:"hybrid",top:34}], g2:[{cls:"hybrid",top:34},{cls:"light",top:6}]},
-          {key:"dispersive", name:"Dispersive", g1:[{cls:"hybrid",top:34}], g2:[{cls:"light",top:18}]}
-        ];
-        let h = `<div class="msactual"><span class="mcname">Actual result</span><div class="mstubes">
-          <div class="mscol"><span class="mslbl">Generation 1</span>${tube([{cls:"hybrid",top:34}])}</div>
-          <div class="mscol"><span class="mslbl">Generation 2</span>${tube([{cls:"hybrid",top:34},{cls:"light",top:6}])}</div>
-        </div></div>`;
-        h += `<div class="mschoices">` + models.map(m => `<div class="mschoice" data-model="${m.key}">
-          <span class="mcname">${m.name}</span>
-          <div class="mstubes">
-            <div class="mscol"><span class="mslbl">Gen 1</span>${tube(m.g1)}</div>
-            <div class="mscol"><span class="mslbl">Gen 2</span>${tube(m.g2)}</div>
-          </div>
-        </div>`).join("") + `</div>`;
+        const st = GATES.incubateHeavy;
+        const dish = dishHTML("msDish", false);
+        return `<div class="mslab"><div class="mstray">${!st.dropped ? dish : ""}</div>${beakersHTML(st.dropped ? "heavy" : null, dish)}</div>
+          <div style="margin-top:10px"><button class="btn primary" id="incubateBtn" ${st.dropped ? "" : "disabled"}>${st.incubated ? "Incubated ✓" : "Incubate"}</button></div>`;
+      },
+      wire:g => {
+        const st = GATES.incubateHeavy;
+        const dish = g.querySelector("#msDish");
+        if (dish && !st.dropped){
+          dragify(dish, {
+            targets:() => [...g.querySelectorAll("[data-beaker]")],
+            tap:() => { gateMsg("Drag the dish onto the Heavy nitrogen beaker.", ""); return false; },
+            drop:z => {
+              if (!z) { gateMsg("Drop the dish onto a beaker.", ""); return false; }
+              if (z.dataset.beaker === "heavy"){ st.dropped = true; renderGate(); return true; }
+              gateMsg("That's the light nitrogen beaker. We need to start the culture in heavy nitrogen first.", "bad"); return false;
+            }
+          });
+        }
+        const btn = g.querySelector("#incubateBtn");
+        if (btn && !st.incubated) btn.addEventListener("click", () => {
+          st.incubated = true; renderGate();
+          gateMsg("The starting culture's DNA is now completely heavy on both strands, since every nucleotide it built came from heavy nitrogen.", "good");
+          setTimeout(passGate, 1300);
+        });
+        if (!st.dropped) gateMsg("Drag the petri dish onto the Heavy nitrogen beaker (or tap it, then tap the beaker).", "");
+      }
+    },
+    incubateLight1:{
+      title:"Generation 1: incubate in light nitrogen",
+      doneText:"One generation in: a single in-between band. Semi-conservative and dispersive still look identical.",
+      html:() => {
+        const st = GATES.incubateLight1;
+        const dish = dishHTML("msDish2", true);
+        let h = `<div class="mslab"><div class="mstray">${!st.dropped ? dish : ""}</div>${beakersHTML(st.dropped ? "light" : null, dish)}</div>`;
+        h += `<div style="margin-top:10px"><button class="btn primary" id="incubateBtn1" ${st.dropped ? "" : "disabled"}>${st.incubated ? "Incubated ✓" : "Incubate one generation"}</button></div>`;
+        if (st.incubated){
+          const OPTIONS = [
+            {key:"conservative", bands:[{cls:"heavy",top:68},{cls:"light",top:6}]},
+            {key:"semiconservative", bands:[{cls:"hybrid",top:34}]},
+            {key:"dispersive", bands:[{cls:"hybrid",top:34}]}
+          ];
+          h += `<div class="traylbl" style="margin-top:10px">Which result actually appeared on the gel after one generation?</div>`;
+          h += `<div class="mschoices">` + OPTIONS.map((o, i) => `<div class="mschoice${st.picked === o.key ? " picked" : ""}" data-key="${o.key}"><span class="mcname">Result ${String.fromCharCode(65 + i)}</span>${tube(o.bands)}</div>`).join("") + `</div>`;
+        }
         return h;
       },
       wire:g => {
-        g.querySelectorAll("[data-model]").forEach(c => c.addEventListener("click", () => {
-          g.querySelectorAll("[data-model]").forEach(x => x.classList.remove("picked"));
-          c.classList.add("picked");
-          const key = c.dataset.model;
-          if (key === "semiconservative"){ gateMsg("Correct! One hybrid band in Generation 1, then a hybrid band plus a light band in Generation 2, exactly matches each new molecule keeping one old strand and one new strand.", "good"); setTimeout(passGate, 900); }
-          else if (key === "conservative"){ gateMsg("Not quite: conservative predicts a heavy band AND a light band appear immediately in Generation 1, but only one (hybrid) band showed up.", "bad"); }
-          else { gateMsg("Not quite: dispersive predicts a single band that keeps drifting lighter each generation, but Generation 2 clearly shows two separate bands.", "bad"); }
-        }));
-        gateMsg("Compare each model's predicted bands to the actual result above, then click the model that matches.", "");
+        const st = GATES.incubateLight1;
+        const dish = g.querySelector("#msDish2");
+        if (dish && !st.dropped){
+          dragify(dish, {
+            targets:() => [...g.querySelectorAll("[data-beaker]")],
+            tap:() => { gateMsg("Drag the dish onto the Light nitrogen beaker.", ""); return false; },
+            drop:z => {
+              if (!z) return false;
+              if (z.dataset.beaker === "light"){ st.dropped = true; renderGate(); return true; }
+              gateMsg("This dish is already heavy-labeled from the last step. Now it needs to go into the light nitrogen beaker.", "bad"); return false;
+            }
+          });
+        }
+        const btn = g.querySelector("#incubateBtn1");
+        if (btn && !st.incubated) btn.addEventListener("click", () => {
+          st.incubated = true; renderGate();
+          gateMsg("Now predict: which gel result actually happened?", "");
+        });
+        if (st.incubated && !st.correct){
+          g.querySelectorAll("[data-key]").forEach(c => c.addEventListener("click", () => {
+            st.picked = c.dataset.key; renderGate();
+            if (c.dataset.key === "conservative"){
+              gateMsg("Not quite: conservative predicts a heavy band would still remain untouched, plus a fully new light band. But there's no heavy band here at all.", "bad");
+            } else {
+              st.correct = true;
+              gateMsg("Right, a single band partway between heavy and light. But notice: this looks exactly the same whether replication is semi-conservative or dispersive. One generation alone can't tell them apart yet!", "good");
+              setTimeout(passGate, 1800);
+            }
+          }));
+        }
+        if (!st.dropped) gateMsg("Drag the heavy-labeled dish into the Light nitrogen beaker.", "");
+      }
+    },
+    incubateLight2:{
+      title:"Generation 2: incubate again",
+      doneText:"Confirmed: DNA replication is semi-conservative.",
+      html:() => {
+        const st = GATES.incubateLight2;
+        let h = `<div style="margin-top:4px"><button class="btn primary" id="incubateBtn2" ${st.incubated ? "disabled" : ""}>${st.incubated ? "Incubated ✓" : "Incubate a second generation"}</button></div>`;
+        if (st.incubated){
+          const OPTIONS = [
+            {key:"conservative", bands:[{cls:"heavy",top:68},{cls:"light",top:6}]},
+            {key:"semiconservative", bands:[{cls:"hybrid",top:34},{cls:"light",top:6}]},
+            {key:"dispersive", bands:[{cls:"lightish",top:18}]}
+          ];
+          h += `<div class="traylbl" style="margin-top:10px">Which result actually appeared after a second generation?</div>`;
+          h += `<div class="mschoices">` + OPTIONS.map((o, i) => `<div class="mschoice${st.picked === o.key ? " picked" : ""}" data-key="${o.key}"><span class="mcname">Result ${String.fromCharCode(65 + i)}</span>${tube(o.bands)}</div>`).join("") + `</div>`;
+        }
+        return h;
+      },
+      wire:g => {
+        const st = GATES.incubateLight2;
+        const btn = g.querySelector("#incubateBtn2");
+        if (btn && !st.incubated) btn.addEventListener("click", () => { st.incubated = true; renderGate(); gateMsg("Predict this generation's result.", ""); });
+        if (st.incubated && !st.correct){
+          g.querySelectorAll("[data-key]").forEach(c => c.addEventListener("click", () => {
+            st.picked = c.dataset.key; renderGate();
+            if (c.dataset.key === "semiconservative"){
+              st.correct = true;
+              gateMsg("Two distinct bands: a hybrid band and an all-light band. That's only possible if some finished molecules are 100% new DNA. Dispersive predicts just one band, still shifting lighter, never two separate bands. This third culture is the one that finally rules dispersive out.", "good");
+              setTimeout(passGate, 1900);
+            } else if (c.dataset.key === "conservative"){
+              gateMsg("Conservative was already ruled out last generation: it also predicts a heavy band would reappear, which never happens.", "bad");
+            } else {
+              gateMsg("Dispersive predicts the single band keeps sliding lighter, never splitting into two separate bands. But here there clearly are two distinct bands.", "bad");
+            }
+          }));
+        }
+        if (!st.incubated) gateMsg("Click Incubate to grow one more generation in light nitrogen.", "");
       }
     }
   };
@@ -473,6 +643,18 @@
     return o;
   }
 
+  function msSVG(){
+    let o = `<text x="500" y="34" class="region mid" fill="#1d2433">The Meselson-Stahl experiment</text>`;
+    const flask = (cx, cy, color, label) => `<path d="M${cx-26},${cy-36} v18 l-24,46 q-4,10 8,10 h84 q12,0 8,-10 l-24,-46 v-18 Z" fill="${color}22" stroke="${color}" stroke-width="3"/><rect x="${cx-26}" y="${cy-40}" width="52" height="9" rx="3" fill="${color}"/><text x="${cx}" y="${cy+50}" class="small mid">${label}</text>`;
+    o += flask(200, 190, "#1f4e8c", "Heavy nitrogen (¹⁵N)");
+    o += flask(460, 190, "#a8760f", "Light nitrogen (¹⁴N)");
+    o += `<path d="M270,190 H390" stroke="#9aa3b5" stroke-width="3" marker-end="url(#dh)"/><text x="330" y="176" class="small mid">many generations</text>`;
+    o += `<path d="M520,190 H620" stroke="#9aa3b5" stroke-width="3" marker-end="url(#dh)"/>`;
+    o += `<rect x="640" y="140" width="46" height="104" rx="10" fill="#f4f6f9" stroke="#9aa3b5" stroke-width="2.5"/><circle cx="663" cy="170" r="6" fill="#8e6fd8"/>`;
+    o += `<text x="663" y="264" class="small mid">Spin in a</text><text x="663" y="280" class="small mid">centrifuge</text><text x="663" y="296" class="small mid">(density gradient)</text>`;
+    return o;
+  }
+
   const DEFS = `<defs><marker id="dh" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#e8744f"/></marker></defs>`;
 
   function render(){
@@ -485,6 +667,7 @@
     let o = DEFS;
     if (cur.gene > 0.01) o += `<g opacity="${f3(cur.gene)}">${forkSVG(cur)}</g>`;
     if (cur.origins > 0.01) o += `<g opacity="${f3(cur.origins)}">${originsSVG()}</g>`;
+    if (cur.ms > 0.01) o += `<g opacity="${f3(cur.ms)}">${msSVG()}</g>`;
     svg.innerHTML = o;
   }
 
@@ -637,6 +820,9 @@
   }
   function restart(){
     for (const k in gates) delete gates[k];
+    GATES.incubateHeavy.dropped = false; GATES.incubateHeavy.incubated = false;
+    GATES.incubateLight1.dropped = false; GATES.incubateLight1.incubated = false; GATES.incubateLight1.picked = null; GATES.incubateLight1.correct = false;
+    GATES.incubateLight2.incubated = false; GATES.incubateLight2.picked = null; GATES.incubateLight2.correct = false;
     bl = {}; furthest = 0; idx = 0;
     cur = {...S[0]}; tw = null;
     enterStep(0);
