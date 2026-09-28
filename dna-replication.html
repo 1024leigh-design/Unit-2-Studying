@@ -148,12 +148,11 @@
   .mspetri.lifted{opacity:.25}
   .mspetri.nope{animation:shake .32s}
   .msbeakers{display:flex;gap:22px;flex-wrap:wrap}
-  .msbeaker{width:130px;min-height:130px;border:3px solid #9aa3b5;border-top:none;border-radius:0 0 16px 16px;background:#f4f6f9;display:grid;align-content:end;justify-items:center;gap:6px;padding:10px 8px 12px;position:relative}
-  .msbeaker::before{content:"";position:absolute;left:-3px;right:-3px;top:-3px;height:8px;border:3px solid #9aa3b5;border-bottom:none;border-radius:6px 6px 0 0}
+  .msbeaker{width:150px;min-height:150px;border:2px solid transparent;border-radius:16px;display:grid;align-content:end;justify-items:center;gap:6px;padding:8px 8px 10px;position:relative}
   .msbeaker.over{border-color:var(--accent);background:var(--accent-soft)}
-  .msbeaker.heavy{border-color:#1f4e8c}
-  .msbeaker.light{border-color:#a8760f}
-  .msbeaker .mblbl{font-size:.8rem;font-weight:700;color:var(--muted);text-align:center}
+  .msbeaker svg{display:block}
+  .msbeaker .mblbl{font-size:.9rem;font-weight:700;color:#343b4a;text-align:center}
+  .msbeaker.heavy .mblbl{color:#2c5aa0} .msbeaker.light .mblbl{color:#a8760f}
   @media (prefers-reduced-motion:reduce){ .mspetri.nope{animation:none} }
 
   /* Two-column comparison boxes (reused text-embedded pattern) */
@@ -280,7 +279,8 @@
   function closeMore(){ $("moreOverlay").hidden = true; }
 
   /* ---------- Scene states ---------- */
-  const B = {a:ORIGIN, gene:1, origins:0, originLabel:0, helicase:0, leadOn:0, lagOn:0, zoom:0, ms:0};
+  const B = {a:ORIGIN, gene:1, origins:0, originLabel:0, helicase:0, leadOn:0, lagOn:0, zoom:0, ms:0, hero:0, models:0, ms3:0};
+  const S_HERO = {...B, gene:0, hero:1}, S_MODELS = {...B, gene:0, models:1}, S_MS3 = {...B, gene:0, ms3:1};
   const S = [];
   const MS = {...B, gene:0, ms:1};
   S[0] = {...MS};
@@ -297,26 +297,12 @@
   S[11] = {...S[10], gene:0, origins:1};
   S[12] = {...S[10]};
 
-  /* small colored bars showing how old (heavy) vs. new (light) DNA is distributed under each model */
-  function modelStrand(kind){
-    const heavy = "#343b4a", light = "#f2b134";
-    const bar = fill => `<div style="height:9px;border-radius:5px;background:${fill}"></div>`;
-    let mols;
-    if (kind === "conservative") mols = [[heavy, heavy], [light, light]];
-    else if (kind === "semiconservative") mols = [[heavy, light], [heavy, light]];
-    else { const stripe = `repeating-linear-gradient(90deg,${heavy} 0 6px,${light} 6px 12px)`; mols = [[stripe, stripe], [stripe, stripe]]; }
-    return `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px">` + mols.map(m => `<div style="display:grid;gap:3px;width:64px">${bar(m[0])}${bar(m[1])}</div>`).join("") + `</div>`;
-  }
-  const MODEL_BOXES = `<div class="cmpwrap">
-    <div class="cmpbox" style="background:#eef1f5;border:2px solid #9aa3b5"><b>Conservative</b><br>The original double helix stays fully intact, and an entirely new copy is built alongside it.${modelStrand("conservative")}</div>
-    <div class="cmpbox" style="background:#e1f3e8;border:2px solid #1b7f4e"><b style="color:#1b7f4e">Semi-conservative</b><br>Each new molecule keeps one original strand and gains one brand-new strand.${modelStrand("semiconservative")}</div>
-    <div class="cmpbox" style="background:#fbe8e7;border:2px solid #b83a34"><b style="color:#b83a34">Dispersive</b><br>Old and new DNA are chopped up and mixed together throughout both strands.${modelStrand("dispersive")}</div>
-  </div>`;
-
   const STEPS = [
-    {title:"Semi-conservative replication", state:S[0], more:"replicationModels",
-     text:`Before a cell divides, it must copy its entire genome so each daughter cell gets a full set of instructions. Each new DNA molecule ends up with one original (old) strand and one brand-new strand, a pattern called {{semiconservative}} replication. Before this was confirmed, scientists actually considered three different possibilities for how copying might work:${MODEL_BOXES}`},
-    {title:"The Meselson-Stahl experiment", state:S[1], more:"msExperiment",
+    {title:"Copying the code of life", state:S_HERO,
+     text:`Every time a cell divides, it has to copy its <b>entire</b> genome so that each new cell gets a complete set of instructions. In your cells that's about 6 billion base pairs, copied in a few hours with almost no mistakes. In this module you'll watch a cell unzip its DNA, build two new strands, and end up with two identical molecules. But first, a mystery from the 1950s: once Watson and Crick showed DNA is a double helix, nobody knew how the copying actually worked. Does the original molecule stay whole? Get split in half? Get shredded and mixed? Two young scientists, Matthew Meselson and Franklin Stahl, cared because the answer would reveal how genetic information is passed on so faithfully, generation after generation. Let's see what they figured out.`},
+    {title:"Semi-conservative replication", state:S_MODELS, more:"replicationModels",
+     text:`Before a cell divides, it must copy its entire genome so each daughter cell gets a full set of instructions. Each new DNA molecule ends up with one original (old) strand and one brand-new strand, a pattern called {{semiconservative}} replication. Before this was confirmed, scientists seriously considered three different possibilities for how copying might work. Compare them in the diagram above: dark strands are original DNA, gold strands are new.`},
+    {title:"The Meselson-Stahl experiment", state:S_MS3, more:"msExperiment",
      text:`In 1958, Matthew Meselson and Franklin Stahl set out to test which model was correct. They grew bacteria for many generations in a medium containing only {{heavy}} nitrogen (¹⁵N), so every strand of DNA in the starting culture was fully heavy. Then they switched the culture to ordinary {{light}} nitrogen (¹⁴N) and let it divide. After each generation, they measured the {{density}} of the DNA in a centrifuge: heavier DNA sinks lower, lighter DNA stays higher, so each generation shows up as one or more bands.`},
     {title:"Grow the starting culture", state:S[2], gate:"incubateHeavy",
      text:`Let's run the experiment ourselves. Drag the petri dish of bacteria into the heavy nitrogen beaker below, then click Incubate to grow many generations there, exactly like Meselson and Stahl's starting culture.`},
@@ -347,7 +333,8 @@
   /* ---------- App state ---------- */
   let mode = "learn", idx = 0, furthest = 0;
   let bl = {};
-  let cur = {...S[0]}, tw = null, dirty = true;
+  let cur = {...S_HERO}, tw = null, dirty = true;
+  const T0 = performance.now();
   const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const $ = id => document.getElementById(id);
@@ -405,8 +392,8 @@
   }
   const dishHTML = (id, heavy) => `<div class="mspetri${heavy ? " heavylab" : ""}" id="${id}" tabindex="0" role="button" aria-label="Petri dish of bacteria, drag onto a beaker">${heavy ? "Heavy-labeled" : "Bacteria"}</div>`;
   const beakersHTML = (dishIn, dishHtml) => `<div class="msbeakers">
-      <div class="msbeaker heavy" data-beaker="heavy"><span class="mblbl">Heavy nitrogen (¹⁵N)</span>${dishIn === "heavy" ? dishHtml : ""}</div>
-      <div class="msbeaker light" data-beaker="light"><span class="mblbl">Light nitrogen (¹⁴N)</span>${dishIn === "light" ? dishHtml : ""}</div>
+      <div class="msbeaker heavy" data-beaker="heavy"><svg width="110" height="120" viewBox="0 0 110 120" aria-hidden="true">${flask(55, 114, 90, HEAVY, {cells:dishIn === "heavy", id:"gateFlH"})}</svg><span class="mblbl">Heavy nitrogen (¹⁵N)</span>${dishIn === "heavy" ? dishHtml : ""}</div>
+      <div class="msbeaker light" data-beaker="light"><svg width="110" height="120" viewBox="0 0 110 120" aria-hidden="true">${flask(55, 114, 90, LIGHTN, {cells:dishIn === "light", id:"gateFlL"})}</svg><span class="mblbl">Light nitrogen (¹⁴N)</span>${dishIn === "light" ? dishHtml : ""}</div>
     </div>`;
   const GATES = {
     incubateHeavy:{
@@ -658,15 +645,219 @@
     return o;
   }
 
+  /* ===== Lab glassware shared by the Meselson-Stahl graphics ===== */
+  const INK = "#1d2433", HEAVY = "#2c5aa0", LIGHTN = "#d9941a";
+  let gid = 0;
+  /* Erlenmeyer flask: black outline, narrow neck, colored broth with a meniscus line */
+  function flask(cx, baseY, w, liquid, opt){
+    opt = opt || {};
+    const h = w * 1.25, neckW = w * 0.3, neckH = h * 0.32, bodyTop = baseY - h + neckH, id = opt.id || ("fl" + (gid++));
+    const outline = `M${f1(cx - neckW / 2)},${f1(baseY - h)} V${f1(bodyTop)} L${f1(cx - w / 2 + 6)},${f1(baseY - 8)} Q${f1(cx - w / 2)},${f1(baseY)} ${f1(cx - w / 2 + 10)},${f1(baseY)} H${f1(cx + w / 2 - 10)} Q${f1(cx + w / 2)},${f1(baseY)} ${f1(cx + w / 2 - 6)},${f1(baseY - 8)} L${f1(cx + neckW / 2)},${f1(bodyTop)} V${f1(baseY - h)}`;
+    const lvl = baseY - (h - neckH) * 0.55;
+    let o = `<defs><clipPath id="${id}"><path d="${outline} Z"/></clipPath></defs>`;
+    o += `<path d="${outline} Z" fill="#fff"/>`;
+    o += `<rect x="${f1(cx - w)}" y="${f1(lvl)}" width="${f1(w * 2)}" height="${f1(baseY - lvl + 4)}" fill="${liquid}" opacity=".55" clip-path="url(#${id})"/>`;
+    o += `<path d="M${f1(cx - w)},${f1(lvl)} H${f1(cx + w)}" stroke="${liquid}" stroke-width="3" clip-path="url(#${id})"/>`;
+    /* a few rod-shaped bacteria swimming in the broth */
+    if (opt.cells) for (let k = 0; k < 5; k++){ const bx = cx - w * .28 + (k * 37 % 100) / 100 * w * .56, by = lvl + 10 + (k * 23 % 60) / 60 * (baseY - lvl - 20); o += `<rect x="${f1(bx - 5)}" y="${f1(by - 2.5)}" width="10" height="5" rx="2.5" fill="${INK}" opacity=".45" transform="rotate(${(k * 47) % 90 - 45} ${f1(bx)} ${f1(by)})" clip-path="url(#${id})"/>`; }
+    o += `<path d="${outline}" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>`;
+    o += `<path d="M${f1(cx - neckW / 2 - 4)},${f1(baseY - h)} H${f1(cx + neckW / 2 + 4)}" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
+    o += `<path d="M${f1(cx - w / 2 + 16)},${f1(baseY - 14)} L${f1(cx - neckW / 2 + 5)},${f1(bodyTop + 8)}" stroke="#fff" stroke-width="3" opacity=".7" stroke-linecap="round"/>`;
+    return o;
+  }
+  /* centrifuge tube with a density gradient (pale at the top, denser at the bottom) and DNA bands */
+  function ctube(cx, top, h, w, bands, opt){
+    opt = opt || {};
+    const id = "ct" + (gid++), bot = top + h;
+    const d = `M${f1(cx - w / 2)},${f1(top)} V${f1(bot - w / 2)} A${f1(w / 2)},${f1(w / 2)} 0 0 0 ${f1(cx + w / 2)},${f1(bot - w / 2)} V${f1(top)}`;
+    let o = `<defs><linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7f9fd"/><stop offset="1" stop-color="#c9d3e6"/></linearGradient><clipPath id="${id}"><path d="${d} Z"/></clipPath></defs>`;
+    o += `<path d="${d} Z" fill="url(#${id}g)"/>`;
+    (bands || []).forEach(bd => { const y = top + h * bd.f; o += `<rect x="${f1(cx - w / 2)}" y="${f1(y - 4)}" width="${f1(w)}" height="8" fill="${bd.c}" opacity="${bd.op === undefined ? .9 : bd.op}" clip-path="url(#${id})"/>`; });
+    if (opt.q) o += `<text x="${f1(cx)}" y="${f1(top + h * .6)}" font-size="22" font-weight="700" fill="#9aa3b5" text-anchor="middle">?</text>`;
+    o += `<path d="${d}" fill="none" stroke="${INK}" stroke-width="2.4"/><rect x="${f1(cx - w / 2 - 5)}" y="${f1(top - 7)}" width="${f1(w + 10)}" height="9" rx="3" fill="#fff" stroke="${INK}" stroke-width="2.2"/>`;
+    return o;
+  }
+  const arrowR = (x1, y, x2, col) => `<path d="M${x1},${y} H${x2 - 8}" stroke="${col || "#7a8292"}" stroke-width="3"/><path d="M${x2},${y} l-11,-6 v12 z" fill="${col || "#7a8292"}"/>`;
+  const arrowD = (x, y1, y2, col) => `<path d="M${x},${y1} V${y2 - 8}" stroke="${col || "#7a8292"}" stroke-width="3"/><path d="M${x},${y2} l-6,-11 h12 z" fill="${col || "#7a8292"}"/>`;
+  const lbl = (x, y, t, size, col, wt) => `<text x="${f1(x)}" y="${f1(y)}" font-size="${size || 15}" font-weight="${wt || 700}" fill="${col || "#343b4a"}" text-anchor="middle">${t}</text>`;
+
+  /* Lab steps: the whole procedure in one row */
   function msSVG(){
-    let o = `<text x="500" y="34" class="region mid" fill="#1d2433">The Meselson-Stahl experiment</text>`;
-    const flask = (cx, cy, color, label) => `<path d="M${cx-26},${cy-36} v18 l-24,46 q-4,10 8,10 h84 q12,0 8,-10 l-24,-46 v-18 Z" fill="${color}22" stroke="${color}" stroke-width="3"/><rect x="${cx-26}" y="${cy-40}" width="52" height="9" rx="3" fill="${color}"/><text x="${cx}" y="${cy+50}" class="small mid">${label}</text>`;
-    o += flask(200, 190, "#1f4e8c", "Heavy nitrogen (¹⁵N)");
-    o += flask(460, 190, "#a8760f", "Light nitrogen (¹⁴N)");
-    o += `<path d="M270,190 H390" stroke="#9aa3b5" stroke-width="3" marker-end="url(#dh)"/><text x="330" y="176" class="small mid">many generations</text>`;
-    o += `<path d="M520,190 H620" stroke="#9aa3b5" stroke-width="3" marker-end="url(#dh)"/>`;
-    o += `<rect x="640" y="140" width="46" height="104" rx="10" fill="#f4f6f9" stroke="#9aa3b5" stroke-width="2.5"/><circle cx="663" cy="170" r="6" fill="#8e6fd8"/>`;
-    o += `<text x="663" y="264" class="small mid">Spin in a</text><text x="663" y="280" class="small mid">centrifuge</text><text x="663" y="296" class="small mid">(density gradient)</text>`;
+    gid = 0;
+    let o = lbl(500, 40, "The Meselson-Stahl experiment", 19, "#1d2433");
+    o += flask(170, 250, 120, HEAVY, {cells:true}) + lbl(170, 290, "Heavy nitrogen broth") + lbl(170, 310, "(¹⁵N)", 14, HEAVY);
+    o += arrowR(250, 200, 330) + lbl(290, 186, "move cells", 13, "#5a6376");
+    o += flask(410, 250, 120, LIGHTN, {cells:true}) + lbl(410, 290, "Light nitrogen broth") + lbl(410, 310, "(¹⁴N)", 14, "#a8760f");
+    o += arrowR(490, 200, 580) + lbl(535, 186, "extract DNA", 13, "#5a6376");
+    o += ctube(640, 120, 130, 40, [], {}) + `<path d="M630,215 q5,-8 10,0 t10,0" stroke="${INK}" stroke-width="2" fill="none"/>` + lbl(640, 290, "Purified DNA");
+    o += arrowR(685, 200, 770) + lbl(727, 186, "spin", 13, "#5a6376");
+    o += ctube(830, 100, 160, 44, [], {q:true}) + lbl(830, 290, "Centrifuge tube") + lbl(830, 310, "Where are the bands?", 14, "#5a6376", 400);
+    o += lbl(500, 380, "They sampled the culture after every generation, and extracted and spun the DNA each time.", 15, "#5a6376", 400);
+    return o;
+  }
+
+  /* ===== Step 1 hero: a spinning double helix being copied, on a night-sky background ===== */
+  const SEQ = "ATGCGTACCTAGGCATTCGATCGGATACGTTAGCCATGGATCCGTAATGCGTCA";
+  const PAIRB = {A:"T", T:"A", G:"C", C:"G"};
+  function heroSVG(t){
+    const W = 1000, CY = 250, OLD = "#8fb3ff", NEW = "#f2b134";
+    const cyc = 15, tc = t % cyc, fx = lerp(-40, 1080, smooth(clamp(tc / 12, 0, 1)));
+    const fade = 1 - smooth(clamp((tc - 13.6) / 1.4, 0, 1)) * (tc > 13.6 ? 1 : 0);
+    let o = `<defs><radialGradient id="hbg" cx=".5" cy=".42" r=".8"><stop offset="0" stop-color="#26306b"/><stop offset=".6" stop-color="#151b44"/><stop offset="1" stop-color="#0b0f2a"/></radialGradient>
+      <filter id="hglow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+    o += `<rect x="0" y="0" width="${W}" height="470" rx="0" fill="url(#hbg)"/>`;
+    for (let k = 0; k < 46; k++){ const x = (k * 211) % 997, y = (k * 97) % 460 + 5, tw = .25 + .35 * (.5 + .5 * Math.sin(t * 1.3 + k)); o += `<circle cx="${x}" cy="${y}" r="${k % 5 ? 1.1 : 1.8}" fill="#fff" opacity="${f3(tw)}"/>`; }
+    o += `<text x="46" y="68" font-size="38" font-weight="800" fill="#fff" letter-spacing="-0.5">DNA Replication</text>`;
+    o += `<text x="48" y="98" font-size="18" fill="#c7d0f5">How one molecule becomes two, almost perfectly</text>`;
+    /* legend */
+    o += `<g transform="translate(700,50)"><rect x="0" y="0" width="256" height="50" rx="12" fill="#ffffff" fill-opacity=".07" stroke="#ffffff" stroke-opacity=".18"/><path d="M16,18 h34" stroke="${OLD}" stroke-width="7" stroke-linecap="round"/><text x="60" y="23" font-size="14" fill="#e6ebff">original strand</text><path d="M16,36 h34" stroke="${NEW}" stroke-width="7" stroke-linecap="round"/><text x="60" y="41" font-size="14" fill="#e6ebff">new strand</text></g>`;
+    /* helix geometry */
+    const k = 2 * Math.PI / 150, om = t * 1.4, X0 = 30, X1 = 970, DX = 6;
+    const sepOf = x => 72 * smooth(clamp((fx - x) / 170, 0, 1));
+    const Rof = x => lerp(32, 24, clamp(sepOf(x) / 72, 0, 1));
+    const strands = [
+      {col:OLD, y:x => CY - sepOf(x) + Rof(x) * Math.sin(k * x + om), z:x => Math.cos(k * x + om), from:X0, to:X1},
+      {col:OLD, y:x => CY + sepOf(x) + Rof(x) * Math.sin(k * x + om + Math.PI), z:x => Math.cos(k * x + om + Math.PI), from:X0, to:X1},
+      {col:NEW, y:x => CY - sepOf(x) + Rof(x) * Math.sin(k * x + om + Math.PI), z:x => Math.cos(k * x + om + Math.PI), from:X0, to:Math.min(X1, fx - 70)},
+      {col:NEW, y:x => CY + sepOf(x) + Rof(x) * Math.sin(k * x + om), z:x => Math.cos(k * x + om), from:X0, to:Math.min(X1, fx - 70)}
+    ];
+    const runs = side => {
+      let out = "";
+      strands.forEach(st => {
+        if (st.to <= st.from) return;
+        let d = "", prev = null;
+        for (let x = st.from; x <= st.to + .1; x += DX){
+          const front = st.z(x) >= 0;
+          if (front !== side){ prev = null; continue; }
+          d += (prev === null ? "M" : "L") + f1(x) + "," + f1(st.y(x)); prev = x;
+        }
+        if (d) out += `<path d="${d}" fill="none" stroke="${st.col}" stroke-width="${side ? 7 : 5}" stroke-linecap="round" stroke-linejoin="round" opacity="${side ? 1 : .42}"${side ? ` filter="url(#hglow)"` : ""}/>`;
+      });
+      return out;
+    };
+    let rungs = "";
+    for (let x = X0 + 6, i = 0; x < X1; x += 15, i++){
+      const b = SEQ[i % SEQ.length], c = PAIRB[b], sp = sepOf(x);
+      const pairs = sp < 1 ? [[strands[0], strands[1], b, c]] : (x < fx - 70 ? [[strands[0], strands[2], b, c], [strands[3], strands[1], b, c]] : []);
+      pairs.forEach(pr => { const y1 = pr[0].y(x), y2 = pr[1].y(x), ym = (y1 + y2) / 2; rungs += `<path d="M${f1(x)},${f1(y1)} V${f1(ym)}" stroke="${BASE[pr[2]][0]}" stroke-width="4.5" opacity=".9"/><path d="M${f1(x)},${f1(ym)} V${f1(y2)}" stroke="${BASE[pr[3]][0]}" stroke-width="4.5" opacity=".9"/>`; });
+      /* unpaired bases waiting on the separated old strands, between the polymerase and the fork */
+      if (sp >= 1 && x >= fx - 70 && x < fx){
+        rungs += `<path d="M${f1(x)},${f1(strands[0].y(x))} v12" stroke="${BASE[b][0]}" stroke-width="4.5"/><path d="M${f1(x)},${f1(strands[1].y(x))} v-12" stroke="${BASE[c][0]}" stroke-width="4.5"/>`;
+      }
+    }
+    let g = runs(false) + rungs + runs(true);
+    /* free nucleotides drifting in toward the fork */
+    if (fx > 40 && fx < 1000){
+      for (let n = 0; n < 10; n++){
+        const ph = (t * .6 + n / 10) % 1, side = n % 2 ? 1 : -1, b = "ATGC"[n % 4];
+        const sx = fx - 40 + ((n * 53) % 120) - 30, sy = CY + side * (150 + (n * 17) % 40);
+        const ex = fx - 60, ey = CY + side * 72;
+        g += `<circle cx="${f1(lerp(sx, ex, ph))}" cy="${f1(lerp(sy, ey, ph))}" r="5" fill="${BASE[b][0]}" opacity="${f3(Math.sin(ph * Math.PI) * .9)}"/>`;
+      }
+      /* helicase at the fork */
+      g += `<circle cx="${f1(fx)}" cy="${CY}" r="${f1(22 + 2 * Math.sin(t * 6))}" fill="#7f9cff" fill-opacity=".18" stroke="#b9c8ff" stroke-width="2.5"/>`;
+      if (fx > 140 && fx < 900) g += `<text x="${f1(fx)}" y="${CY - 108}" font-size="14" font-weight="700" fill="#e6ebff" text-anchor="middle">replication fork</text><path d="M${f1(fx)},${CY - 100} V${CY - 36}" stroke="#e6ebff" stroke-width="1.5" stroke-dasharray="3 4"/>`;
+    }
+    if (fx < 820) g += `<text x="935" y="${CY + 70}" font-size="14" font-weight="700" fill="#c7d0f5" text-anchor="end">parent DNA</text>`;
+    if (fx > 360) g += `<text x="40" y="${CY - 104}" font-size="14" font-weight="700" fill="#c7d0f5">two new DNA molecules</text>`;
+    o += `<g opacity="${f3(fade)}">${g}</g>`;
+    /* stats */
+    const stats = [["6 billion", "base pairs copied each time", "one of your cells divides"], ["~1 in a billion", "bases ends up copied wrong,", "thanks to proofreading"], ["~40 minutes", `for <tspan font-style="italic">E. coli</tspan> to copy its`, "whole chromosome"]];
+    stats.forEach((st, i) => {
+      const x = 40 + i * 312;
+      o += `<rect x="${x}" y="366" width="296" height="86" rx="14" fill="#ffffff" fill-opacity=".07" stroke="#ffffff" stroke-opacity=".18"/>`;
+      o += `<text x="${x + 18}" y="400" font-size="24" font-weight="800" fill="${NEW}">${st[0]}</text><text x="${x + 18}" y="423" font-size="13.5" fill="#dfe5ff">${st[1]}</text><text x="${x + 18}" y="441" font-size="13.5" fill="#dfe5ff">${st[2]}</text>`;
+    });
+    return o;
+  }
+
+  /* ===== Step 2: the three models, drawn as little double helices ===== */
+  function miniHelix(x1, x2, cy, colTop, colBot, t, amp){
+    amp = amp || 9;
+    const k = 2 * Math.PI / 56, om = t * 1.2;
+    const seg = (fn, colFn, zFn, side) => { let o = ""; for (let x = x1; x < x2; x += 4){ const front = zFn(x) >= 0; if (front !== side) continue; o += `<path d="M${f1(x)},${f1(fn(x))} L${f1(Math.min(x + 4, x2))},${f1(fn(Math.min(x + 4, x2)))}" stroke="${colFn(x)}" stroke-width="${side ? 6 : 4.5}" stroke-linecap="round" opacity="${side ? 1 : .55}"/>`; } return o; };
+    const yA = x => cy + amp * Math.sin(k * x + om), yB = x => cy + amp * Math.sin(k * x + om + Math.PI);
+    const zA = x => Math.cos(k * x + om), zB = x => -zA(x);
+    let o = seg(yA, colTop, zA, false) + seg(yB, colBot, zB, false);
+    for (let x = x1 + 6; x < x2 - 2; x += 10) o += `<path d="M${f1(x)},${f1(yA(x))} L${f1(x)},${f1(yB(x))}" stroke="#c3c9d4" stroke-width="2.5"/>`;
+    return o + seg(yA, colTop, zA, true) + seg(yB, colBot, zB, true);
+  }
+  function modelsSVG(t){
+    const OLDC = "#2f3a56", NEWC = "#f2b134";
+    const old = () => OLDC, nw = () => NEWC, mix = off => x => (Math.floor((x + off) / 26) % 2 ? NEWC : OLDC);
+    let o = lbl(500, 36, "Three ideas for how DNA copies itself", 20, "#1d2433", 800);
+    o += `<path d="M330,58 h28" stroke="${OLDC}" stroke-width="6" stroke-linecap="round"/><text x="366" y="63" font-size="14" font-weight="700" fill="#343b4a">original strand</text><path d="M520,58 h28" stroke="${NEWC}" stroke-width="6" stroke-linecap="round"/><text x="556" y="63" font-size="14" font-weight="700" fill="#343b4a">new strand</text>`;
+    const M = [
+      ["Conservative", "#5a6376", "#eef1f5", "#9aa3b5", ["The original helix stays whole;", "a completely new copy is built."], [[old, old], [nw, nw]]],
+      ["Semi-conservative", "#1b7f4e", "#e8f6ee", "#1b7f4e", ["Each new molecule keeps one", "original strand + one new strand."], [[old, nw], [nw, old]]],
+      ["Dispersive", "#b83a34", "#fbecea", "#b83a34", ["Old and new DNA are chopped", "up and mixed in every strand."], [[mix(0), mix(13)], [mix(13), mix(0)]]]
+    ];
+    M.forEach((m, i) => {
+      const cx = 172 + i * 328, x1 = cx - 100, x2 = cx + 100;
+      o += `<rect x="${cx - 150}" y="78" width="300" height="378" rx="18" fill="${m[2]}" stroke="${m[3]}" stroke-width="2.5"/>`;
+      o += lbl(cx, 112, m[0], 19, m[1], 800) + lbl(cx, 138, m[4][0], 14, "#343b4a", 400) + lbl(cx, 157, m[4][1], 14, "#343b4a", 400);
+      o += lbl(cx, 190, "Original DNA", 13, "#5a6376") + miniHelix(x1, x2, 214, old, old, t);
+      o += arrowD(cx, 238, 276, "#9aa3b5") + lbl(cx + 38, 262, "copy", 13, "#5a6376");
+      o += lbl(cx, 298, "Two DNA molecules after copying", 13, "#5a6376");
+      o += miniHelix(x1, x2, 330, m[5][0][0], m[5][0][1], t) + miniHelix(x1, x2, 384, m[5][1][0], m[5][1][1], t + 1.7);
+      if (i === 1) o += `<rect x="${cx - 60}" y="420" width="120" height="24" rx="12" fill="#1b7f4e"/>` + lbl(cx, 437, "What cells do!", 13, "#fff");
+    });
+    return o;
+  }
+
+  /* ===== Step 3: the experiment in three panels ===== */
+  function nucleotide(t){
+    /* deoxyadenosine monophosphate, drawn as a simple skeletal structure; the 5 nitrogens are highlighted */
+    const heavy = Math.floor(t / 1.8) % 2 === 0, hc = heavy ? HEAVY : LIGHTN;
+    const P = {C6:[240,112], N1:[264,126], C2:[264,154], N3:[240,168], C4:[216,154], C5:[216,126], N7:[190,117], C8:[176,140], N9:[190,163], N6:[240,84],
+      O4:[160,190], C1:[184,207], C2s:[176,236], C3:[144,236], C4s:[136,207], C5s:[108,186], O5:[86,170], P:[66,150]};
+    const bond = (a, b) => `<path d="M${P[a][0]},${P[a][1]} L${P[b][0]},${P[b][1]}" stroke="#343b4a" stroke-width="3" stroke-linecap="round"/>`;
+    let o = "";
+    [["C6","N1"],["N1","C2"],["C2","N3"],["N3","C4"],["C4","C5"],["C5","C6"],["C5","N7"],["N7","C8"],["C8","N9"],["N9","C4"],["C6","N6"],["N9","C1"],["O4","C1"],["C1","C2s"],["C2s","C3"],["C3","C4s"],["C4s","O4"],["C4s","C5s"],["C5s","O5"],["O5","P"]].forEach(b => { o += bond(b[0], b[1]); });
+    [[-24,-16],[-26,14],[6,-28]].forEach(d => { o += `<path d="M${P.P[0]},${P.P[1]} l${d[0]},${d[1]}" stroke="#343b4a" stroke-width="3"/><circle cx="${P.P[0] + d[0]}" cy="${P.P[1] + d[1]}" r="8" fill="#fff"/><text x="${P.P[0] + d[0]}" y="${P.P[1] + d[1] + 4.5}" font-size="12.5" font-weight="800" fill="#d9443a" text-anchor="middle">O</text>`; });
+    o += `<circle cx="${P.P[0]}" cy="${P.P[1]}" r="14" fill="#e8744f"/><text x="${P.P[0]}" y="${P.P[1] + 5}" font-size="14" font-weight="800" fill="#fff" text-anchor="middle">P</text>`;
+    [["O4",""],["O5",""]].forEach(k => { o += `<circle cx="${P[k[0]][0]}" cy="${P[k[0]][1]}" r="9" fill="#fff"/><text x="${P[k[0]][0]}" y="${P[k[0]][1] + 5}" font-size="14" font-weight="800" fill="#d9443a" text-anchor="middle">O</text>`; });
+    o += `<text x="140" y="258" font-size="12" font-weight="700" fill="#5a6376" text-anchor="middle">OH</text>`;
+    ["N1","N3","N7","N9","N6"].forEach((n, i) => {
+      const [x, y] = P[n], pul = 1 + .12 * Math.sin(t * 5 + i);
+      o += `<circle cx="${x}" cy="${y}" r="${f1(15 * pul)}" fill="${hc}" opacity=".18"/><circle cx="${x}" cy="${y}" r="11.5" fill="#fff" stroke="${hc}" stroke-width="3"/><text x="${x}" y="${y + 5}" font-size="14" font-weight="800" fill="${hc}" text-anchor="middle">N</text>`;
+    });
+    o += lbl(84, 204, "phosphate", 11.5, "#8a4a24") + lbl(160, 278, "sugar", 11.5, "#5a6376") + lbl(300, 180, "base (A)", 11.5, "#5a6376");
+    return {svg:o, heavy, hc};
+  }
+  function ms3SVG(t){
+    gid = 0;
+    let o = lbl(500, 30, "How Meselson and Stahl tracked old vs. new DNA", 19, "#1d2433", 800);
+    const panel = (x, n, title) => `<rect x="${x}" y="46" width="312" height="412" rx="16" fill="#fbfcfe" stroke="#d9dee7" stroke-width="2"/><circle cx="${x + 26}" cy="74" r="14" fill="#3f4cc0"/><text x="${x + 26}" y="79" font-size="15" font-weight="800" fill="#fff" text-anchor="middle">${n}</text><text x="${x + 48}" y="80" font-size="16" font-weight="800" fill="#1d2433">${title}</text>`;
+    /* panel 1 */
+    o += panel(14, 1, "Why nitrogen?");
+    const nuc = nucleotide(t);
+    o += `<g transform="translate(-18,16) scale(1.1)">${nuc.svg}</g>`;
+    o += `<rect x="30" y="342" width="280" height="36" rx="18" fill="${nuc.hc}"/>` + lbl(170, 366, nuc.heavy ? "¹⁵N = heavy (1 extra neutron)" : "¹⁴N = normal, light nitrogen", 14.5, "#fff");
+    o += lbl(170, 404, "Every DNA base contains nitrogen,", 14, "#343b4a", 400) + lbl(170, 424, "so DNA built in ¹⁵N broth is heavier", 14, "#343b4a", 400) + lbl(170, 444, "than DNA built in ¹⁴N broth.", 14, "#343b4a", 400);
+    /* panel 2 */
+    o += panel(344, 2, "Grow, extract, spin");
+    const cols = [[402, HEAVY, "¹⁵N broth", "many gens", [{f:.72, c:HEAVY}], false], [500, LIGHTN, "¹⁴N broth", "1 gen", [], true], [598, LIGHTN, "¹⁴N broth", "2 gens", [], true]];
+    cols.forEach((c, i) => {
+      o += flask(c[0], 196, 70, c[1], {cells:true}) + lbl(c[0], 218, c[2], 13, c[1] === HEAVY ? HEAVY : "#a8760f") + lbl(c[0], 234, c[3], 12, "#5a6376", 400);
+      if (i < 2) o += arrowR(c[0] + 36, 160, c[0] + 62, "#9aa3b5");
+      o += arrowD(c[0], 244, 290, "#7a8292");
+      o += ctube(c[0], 300, 92, 30, c[4], {q:c[5]}) + lbl(c[0], 412, "Gen " + i, 13, "#343b4a");
+    });
+    o += `<text x="444" y="274" font-size="11.5" font-weight="700" fill="#5a6376" text-anchor="middle">extract</text><text x="444" y="287" font-size="11.5" font-weight="700" fill="#5a6376" text-anchor="middle">+ spin</text>`;
+    o += lbl(500, 438, "After every generation: take a sample,", 13.5, "#343b4a", 400) + lbl(500, 454, "pull out the DNA, and spin it.", 13.5, "#343b4a", 400);
+    /* panel 3 */
+    o += panel(674, 3, "Reading the tube");
+    const TX = 740, TT = 110, TH = 280;
+    const bands = [{f:.40, c:LIGHTN, n:"¹⁴N / ¹⁴N", d:"light DNA"}, {f:.55, c:"#6c8c6a", n:"¹⁵N / ¹⁴N", d:"hybrid DNA"}, {f:.70, c:HEAVY, n:"¹⁵N / ¹⁵N", d:"heavy DNA"}];
+    o += ctube(TX, TT, TH, 50, bands.map(b => ({f:b.f, c:b.c, op:.85})), {});
+    /* molecules sinking to where their density matches the salt */
+    bands.forEach((b, i) => { for (let j = 0; j < 2; j++){ const ph = smooth(clamp(((t + i * .7 + j * 1.6) % 4) / 2.6, 0, 1)); const y = lerp(TT + 14, TT + TH * b.f, ph); o += `<circle cx="${TX - 12 + j * 22 + i * 3}" cy="${f1(y)}" r="4.5" fill="${b.c}" opacity="${f3(1 - smooth(clamp((ph - .85) / .15, 0, 1)) * .7)}"/>`; } });
+    o += `<text x="${TX - 44}" y="${TT + 20}" font-size="12" font-weight="700" fill="#5a6376" text-anchor="end">top</text><text x="${TX - 44}" y="${TT + TH - 8}" font-size="12" font-weight="700" fill="#5a6376" text-anchor="end">bottom</text>`;
+    o += `<path d="M${TX - 58},${TT + 40} V${TT + TH - 40}" stroke="#7a8292" stroke-width="2.5"/><path d="M${TX - 58},${TT + TH - 32} l-6,-11 h12 z" fill="#7a8292"/>`;
+    o += `<text x="${TX - 66}" y="${TT + TH / 2}" font-size="12" font-weight="700" fill="#5a6376" text-anchor="middle" transform="rotate(-90 ${TX - 66} ${TT + TH / 2})">denser</text>`;
+    bands.forEach(b => { const y = TT + TH * b.f; o += `<path d="M${TX + 28},${f1(y)} H${TX + 46}" stroke="${b.c}" stroke-width="2.5"/><text x="${TX + 52}" y="${f1(y - 2)}" font-size="14" font-weight="800" fill="${b.c}">${b.n}</text><text x="${TX + 52}" y="${f1(y + 15)}" font-size="12.5" font-weight="700" fill="#5a6376">${b.d}</text>`; });
+    o += lbl(830, 424, "Heavier DNA sinks lower. Each band is", 13.5, "#343b4a", 400) + lbl(830, 442, "millions of molecules with the same density.", 13.5, "#343b4a", 400);
     return o;
   }
 
@@ -683,12 +874,17 @@
     if (cur.gene > 0.01) o += `<g opacity="${f3(cur.gene)}">${forkSVG(cur)}</g>`;
     if (cur.origins > 0.01) o += `<g opacity="${f3(cur.origins)}">${originsSVG()}</g>`;
     if (cur.ms > 0.01) o += `<g opacity="${f3(cur.ms)}">${msSVG()}</g>`;
+    const tt = reduced ? 0 : (performance.now() - T0) / 1000;
+    if (cur.hero > 0.01) o += `<g opacity="${f3(cur.hero)}">${heroSVG(tt)}</g>`;
+    if (cur.models > 0.01) o += `<g opacity="${f3(cur.models)}">${modelsSVG(tt)}</g>`;
+    if (cur.ms3 > 0.01) o += `<g opacity="${f3(cur.ms3)}">${ms3SVG(tt)}</g>`;
     svg.innerHTML = o;
   }
 
   let last = performance.now();
   function frame(now){
     if (stepTween(now)) dirty = true;
+    if (cur.hero > .01 || cur.models > .01 || cur.ms3 > .01) dirty = true;
     if (dirty){ render(); dirty = false; }
     requestAnimationFrame(frame);
   }
@@ -839,7 +1035,7 @@
     GATES.incubateLight1.dropped = false; GATES.incubateLight1.incubated = false; GATES.incubateLight1.picked = null; GATES.incubateLight1.correct = false;
     GATES.incubateLight2.incubated = false; GATES.incubateLight2.picked = null; GATES.incubateLight2.correct = false;
     bl = {}; furthest = 0; idx = 0;
-    cur = {...S[0]}; tw = null;
+    cur = {...S_HERO}; tw = null;
     enterStep(0);
   }
   function replay(){
@@ -871,7 +1067,7 @@
   requestAnimationFrame(frame);
 
   // exposed for testing only
-  window.__rep = {goTo, check, moveOn, setMode, openMore, closeMore, get idx(){return idx;}, get cur(){return cur;}, get bl(){return bl;}, matches, GATES};
+  window.__rep = {STEPS, goTo, check, moveOn, setMode, openMore, closeMore, get idx(){return idx;}, get cur(){return cur;}, get bl(){return bl;}, matches, GATES};
 })();
 </script>
 <script>
