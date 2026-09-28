@@ -681,11 +681,11 @@
     {part:P3, title:"No lactose: stop sign up", v:O("lac", {repShow:1, rep:1}, "blocked"), more:"leaky",
      text:`The lacI gene makes a repressor protein all the time. With no lactose around, the repressor sits on the {{operator2}} and the stop sign is up! RNA polymerase is blocked, so no lac genes are transcribed. If transcription is blocked by a repressor protein, the operon is under {{negative2}} control.`,
      after:`The lac operon is a classic example of negative control.`},
-    {part:P3, title:"Lactose arrives", v:O("lac", {repShow:1, rep:0, repAct:0, ind:1, lac:1}, "drive"), pre:O("lac", {repShow:1, rep:1}, "blocked"), more:"iptg",
+    {part:P3, title:"Lactose arrives", v:O("lac", {repShow:1, rep:0, repAct:0, ind:1, lac:1}, "drive"), pre:O("lac", {repShow:1, rep:1}, "blocked"), more:"iptg", play:"drive",
      text:`Lactose enters the cell, and some of it is rearranged into {{allolactose}}. Allolactose comes straight from lactose and is almost the same molecule: same two sugars, just linked a little differently. Think of it as lactose's twin! Allolactose is the inducer. It clicks onto the repressor, the repressor changes shape, and it falls off the operator. Stop sign down, and RNA polymerase can transcribe the lac genes!`,
      after:`Lactose (as allolactose) takes the stop sign away.`},
     {part:P3, title:"Plot twist: it's ALSO positive control!", v:O("lac", {repShow:1, rep:0, repAct:0, ind:1, lac:1, camp:1, capShow:1, capAmp:1, cap:1}, "drive", {switches:true}),
-     pre:O("lac", {repShow:1, rep:0, repAct:0, ind:1, lac:1}, "drive"), more:"switches",
+     pre:O("lac", {repShow:1, rep:0, repAct:0, ind:1, lac:1}, "drive"), more:"switches", play:"drive",
      text:`Oh, by the way: the lac operon is ALSO under a second kind of control, and it's a great secondary example of it! Remember the CAP site? An activator protein called CAP can sit there and act as gas, helping RNA polymerase grab the promoter. A protein that boosts transcription means {{positive2}} control. And the gas is controlled by a different sugar: glucose. How cool is that? One operon, two switches.`,
      after:`Lactose = stop sign (negative control). Glucose = gas (positive control).`},
     {part:P3, title:"But glucose is still here", v:O("lac", LAC_IND, "low"), table:{data:LAC_TABLE, rows:["GL","Gl"], hl:"GL"}, more:"exclusion",
@@ -694,11 +694,11 @@
      text:`The gas system has two parts. Part one is cAMP (cyclic AMP), a tiny signal molecule the cell makes from ATP. Here's the rule to remember: when glucose is high, cAMP is {{low}}. When glucose is low, cAMP is high. Glucose coming into the cell slows down the enzyme that makes cAMP, so glucose and cAMP always move in opposite directions.`,
      after:`Glucose up, cAMP down. Glucose down, cAMP up.`},
     {part:P3, title:"How glucose controls the gas: CAP", v:O("lac", {repShow:0, carShow:0, capShow:1, camp:1, capAmp:1, cap:1, lac:1}, "hide"),
-     pre:O("lac", {repShow:0, carShow:0, capShow:1, camp:1, capAmp:0, cap:0, lac:1}, "hide"), table:{data:LAC_TABLE, rows:["GL","Gl"]}, more:"capmore",
+     pre:O("lac", {repShow:0, carShow:0, capShow:1, camp:1, capAmp:0, cap:0, lac:1}, "hide"), table:{data:LAC_TABLE, rows:["GL","Gl"]}, more:"capmore", play:"capseq",
      text:`Part two is {{cap}}, the catabolite activator protein. CAP is the gas can, but on its own it's empty and can't grab the DNA. When cAMP binds to CAP, CAP changes shape and can now attach to the CAP site right next to the promoter. So: low glucose, then lots of cAMP, then cAMP binds CAP, then CAP binds DNA. That's the gas!`},
-    {part:P3, title:"Glucose gone, lactose here: full speed!", v:O("lac", LAC_ON, "drive"), table:{data:LAC_TABLE, rows:["GL","Gl","gL"], hl:"gL"}, more:"fullspeed",
+    {part:P3, title:"Glucose gone, lactose here: full speed!", v:O("lac", LAC_ON, "drive"), table:{data:LAC_TABLE, rows:["GL","Gl","gL"], hl:"gL"}, more:"fullspeed", play:"drive",
      text:`Now glucose runs out. cAMP rises, cAMP binds CAP, and CAP-cAMP lands next to the promoter. It grabs RNA polymerase and helps it hold on. No stop sign AND a full tank, so the lac genes are transcribed at {{high}} levels. <i>E. coli</i> can finally eat that lactose!`},
-    {part:P3, title:"No glucose, no lactose", v:O("lac", LAC_NONE, "blocked"), table:{data:LAC_TABLE, rows:["GL","Gl","gl","gL"], hl:"gl"}, more:"nonemore",
+    {part:P3, title:"No glucose, no lactose", v:O("lac", LAC_NONE, "blocked"), table:{data:LAC_TABLE, rows:["GL","Gl","gl","gL"], hl:"gl"}, more:"nonemore", play:"lacstop",
      text:`What if both sugars are gone? Glucose is low, so cAMP is high and CAP-cAMP is bound. Gas in the tank! But there's no {{lactose}}, so the repressor is back on the operator. Even a full tank can't get you through a stop sign. No transcription.`},
     {part:P3, title:"Putting it all together", v:O("lac", LAC_ON, "drive"), table:{data:LAC_TABLE, rows:["GL","Gl","gl","gL"]}, more:"together", play:"lac",
      cta:[{label:"Bonus: X-gal and blue-white screening (Ch. 9)", view:"xgal"},{label:"Next: Repressible operons", view:"rep"}],
@@ -706,9 +706,9 @@
 
     {part:P4, title:"Meet the trp operon", v:O("trp", TRP_LOW, "drive", {showTrp:true}), more:"trpgenes",
      text:`Tryptophan (trp) is an amino acid that <i>E. coli</i> can build itself using the trp operon. Building it takes a lot of energy, so why bother if tryptophan is already around? The trp operon is {{repressible2}}: normally ON, and switched OFF when there's plenty of tryptophan. (No need to memorize the trp gene names, they're just there for fun!)`},
-    {part:P4, title:"Low tryptophan: full speed ahead", v:O("trp", TRP_LOW, "drive", {inactive:true}), more:"trprep",
+    {part:P4, title:"Low tryptophan: full speed ahead", v:O("trp", TRP_LOW, "drive", {inactive:true}), more:"trprep", play:"drive",
      text:`The trp repressor is made by the trpR gene. On its own, the trp repressor is {{inactive}}: it can't grab the operator. The road is clear, so RNA polymerase transcribes the trp genes and the cell builds the tryptophan it needs.`},
-    {part:P4, title:"High tryptophan: stop sign up", v:O("trp", TRP_HIGH, "blocked"), more:"atten",
+    {part:P4, title:"High tryptophan: stop sign up", v:O("trp", TRP_HIGH, "blocked"), more:"atten", play:"trpstop",
      text:`When tryptophan builds up, tryptophan itself binds the repressor and switches it on. In this system, tryptophan is the {{corepressor}}. The active repressor sits on the operator and blocks RNA polymerase. The cell stops making something it already has. So smart!`},
     {part:P4, title:"The trp operon is a feedback loop", v:T("feedback", {mode:"trp"}), more:"trpfeedback",
      text:`Put it all together! The trp genes are transcribed into mRNA, the mRNA is translated into enzymes, and those enzymes build tryptophan. When tryptophan piles up, it becomes the corepressor and shuts the trp genes off. As the cell uses tryptophan to build its own proteins, the level drops, the repressor lets go, and the genes turn back on. The trp operon is a classic example of negative {{feedback2}}.`},
@@ -739,7 +739,7 @@
     basics:{name:"Gene regulation basics", short:"1. Basics", steps:PRO.slice(0, 9)},
     ind:{name:"Inducible operons", short:"2. Inducible operons", steps:PRO.slice(9, 19)},
     xgal:{name:"X-gal bonus", short:"X-gal bonus", bonus:true, steps:XGAL},
-    rep:{name:"Repressible operons", short:"3. Repressible operons", steps:PRO.slice(18)}
+    rep:{name:"Repressible operons", short:"3. Repressible operons", steps:PRO.slice(19)}
   };
   const PRO_TRACKS = ["basics","ind","xgal","rep"];
   const PRO_TABS = ["basics","ind","rep"];
@@ -875,7 +875,36 @@
     if (justDone){ playMsg("That's positive control: the activator helps RNA polymerase grab on and hold tight. Try dragging it back off, too — or tap Next when you're ready!", "good"); updateButtons(); }
     else playMsg(on ? "Gas in the tank! RNA polymerase grabs the promoter and holds tight. Vroom!" : "No gas now. RNA polymerase can still start sometimes, but it usually stalls.", "good");
   }
+  const curStep = () => steps()[idx()];
   const PLAYS = {
+    drive:{
+      start:() => ({max:null, done:false}),
+      def:p => { const v = curStep().v; return O(v.layout, v.s, p.done ? "drive" : "manual", {...v.flags, carDrag:!p.done}); }
+    },
+    capseq:{
+      start:() => ({phase:0, done:false}),
+      def:p => {
+        const base = {repShow:0, carShow:0, capShow:1, lac:1};
+        const tray = m => Object.assign([["glu", "Glucose"]], {msg:m});
+        if (p.phase === 0) return O("lac", {...base, glu:1, camp:0, capAmp:0, cap:0}, "hide", {drag:tray("Drag the glucose up and out of the cell!"), tween:true});
+        if (p.phase === 1) return O("lac", {...base, glu:0, camp:1, capAmp:0, cap:0}, "hide", {drag:tray("Glucose is gone, so cAMP goes up"), tween:true, campToken:true, dragToken:{
+          onDrop:(x, y) => { const L = LAY.lac; if (Math.hypot(x - L.capHome[0], y - L.capHome[1]) < 90) capLoaded(p); else playMsg("Drop the cAMP right onto the CAP gas can.", "bad"); },
+          onTap:() => capLoaded(p)}});
+        return O("lac", {...base, glu:0, camp:1, capAmp:1, cap:1}, "hide", {drag:tray("Glucose is gone, so cAMP goes up"), tween:true});
+      }
+    },
+    trpstop:{
+      start:() => ({on:false, done:false}),
+      def:p => p.on ? O("trp", TRP_HIGH, "blocked") : O("trp", {repShow:1, rep:0, repAct:0, trp:1}, "drive", {inactive:true, trpToken:true, dragToken:{
+        onDrop:(x, y) => { const h = LAY.trp.repHome; if (Math.hypot(x - h[0], y - h[1]) < 90) trpOn(p); else playMsg("Drop the tryptophan right onto the inactive repressor.", "bad"); },
+        onTap:() => trpOn(p)}})
+    },
+    lacstop:{
+      start:() => ({on:false, done:false}),
+      def:p => O("lac", {...LAC_NONE, rep:p.on ? 1 : 0}, p.on ? "blocked" : "park", p.on ? {} : {dragToken:{
+        onDrop:(x, y) => { if (Math.hypot(x - LAY.lac.opX, y - 284) < 100) lacStopOn(p); else playMsg("The repressor only fits one spot: the operator.", "bad"); },
+        onTap:() => lacStopOn(p)}, dragHint:true})
+    },
     regmake:{
       start:() => ({made:false}),
       def:p => O("generic", {repShow:p.made ? 1 : 0, made:p.made ? 1 : 0}, "park", {regGlow:!p.made})
@@ -1173,7 +1202,7 @@
     } else {
       vis = def;
       if (def.scene === "operon"){
-        if (def.flags && def.flags.dragToken){ opCur = {...def.s}; opTw = null; }
+        if (def.flags && def.flags.dragToken && !def.flags.tween){ opCur = {...def.s}; opTw = null; }
         else opTw = {from:{...opCur}, to:{...def.s}, t0:performance.now(), dur:reduced ? 800 : 2400};
         if (def.car !== carMode){
           const big = ["rep","cap","ind","capAmp","repAct","act2"].some(k => Math.abs(def.s[k] - opCur[k]) > .5);
@@ -1212,6 +1241,18 @@
         extra += pill(cx0 - 20, 222, "Made it this time!", "#9a6212", s.carShow * (1 - seg(p, 1.6, 2.0)));
       }
       if (k % n === 0 && k > 0 && p < 2.2) extra += mrna(L.genes + 10 * (p + .3), 855 + 10 * (p + .3), 272 - (p + .3) * 34, 1 - (p + .3) / 2.5);
+    } else if (carMode === "manual"){
+      /* the student drags RNA polymerase along the genes */
+      const pl = playState() || {}, dragging = stageDrag && stageDrag.moved && vis.flags && vis.flags.carDrag;
+      if (dragging){ pl.max = Math.max(pl.max || cx0, clamp(stageDrag.x, cx0, 905)); x = clamp(stageDrag.x, cx0, 905); }
+      else x = pl.max || cx0;
+      if (x - 50 > L.genes) extra += mrna(L.genes, x - 50, 272, 1);
+      if (!pl.done){
+        const pu = .5 + .5 * Math.sin(ct * 5);
+        extra += `<ellipse cx="${f1(x)}" cy="${y - 28}" rx="${f1(58 + 5 * pu)}" ry="${f1(36 + 4 * pu)}" fill="none" stroke="#f2b134" stroke-width="3" opacity="${f3(.5 + .4 * pu)}"/>`;
+        if (!dragging) extra += pill(x + 10, 200, "Drag me along the genes →", "#9a6212", 1);
+        if ((pl.max || 0) >= 900 && !pl.done) setTimeout(() => { if (!pl.done) driveDone(pl); }, 0);
+      }
     } else if (carMode === "drive"){
       const P = 3.0, p = ct % P, cyc = Math.floor(ct / P);
       if (p < .4) x = cx0;
@@ -1367,10 +1408,27 @@
     }
     if (s.carShow > .01 && carMode !== "hide"){
       const carSvg = carLayer(L, s);
-      o += def.flags.termHelp ? `<g data-hint="car" style="cursor:pointer">${carSvg}</g>` : carSvg;
+      o += def.flags.termHelp ? `<g data-hint="car" style="cursor:pointer">${carSvg}</g>` : def.flags.carDrag ? `<g data-token="1" style="cursor:grab">${carSvg}</g>` : carSvg;
     }
     if (def.flags.bgal && carMode === "drive" && carT > 2.5) o += pill(690, 206, "\u03b2-galactosidase made!", "#9a6212", Math.min(1, carT - 2.5));
     if (def.flags.drag) o += dragOverlay(L, s);
+    if (def.flags.trpToken){
+      const moving = stageDrag && stageDrag.moved, hx = 600, hy = 200, pu = .5 + .5 * Math.sin(sceneT * 5), rh = L.repHome;
+      const cx = moving ? stageDrag.x : hx, cy = moving ? stageDrag.y : hy;
+      o += `<circle cx="${rh[0]}" cy="${rh[1]}" r="${f1(46 + 4 * pu)}" fill="rgba(107,75,184,.08)" stroke="${PURPLE}" stroke-width="3" stroke-dasharray="7 6"/>`;
+      if (!moving) o += `<circle cx="${hx}" cy="${hy}" r="${f1(24 + 3 * pu)}" fill="none" stroke="#f2b134" stroke-width="3" opacity="${f3(.5 + .4 * pu)}"/>`;
+      o += `<g data-token="1" style="cursor:grab"><circle cx="${f1(cx)}" cy="${f1(cy)}" r="24" fill="#fff" opacity=".01"/>${trpChip(cx, cy, 1)}</g>`;
+      if (!moving) o += pill(hx, hy - 38, "Drag me to the repressor!", "#6b4bb8", 1);
+    }
+    if (def.flags.campToken){
+      /* one cAMP the student carries to CAP */
+      const moving = stageDrag && stageDrag.moved, hx = 470, hy = 175;
+      const cx = moving ? stageDrag.x : hx, cy = moving ? stageDrag.y : hy, pu = .5 + .5 * Math.sin(sceneT * 5);
+      if (!moving) o += `<circle cx="${hx}" cy="${hy}" r="${f1(26 + 3 * pu)}" fill="none" stroke="#f2b134" stroke-width="3" opacity="${f3(.5 + .4 * pu)}"/>`;
+      const ch = L.capHome; o += `<circle cx="${ch[0]}" cy="${ch[1] - 20}" r="${f1(44 + 4 * pu)}" fill="rgba(47,158,99,.08)" stroke="${GREEN}" stroke-width="3" stroke-dasharray="7 6"/>`;
+      o += `<g data-token="1" style="cursor:grab"><circle cx="${f1(cx)}" cy="${f1(cy)}" r="22" fill="#fff" opacity=".01"/>${camp(cx, cy, 1)}</g>`;
+      o += `<text x="${f1(cx)}" y="${f1(cy - 20)}" class="t12 mid" style="fill:#0a6e7a">cAMP</text>`;
+    }
     if (def.flags.termHelp) o += termLayer(L, t);
     return o;
   }
@@ -1412,7 +1470,7 @@
     return o;
   }
   function wireStageDrag(){
-    const active = () => vis && vis.scene === "operon" && vis.flags && vis.flags.dragToken;
+    const active = () => vis && vis.scene === "operon" && vis.flags && (vis.flags.dragToken || vis.flags.carDrag);
     svg.addEventListener("pointerdown", e => {
       if (!active()) return;
       const g = e.target.closest("[data-token]"); if (!g) return;
@@ -1431,6 +1489,7 @@
       const d = stageDrag; stageDrag = null;
       const cfg = vis && vis.flags && vis.flags.dragToken;
       if (!cfg) return;
+      if ((vis.flags.campToken || vis.flags.trpToken) && !d.moved) return;
       if (!d.moved) cfg.onTap && cfg.onTap();
       else cfg.onDrop && cfg.onDrop(d.x, d.y);
     };
@@ -1446,7 +1505,7 @@
   const bigMol = (k, x, y, sc) => `<g transform="translate(${f1(x)},${f1(y)}) scale(${sc || 1.8})">${MOLICON[k](0, 0)}</g>`;
   function trayLayer(DRAG, s, lay){
     const names = DRAG.map(d => d[1]);
-    const instr = names.length > 1 ? `Drag the ${names.slice(0, -1).join(", ")} or the ${names[names.length - 1]} down into the cell!` : `Drag the ${names[0]} down into the cell!`;
+    const instr = DRAG.msg ? DRAG.msg : names.length > 1 ? `Drag the ${names.slice(0, -1).join(", ")} or the ${names[names.length - 1]} down into the cell!` : `Drag the ${names[0]} down into the cell!`;
     let o = `<text x="500" y="16" class="t16 mid" font-weight="700">${instr}</text>`;
     o += `<text x="18" y="44" class="t13 muted">Outside the cell</text>`;
     /* the cell membrane, drawn as a phospholipid bilayer: a pale tail layer between two rows of heads */
@@ -1867,6 +1926,7 @@
     const crop = d.scene === "platelab" && svg.parentNode.clientWidth < 760;
     const vb = crop ? "70 15 460 455" : "0 0 1000 470";
     if (svg.getAttribute("viewBox") !== vb) svg.setAttribute("viewBox", vb);
+    if (d.scene === "operon") o += confettiSVG();
     svg.innerHTML = o;
   }
   let last = performance.now();
@@ -1993,7 +2053,7 @@
     if (res && st.pre && st.pre.scene === "operon" && changed){
       if ("operon:" + st.pre.layout !== visKey) applyVisual(st.pre);
       else { opCur = {...st.pre.s}; opTw = null; carMode = st.pre.car; }
-      applyVisual(st.v);
+      applyVisual(st.play ? PLAYS[st.play].def(playState()) : st.v);
     } else if (st.play) applyVisual(PLAYS[st.play].def(playState()));
     else applyVisual(res ? st.v : preDef(i));
     renderBubble(); renderNav(); trackTable(); renderPlay();
@@ -2079,24 +2139,72 @@
     });
   }
   const htmlZone = ev => { const el = document.elementFromPoint(ev.clientX, ev.clientY); const z = el && el.closest && el.closest("[data-drop]"); return z ? z.dataset.drop : null; };
+  /* celebration: confetti burst + banner drawn over the operon scene */
+  let CELE = null;
+  function celebrate(x, y, text){ CELE = {x, y, text, t0:performance.now()}; }
+  function confettiSVG(){
+    if (!CELE) return "";
+    const age = (performance.now() - CELE.t0) / 1000; if (age > 2.8){ CELE = null; return ""; }
+    const cols = ["#f2b134", "#2f9e63", "#3b7dd8", "#e05a8a", "#8e5bd0", "#e8744f"];
+    let o = "";
+    if (age < 1.6) for (let i = 0; i < 28; i++){
+      const a = i / 28 * Math.PI * 2 + (i % 3) * .2, sp = 90 + (i * 37 % 60), px = CELE.x + Math.cos(a) * sp * age, py = CELE.y + Math.sin(a) * sp * age + 120 * age * age;
+      o += `<rect x="${f1(px - 4)}" y="${f1(py - 2)}" width="8" height="4" rx="1" fill="${cols[i % cols.length]}" transform="rotate(${f1(i * 40 + age * 400)} ${f1(px)} ${f1(py)})" opacity="${f3(1 - age / 1.6)}"/>`;
+    }
+    const op = smooth(clamp(age / .25, 0, 1)) * (1 - smooth(clamp((age - 2.2) / .5, 0, 1))), w = CELE.text.length * 9.4 + 70;
+    o += `<g opacity="${f3(op)}" transform="translate(500 34)"><rect x="${f1(-w / 2)}" y="-22" width="${f1(w)}" height="44" rx="22" fill="#1b7f4e" stroke="#fff" stroke-width="3"/><text x="0" y="7" font-size="18" font-weight="800" fill="#fff" text-anchor="middle">🎉 ${CELE.text}</text></g>`;
+    return o;
+  }
+  function driveDone(p){ p.done = true; celebrate(900, 250, `Great job! You transcribed the ${curStep().v.layout === "trp" ? "trp" : "lac"} genes!`); applyVisual(PLAYS.drive.def(p)); renderPlay(); updateButtons(); playMsg("RNA polymerase made one mRNA carrying all the genes. Watch it keep going!", "good"); }
+  function capLoaded(p){
+    if (p.phase !== 1) return;
+    p.phase = 2; applyVisual(PLAYS.capseq.def(p)); renderPlay();
+    playMsg("cAMP clicked into CAP. Watch CAP-cAMP grab the CAP site!", "good");
+    setTimeout(() => { if (p.phase === 2 && !p.done){ p.done = true; celebrate(360, 290, "Gas in the tank! CAP-cAMP is on the DNA"); renderPlay(); updateButtons(); } }, 2300);
+  }
+  function trpOn(p){ p.on = true; applyVisual(PLAYS.trpstop.def(p)); renderPlay(); playMsg("Tryptophan clicked into the repressor. Now it's active: watch it grab the operator!", "good");
+    setTimeout(() => { if (!p.done){ p.done = true; celebrate(LAY.trp.opX, 260, "Stop sign up! The trp genes shut off"); renderPlay(); updateButtons(); } }, 2400); }
+  function lacStopOn(p){ p.on = true; p.done = true; celebrate(LAY.lac.opX, 260, "Stop sign up! No transcription"); applyVisual(PLAYS.lacstop.def(p)); renderPlay(); updateButtons(); playMsg("Even with a full tank of gas, the car can't get past the stop sign.", "good"); }
   function playMsg(t, cls){ const m = $("playMsg"); if (m){ m.className = "gmsg " + (cls || ""); m.innerHTML = t; } }
   function renderPlay(){
     const st = isTrack(view) && steps()[idx()];
     if (!st || !st.play) return;
     const p = playState(), A = $("labArea");
+    if (st.play === "drive"){
+      const gn = curStep().v.layout === "trp" ? "trp" : "lac";
+      A.innerHTML = `<div class="play${p.done ? " done" : ""}"><div class="ptitle">${p.done ? `✓ You transcribed the ${gn} genes!` : "Your turn: be RNA polymerase"}</div>${p.done ? "" : `<div class="draghint">☝ Drag RNA polymerase (the car) in the diagram above along the ${gn} genes to make the mRNA.</div>`}<div class="gmsg" id="playMsg"></div></div>`;
+      return;
+    }
+    if (st.play === "capseq"){
+      const tip = ["☝ Glucose is in the cell. Drag it up and out of the cell.", "☝ cAMP went up! Now drag a cAMP onto the CAP gas can.", "Watch CAP-cAMP move to the CAP site…"][p.phase];
+      A.innerHTML = `<div class="play${p.done ? " done" : ""}"><div class="ptitle">${p.done ? "✓ You filled the gas tank!" : "Your turn: fill the gas tank"}</div>${p.done ? "" : `<div class="draghint">${tip}</div>`}<div class="gmsg" id="playMsg"></div></div>`;
+      playSetter = (k, v) => {
+        if (k !== "glu") return;
+        if (!v && p.phase === 0){ p.phase = 1; applyVisual(PLAYS.capseq.def(p)); renderPlay(); celebrate(250, 190, "Glucose out: cAMP goes up!"); playMsg("No glucose, so the cell makes lots of cAMP.", "good"); }
+        else if (v && p.phase === 1){ p.phase = 0; applyVisual(PLAYS.capseq.def(p)); renderPlay(); playMsg("Glucose is back, so cAMP drops again. Take it back out!", "bad"); }
+      };
+      return;
+    }
+    if (st.play === "trpstop"){
+      A.innerHTML = `<div class="play${p.done ? " done" : ""}"><div class="ptitle">${p.done ? "✓ You switched the trp genes off!" : "Your turn: be the corepressor"}</div>${p.done ? "" : `<div class="draghint">☝ Lots of tryptophan is around. Drag a tryptophan onto the inactive repressor.</div>`}<div class="gmsg" id="playMsg"></div></div>`;
+      return;
+    }
+    if (st.play === "lacstop"){
+      A.innerHTML = `<div class="play${p.done ? " done" : ""}"><div class="ptitle">${p.done ? "✓ Stop sign up!" : "Your turn: no lactose, so what happens?"}</div>${p.done ? "" : `<div class="draghint">☝ No lactose means no allolactose. Drag the repressor (stop sign) onto the operator.</div>`}<div class="gmsg" id="playMsg"></div></div>`;
+      return;
+    }
     if (st.play === "regmake"){
       let h = `<div class="play${p.done ? " done" : ""}"><div class="ptitle">${p.done ? "✓ You made the repressor!" : "Your turn: make the repressor"}</div>`;
       h += p.done ? `<div>RNA polymerase transcribed the regulatory gene into mRNA, and ribosomes translated it into the repressor protein (the stop sign). Now it can float off to find the operator.</div>`
         : `<div><button class="btn primary" id="regMakeBtn" type="button">Transcribe the regulatory gene</button></div>`;
       h += `<div class="gmsg" id="playMsg"></div></div>`;
-      h += `<div class="play" style="border-color:#c9b8ef;background:#f6f2fe;margin-top:12px"><div class="ptitle" style="color:#5b3fb0">But wait!? Is there a repressor for the repressor gene?</div>
-        <div>Yes, there can be! The genes that make regulators are regulated too. Some repressors even control their <i>own</i> gene: the trp repressor (made by <i>trpR</i>) turns down <i>trpR</i> itself when there's plenty of it, so the cell doesn't make too much. Other regulator genes are switched by different regulators, forming chains and networks: one regulator controls another, which controls another. Others, like <i>lacI</i>, are simply left on at a low, steady level, so the cell always has about 10 lac repressors ready to go.</div></div>`;
+      h += `<details class="play butwait" style="border-color:#c9b8ef;background:#f6f2fe;margin-top:12px"><summary class="ptitle" style="color:#5b3fb0;cursor:pointer">But wait!? Is there a repressor for the repressor gene? <span style="font-weight:400;color:#6b5a92">(click to read)</span></summary>
+        <div style="margin-top:8px">Yes, there can be! The genes that make regulators are regulated too. Some repressors even control their <i>own</i> gene: the trp repressor (made by <i>trpR</i>) turns down <i>trpR</i> itself when there's plenty of it, so the cell doesn't make too much. Other regulator genes are switched by different regulators, forming chains and networks: one regulator controls another, which controls another. Others, like <i>lacI</i>, are simply left on at a low, steady level, so the cell always has about 10 lac repressors ready to go.</div></details>`;
       A.innerHTML = h;
       const btn = $("regMakeBtn");
       if (btn) btn.addEventListener("click", () => {
         p.made = true; p.done = true;
         applyVisual(PLAYS.regmake.def(p)); renderPlay(); updateButtons();
-        playMsg("The repressor comes off the regulatory gene!", "good");
       });
       return;
     }
@@ -2265,7 +2373,7 @@
     const L = LABS[labOp], s = labState[labOp];
     $("stepNo").textContent = "Operon Lab";
     $("stepTitle").textContent = "Explore a new operon";
-    textEl.textContent = L.intro;
+    textEl.innerHTML = L.intro;
     afterEl.hidden = true; fb.textContent = ""; fb.className = "feedback"; checkRow.hidden = true;
     const shown = labPending ? labPending.prev : s, next = labPending ? labPending.next : s;
     const out = L.out(shown);
