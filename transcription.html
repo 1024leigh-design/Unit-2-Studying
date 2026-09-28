@@ -237,6 +237,7 @@
 </div>
 
 <script src="bioart.js"></script>
+<script src="games.js"></script>
 <script>
 (function(){
   /* ---------- Sequence and layout ---------- */
@@ -453,21 +454,15 @@
     elongate:{
       title:"Speed round: transcribe 20 bases!",
       get doneText(){ return GATES.elongate.doneMsg || "You transcribed all 20 bases!"; },
-      template:"TACCGTAGGCTTAACGGCAT", got:"", mistakes:0, startT:null, active:false, replaying:false,
-      best:(() => { try { const v = localStorage.getItem("bio112-elong-best"); return v ? +v : null; } catch (e) { return null; } })(),
-      scores:(() => { try { const v = JSON.parse(localStorage.getItem("bio112-elong-scores") || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
-      doneExtra:() => {
-        const st = GATES.elongate;
-        const rows = st.scores.map((s, i) => `<li><b>${s.t.toFixed(1)}s</b> &middot; ${s.m} mistake${s.m === 1 ? "" : "s"} <span style="color:var(--muted)">(${new Date(s.d).toLocaleDateString()})</span>${i === 0 ? " ★" : ""}</li>`).join("");
-        return `<div class="traylbl">Your best times, saved on this browser:</div>`
-          + (rows ? `<ol style="margin:0;padding-left:22px;line-height:1.6">${rows}</ol>` : "")
-          + `<div><button class="btn primary" id="elongAgain">Play again</button></div>`;
-      },
+      template:BioGames.randBases(20), got:"", mistakes:0, startT:null, active:false, replaying:false, round:1,
+      get best(){ return BioGames.best("bio112-elong-scores"); },
+      doneExtra:() => BioGames.board("bio112-elong-scores") + `<div><button class="btn primary" id="elongAgain">Play again with a new strand ▶</button></div>`,
       wireDone:g => {
         const b = g.querySelector("#elongAgain");
         if (b) b.addEventListener("click", () => {
           const st = GATES.elongate;
           st.replaying = true; st.got = ""; st.startT = null; st.active = false; st.mistakes = 0;
+          st.template = BioGames.randBases(20); st.round++;
           renderGate();
         });
       },
@@ -481,7 +476,7 @@
           <div class="grow"><span class="glbl">DNA template 3'</span>${dnaRow}<span class="glbl" style="min-width:0">&nbsp;5'</span></div>
           <div class="grow"><span class="glbl">New RNA 5'</span>${rnaRow}<span class="glbl" style="min-width:0">&nbsp;3'</span></div>
           </div>
-          <div class="traylbl">Time: <span id="elongTimer">0.0s</span> &middot; Mistakes: <span id="elongMiss">${GATES.elongate.mistakes}</span> &middot; Best time: ${best === null ? "––" : best.toFixed(1) + "s"}</div>
+          <div class="traylbl">Round ${GATES.elongate.round} &middot; Time: <span id="elongTimer">0.0s</span> &middot; Mistakes: <span id="elongMiss">${GATES.elongate.mistakes}</span> &middot; Best time: ${best === null ? "––" : BioGames.fmt(best)}</div>
           <div class="traylbl">Type A, U, G, or C on your keyboard, or tap the tiles below, as fast as you can</div>
           <div class="gkeys">${["A","U","G","C"].map(b => `<button class="gb gb${b} ntile" data-nt="${b}" aria-label="Add ${b}">${b}</button>`).join("")}</div>`;
       },
@@ -497,15 +492,13 @@
               st.active = false;
               const elapsed = (performance.now() - st.startT) / 1000;
               st.elapsed = elapsed;
-              const improved = st.best === null || elapsed < st.best;
-              if (improved){ st.best = elapsed; try { localStorage.setItem("bio112-elong-best", String(elapsed)); } catch (e) {} }
-              st.scores = [...st.scores, {t:elapsed, m:st.mistakes, d:Date.now()}].sort((a, b) => a.t - b.t).slice(0, 5);
-              try { localStorage.setItem("bio112-elong-scores", JSON.stringify(st.scores)); } catch (e) {}
+              const improved = BioGames.add("bio112-elong-scores", {t:elapsed, m:st.mistakes}).newBest;
+              BioGames.celebrate(improved ? `New best time! ${BioGames.fmt(elapsed)}` : `Transcribed in ${BioGames.fmt(elapsed)}!`);
               renderGate();
               gateMsg(`Done in ${elapsed.toFixed(1)}s with ${st.mistakes} mistake${st.mistakes === 1 ? "" : "s"}!${improved ? " New best time!" : ""}`, "good");
               st.doneMsg = `You transcribed all 20 bases in ${elapsed.toFixed(1)}s with ${st.mistakes} mistake${st.mistakes === 1 ? "" : "s"}.${improved ? " New best time!" : ""}`;
               setTimeout(() => {
-                st.got = ""; st.startT = null; st.active = false; st.mistakes = 0;
+                st.got = ""; st.startT = null; st.active = false; st.mistakes = 0; st.template = BioGames.randBases(20); st.round++;
                 if (st.replaying){ st.replaying = false; renderGate(); } else passGate();
               }, 1400);
               return;
@@ -989,6 +982,7 @@
   window.addEventListener("resize", () => { dirty = true; });
 
   setMode("learn");
+  if (location.hash === "#game") goTo(STEPS.findIndex(st => st.gate === "elongate"));
   requestAnimationFrame(frame);
 
   // exposed for testing only

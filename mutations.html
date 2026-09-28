@@ -369,6 +369,7 @@
         <h2>DNA Editor</h2>
         <p>Drag a base from the tray onto a DNA letter to swap it, or onto a gap between two letters to insert it. Tap a base to select it, then use Delete below to remove it. The mRNA and protein update instantly, and the editor tells you what kind of mutation you made.</p>
       </div>
+      <div class="gracebar" id="edRace"></div>
       <div class="missions" id="edMissions"></div>
       <div class="hintbox" id="edHint" hidden></div>
       <div class="editor">
@@ -387,7 +388,8 @@
       </div>
       <div class="verdict" id="edVerdict" aria-live="polite"></div>
       <div class="compare" id="edCompare"></div>
-      <div class="note">Tip: try to create all 5 kinds of mutation — silent, missense, nonsense, and both kinds of frameshift — to complete every mission above.</div>
+      <div class="note">Tip: make all 6 missions above (silent, missense, nonsense, both kinds of frameshift, and rescuing the frame) to finish the race. Then hit <b>New gene</b> for a fresh sequence.</div>
+      <div id="edBoard" style="margin-top:12px"></div>
     </div>
   </div>
 </div>
@@ -404,6 +406,7 @@
 </div>
 
 <script src="bioart.js"></script>
+<script src="games.js"></script>
 <script>
 (function(){
   const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -1231,24 +1234,47 @@
 
   /* The gene starts just like the one in Transcription and Translation (Met, Ala, Phe, Gly), then keeps going.
      The bases after the stop codon are "downstream" DNA that is not normally read. */
-  const GENE_MRNA = "AUGGCAUUCGGAAAAUGGCUGGAGUACCGUCAUUAA" + "AUAAAUAA";
-  const ORIG = [...GENE_MRNA].map(b => TODNA[b]).join("");
+  const FIRST_GENE = "AUGGCAUUCGGAAAAUGGCUGGAGUACCGUCAUUAA" + "AUAAAUAA";
   const translate = m => { const out = []; for (let i = 0; i + 3 <= m.length; i += 3){ const a = CODE[m.substr(i, 3)]; out.push(a); if (a === "Stop") break; } return out; };
-  const ORIG_P = translate(GENE_MRNA);
+  let GENE_MRNA = FIRST_GENE, ORIG = "", ORIG_P = [];
+  /* codons that make a silent change easy (any third base gives the same amino acid) and codons one base away from a stop */
+  const SENSE = Object.keys(CODE).filter(c => CODE[c] !== "Stop" && c !== "AUG");
+  const FOURFOLD = SENSE.filter(c => [..."UCAG"].every(b => CODE[c.slice(0, 2) + b] === CODE[c]));
+  const NEARSTOP = SENSE.filter(c => ["UAA", "UAG", "UGA"].some(st => [0, 1, 2].filter(k => st[k] !== c[k]).length === 1));
+  function randomGene(){
+    const cod = Array.from({length:10}, () => BioGames.pick(SENSE));
+    cod[Math.floor(Math.random() * 4)] = BioGames.pick(FOURFOLD);
+    cod[4 + Math.floor(Math.random() * 4)] = BioGames.pick(NEARSTOP);
+    return "AUG" + cod.join("") + BioGames.pick(["UAA", "UAG", "UGA"]) + "AUAAAUAA";
+  }
+  function setGene(m){ GENE_MRNA = m; ORIG = [...m].map(b => TODNA[b]).join(""); ORIG_P = translate(m); }
+  setGene(FIRST_GENE);
+  function codonHint(list){ for (let k = 1; k < ORIG_P.length - 1; k++){ const c = GENE_MRNA.substr(k * 3, 3); if (list.includes(c)) return `${CODE[c]} (${c}, codon ${k + 1})`; } return null; }
 
   let bases, sel, hist, stats, note = "", done = {}, pickedBase = null;
   const MISSIONS = [
-    {id:"silent", label:"Silent", hint:"Change the third base of a codon. The Ala (GCA) and Gly (GGA) codons are good places to start."},
+    {id:"silent", label:"Silent", get hint(){ const h = codonHint(FOURFOLD); return `Change the third base of a codon.${h ? ` ${h} is a good place to start: any third base still codes for the same amino acid.` : ""}`; }},
     {id:"missense", label:"Missense", hint:"Change the first or second base of a codon and watch one amino acid swap."},
-    {id:"nonsense", label:"Nonsense", hint:"Aim for a stop codon (UAA, UAG, or UGA) in the mRNA. Lys (AAA) and Trp (UGG) are one base away!"},
+    {id:"nonsense", label:"Nonsense", get hint(){ const h = codonHint(NEARSTOP); return `Aim for a stop codon (UAA, UAG, or UGA) in the mRNA.${h ? ` ${h} is just one base away!` : ""}`; }},
     {id:"fsins", label:"Frameshift: insertion", hint:"Select a base near the start, then insert one new base after it."},
     {id:"fsdel", label:"Frameshift: deletion", hint:"Select a base near the start and delete it."},
-    {id:"rescue", label:"Bonus: rescue the frame", bonus:true, hint:"Insert one base, then delete a different base a few spots later. The protein after the second change comes back! Tap Reset first if you already have other changes."}
+    {id:"rescue", label:"Rescue the frame", hint:"Insert one base, then delete a different base a few spots later. The protein after the second change comes back! Tap Reset first if you already have other changes."}
   ];
-  let hintFor = null;
+  let hintFor = null, round = 1;
+  const ED_KEY = "bio112-editor-race", sw = BioGames.stopwatch();
+  const allDone = () => MISSIONS.every(x => done[x.id]);
+  function renderRace(){
+    const best = BioGames.best(ED_KEY), got = MISSIONS.filter(x => done[x.id]).length;
+    const el = $("edRace"); if (!el) return;
+    el.innerHTML = `<span>⏱ <span class="gclock" id="edClock">${BioGames.fmt(sw.time)}</span></span><span class="gstat">Gene ${round}</span><span class="gstat">Missions: ${got} of ${MISSIONS.length}</span><span class="gstat">Best: ${best === null ? "––" : BioGames.fmt(best)}</span><button class="btn ${allDone() ? "primary" : "secondary"}" id="edNewGene" type="button">New gene ▶</button><span class="gstat" style="font-weight:400">Race: make all ${MISSIONS.length} kinds of mutation as fast as you can. The clock starts on your first edit.</span>`;
+    $("edNewGene").addEventListener("click", newGene);
+    sw.attach($("edClock"));
+    $("edBoard").innerHTML = BioGames.board(ED_KEY, {mistakes:false});
+  }
+  function newGene(){ round++; setGene(randomGene()); done = {}; hintFor = null; sw.reset(); reset(); toast(`New gene! It codes for ${ORIG_P.slice(0, -1).join("-")}.`); }
 
   function reset(){ bases = [...ORIG].map(b => ({b, o:b})); sel = 3; hist = []; stats = {ins:0, del:0, sub:0}; note = ""; pickedBase = null; render(); }
-  const snap = () => { hist.push({bases:bases.map(x => ({...x})), sel, stats:{...stats}}); if (hist.length > 60) hist.shift(); };
+  const snap = () => { if (!allDone()) sw.start(); hist.push({bases:bases.map(x => ({...x})), sel, stats:{...stats}}); if (hist.length > 60) hist.shift(); };
   function undo(){ const h = hist.pop(); if (!h) return; bases = h.bases; sel = h.sel; stats = h.stats; note = ""; render(); }
   const dnaStr = () => bases.map(x => x.b).join("");
   const mrnaStr = () => bases.map(x => TORNA[x.b]).join("");
@@ -1259,7 +1285,7 @@
   function insertAfter(i, b){ snap(); bases.splice(i + 1, 0, {b, o:null}); sel = i + 1; stats.ins++; note = ""; render(); }
   function del(){ if (sel == null || bases.length < 4) return; snap(); bases.splice(sel, 1); sel = Math.min(sel, bases.length - 1); stats.del++; note = ""; render(); }
   function zap(){
-    const as = bases.map((x, i) => x.b === "A" && i > 2 && i < 33 ? i : -1).filter(i => i >= 0);
+    const as = bases.map((x, i) => x.b === "A" && i > 2 && i < ORIG.length - 11 ? i : -1).filter(i => i >= 0);
     if (!as.length){ note = "No A's left in the gene for nitrous acid to change!"; render(); return; }
     snap();
     const i = as[Math.floor(Math.random() * as.length)];
@@ -1407,7 +1433,12 @@
       done[r.type] = true;
       const left = MISSIONS.filter(x => !done[x.id]).length;
       toast(left ? `Mission complete: ${MISSIONS.find(x => x.id === r.type).label}! ${left} to go.` : "All missions complete! You're a mutation master!");
+      if (!left){
+        const t = sw.stop(), res = BioGames.add(ED_KEY, {t, label:ORIG_P.slice(0, 4).join("-") + "…"});
+        BioGames.celebrate(res.newBest ? `New best! All 6 missions in ${BioGames.fmt(t)}` : `All 6 missions in ${BioGames.fmt(t)}!`);
+      }
     }
+    renderRace();
     renderMissions();
   }
   function renderMissions(){
@@ -1434,7 +1465,7 @@
   });
 
   reset();
-  window.__ed = {swap, insert, del, undo, reset, zap, classify, select:i => { sel = i; render(); }, get done(){ return done; }, mrna:mrnaStr};
+  window.__ed = {newGene, get orig(){ return ORIG_P; }, swap, insert, del, undo, reset, zap, classify, select:i => { sel = i; render(); }, get done(){ return done; }, mrna:mrnaStr};
 })();
 </script>
 <script>

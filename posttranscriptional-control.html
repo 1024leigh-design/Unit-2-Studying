@@ -276,7 +276,9 @@
   .muted-s{color:var(--muted);font-size:.93rem;margin-top:2px;max-width:60ch;line-height:1.5}
   .spcollect{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
   .spcount{font-weight:700;margin-bottom:10px}
-  .spgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .spgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  .spgrid .slot svg{max-width:100%;height:auto}
+  .spgrid .slot span{font-size:.8rem;text-align:center}
   .slot{min-height:74px;border:2px dashed var(--line);border-radius:12px;display:grid;place-items:center;color:#b3bac7;font-weight:700;font-size:1.3rem;padding:6px}
   .slot.got{border-style:solid;border-color:#9fd3b5;background:#f5fbf7;color:var(--ink);font-size:.8rem;gap:2px}
   @media (prefers-reduced-motion:reduce){ .sgm,.cap5,.tail3{transition:none} .snrnp{animation:none} }
@@ -416,8 +418,9 @@
     <div class="labwrap">
       <div class="labhead">
         <h2>Splice Lab</h2>
-        <p>This pre-mRNA has 6 exons and 5 introns. Be the snRNP: drag it onto an intron to cut the intron out (tapping works too), or drop it on a <b>GU</b> splice site and then an <b>AG</b> farther right to skip whole exons in between. Once every intron is gone, drag the 5' cap and poly-A tail onto the ends to finish the mature mRNA, then export it and see what protein you built. Different exon combinations make different proteins from the very same gene &mdash; how many can you find?</p>
+        <p><span id="spDesc">This pre-mRNA has 6 exons and 5 introns.</span> Be the snRNP: drag it onto an intron to cut the intron out (tapping works too), or drop it on a <b>GU</b> splice site and then an <b>AG</b> farther right to skip whole exons in between. Once every intron is gone, drag the 5' cap and poly-A tail onto the ends to finish the mature mRNA, then export it and see what protein you built. Different exon combinations make different proteins from the very same gene &mdash; how many can you find?</p>
       </div>
+      <div class="gracebar" id="spRace"></div>
       <div class="spcellwrap">
         <div class="spcelltag">Eukaryotic cell</div>
         <div class="nucbox">
@@ -431,6 +434,7 @@
       <div class="actions"><button class="btn primary" id="spGo">Export it to the cytoplasm and translate</button><button class="btn secondary" id="spNew">New pre-mRNA</button></div>
       <div id="spOut"></div>
       <div class="spcollect"><div class="spcount" id="spCount"></div><div class="spgrid" id="spGrid"></div></div>
+      <div id="spBoard" style="margin-top:12px"></div>
     </div>
   </div>
 </div>
@@ -447,6 +451,7 @@
 </div>
 
 <script src="bioart.js"></script>
+<script src="games.js"></script>
 <script>
 (function(){
   const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -1052,16 +1057,34 @@
 <script>
 (function(){
   const $ = id => document.getElementById(id);
-  const EX = {
-    E1:{n:1, col:"#f2b134", ink:"#3b2a00", part:"start", w:56},
-    E2:{n:2, col:"#3b7dd8", ink:"#fff", part:"square", w:52},
-    E3:{n:3, col:"#2f9e63", ink:"#fff", part:"triangle", w:52},
-    E4:{n:4, col:"#8e5bd0", ink:"#fff", part:"hex", w:52},
-    E5:{n:5, col:"#e8744f", ink:"#fff", part:"diamond", w:52},
-    E6:{n:6, col:"#d9534f", ink:"#fff", part:"end", w:56}
-  };
-  const GOAL = 6;
-  const START = ["E1","I1","E2","I2","E3","I3","E4","I4","E5","I5","E6"];
+  /* Each round is a brand-new gene: 5 to 7 exons with their own colors, shapes and name.
+     Race goal: find 6 different proteins from the same gene. */
+  const GOAL = 6, SP_KEY = "bio112-splice-race";
+  const NAMES = ["troponin T", "fibronectin", "tropomyosin", "CD44", "calcitonin", "Dscam", "neurexin", "BCL-X", "slo channel", "titin",
+    "FGF receptor", "dystrophin", "tau", "CFTR", "insulin receptor", "sodium channel", "actinin", "caspase-9", "myosin light chain", "VEGF",
+    "collagen XIII", "agrin", "spectrin", "kinase X", "mucin-1", "p53 isoform", "estrogen receptor", "ankyrin"];
+  const COLS = [["#3b7dd8","#fff"],["#2f9e63","#fff"],["#8e5bd0","#fff"],["#e8744f","#fff"],["#0f8a80","#fff"],["#c2446d","#fff"],["#6b4bb8","#fff"],["#b8860b","#fff"]];
+  const SHAPES = ["square", "triangle", "hex", "diamond", "pent"];
+  let EX = {}, START = [], NEX = 6, GENE = "", round = 0;
+  const sw = BioGames.stopwatch();
+  function newGene(){
+    NEX = 5 + Math.floor(Math.random() * 3); round++;
+    const cols = COLS.slice().sort(() => Math.random() - .5), shapes = SHAPES.slice().sort(() => Math.random() - .5);
+    EX = {E1:{n:1, col:"#f2b134", ink:"#3b2a00", part:"start", w:56}};
+    for (let n = 2; n < NEX; n++) EX["E" + n] = {n, col:cols[n - 2][0], ink:cols[n - 2][1], part:shapes[(n - 2) % shapes.length], w:44 + Math.floor(Math.random() * 18)};
+    EX["E" + NEX] = {n:NEX, col:"#d9534f", ink:"#fff", part:"end", w:56};
+    START = []; for (let n = 1; n <= NEX; n++){ START.push("E" + n); if (n < NEX) START.push("I" + n); }
+    GENE = BioGames.pick(NAMES); found = []; sw.reset();
+    const d = $("spDesc"); if (d) d.innerHTML = `Round ${round}: the <b>${GENE}</b> gene. This pre-mRNA has ${NEX} exons and ${NEX - 1} introns.`;
+    reset(); renderRace();
+  }
+  function renderRace(){
+    const best = BioGames.best(SP_KEY);
+    $("spRace").innerHTML = `<span>⏱ <span class="gclock" id="spClock">${BioGames.fmt(sw.time)}</span></span><span class="gstat">Round ${round}: ${GENE}</span><span class="gstat">Proteins: ${Math.min(found.length, GOAL)} of ${GOAL}</span><span class="gstat">Best: ${best === null ? "––" : BioGames.fmt(best)}</span><button class="btn ${found.length >= GOAL ? "primary" : "secondary"}" id="spNewGene" type="button">New gene ▶</button><span class="gstat" style="font-weight:400">Race: find ${GOAL} different proteins as fast as you can. The clock starts on your first cut.</span>`;
+    $("spNewGene").addEventListener("click", newGene);
+    sw.attach($("spClock"));
+    $("spBoard").innerHTML = BioGames.board(SP_KEY, {mistakes:false});
+  }
   let segs, pending, busy, made, capped, tailed, found = [];
 
   function reset(){ segs = START.slice(); pending = null; busy = false; made = false; capped = false; tailed = false; say(); render(); }
@@ -1085,6 +1108,7 @@
     const i = segs.indexOf(a), j = segs.indexOf(b);
     const gone = segs.slice(i, j + 1);
     busy = true; pending = null;
+    if (found.length < GOAL) sw.start();
     gone.forEach(id => { const el = document.querySelector(`[data-seg="${id}"]`); if (el) el.classList.add("looping"); });
     const snrnp = $("spSnrnp"); snrnp.hidden = false;
     const r1 = document.querySelector(`[data-seg="${a}"]`).getBoundingClientRect(), r2 = document.querySelector(`[data-seg="${b}"]`).getBoundingClientRect(), rt = $("spTrack").getBoundingClientRect();
@@ -1110,7 +1134,7 @@
   function clickExon(id){
     if (busy || made) return;
     const n = EX[id].n;
-    if (n === 1 || n === GOAL) say(`Exon ${n} holds the ${n === 1 ? "start" : "stop"} codon, so every version of this protein keeps it.`, "warn");
+    if (n === 1 || n === NEX) say(`Exon ${n} holds the ${n === 1 ? "start" : "stop"} codon, so every version of this protein keeps it.`, "warn");
     else say(`snRNPs don't cut in the middle of exons. They cut at splice sites. To skip exon ${n}, tap the GU just before it, then the AG just after it.`, "warn");
   }
 
@@ -1122,7 +1146,11 @@
     if (isNew) found.push(k);
     const all = found.length >= GOAL;
     toast(isNew ? (all ? `You found ${found.length} proteins from one gene. Splicing superstar!` : found.length === 1 ? "Your first protein! Can you make a different one from the same gene?" : `New protein discovered! ${found.length} of at least ${GOAL}.`) : "You already made this one. Try skipping different exons!", isNew);
-    say(); render();
+    if (isNew && found.length === GOAL){
+      const t = sw.stop(), res = BioGames.add(SP_KEY, {t, label:`${GENE}, ${NEX} exons`});
+      BioGames.celebrate(res.newBest ? `New best! ${GOAL} proteins in ${BioGames.fmt(t)}` : `${GOAL} proteins in ${BioGames.fmt(t)}!`);
+    }
+    say(); render(); renderRace();
   }
 
   function protein(k, big){
@@ -1134,6 +1162,7 @@
       if (e.part === "start" || e.part === "end") s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${e.col}"/>`;
       else if (e.part === "square") s += `<rect x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" rx="${r * .25}" fill="${e.col}"/>`;
       else if (e.part === "triangle") s += `<polygon points="${x},${y - r * 1.1} ${x + r * 1.1},${y + r * .85} ${x - r * 1.1},${y + r * .85}" fill="${e.col}"/>`;
+      else if (e.part === "pent") s += `<polygon points="${[0,1,2,3,4].map(j => { const a = -Math.PI / 2 + j * 2 * Math.PI / 5; return (x + r * 1.15 * Math.cos(a)).toFixed(1) + "," + (y + r * 1.15 * Math.sin(a)).toFixed(1); }).join(" ")}" fill="${e.col}"/>`;
       else if (e.part === "diamond") s += `<polygon points="${x},${y - r * 1.25} ${x + r * 1.25},${y} ${x},${y + r * 1.25} ${x - r * 1.25},${y}" fill="${e.col}"/>`;
       else s += `<polygon points="${[0,1,2,3,4,5].map(j => { const a = Math.PI / 6 + j * Math.PI / 3; return (x + r * 1.1 * Math.cos(a)).toFixed(1) + "," + (y + r * 1.1 * Math.sin(a)).toFixed(1); }).join(" ")}" fill="${e.col}"/>`;
     });
@@ -1167,7 +1196,7 @@
     if (tailSlotEl) tailSlotEl.addEventListener("click", dropTail);
     $("spStage").textContent = made ? "Exported! Translated by a ribosome in the cytoplasm" : mat ? "Mature mRNA: ready for export" : done ? "Spliced: add the cap and tail" : "Pre-mRNA";
     $("spGo").disabled = !mat || made;
-    const missing = [2,3,4,5].filter(n => !key().split("-").includes(String(n)));
+    const missing = Array.from({length:NEX - 2}, (_, k) => k + 2).filter(n => !key().split("-").includes(String(n)));
     $("spOut").innerHTML = made ? `<div class="made">${protein(key(), true)}<div><b>Built from exons ${key().split("-").join(", ")}</b><div class="muted-s">${!missing.length ? "The full-length protein, with every piece." : `Missing the ${missing.map(n => "exon " + n).join(", ")} piece${missing.length > 1 ? "s" : ""}, so this protein has a different shape and maybe a different job.`}</div></div></div>` : "";
     $("spCount").textContent = `Proteins discovered: ${found.length}${found.length < GOAL ? " of at least " + GOAL : ""}`;
     let g = "";
@@ -1253,8 +1282,8 @@
   $("spGo").addEventListener("click", translate);
   $("spNew").addEventListener("click", reset);
   document.addEventListener("keydown", e => { if (e.key === "Escape" && pending && document.body.dataset.view === "lab"){ pending = null; say(); render(); } });
-  reset();
-  window.__sp = {cut, clickGU, clickAG, clickIntron, clickExon, translate, reset, dropCap, dropTail, get found(){ return found; }, get segs(){ return segs; }, get capped(){ return capped; }, get tailed(){ return tailed; }, get mature(){ return mature(); }};
+  newGene();
+  window.__sp = {newGene, get NEX(){ return NEX; }, cut, clickGU, clickAG, clickIntron, clickExon, translate, reset, dropCap, dropTail, get found(){ return found; }, get segs(){ return segs; }, get capped(){ return capped; }, get tailed(){ return tailed; }, get mature(){ return mature(); }};
 })();
 </script>
 <script>

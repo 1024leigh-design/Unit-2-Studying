@@ -147,6 +147,10 @@
   .mspetri.dragging{position:fixed;z-index:60;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.28);cursor:grabbing}
   .mspetri.lifted{opacity:.25}
   .mspetri.nope{animation:shake .32s}
+  .gkeys{display:flex;gap:10px;flex-wrap:wrap}
+  .rrkey{width:58px;height:58px;border-radius:14px;border:0;font:800 1.5rem var(--font);color:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.2)}
+  .rrkey:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.2)}
+  .rrA{background:#2f9e63}.rrT{background:#d9534f}.rrG{background:#f2b134;color:#3b2a00}.rrC{background:#3b7dd8}
   .subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;align-items:center}
   .subtabs .lbl{font-size:.85rem;font-weight:700;color:var(--muted);margin-right:4px}
   .subtabs button{font:700 .9rem var(--font);border-radius:999px;padding:6px 14px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
@@ -228,6 +232,7 @@
 </div>
 
 <script src="bioart.js"></script>
+<script src="games.js"></script>
 <script>
 (function(){
   /* ---------- Sequence and layout ---------- */
@@ -284,7 +289,8 @@
   function closeMore(){ $("moreOverlay").hidden = true; }
 
   /* ---------- Scene states ---------- */
-  const B = {a:ORIGIN, gene:1, origins:0, originLabel:0, helicase:0, leadOn:0, lagOn:0, zoom:0, ms:0, hero:0, models:0, ms3:0, lagStep:0};
+  const B = {a:ORIGIN, gene:1, origins:0, originLabel:0, helicase:0, leadOn:0, lagOn:0, zoom:0, ms:0, hero:0, models:0, ms3:0, lagStep:0, race:0};
+  const S_RACE = {...B, gene:0, race:1};
   const S_HERO = {...B, gene:0, hero:1}, S_MODELS = {...B, gene:0, models:1}, S_MS3 = {...B, gene:0, ms3:1};
   const S = [];
   const MS = {...B, gene:0, ms:1};
@@ -310,6 +316,8 @@
      text:`Every time a cell divides, it has to copy its <b>entire</b> genome so that each new cell gets a complete set of instructions. In your cells that's about 6 billion base pairs, copied in a few hours with almost no mistakes. In this module you'll watch a cell unzip its DNA, build two new strands, and end up with two identical molecules. But first, a mystery from the 1950s: once Watson and Crick showed DNA is a double helix, nobody knew how the copying actually worked. Does the original molecule stay whole? Get split in half? Get shredded and mixed? Two young scientists, Matthew Meselson and Franklin Stahl, cared because the answer would reveal how genetic information is passed on so faithfully, generation after generation. Let's see what they figured out.`},
     {title:"Semi-conservative replication", state:S_MODELS, more:"replicationModels",
      text:`Before a cell divides, it must copy its entire genome so each daughter cell gets a full set of instructions. Each new DNA molecule ends up with one original (old) strand and one brand-new strand, a pattern called {{semiconservative}} replication. Before this was confirmed, scientists seriously considered three different possibilities for how copying might work. Compare them in the diagram above: dark strands are original DNA, gold strands are new.`},
+    {title:"Replication Race: A with T, G with C", state:S_RACE, gate:"repRace", live:true,
+     text:`Every DNA copy follows one simple rule: <b>A pairs with T</b>, and <b>G pairs with C</b>. That's why each old strand works as a template: the bases on it decide exactly which bases go on the new strand. Now race the clock! Build the new strand for each template as fast as you can. Every round gives you a brand-new strand, and your times are saved on this browser.`},
     {title:"The Meselson-Stahl experiment", state:S_MS3, more:"msExperiment",
      text:`In 1958, Matthew Meselson and Franklin Stahl set out to test which model was correct. They grew bacteria for many generations in a medium containing only {{heavy}} nitrogen (¹⁵N), so every strand of DNA in the starting culture was fully heavy. Then they switched the culture to ordinary {{light}} nitrogen (¹⁴N) and let it divide. After each generation, they measured the {{density}} of the DNA in a centrifuge: heavier DNA sinks lower, lighter DNA stays higher, so each generation shows up as one or more bands.`},
     {title:"Grow the starting culture", state:S[2], gate:"incubateHeavy",
@@ -375,8 +383,8 @@
     g.hidden = false;
     const G = GATES[st.gate];
     g.className = "gate" + (gates[idx] ? " done" : "");
-    if (gates[idx]){ g.innerHTML = `<div class="gtitle">✓ ${G.doneText}</div>`; return; }
-    g.innerHTML = `<div class="gtitle">${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
+    if (gates[idx] && !G.keep){ g.innerHTML = `<div class="gtitle">✓ ${G.doneText}</div>`; return; }
+    g.innerHTML = `<div class="gtitle">${gates[idx] ? "✓ " : ""}${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
     G.wire(g);
   }
   function tube(bands){
@@ -419,7 +427,47 @@
     if (g === "lagAgain"){ LI.found = true; LI.fill = FRAGS[2].L; LI.done = true; }
     if (g === "lagSeal"){ LI.sealed = {1:0, 2:0}; }
   }
+  /* ===== Replication Race ===== */
+  const RR = {tpl:"", got:"", miss:0, done:false, sw:BioGames.stopwatch(), round:0};
+  const RR_KEY = "bio112-rep-race", PAIRD = {A:"T", T:"A", G:"C", C:"G"};
+  function rrNew(){ RR.tpl = BioGames.randBases(16); RR.got = ""; RR.miss = 0; RR.done = false; RR.sw.reset(); RR.round++; }
+  rrNew();
+  function rrPlace(nt){
+    if (RR.done || STEPS[idx].gate !== "repRace") return;
+    const need = PAIRD[RR.tpl[RR.got.length]];
+    if (nt !== need){ RR.miss++; gateMsg(`Not quite: <b>${RR.tpl[RR.got.length]}</b> pairs with <b>${need}</b>.`, "bad"); const m = $("rrMiss"); if (m) m.textContent = RR.miss; return; }
+    RR.sw.start(); RR.got += nt;
+    if (RR.got.length === RR.tpl.length){
+      RR.done = true;
+      const t = RR.sw.stop(), res = BioGames.add(RR_KEY, {t, m:RR.miss});
+      celebrate(500, 230, res.newBest ? `New best time! ${BioGames.fmt(t)}` : `Strand copied in ${BioGames.fmt(t)}!`);
+      if (!gates[idx]) passGate(); else renderGate();
+      gateMsg(`Done in ${BioGames.fmt(t)} with ${RR.miss} mistake${RR.miss === 1 ? "" : "s"}.${res.newBest ? " That's your new best!" : ""} Hit <b>New strand</b> to go again.`, "good");
+      return;
+    }
+    const k = $("rrKeys"); if (k) k.dataset.n = RR.got.length;
+    gateMsg("", "");
+  }
+  document.addEventListener("keydown", e => {
+    if (STEPS[idx].gate !== "repRace" || e.ctrlKey || e.metaKey || (e.target && e.target.tagName === "INPUT")) return;
+    const k = e.key.toUpperCase();
+    if (k.length === 1 && "ATGC".includes(k)){ e.preventDefault(); rrPlace(k); }
+    else if (e.key === "Enter" && RR.done){ e.preventDefault(); rrNew(); renderGate(); }
+  });
   const GATES = {
+    repRace:{keep:true, title:"Replication Race: build the new strand!", doneText:"Strand copied!",
+      html:() => {
+        const best = BioGames.best(RR_KEY);
+        return `<div class="gracebar"><span>⏱ <span class="gclock" id="rrClock">${BioGames.fmt(RR.sw.time)}</span></span><span class="gstat">Round ${RR.round}</span><span class="gstat">Mistakes: <span id="rrMiss">${RR.miss}</span></span><span class="gstat">Best: ${best === null ? "––" : BioGames.fmt(best)}</span><button class="btn ${RR.done ? "primary" : "secondary"}" id="rrNew" type="button">New strand ▶</button></div>
+          <div style="font-size:.95rem">Type <b>A, T, G, C</b> on your keyboard (or tap the tiles) to add the matching base under each template base, left to right. The clock starts on your first correct base.</div>
+          <div class="gkeys" id="rrKeys">${["A","T","G","C"].map(b => `<button class="rrkey rr${b}" data-rr="${b}" type="button">${b}</button>`).join("")}</div>
+          ${BioGames.board(RR_KEY)}`;
+      },
+      wire:g => {
+        g.querySelectorAll("[data-rr]").forEach(b => b.addEventListener("click", () => rrPlace(b.dataset.rr)));
+        g.querySelector("#rrNew").addEventListener("click", () => { rrNew(); renderGate(); gateMsg("New template strand. Go!", ""); });
+        RR.sw.attach(g.querySelector("#rrClock"));
+      }},
     lagFind:lagGate("Your turn: find the new primer", "DNA polymerase found the new primer!", "☝ In the diagram above, drag <b>DNA polymerase</b> onto the new purple RNA primer near the fork."),
     lagBuild:lagGate("Your turn: build the next fragment", "You built Okazaki fragment 2!", "☝ Drag <b>DNA polymerase</b> to the left along the top strand. Watch new DNA appear behind it!"),
     lagAgain:lagGate("Your turn: one more cycle", "You built Okazaki fragment 3!", "☝ First drag <b>DNA polymerase</b> onto the newest primer, then drag it left to build the fragment."),
@@ -960,6 +1008,34 @@
     return o;
   }
 
+  /* ===== Replication Race scene: the template on top, the new strand growing under it ===== */
+  function raceSVG(t){
+    const n = RR.tpl.length, x0 = 118, dx = 51, yT = 150, yN = 262, W = 38, H = 44;
+    let o = `<text x="500" y="44" font-size="22" font-weight="800" fill="#1d2433" text-anchor="middle">Build the new strand: A–T, G–C</text>`;
+    o += `<text x="500" y="72" font-size="15" fill="#5a6376" text-anchor="middle">Round ${RR.round} · ${RR.got.length} of ${n} bases · ⏱ ${BioGames.fmt(RR.sw.time)}</text>`;
+    o += `<path d="M${x0 - 30},${yT - 10} H${x0 + (n - 1) * dx + 30}" stroke="#64748b" stroke-width="6" stroke-linecap="round"/>`;
+    if (RR.got.length) o += `<path d="M${x0 - 30},${yN + H + 10} H${x0 + (RR.got.length - 1) * dx + 22}" stroke="#f2b134" stroke-width="6" stroke-linecap="round"/>`;
+    o += `<text x="${x0 - 60}" y="${yT + 28}" class="prime">3'</text><text x="${x0 + (n - 1) * dx + 44}" y="${yT + 28}" class="prime">5'</text>`;
+    o += `<text x="${x0 - 60}" y="${yN + 28}" class="prime">5'</text><text x="${x0 + (n - 1) * dx + 44}" y="${yN + 28}" class="prime">3'</text>`;
+    const big = (x, y, b, op, glow) => { const c = BASE[b]; return `<g opacity="${f3(op)}">${glow ? `<rect x="${f1(x - W / 2 - 5)}" y="${f1(y - 5)}" width="${W + 10}" height="${H + 10}" rx="12" fill="none" stroke="#f2b134" stroke-width="3"/>` : ""}<rect x="${f1(x - W / 2)}" y="${y}" width="${W}" height="${H}" rx="9" fill="${c[0]}"/><text x="${f1(x)}" y="${y + 30}" font-size="22" font-weight="800" fill="${c[1]}" text-anchor="middle">${b}</text></g>`; };
+    const pulse = .5 + .5 * Math.sin(t * 6);
+    for (let i = 0; i < n; i++){
+      const x = x0 + i * dx, b = RR.tpl[i];
+      o += big(x, yT, b, 1);
+      if (i < RR.got.length){
+        const hb = b === "G" || b === "C" ? 3 : 2;
+        for (let k = 0; k < hb; k++) o += `<path d="M${f1(x - 8 + k * 8 * (hb === 2 ? 2 : 1))},${yT + H + 6} V${yN - 6}" stroke="#9aa3b5" stroke-width="2.5" stroke-dasharray="4 4"/>`;
+        o += big(x, yN, RR.got[i], 1);
+      } else if (i === RR.got.length && !RR.done){
+        o += `<rect x="${f1(x - W / 2)}" y="${yN}" width="${W}" height="${H}" rx="9" fill="#fff" stroke="#f2b134" stroke-width="3" stroke-dasharray="6 5" opacity="${f3(.55 + .45 * pulse)}"/><text x="${f1(x)}" y="${yN + 30}" font-size="22" font-weight="800" fill="#c9a35a" text-anchor="middle">?</text>`;
+        o += enzymeIcon(x, yN + H + 50, "#2f9e63", "#1b7f4e", "DNA polymerase", 1);
+      } else o += `<rect x="${f1(x - W / 2)}" y="${yN}" width="${W}" height="${H}" rx="9" fill="#f4f6f9" stroke="#d9dee7" stroke-width="2"/>`;
+    }
+    o += `<text x="${x0 - 30}" y="${yT - 22}" font-size="14" font-weight="700" fill="#64748b">Template (old) strand</text><text x="${x0 + (n - 1) * dx + 30}" y="${yN + H + 34}" font-size="14" font-weight="700" fill="#a8760f" text-anchor="end">New strand</text>`;
+    if (RR.done) o += `<rect x="270" y="396" width="460" height="44" rx="22" fill="#1b7f4e"/><text x="500" y="424" font-size="17" font-weight="800" fill="#fff" text-anchor="middle">Copied in ${BioGames.fmt(RR.sw.time)}! Press Enter for a new strand</text>`;
+    return o;
+  }
+
   /* ===== Step 2: the three models, drawn as little double helices ===== */
   function miniHelix(x1, x2, cy, colTop, colBot, t, amp){
     amp = amp || 9;
@@ -1067,6 +1143,7 @@
     o += confettiSVG();
     if (cur.hero > 0.01) o += `<g opacity="${f3(cur.hero)}">${heroSVG(tt)}</g>`;
     if (cur.models > 0.01) o += `<g opacity="${f3(cur.models)}">${modelsSVG(tt)}</g>`;
+    if (cur.race > 0.01) o += `<g opacity="${f3(cur.race)}">${raceSVG(tt)}</g>`;
     if (cur.ms3 > 0.01) o += `<g opacity="${f3(cur.ms3)}">${ms3SVG(tt)}</g>`;
     svg.innerHTML = o;
   }
@@ -1125,7 +1202,7 @@
   let last = performance.now();
   function frame(now){
     if (stepTween(now)) dirty = true;
-    if (cur.hero > .01 || cur.models > .01 || cur.ms3 > .01 || cur.lagStep > .5 || LI.cele) dirty = true;
+    if (cur.hero > .01 || cur.models > .01 || cur.ms3 > .01 || cur.race > .01 || cur.lagStep > .5 || LI.cele) dirty = true;
     if (dirty){ render(); dirty = false; }
     requestAnimationFrame(frame);
   }
@@ -1314,6 +1391,7 @@
   window.addEventListener("resize", () => { dirty = true; });
 
   setMode("learn");
+  if (location.hash === "#game") goTo(STEPS.findIndex(st => st.gate === "repRace"));
   requestAnimationFrame(frame);
 
   // exposed for testing only
