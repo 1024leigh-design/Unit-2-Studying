@@ -42,7 +42,12 @@
   .card svg{width:100%;height:84px}
 
   .modehint{color:var(--muted);font-size:.92rem;margin:0 0 10px}
-  .stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+  .bondfloat{position:absolute;transform:translate(-50%,-50%);z-index:3;font:700 1rem var(--font);padding:9px 16px;border-radius:999px;border:2px solid #9a6212;background:#f2b134;color:#3b2a00;cursor:pointer;box-shadow:0 4px 12px rgba(29,36,51,.25);animation:bondpulse 1.4s ease-in-out infinite;white-space:nowrap}
+  .bondfloat:hover{filter:brightness(1.06)}
+  .bondfloat:disabled{animation:none;opacity:.6;cursor:default}
+  @keyframes bondpulse{0%,100%{box-shadow:0 4px 12px rgba(29,36,51,.25),0 0 0 0 rgba(242,177,52,.55)}50%{box-shadow:0 4px 12px rgba(29,36,51,.25),0 0 0 10px rgba(242,177,52,0)}}
+  @media (prefers-reduced-motion:reduce){ .bondfloat{animation:none} }
   #scene{display:block;width:100%;height:auto;font-family:var(--font);transition:opacity .2s}
 
   .tablewrap{margin-top:12px;overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
@@ -488,6 +493,7 @@
   function renderGate(){
     const g = document.getElementById("gate"), st = STEPS[idx];
     if (!g) return;
+    document.querySelectorAll(".bondfloat").forEach(b => b.remove());
     if (!st.gate){ g.hidden = true; g.innerHTML = ""; return; }
     g.hidden = false;
     const G = GATES[st.gate];
@@ -554,11 +560,20 @@
   }
   /* The peptide bond trigger: chain in the P site links to the new amino acid in the A site */
   function bondHTML(chain, aa){
-    return `<div class="bondrow"><span class="pchain">${chain.map(a => aaChip(a)).join("")}</span><span class="bondgap" id="bondGap"></span>${aaChip(aa, "new")}</div><div><button class="btn primary bondbtn" id="bondBtn">⚡ Form peptide bond</button></div>`;
+    return `<div class="bondrow"><span class="pchain">${chain.map(a => aaChip(a)).join("")}</span><span class="bondgap" id="bondGap"></span>${aaChip(aa, "new")}</div>`;
+  }
+  /* The bond button sits on the diagram itself, just above the P- and A-site amino acids */
+  function placeBondBtn(){
+    const b = document.querySelector(".bondfloat"); if (!b) return;
+    b.style.left = ((CX(cur.rp) + 60) / 10) + "%"; b.style.top = (80 / 470 * 100) + "%";
   }
   function wireBond(g, chain, aa, after){
-    g.querySelector("#bondBtn").addEventListener("click", e => {
+    const btn = document.createElement("button");
+    btn.className = "bondfloat"; btn.id = "bondBtn"; btn.type = "button"; btn.textContent = "\u26a1 Form peptide bond";
+    svg.parentNode.appendChild(btn); placeBondBtn();
+    btn.addEventListener("click", e => {
       e.currentTarget.disabled = true;
+      setTimeout(() => btn.remove(), 500);
       const gap = g.querySelector("#bondGap"); gap.classList.add("made"); gap.innerHTML = `<span class="spark"></span><span class="spark s2"></span>`;
       g.querySelector(".bondrow").classList.add("linked");
       gateMsg(`Zap! rRNA in the large subunit moves the chain (${chain.join("-")}) onto ${aa}. Now it's ${chain.concat(aa).join("-")}.`, "good");
@@ -585,7 +600,7 @@
       html:() => bondHTML(["Met"], "Ala"),
       wire:g => {
         wireBond(g, ["Met"], "Ala", passGate);
-        gateMsg("Methionine (in the P site) is about to link to alanine (in the A site). Tap the button to fire the bond.", "");
+        gateMsg("Methionine (in the P site) is about to link to alanine (in the A site). Tap the ⚡ button on the ribosome to fire the bond.", "");
       }
     },
     repeat:{
@@ -599,7 +614,7 @@
       wire:g => {
         const G = GATES.repeat, r = ROUNDS[G.round || 0];
         if ((G.phase || "dock") === "dock"){
-          wireShelf(g, r.codon, () => setTimeout(() => { G.phase = "bond"; renderGate(); gateMsg(`${r.aa} is in the A site. Link it to the chain!`, ""); }, 1000));
+          wireShelf(g, r.codon, () => setTimeout(() => { G.phase = "bond"; renderGate(); gateMsg(`${r.aa} is in the A site. Tap the \u26a1 button on the ribosome to link it to the chain!`, ""); }, 1000));
           gateMsg(`The ribosome moved, so codon ${r.codon} now sits in the A site. Which tRNA matches?`, "");
         } else {
           wireBond(g, r.chain, r.aa, () => {
@@ -781,6 +796,7 @@
     else if (d.scene === "code") o = codeSVG(t, frozen);
     else if (d.scene === "compare") o = compareSVG(t);
     svg.innerHTML = o;
+    placeBondBtn();
   }
   let last = performance.now();
   function frame(now){ const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; stepTween(now); sceneT += dt; render(); requestAnimationFrame(frame); }
