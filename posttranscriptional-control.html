@@ -543,7 +543,6 @@
       o += `<circle cx="${f1(px)}" cy="${f1(py)}" r="9" fill="#fbf9ff"/><path d="M${f1(px)},${f1(py - 9)} v18" stroke="#8e5bd0" stroke-width="4" stroke-linecap="round"/>`;
     });
     o += `<ellipse cx="${ncx}" cy="${ncy - nry - 8}" rx="70" ry="17" fill="#8e5bd0"/><text x="${ncx}" y="${ncy - nry - 3}" class="t15 mid wht">Nucleus</text>`;
-    o += `<text x="622" y="188" class="t12 muted">Nuclear pore</text><text x="622" y="206" class="t12 muted">(one of many, not to scale)</text>`;
     return o + EUK_ONLY();
   }
   const inNucleus = body => `<g transform="translate(-26 96) scale(0.74)">${body}</g>`;
@@ -552,7 +551,9 @@
     let o = `<defs><pattern id="pgWall" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#b9d3a6"/><path d="M0,6 H12 M6,0 V12" stroke="#7fa468" stroke-width="2"/></pattern></defs>`;
     o += `<rect x="34" y="80" width="932" height="364" rx="182" fill="url(#pgWall)" stroke="#5f8a4f" stroke-width="2.5"/>`;
     o += `<rect x="50" y="96" width="900" height="332" rx="166" fill="#f1f7ec" stroke="#c9a15a" stroke-width="3"/><rect x="56" y="102" width="888" height="320" rx="160" fill="none" stroke="#e3c98f" stroke-width="1.5"/>`;
-    o += `<circle cx="838" cy="380" r="42" fill="#e7f1de" stroke="#0f766e" stroke-width="3"/><text x="838" y="434" class="t12 mid muted">Nucleoid (DNA)</text>`;
+    /* loose, faint DNA loops (the nucleoid), kept well inside the membrane and unlabeled so they stay in the background */
+    const loop = (cx, cy, r) => { let d = ""; for (let k = 0; k <= 72; k++){ const a = k / 72 * Math.PI * 2, rr = r + 3 * Math.sin(a * 4) + 2 * Math.sin(a * 9 + 1); d += (k ? "L" : "M") + f1(cx + rr * Math.cos(a) * 1.5) + "," + f1(cy + rr * Math.sin(a)); } return `<path d="${d}Z" fill="none" stroke="#0f766e" stroke-width="2" opacity=".22"/>`; };
+    o += loop(200, 330, 26) + loop(810, 318, 22);
     return o + badge(tag || "PROKARYOTE", "#4d7a3d");
   }
   const SC = {
@@ -608,17 +609,19 @@
     capTail:t => {
       const T = 9, tt = t % T;
       const cap = smooth(seg(tt, .8, 2.2)), tail = smooth(seg(tt, 2.6, 4.6)), fade = 1 - smooth(seg(tt, 8.2, 9));
+      /* drawn at full size, sized to sit inside the nucleus (center 322,266) like the mature mRNA on the next step */
+      const y = 270;
       let o = `<g opacity="${f3(fade)}">`;
-      o += `<rect x="150" y="196" width="700" height="18" rx="9" fill="${ORANGE}"/>`;
-      o += capG(lerp(150, 138, cap), lerp(110, 205, cap), cap, 15);
-      const n = Math.min(6, Math.floor(tail * 7));
-      o += polyA(862, 205, n, tail, 20);
-      o += `<text x="138" y="252" class="t13 mid" opacity="${f3(cap)}">5' ${resolved("cap") ? "cap" : "?"}</text>`;
-      o += `<text x="920" y="252" class="t13 mid" opacity="${f3(tail)}">3' ${resolved("polya") ? "poly-A tail" : "?"}</text>`;
-      if (cap > .9) o += `<text x="330" y="140" class="t13 mid" opacity="${f3(seg(tt, 2.2, 2.8))}">Protects the end and helps the ribosome bind</text>`;
-      if (tail > .9) o += `<text x="640" y="300" class="t13 mid" opacity="${f3(seg(tt, 4.6, 5.2))}">Adds stability and helps the mRNA leave the nucleus</text>`;
+      o += `<rect x="170" y="${y - 9}" width="270" height="18" rx="9" fill="${ORANGE}"/>`;
+      o += capG(lerp(170, 154, cap), lerp(170, y, cap), cap, 14);
+      const n = Math.min(5, Math.floor(tail * 6));
+      o += polyA(456, y, n, tail, 17);
+      o += `<text x="154" y="${y + 42}" class="t15 mid" opacity="${f3(cap)}">5' ${resolved("cap") ? "cap" : "?"}</text>`;
+      o += `<text x="490" y="${y + 42}" class="t15 mid" opacity="${f3(tail)}">3' ${resolved("polya") ? "poly-A tail" : "?"}</text>`;
+      if (cap > .9) o += `<g opacity="${f3(seg(tt, 2.2, 2.8))}"><text x="322" y="192" class="t15 mid">Cap: protects the end and</text><text x="322" y="214" class="t15 mid">helps the ribosome bind</text></g>`;
+      if (tail > .9) o += `<g opacity="${f3(seg(tt, 4.6, 5.2))}"><text x="322" y="352" class="t15 mid">Tail: adds stability and helps</text><text x="322" y="374" class="t15 mid">the mRNA leave the nucleus</text></g>`;
       o += `</g>`;
-      return `<text x="500" y="44" class="t18 mid">Two more changes, both eukaryotes only</text>` + eukCell("nuc") + `<g transform="translate(-44 100) scale(0.66)">${o}</g>`;
+      return `<text x="500" y="44" class="t18 mid">Two more changes, both eukaryotes only</text>` + eukCell("nuc") + o;
     },
     riboswitch:t => {
       const T = 10, tt = t % T;
@@ -631,10 +634,10 @@
       o += `<path d="M${hx - 40},${y} C${hx - 40},${f1(y - h)} ${f1(hx - 40 + wdt)},${f1(y - h)} ${f1(hx - 40 + wdt)},${y}" fill="none" stroke="${ORANGE}" stroke-width="5"/>`;
       o += `<path d="M${f1(hx - 40 + wdt)},${y} H${bx - 30}" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
       o += `<text x="${f1(hx - 40 + wdt / 2)}" y="${f1(y - h - 14)}" class="t12 mid">${resolved("riboswitch") ? "Riboswitch" : "?"}</text>`;
-      /* the substrate enters from just outside the cell wall, a short trip to the riboswitch, not a trek across the whole cytoplasm */
-      const mx = lerp(6, hx - 40 + wdt / 2, on), my = lerp(y - 26, y - h + 16, on);
+      /* the substrate starts just inside the cell, a short trip to the riboswitch */
+      const mx = lerp(150, hx - 40 + wdt / 2, on), my = lerp(y - 40, y - h + 16, on);
       o += `<g opacity="${f3(Math.max(on, smooth(seg(tt, .6, 1.4)) * (1 - back)))}"><polygon points="${[0,1,2,3,4,5].map(i => { const a = Math.PI / 6 + i * Math.PI / 3; return f1(mx + 12 * Math.cos(a)) + "," + f1(my + 12 * Math.sin(a)); }).join(" ")}" fill="${TEAL}" stroke="#0a6e7a" stroke-width="1.5"/></g>`;
-      if (on < .9) o += `<text x="${f1(mx + 20)}" y="${f1(my + 5)}" class="t12" opacity="${f3(1 - on)}">Substrate molecule</text>`;
+      if (on < .9) o += `<text x="${f1(mx)}" y="${f1(my - 20)}" class="t12 mid" opacity="${f3(1 - on)}">Substrate molecule</text>`;
       /* downstream binding site: folds into a hairpin that physically covers it as sh rises, so the ribosome can no longer dock there */
       const foldH = 44 * sh, foldW = 22;
       o += `<path d="M${bx - 30},${y} H${bx - foldW}" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
@@ -651,7 +654,7 @@
         o += ribo(bx, y - 22, 1.15, 1 - sh * 2);
         o += pill(bx, y - 84, "Translation goes ahead", GREEN, 1 - sh * 2);
       }
-      o += `<text x="500" y="392" class="t15 mid muted">Binding a substrate folds the mRNA, and that fold can physically cover the ribosome's landing site.</text><text x="500" y="414" class="t12 mid muted">(Riboswitches work in eukaryotes too.)</text>`;
+      o += `<text x="500" y="338" class="t15 mid muted">Binding a substrate folds the mRNA,</text><text x="500" y="360" class="t15 mid muted">and that fold can cover the ribosome's landing site.</text><text x="500" y="384" class="t12 mid muted">(Riboswitches work in eukaryotes too.)</text>`;
       return o;
     },
     exit:t => {
@@ -692,7 +695,7 @@
         const lx = hx + 8 + N * DX + 2;
         if (dicer < 1) for (let k = 0; k < LOOP.length; k++){ const a = -Math.PI / 2 + (k + .5) * Math.PI / LOOP.length; h += nt(lx + 22 * Math.cos(a) + 14 * dicer, hy + 22 * Math.sin(a) - 10 * dicer, LOOP[k], 1 - dicer, 6); }
         const lbl = drosha < 1 && out < .05 ? "pri-miRNA hairpin (stem-loop)" : out < 1 ? "pre-miRNA hairpin" : dicer < .5 ? "pre-miRNA hairpin" : load > .05 ? "Passenger strand is discarded" : "miRNA duplex (loop cut off)";
-        h += `<text x="${f1(hx + 60)}" y="${f1(hy - 32)}" class="t12 mid pur">${lbl}</text>`;
+        h += `<text x="${f1(hx + 60)}" y="${f1(hy - 46)}" class="t12 mid pur">${lbl}</text>`;
         o += `<g opacity="${f3(fade)}">${h}</g>`;
       }
       /* enzymes as labeled blobs */
@@ -764,7 +767,7 @@
     {part:P3, title:"Riboswitches", v:"riboswitch", more:"ribo",
      text:`A {{riboswitch}} is a part of an mRNA that binds a small substrate molecule directly. When the substrate binds, the mRNA's {{structure}} changes, and that can either start OR stop translation. No regulatory protein is needed! Riboswitches are used by {{both}} prokaryotes and eukaryotes.`},
     {part:P3, title:"microRNA", v:"mirna", gate:"mirna", more:"mirna",
-     text:`{{mirna}} molecules are small RNAs that regulate gene expression. Each one starts as a hairpin (a stem-loop) made in the nucleus. It gets trimmed, exported, and loaded into a protein complex called RISC in the cytoplasm. The miRNA base-pairs with a target mRNA, which needs at least {{six}} complementary bases. The cell treats that double-stranded RNA as a problem, so the mRNA gets {{degraded}} and never becomes protein.`},
+     text:`{{mirna}} molecules are small RNAs that regulate gene expression. Each one starts as a hairpin (a stem-loop) made in the nucleus. It gets trimmed, exported, and loaded into a protein complex called RISC in the cytoplasm. The miRNA base-pairs with a target mRNA, which needs at least {{six}} complementary bases. The cell treats that double-stranded RNA as a problem, so the mRNA gets {{degraded}} and never becomes protein.<br><span class="more-note">Note: the step-by-step names in the animation (pri-miRNA, pre-miRNA, Drosha, Dicer, passenger strand) are extra detail. You don't need to know them for the exam.</span>`},
     {part:P3, title:"Putting it together", v:"compare", more:"compare", table:TABLE, links:[["Splice Lab","#splice"],["Mutations module","mutations.html"],["Translation module","translation.html"]],
      text:`Nice work! Splicing, caps, and tails happen in the nucleus of eukaryotes, before the mRNA ever reaches a ribosome. Riboswitches and miRNA work on mRNA that already exists. Every one of these is a chance to stop a protein from being made without touching the DNA at all.`,
      after:`You've now seen control before transcription and after it!`}

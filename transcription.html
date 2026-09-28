@@ -378,8 +378,13 @@
     if (!st.gate){ g.hidden = true; g.innerHTML = ""; return; }
     g.hidden = false;
     const G = GATES[st.gate];
-    g.className = "gate" + (gates[idx] ? " done" : "");
-    if (gates[idx]){ g.innerHTML = `<div class="gtitle">\u2713 ${G.doneText}</div>`; return; }
+    const showDone = gates[idx] && !G.replaying;
+    g.className = "gate" + (showDone ? " done" : "");
+    if (showDone){
+      g.innerHTML = `<div class="gtitle">\u2713 ${G.doneText}</div>` + (G.doneExtra ? G.doneExtra() : "");
+      if (G.wireDone) G.wireDone(g);
+      return;
+    }
     g.innerHTML = `<div class="gtitle">${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
     G.wire(g);
   }
@@ -447,8 +452,24 @@
     elongate:{
       title:"Speed round: transcribe 20 bases!",
       get doneText(){ return GATES.elongate.doneMsg || "You transcribed all 20 bases!"; },
-      template:"TACCGTAGGCTTAACGGCAT", got:"", mistakes:0, startT:null, active:false,
+      template:"TACCGTAGGCTTAACGGCAT", got:"", mistakes:0, startT:null, active:false, replaying:false,
       best:(() => { try { const v = localStorage.getItem("bio112-elong-best"); return v ? +v : null; } catch (e) { return null; } })(),
+      scores:(() => { try { const v = JSON.parse(localStorage.getItem("bio112-elong-scores") || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(),
+      doneExtra:() => {
+        const st = GATES.elongate;
+        const rows = st.scores.map((s, i) => `<li><b>${s.t.toFixed(1)}s</b> &middot; ${s.m} mistake${s.m === 1 ? "" : "s"} <span style="color:var(--muted)">(${new Date(s.d).toLocaleDateString()})</span>${i === 0 ? " ★" : ""}</li>`).join("");
+        return `<div class="traylbl">Your best times, saved on this browser:</div>`
+          + (rows ? `<ol style="margin:0;padding-left:22px;line-height:1.6">${rows}</ol>` : "")
+          + `<div><button class="btn primary" id="elongAgain">Play again</button></div>`;
+      },
+      wireDone:g => {
+        const b = g.querySelector("#elongAgain");
+        if (b) b.addEventListener("click", () => {
+          const st = GATES.elongate;
+          st.replaying = true; st.got = ""; st.startT = null; st.active = false; st.mistakes = 0;
+          renderGate();
+        });
+      },
       html:() => {
         const TPL = GATES.elongate.template, got = GATES.elongate.got || "";
         const n = TPL.length;
@@ -477,10 +498,15 @@
               st.elapsed = elapsed;
               const improved = st.best === null || elapsed < st.best;
               if (improved){ st.best = elapsed; try { localStorage.setItem("bio112-elong-best", String(elapsed)); } catch (e) {} }
+              st.scores = [...st.scores, {t:elapsed, m:st.mistakes, d:Date.now()}].sort((a, b) => a.t - b.t).slice(0, 5);
+              try { localStorage.setItem("bio112-elong-scores", JSON.stringify(st.scores)); } catch (e) {}
               renderGate();
               gateMsg(`Done in ${elapsed.toFixed(1)}s with ${st.mistakes} mistake${st.mistakes === 1 ? "" : "s"}!${improved ? " New best time!" : ""}`, "good");
-              GATES.elongate.doneMsg = `You transcribed all 20 bases in ${elapsed.toFixed(1)}s (best: ${st.best.toFixed(1)}s).`;
-              setTimeout(() => { st.got = ""; st.startT = null; st.active = false; st.mistakes = 0; passGate(); }, 1400);
+              st.doneMsg = `You transcribed all 20 bases in ${elapsed.toFixed(1)}s with ${st.mistakes} mistake${st.mistakes === 1 ? "" : "s"}.${improved ? " New best time!" : ""}`;
+              setTimeout(() => {
+                st.got = ""; st.startT = null; st.active = false; st.mistakes = 0;
+                if (st.replaying){ st.replaying = false; renderGate(); } else passGate();
+              }, 1400);
               return;
             }
             renderGate();
@@ -498,6 +524,7 @@
           g.tabIndex = 0;
           g.addEventListener("keydown", e => {
             const k = e.key.toUpperCase();
+            if (STEPS[idx].gate !== "elongate" || (gates[idx] && !st.replaying)) return;
             if (!"AUGC".includes(k) || st.got.length >= st.template.length) return;
             e.preventDefault();
             place(k);
@@ -748,8 +775,8 @@
     svg.setAttribute("viewBox", `${f1(x0)} ${f1(y0)} ${f1(w)} ${f1(h)}`);
     let o = DEFS;
     if (cur.gene > 0.01) o += `<g opacity="${f3(cur.gene)}">${geneSVG(cur)}</g>`;
-    if (cur.bact > 0.01) o += `<g opacity="${f3(cur.bact)}">${bactSVG(idx === 9 ? sceneT : 0)}</g>`;
-    if (cur.euk > 0.01) o += `<g opacity="${f3(cur.euk)}">${eukSVG(idx === 10 ? sceneT : 0)}</g>`;
+    if (cur.bact > 0.01) o += `<g opacity="${f3(cur.bact)}">${bactSVG(STEPS[idx].state === S[10] ? sceneT : 0)}</g>`;
+    if (cur.euk > 0.01) o += `<g opacity="${f3(cur.euk)}">${eukSVG(STEPS[idx].state === S[11] ? sceneT : 0)}</g>`;
     svg.innerHTML = o;
   }
 
@@ -851,7 +878,7 @@
     if (!st.slider){ el.hidden = true; el.innerHTML = ""; return; }
     el.hidden = false;
     const [lo, hi] = st.sliderRange || [S[4].a, GE];
-    el.innerHTML = `<span class="plbl">Slide RNA polymerase:</span><input type="range" id="polRange" min="${lo}" max="${hi}" step="0.2" value="${clamp(cur.a, lo, hi)}">`;
+    el.innerHTML = `<span class="plbl">Slide RNA polymerase:</span><input type="range" id="polRange" min="${lo}" max="${hi}" step="0.2" value="${lo}">`;
     $("polRange").addEventListener("input", e => { tw = null; cur.a = +e.target.value; dirty = true; });
   }
   function enterStep(i){
@@ -861,8 +888,15 @@
     if (res) furthest = Math.max(furthest, i + 1);
     if (changed && st.scene) sceneT = 0;
     playing = res && !!st.scene;
-    animateTo(res ? st.state : prevState(i));
+    animateTo(res ? targetState(i) : prevState(i));
     renderBubble(); renderNav(); renderGate(); renderSlider(); dirty = true;
+  }
+  /* Slider steps start with RNA polymerase at the beginning of the slider range, so the student does the sliding */
+  function targetState(i){
+    const st = STEPS[i];
+    if (!st.slider) return st.state;
+    const [lo] = st.sliderRange || [S[4].a, GE];
+    return {...st.state, a: lo};
   }
   function goTo(i){ enterStep(clamp(i, 0, LAST)); }
 
@@ -870,7 +904,7 @@
     if (!stepResolved(idx)){ updateButtons(); renderNav(); renderGate(); return; }
     furthest = Math.max(furthest, idx + 1);
     updateButtons(); renderNav(); showAfter();
-    animateTo(STEPS[idx].state);
+    animateTo(targetState(idx));
     if (STEPS[idx].scene){ sceneT = 0; playing = true; }
     dirty = true;
     nextBtn.focus({preventScroll:true});
@@ -915,7 +949,7 @@
   }
   function restart(){
     for (const k in gates) delete gates[k];
-    GATES.elongate.got = ""; GATES.elongate.mistakes = 0; GATES.elongate.startT = null; GATES.elongate.active = false;
+    GATES.elongate.got = ""; GATES.elongate.mistakes = 0; GATES.elongate.startT = null; GATES.elongate.active = false; GATES.elongate.replaying = false;
     bl = {}; furthest = 0; idx = 0; sceneT = 0; playing = false;
     cur = {...S[0]}; tw = null;
     enterStep(0);
@@ -923,7 +957,7 @@
   function replay(){
     if (idx === 0) return;
     cur = {...prevState(idx)};
-    if (stepResolved(idx)){ animateTo(STEPS[idx].state); if (STEPS[idx].scene){ sceneT = 0; playing = true; } }
+    if (stepResolved(idx)){ animateTo(targetState(idx)); if (STEPS[idx].scene){ sceneT = 0; playing = true; } }
     dirty = true;
   }
 
