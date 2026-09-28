@@ -522,28 +522,26 @@
   /* Corner badge so eukaryote-only and prokaryote scenes can't be confused */
   function badge(text, fill, x){ x = x || 18; const w = text.length * 8.7 + 30; return `<g><rect x="${x}" y="14" width="${f1(w)}" height="26" rx="13" fill="${fill}"/><text x="${f1(x + w / 2)}" y="31.5" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing=".5">${text}</text></g>`; }
   const EUK_ONLY = () => badge("EUKARYOTES ONLY", "#6b4bb8");
-  function mito(x, y, s){
-    s = s || 1;
-    const rx = 32 * s, ry = 19 * s;
-    let o = `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(rx)}" ry="${f1(ry)}" fill="#e29a76" stroke="#a8461f" stroke-width="2"/>`;
-    for (let i = -1; i <= 1; i++){ const cx1 = x + i * rx * 0.42; o += `<path d="M${f1(cx1)},${f1(y - ry * .68)} q${f1(rx * .34)},${f1(ry * .68)} 0,${f1(ry * 1.36)}" fill="none" stroke="#c4532f" stroke-width="2"/>`; }
+  /* A phospholipid bilayer: two membrane lines with round phospholipid heads along the flat edges */
+  function bilayerRect(x, y, w, h, r){
+    let o = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="#fbf9ff" stroke="#c9b9ee" stroke-width="2"/>`;
+    o += `<rect x="${x+8}" y="${y+8}" width="${w-16}" height="${h-16}" rx="${Math.max(0,r-8)}" fill="none" stroke="#c9b9ee" stroke-width="2"/>`;
+    const y1 = y + 4, y2 = y + h - 4;
+    for (let px = x + r + 6; px < x + w - r - 6; px += 15){
+      o += `<circle cx="${f1(px)}" cy="${y1}" r="3.4" fill="#c9b9ee"/><circle cx="${f1(px)}" cy="${y2}" r="3.4" fill="#c9b9ee"/>`;
+    }
     return o;
   }
-  function erLines(x, y, w){ let d = ""; for (let n = 0; n < 3; n++){ let p = `M${x},${y + n * 13}`; for (let px = x; px < x + w; px += 15) p += ` q7,-9 15,0`; d += `<path d="${p}" fill="none" stroke="#c9b9ee" stroke-width="2.5"/>`; } return d; }
   function eukCell(dim){
     /* dim: "cyto" dims the nucleus */
     const nd = dim === "cyto" ? .55 : 1;
-    let o = `<rect x="12" y="66" width="976" height="394" rx="90" fill="#fbf9ff" stroke="#c9b9ee" stroke-width="3"/>`;
-    o += `<text x="964" y="88" class="t12 end muted">Eukaryotic cell (plasma membrane, no cell wall)</text>`;
+    let o = bilayerRect(12, 66, 976, 394, 90);
     const ncx = 322, ncy = 266, nrx = 286, nry = 170;
     o += `<ellipse cx="${ncx}" cy="${ncy}" rx="${nrx}" ry="${nry}" fill="#efe7fb" stroke="#8e5bd0" stroke-width="3" opacity="${nd}"/><ellipse cx="${ncx}" cy="${ncy}" rx="${nrx - 9}" ry="${nry - 9}" fill="none" stroke="#b9a6ee" stroke-width="1.5" opacity="${nd}"/>`;
     [-25, 25].forEach(deg => {
       const a = deg * Math.PI / 180, px = ncx + nrx * Math.cos(a), py = ncy + nry * Math.sin(a);
       o += `<circle cx="${f1(px)}" cy="${f1(py)}" r="9" fill="#fbf9ff"/><path d="M${f1(px)},${f1(py - 9)} v18" stroke="#8e5bd0" stroke-width="4" stroke-linecap="round"/>`;
     });
-    o += mito(668, 112, .78);
-    o += erLines(626, 225, 78);
-    o += `<text x="860" y="118" class="t12 muted">Cytoplasm</text>`;
     o += `<ellipse cx="${ncx}" cy="${ncy - nry - 8}" rx="70" ry="17" fill="#8e5bd0"/><text x="${ncx}" y="${ncy - nry - 3}" class="t15 mid wht">Nucleus</text>`;
     o += `<text x="622" y="188" class="t12 muted">Nuclear pore</text><text x="622" y="206" class="t12 muted">(one of many, not to scale)</text>`;
     return o + EUK_ONLY();
@@ -554,7 +552,7 @@
     let o = `<defs><pattern id="pgWall" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#b9d3a6"/><path d="M0,6 H12 M6,0 V12" stroke="#7fa468" stroke-width="2"/></pattern></defs>`;
     o += `<rect x="34" y="80" width="932" height="364" rx="182" fill="url(#pgWall)" stroke="#5f8a4f" stroke-width="2.5"/>`;
     o += `<rect x="50" y="96" width="900" height="332" rx="166" fill="#f1f7ec" stroke="#c9a15a" stroke-width="3"/><rect x="56" y="102" width="888" height="320" rx="160" fill="none" stroke="#e3c98f" stroke-width="1.5"/>`;
-    o += `<circle cx="838" cy="380" r="42" fill="#e7f1de" stroke="#0f766e" stroke-width="3"/>`;
+    o += `<circle cx="838" cy="380" r="42" fill="#e7f1de" stroke="#0f766e" stroke-width="3"/><text x="838" y="434" class="t12 mid muted">Nucleoid (DNA)</text>`;
     return o + badge(tag || "PROKARYOTE", "#4d7a3d");
   }
   const SC = {
@@ -601,7 +599,7 @@
         const cx = (g[0] + g[1]) / 2, sy = lerp(80, y - 46 * loop - 70 * cut, arrive);
         o += snrnp(cx, sy, arrive * (1 - cut));
       });
-      if (arrive > .6 && cut < .6) o += `<text x="262" y="96" class="t13 pur" opacity="${f3(arrive * (1 - cut))}">${resolved("snrnps") ? "snRNPs (\u201csnurps\u201d)" : "?"}</text>`;
+      if (arrive > .3 && cut < .9) o += `<text x="262" y="96" class="t13 pur" opacity="${f3(Math.min(arrive, 1 - cut))}">${resolved("snrnps") ? "snRNPs (\u201csnurps\u201d)" : "?"}</text>`;
       if (join > .8) o += pill(500, 330, "Mature mRNA: exons only", GREEN, (join - .8) * 5);
       o += `</g>`;
       o += `<text x="465" y="410" class="t15 mid muted">INtrons are IN the way. EXons are EXpressed.</text>`;

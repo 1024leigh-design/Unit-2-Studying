@@ -295,6 +295,7 @@
     helixReform:{title:"Keeping the bubble small: supercoiling", html:`<p>Only about 12 to 14 base pairs are unwound at any moment inside RNA polymerase, the "transcription bubble." Unwinding a long stretch all at once would put a lot of twisting strain on the rest of the chromosome, since DNA is a closed, coiled-up shape, not a loose noodle.</p><p>As RNA polymerase moves forward, it over-winds (adds extra twists to) the DNA ahead of it and under-winds the DNA behind it, a problem called <b>supercoiling</b>. Cells rely on enzymes called <b>topoisomerases</b> (including one called DNA gyrase in bacteria) to cut, swivel, and reseal the DNA backbone to relieve this strain, so the helix can keep re-forming smoothly behind the enzyme instead of getting hopelessly tangled.</p>`},
     directionMatters:{title:"Why RNA polymerase can only build 5' to 3'", html:`<p>Each new RNA nucleotide is added by attaching its 5' phosphate group to the exposed 3'-OH (hydroxyl) group at the end of the growing chain. That means the chain can only ever grow from its 3' end, which is another way of saying RNA is built 5' to 3'; there's no chemical way to add a base onto the 5' end instead.</p><p>Because the two DNA strands are antiparallel, reading the template strand in its own 3' to 5' direction automatically produces new RNA running 5' to 3', matching the coding strand's orientation. This one-way chemistry is also why DNA replication needs extra tricks (like Okazaki fragments) to copy the strand that runs the "wrong" way relative to the replication fork.</p>`},
     terminatorDetail:{title:"How does RNA polymerase know where to stop?", html:`<p>A <b>terminator</b> is a sequence at the end of a gene that signals "stop here," and bacteria use two main strategies. In <b>rho-independent (intrinsic) termination</b>, the terminator sequence, once transcribed into RNA, folds back on itself into a hairpin loop (because it contains a G-C-rich palindrome), immediately followed by a run of U's. That hairpin physically destabilizes RNA polymerase's grip, and the weak U-A pairing (only two hydrogen bonds each) lets the RNA pull free easily.</p><p>In <b>rho-dependent termination</b>, a separate protein called Rho chases along behind RNA polymerase and catches up when the enzyme pauses at a rho-dependent terminator sequence, then pulls the RNA and DNA apart. Either way, transcription doesn't just "run out" at the end of a gene; a specific sequence actively signals the stop.</p>`},
+    elongationSpeed:{title:"How fast is real RNA polymerase?", html:`<p>Bacterial RNA polymerase adds roughly 40 to 80 RNA nucleotides every second, and it rarely makes a mistake: on average, only about 1 in every 10,000 to 100,000 bases is wrong, and many of those errors get corrected as the enzyme works. That combination of speed and accuracy is exactly what this activity asks you to practice, just at a much smaller, human-friendly scale.</p><p>Eukaryotic RNA polymerase II is slower, closer to 10 to 50 nucleotides per second, in part because it has to work its way past nucleosomes (DNA wrapped around histone proteins) that bacteria don't have to deal with.</p>`},
     mrnaMore:{title:"mRNA: a short-lived messenger", html:`<p>mRNA (messenger RNA) is deliberately temporary. A typical bacterial mRNA lasts only a few minutes before cellular enzymes chop it up, while many eukaryotic mRNAs last hours. That short lifespan is a feature, not a flaw: it lets a cell quickly change which proteins it's making, just by changing which genes it's transcribing, without waiting for old instructions to be used up.</p><p>One gene can be transcribed into many mRNA copies, and each mRNA copy can be translated into many protein copies, so a single burst of transcription can be amplified into a large amount of protein. This copy-of-a-copy strategy also protects the original gene: the master DNA blueprint never has to leave its safe location (the nucleus, in eukaryotes) to be read by the protein-building machinery.</p>`},
     coupledTxTl:{title:"The upside (and risk) of coupled transcription and translation", html:`<p>Because bacteria have no nuclear membrane separating DNA from ribosomes, a ribosome can grab the 5' end of an mRNA and start translating before RNA polymerase has even finished transcribing the 3' end. This <b>coupled transcription and translation</b> lets bacteria respond to their environment and make proteins extremely fast, which matters for a cell that might need to divide again in only 20 minutes.</p><p>There's a catch: if RNA polymerase makes a mistake or the ribosome runs into trouble, there's no time for quality-control editing the way eukaryotes get by processing pre-mRNA first. Bacteria rely on the Rho protein (mentioned in termination) partly to detect and stop transcription when a ribosome has stalled or fallen off early, since an untranslated mRNA drifting through the cytoplasm can be a signal that something has gone wrong.</p>`},
     eukProcessing:{title:"Why eukaryotic processing pays off", html:`<p>Eukaryotic mRNA processing costs time, but it buys a lot in return. The 5' cap and 3' poly-A tail protect the mRNA from being chewed up by enzymes and help ribosomes recognize it. Before export, the cell also does quality control: mRNAs with processing errors are often degraded right in the nucleus and never even reach the cytoplasm.</p><p>Splicing out introns has an enormous bonus: many genes can be spliced in more than one way, called <b>alternative splicing</b>, keeping some exons and skipping others. That means a single gene can code for several different protein versions, which is a major reason humans can build so much biological complexity from only about 20,000 genes.</p>`}
@@ -317,9 +318,10 @@
   S[5]  = {...S[4], a:22, arrow:0};   // "The helix reforms" (was step 7, now shown before Direction matters)
   S[6]  = {...S[5], a:28, arrow:1};   // "Direction matters" (was step 6)
   S[7]  = {...S[6], a:34, arrow:0};
-  S[8]  = {...S[7], open:0, polLeave:1, detach:1, zoom:0, hl:0};
-  S[9]  = {...S[8], gene:0, bact:1};
-  S[10] = {...S[9], bact:0, euk:1};
+  S[8]  = {...S[7]};                  // "mRNA elongation" typing game (same backdrop as Stop signal)
+  S[9]  = {...S[7], open:0, polLeave:1, detach:1, zoom:0, hl:0};
+  S[10] = {...S[9], gene:0, bact:1};
+  S[11] = {...S[10], bact:0, euk:1};
 
   const STEPS = [
     {title:"Meet the gene", state:S[0], more:"promoterFinders",
@@ -338,11 +340,13 @@
      text:`RNA polymerase can only add new nucleotides to one end of the growing chain. That means RNA is always built in the {{five}} to {{three}} direction, while the template strand is read in the opposite direction. Drag the slider below to move RNA polymerase yourself and watch which strand it rides along, and which way it travels.`},
     {title:"Stop signal", state:S[7], more:"terminatorDetail",
      text:`RNA polymerase reaches the end of the gene. Transcription stops when RNA polymerase reaches the {{terminator}}.`},
-    {title:"Release", state:S[8], more:"mrnaMore",
+    {title:"mRNA elongation", state:S[8], gate:"elongate", more:"elongationSpeed",
+     text:`The whole time RNA polymerase is moving, it's adding one RNA nucleotide after another: this is <b>elongation</b>. Now you try it. You'll get 20 template bases; type the matching RNA base for each one as fast and accurately as you can. The clock stops the moment you complete all 20.`},
+    {title:"Release", state:S[9], more:"mrnaMore",
      text:`RNA polymerase lets go, the new RNA is released, and the DNA helix reforms. The finished product is {{mrna}}, a short-term copy of the gene that carries its instructions to the ribosome.`},
-    {title:"Bacteria: all at once", state:S[9], pre:S[9], scene:true, more:"coupledTxTl",
+    {title:"Bacteria: all at once", state:S[10], pre:S[10], scene:true, more:"coupledTxTl",
      text:`Bacteria have no nucleus, so transcription happens in the {{cytoplasm}}. Ribosomes can grab the mRNA and start translating before {{txword}} is complete. This is called <b>coupled transcription and translation</b>, and bacterial mRNA needs no processing.`},
-    {title:"Eukaryotes: process first", state:S[10], pre:S[10], scene:true, more:"eukProcessing",
+    {title:"Eukaryotes: process first", state:S[11], pre:S[11], scene:true, more:"eukProcessing",
      text:`In eukaryotes, transcription happens in the {{nucleus}}, and the pre-mRNA must be processed before it can leave. A <b>5' cap</b> and a <b>3' poly-A tail</b> are added, and <b>snRNPs</b> cut out the {{introns}} and splice the exons together. Only the mature mRNA exits to the cytoplasm for translation.`,
      after:`INtrons are IN the way, EXons are EXpressed!`}
   ];
@@ -438,6 +442,69 @@
           drop:z => z ? place(b.dataset.nt, +z.dataset.slot) : gateMsg("Drop the nucleotide on the glowing slot under the template.", "")
         }));
         if (!(GATES.build.got || "").length) gateMsg("Drag the RNA nucleotide that pairs with each DNA template base onto the glowing slot, left to right.", "");
+      }
+    },
+    elongate:{
+      title:"Speed round: transcribe 20 bases!",
+      get doneText(){ return GATES.elongate.doneMsg || "You transcribed all 20 bases!"; },
+      template:"TACCGTAGGCTTAACGGCAT", got:"", mistakes:0, startT:null, active:false,
+      best:(() => { try { const v = localStorage.getItem("bio112-elong-best"); return v ? +v : null; } catch (e) { return null; } })(),
+      html:() => {
+        const TPL = GATES.elongate.template, got = GATES.elongate.got || "";
+        const n = TPL.length;
+        const dnaRow = [...TPL].map(b => `<span class="gb big gb${b}">${b}</span>`).join("");
+        const rnaRow = [...Array(n)].map((_, k) => k < got.length ? `<span class="gb big gb${got[k]}">${got[k]}</span>` : `<span class="gslot big${k === got.length ? " cur" : ""}">?</span>`).join("");
+        const best = GATES.elongate.best;
+        return `<div class="buildpad">
+          <div class="grow"><span class="glbl">DNA template 3'</span>${dnaRow}<span class="glbl" style="min-width:0">&nbsp;5'</span></div>
+          <div class="grow"><span class="glbl">New RNA 5'</span>${rnaRow}<span class="glbl" style="min-width:0">&nbsp;3'</span></div>
+          </div>
+          <div class="traylbl">Time: <span id="elongTimer">0.0s</span> &middot; Mistakes: <span id="elongMiss">${GATES.elongate.mistakes}</span> &middot; Best time: ${best === null ? "––" : best.toFixed(1) + "s"}</div>
+          <div class="traylbl">Type A, U, G, or C on your keyboard, or tap the tiles below, as fast as you can</div>
+          <div class="gkeys">${["A","U","G","C"].map(b => `<button class="gb gb${b} ntile" data-nt="${b}" aria-label="Add ${b}">${b}</button>`).join("")}</div>`;
+      },
+      wire:g => {
+        const st = GATES.elongate;
+        const PAIR = {A:"U", T:"A", G:"C", C:"G"};
+        const place = nt => {
+          const need = PAIR[st.template[st.got.length]];
+          if (nt === need){
+            if (!st.startT){ st.startT = performance.now(); st.active = true; }
+            st.got += nt;
+            if (st.got.length === st.template.length){
+              st.active = false;
+              const elapsed = (performance.now() - st.startT) / 1000;
+              st.elapsed = elapsed;
+              const improved = st.best === null || elapsed < st.best;
+              if (improved){ st.best = elapsed; try { localStorage.setItem("bio112-elong-best", String(elapsed)); } catch (e) {} }
+              renderGate();
+              gateMsg(`Done in ${elapsed.toFixed(1)}s with ${st.mistakes} mistake${st.mistakes === 1 ? "" : "s"}!${improved ? " New best time!" : ""}`, "good");
+              GATES.elongate.doneMsg = `You transcribed all 20 bases in ${elapsed.toFixed(1)}s (best: ${st.best.toFixed(1)}s).`;
+              setTimeout(() => { st.got = ""; st.startT = null; st.active = false; st.mistakes = 0; passGate(); }, 1400);
+              return;
+            }
+            renderGate();
+            return;
+          }
+          st.mistakes++;
+          const cur = g.querySelector(".gslot.cur");
+          if (cur){ cur.classList.remove("nope"); void cur.offsetWidth; cur.classList.add("nope"); }
+          const missEl = document.getElementById("elongMiss"); if (missEl) missEl.textContent = st.mistakes;
+          gateMsg(`Not quite: ${st.template[st.got.length]} on the DNA pairs with ${need}.`, "bad");
+        };
+        g.querySelectorAll("[data-nt]").forEach(b => b.addEventListener("click", () => place(b.dataset.nt)));
+        if (!g.dataset.elongWired){
+          g.dataset.elongWired = "1";
+          g.tabIndex = 0;
+          g.addEventListener("keydown", e => {
+            const k = e.key.toUpperCase();
+            if (!"AUGC".includes(k) || st.got.length >= st.template.length) return;
+            e.preventDefault();
+            place(k);
+          });
+        }
+        g.focus({preventScroll:true});
+        if (!st.got.length) gateMsg("Click into this box (if needed) and start typing the moment you're ready.", "");
       }
     }
   };
@@ -691,6 +758,7 @@
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
     if (stepTween(now)) dirty = true;
     if (playing && (cur.bact > 0.02 || cur.euk > 0.02)){ sceneT += dt; dirty = true; }
+    if (GATES.elongate.active){ const el = $("elongTimer"); if (el) el.textContent = ((now - GATES.elongate.startT) / 1000).toFixed(1) + "s"; }
     if (dirty){ render(); dirty = false; }
     requestAnimationFrame(frame);
   }
@@ -847,6 +915,7 @@
   }
   function restart(){
     for (const k in gates) delete gates[k];
+    GATES.elongate.got = ""; GATES.elongate.mistakes = 0; GATES.elongate.startT = null; GATES.elongate.active = false;
     bl = {}; furthest = 0; idx = 0; sceneT = 0; playing = false;
     cur = {...S[0]}; tw = null;
     enterStep(0);
