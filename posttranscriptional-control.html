@@ -446,6 +446,7 @@
   </div>
 </div>
 
+<script src="bioart.js"></script>
 <script>
 (function(){
   const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -522,38 +523,38 @@
   /* Corner badge so eukaryote-only and prokaryote scenes can't be confused */
   function badge(text, fill, x){ x = x || 18; const w = text.length * 8.7 + 30; return `<g><rect x="${x}" y="14" width="${f1(w)}" height="26" rx="13" fill="${fill}"/><text x="${f1(x + w / 2)}" y="31.5" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle" letter-spacing=".5">${text}</text></g>`; }
   const EUK_ONLY = () => badge("EUKARYOTES ONLY", "#6b4bb8");
-  /* A phospholipid bilayer: two membrane lines with round phospholipid heads along the flat edges */
-  function bilayerRect(x, y, w, h, r){
-    let o = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="#fbf9ff" stroke="#c9b9ee" stroke-width="2"/>`;
-    o += `<rect x="${x+8}" y="${y+8}" width="${w-16}" height="${h-16}" rx="${Math.max(0,r-8)}" fill="none" stroke="#c9b9ee" stroke-width="2"/>`;
-    const y1 = y + 4, y2 = y + h - 4;
-    for (let px = x + r + 6; px < x + w - r - 6; px += 15){
-      o += `<circle cx="${f1(px)}" cy="${y1}" r="3.4" fill="#c9b9ee"/><circle cx="${f1(px)}" cy="${y2}" r="3.4" fill="#c9b9ee"/>`;
-    }
+  const BA = window.BioArt;
+  /* Organic eukaryotic cell: bilayer membrane and a double-membraned nucleus with pores */
+  const EUK_PTS = BA.blob(500, 262, 486, 194, 0.025, 21, 96, 0.55);
+  const NUC_PTS = BA.blob(322, 266, 283, 167, 0.018, 9, 90);
+  function nucleusShape(){
+    const n = NUC_PTS.length, outer = BA.grow(NUC_PTS, 7);
+    let o = BA.outline(outer, "#efe7fb", "#8e5bd0", 2.6) + BA.outline(NUC_PTS, "none", "#b9a6ee", 1.6);
+    /* nuclear pores: small gaps through both membranes */
+    [-25, 25].forEach(deg => {
+      const k = Math.round(((deg + 360) % 360) / 360 * n) % n, a = NUC_PTS[k], b = outer[k];
+      const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      o += `<circle cx="${f1(mx)}" cy="${f1(my)}" r="8" fill="#f6f2fd"/><path d="M${f1(mx - 1)},${f1(my - 9)} v5 M${f1(mx - 1)},${f1(my + 4)} v5" stroke="#8e5bd0" stroke-width="3.5" stroke-linecap="round"/>`;
+    });
     return o;
   }
   function eukCell(dim){
     /* dim: "cyto" dims the nucleus */
     const nd = dim === "cyto" ? .55 : 1;
-    let o = bilayerRect(12, 66, 976, 394, 90);
-    const ncx = 322, ncy = 266, nrx = 286, nry = 170;
-    o += `<ellipse cx="${ncx}" cy="${ncy}" rx="${nrx}" ry="${nry}" fill="#efe7fb" stroke="#8e5bd0" stroke-width="3" opacity="${nd}"/><ellipse cx="${ncx}" cy="${ncy}" rx="${nrx - 9}" ry="${nry - 9}" fill="none" stroke="#b9a6ee" stroke-width="1.5" opacity="${nd}"/>`;
-    [-25, 25].forEach(deg => {
-      const a = deg * Math.PI / 180, px = ncx + nrx * Math.cos(a), py = ncy + nry * Math.sin(a);
-      o += `<circle cx="${f1(px)}" cy="${f1(py)}" r="9" fill="#fbf9ff"/><path d="M${f1(px)},${f1(py - 9)} v18" stroke="#8e5bd0" stroke-width="4" stroke-linecap="round"/>`;
-    });
-    o += `<ellipse cx="${ncx}" cy="${ncy - nry - 8}" rx="70" ry="17" fill="#8e5bd0"/><text x="${ncx}" y="${ncy - nry - 3}" class="t15 mid wht">Nucleus</text>`;
+    let o = BA.bilayer(EUK_PTS, {fill:"#fbf9ff", head:"#b9a6ee", tail:"#eee8fb"}, "euk");
+    o += `<g opacity="${nd}">${nucleusShape()}</g>`;
+    o += `<ellipse cx="322" cy="${266 - 167 - 12}" rx="70" ry="17" fill="#8e5bd0"/><text x="322" y="${266 - 167 - 7}" class="t15 mid wht">Nucleus</text>`;
     return o + EUK_ONLY();
   }
   const inNucleus = body => `<g transform="translate(-26 96) scale(0.74)">${body}</g>`;
-  /* Bacterial cell: thick peptidoglycan cell wall + plasma membrane, DNA loose in a nucleoid */
+  /* Rod-shaped bacterium: peptidoglycan cell wall around a bilayer membrane, DNA loose in a nucleoid */
+  const BACT_PTS = BA.capsule(500, 262, 450, 164, 0.03, 4);
   function bactCell(tag){
-    let o = `<defs><pattern id="pgWall" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#b9d3a6"/><path d="M0,6 H12 M6,0 V12" stroke="#7fa468" stroke-width="2"/></pattern></defs>`;
-    o += `<rect x="34" y="80" width="932" height="364" rx="182" fill="url(#pgWall)" stroke="#5f8a4f" stroke-width="2.5"/>`;
-    o += `<rect x="50" y="96" width="900" height="332" rx="166" fill="#f1f7ec" stroke="#c9a15a" stroke-width="3"/><rect x="56" y="102" width="888" height="320" rx="160" fill="none" stroke="#e3c98f" stroke-width="1.5"/>`;
-    /* loose, faint DNA loops (the nucleoid), kept well inside the membrane and unlabeled so they stay in the background */
-    const loop = (cx, cy, r) => { let d = ""; for (let k = 0; k <= 72; k++){ const a = k / 72 * Math.PI * 2, rr = r + 3 * Math.sin(a * 4) + 2 * Math.sin(a * 9 + 1); d += (k ? "L" : "M") + f1(cx + rr * Math.cos(a) * 1.5) + "," + f1(cy + rr * Math.sin(a)); } return `<path d="${d}Z" fill="none" stroke="#0f766e" stroke-width="2" opacity=".22"/>`; };
-    o += loop(200, 330, 26) + loop(810, 318, 22);
+    let o = `<defs><pattern id="pgWall" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#c6dcb5"/><path d="M0,6 H12 M6,0 V12" stroke="#93b57d" stroke-width="1.6"/></pattern></defs>`;
+    o += BA.outline(BA.grow(BACT_PTS, 16), "url(#pgWall)", "#5f8a4f", 2.5);
+    o += BA.bilayer(BACT_PTS, {fill:"#f1f7ec", head:"#c9a15a", tail:"#f4e8cc"}, "bact");
+    /* loose nucleoid DNA, faint and unlabeled so it stays in the background */
+    o += BA.tangle(205, 330, 62, 26, 5, {op:.28, width:2.4}) + BA.tangle(810, 318, 52, 22, 8, {op:.28, width:2.4});
     return o + badge(tag || "PROKARYOTE", "#4d7a3d");
   }
   const SC = {
@@ -637,7 +638,7 @@
       /* the substrate starts just inside the cell, a short trip to the riboswitch */
       const mx = lerp(150, hx - 40 + wdt / 2, on), my = lerp(y - 40, y - h + 16, on);
       o += `<g opacity="${f3(Math.max(on, smooth(seg(tt, .6, 1.4)) * (1 - back)))}"><polygon points="${[0,1,2,3,4,5].map(i => { const a = Math.PI / 6 + i * Math.PI / 3; return f1(mx + 12 * Math.cos(a)) + "," + f1(my + 12 * Math.sin(a)); }).join(" ")}" fill="${TEAL}" stroke="#0a6e7a" stroke-width="1.5"/></g>`;
-      if (on < .9) o += `<text x="${f1(mx)}" y="${f1(my - 20)}" class="t12 mid" opacity="${f3(1 - on)}">Substrate molecule</text>`;
+      if (on < .3) o += `<text x="${f1(mx)}" y="${f1(my - 20)}" class="t12 mid" opacity="${f3(1 - on / .3)}">Substrate molecule</text>`;
       /* downstream binding site: folds into a hairpin that physically covers it as sh rises, so the ribosome can no longer dock there */
       const foldH = 44 * sh, foldW = 22;
       o += `<path d="M${bx - 30},${y} H${bx - foldW}" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round"/>`;
@@ -726,20 +727,26 @@
       /* prokaryote: wall + membrane, one compartment */
       let o = `<defs><pattern id="pgWall2" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#b9d3a6"/><path d="M0,5 H10 M5,0 V10" stroke="#7fa468" stroke-width="2"/></pattern></defs>`;
       o += `<text x="245" y="44" class="t18 mid">Prokaryote</text><text x="745" y="44" class="t18 mid">Eukaryote</text>`;
-      o += `<rect x="20" y="64" width="450" height="380" rx="120" fill="url(#pgWall2)" stroke="#5f8a4f" stroke-width="2"/><rect x="33" y="77" width="424" height="354" rx="108" fill="#f1f7ec" stroke="#c9a15a" stroke-width="3"/>`;
-      o += `<text x="245" y="110" class="t12 mid" style="fill:#4d7a3d">Cell wall + membrane, ONE compartment</text>`;
+      const pk = BA.capsule(245, 258, 218, 170, 0.03, 12);
+      o += BA.outline(BA.grow(pk, 12), "url(#pgWall2)", "#5f8a4f", 2) + BA.bilayer(pk, {fill:"#f1f7ec", head:"#c9a15a", tail:"#f4e8cc", gap:4, r:2.3, step:7.5}, "cmpP");
+      o += `<text x="245" y="112" class="t12 mid" style="fill:#4d7a3d">Cell wall + membrane,</text><text x="245" y="128" class="t12 mid" style="fill:#4d7a3d">ONE compartment</text>`;
       [["No nucleus, no splicing", 0], ["mRNA used right away", 1], ["Riboswitches", 2], ["Small RNAs (sRNAs)", 3]].forEach((r, i) => { o += chip(245, 160 + i * 66, 250, r[0], r[1], "#9cc28b"); });
       /* eukaryote: nucleus + cytoplasm */
-      o += `<rect x="500" y="64" width="485" height="380" rx="30" fill="#fbf9ff" stroke="#c9b9ee" stroke-width="3"/>`;
-      o += `<rect x="514" y="96" width="250" height="334" rx="40" fill="#efe7fb" stroke="#8e5bd0" stroke-width="3"/>`;
-      [210, 330].forEach(py => { o += `<rect x="756" y="${py - 12}" width="16" height="24" fill="#fbf9ff"/><path d="M756,${py - 12} h16 M756,${py + 12} h16" stroke="#8e5bd0" stroke-width="4" stroke-linecap="round"/>`; });
+      o += BA.bilayer(BA.blob(742, 254, 238, 188, 0.03, 17, 80, 0.6), {fill:"#fbf9ff", head:"#b9a6ee", tail:"#eee8fb", gap:4, r:2.3, step:7.5}, "cmpE");
+      const nk = BA.blob(639, 263, 122, 164, 0.02, 3, 72, 0.75), nko = BA.grow(nk, 6);
+      o += BA.outline(nko, "#efe7fb", "#8e5bd0", 2.6) + BA.outline(nk, "none", "#b9a6ee", 1.5);
+      [210, 330].forEach(py => {
+        let k = 0; nk.forEach((p, i) => { if (p[0] > 639 && Math.abs(p[1] - py) < Math.abs(nk[k][1] - py) || nk[k][0] <= 639) k = i; });
+        const mx = (nk[k][0] + nko[k][0]) / 2, my = (nk[k][1] + nko[k][1]) / 2;
+        o += `<circle cx="${f1(mx)}" cy="${f1(my)}" r="8" fill="#f6f2fd"/><path d="M${f1(mx)},${f1(my - 9)} v5 M${f1(mx)},${f1(my + 4)} v5" stroke="#8e5bd0" stroke-width="3.5" stroke-linecap="round"/>`;
+      });
       o += `<rect x="578" y="106" width="122" height="26" rx="13" fill="#8e5bd0"/><text x="639" y="124" class="t13 mid wht">Nucleus</text>`;
       o += `<rect x="810" y="106" width="130" height="26" rx="13" fill="#c4532f"/><text x="875" y="124" class="t13 mid wht">Cytoplasm</text>`;
       o += chip(639, 170, 222, "Introns spliced out", 0, "#b9a6ee") + chip(639, 236, 222, "5' cap + poly-A tail", 1, "#b9a6ee");
       o += `<path d="M700,300 H790" stroke="${ORANGE}" stroke-width="5" stroke-linecap="round" marker-end="url(#cmpA)"/><text x="639" y="305" class="t12 mid muted">then export</text>`;
       o += chip(875, 236, 190, "Riboswitches", 2, "#e8b89a") + chip(875, 302, 190, "microRNA + RISC", 3, "#e8b89a");
       o += `<defs><marker id="cmpA" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="${ORANGE}"/></marker></defs>`;
-      o += `<text x="745" y="410" class="t12 mid muted">Processing happens in the nucleus, before export</text>`;
+      o += `<text x="875" y="376" class="t12 mid muted">Processing happens in</text><text x="875" y="392" class="t12 mid muted">the nucleus, before export</text>`;
       o += `<text x="500" y="462" class="t13 mid muted">Riboswitches work in both. Splicing, caps, tails, and miRNA are eukaryote features.</text>`;
       return o;
     }

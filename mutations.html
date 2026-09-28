@@ -393,6 +393,7 @@
   </div>
 </div>
 
+<script src="bioart.js"></script>
 <script>
 (function(){
   const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -761,8 +762,8 @@
       const come = smooth(seg(tt, .8, 2)), mod = smooth(seg(tt, 2, 2.8)), s2 = smooth(seg(tt, 3.4, 4.4)), s3 = smooth(seg(tt, 5.4, 6.4)), v = smooth(seg(tt, 7, 7.6));
       let s = `<text x="500" y="52" class="t18 mid">A base-modifying agent (nitrous acid) turns A-T into G-C</text>`;
       s += `<defs><pattern id="analogHatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="${GOLD}"/><line x1="0" y1="0" x2="0" y2="8" stroke="#a8760f" stroke-width="3"/></pattern></defs>`;
-      s += `<rect x="895" y="66" width="34" height="34" rx="7" fill="url(#analogHatch)" stroke="#a8760f" stroke-width="2.5"/><text x="912" y="88" font-size="14" font-weight="700" fill="#3b2a00" text-anchor="middle">A*</text>`;
-      s += `<text x="912" y="118" class="t12 mid muted">Nucleoside analog:</text><text x="912" y="134" class="t12 mid muted">looks like a real base,</text><text x="912" y="150" class="t12 mid muted">but pairs incorrectly</text>`;
+      s += `<rect x="895" y="352" width="34" height="34" rx="7" fill="url(#analogHatch)" stroke="#a8760f" stroke-width="2.5"/><text x="912" y="374" font-size="14" font-weight="700" fill="#3b2a00" text-anchor="middle">A*</text>`;
+      s += `<text x="912" y="404" class="t12 mid muted">Nucleoside analog:</text><text x="912" y="420" class="t12 mid muted">looks like a real base,</text><text x="912" y="436" class="t12 mid muted">but pairs incorrectly</text>`;
       const X = [190, 500, 810];
       s += `<text x="${X[0]}" y="112" class="t15 mid">1. Normal pair</text>`;
       s += tile(X[0], 170, "A", 1, mod > .5 ? ORANGE : null);
@@ -793,21 +794,31 @@
       s += `<text x="120" y="176" class="t13 mid">UV</text>`;
       if (rays > 0 && rays < 1){
         for (let r = 0; r < 3; r++){
-          const p = (rays * 2 + r / 3) % 1, x = lerp(170, 440, p), y = lerp(130, 250, p);
+          const p = (rays * 2 + r / 3) % 1, x = lerp(170, 430, p), y = lerp(130, 222, p);
           s += `<path d="M${f1(x - 30)},${f1(y - 14)} l10,-6 l6,12 l10,-6 l6,12" fill="none" stroke="${PURPLE}" stroke-width="3" stroke-linecap="round" opacity="${f3(1 - p * .4)}"/>`;
         }
       }
-      s += `<path d="M230,296 H770" stroke="#9aa3b5" stroke-width="6" stroke-linecap="round"/>`;
+      /* double-stranded DNA: top strand (with the two thymines) over its complementary bottom strand */
+      const COMPB = {A:"T", T:"A", G:"C", C:"G"};
+      const xs = [], ys = [];
       for (let i = 0; i < seq.length; i++){
-        let x = 260 + i * 68;
-        const dim = i === 2 || i === 3;
-        if (dim) x += (i === 2 ? 1 : -1) * 5 * bond;
-        const y = dim ? 250 - 14 * bond : 250;
-        s += `<path d="M${f1(x)},${f1(y + 32)} L${260 + i * 68},296" stroke="#9aa3b5" stroke-width="3"/>`;
-        s += tile(x, y, seq[i], 1, dim && bond > .5 ? ORANGE : null);
+        let x = 260 + i * 68; const dim = i === 2 || i === 3;
+        if (dim) x += (i === 2 ? 1 : -1) * 6 * bond;
+        xs.push(x); ys.push(dim ? 232 - 30 * bond : 232);
       }
-      if (bond > 0) s += `<path d="M${f1(396 + 5 * bond + 15)},${f1(250 - 14 * bond + 10)} H${f1(464 - 5 * bond - 15)} M${f1(396 + 5 * bond + 15)},${f1(250 - 14 * bond + 20)} H${f1(464 - 5 * bond - 15)}" stroke="${ORANGE}" stroke-width="4" opacity="${f3(bond)}"/>`;
-      s += `<text x="430" y="200" class="t15 mid" opacity="${f3(bond)}">Thymine ${resolved("dimer") ? "dimer" : "?"} (a pyrimidine dimer)</text>`;
+      const topPts = [[212, 222]].concat(xs.map((x, i) => [x, ys[i] - 10])).concat([[788, 222]]);
+      s += `<path d="${window.BioArt.smoothOpen(topPts)}" fill="none" stroke="#5a6376" stroke-width="5" stroke-linecap="round"/>`;
+      s += `<path d="M212,352 H788" stroke="#5a6376" stroke-width="5" stroke-linecap="round"/>`;
+      s += `<text x="196" y="227" class="t13 end muted">5'</text><text x="804" y="227" class="t13 muted">3'</text><text x="196" y="357" class="t13 end muted">3'</text><text x="804" y="357" class="t13 muted">5'</text>`;
+      for (let i = 0; i < seq.length; i++){
+        const x0 = 260 + i * 68, dim = i === 2 || i === 3;
+        const nb = seq[i] === "G" || seq[i] === "C" ? 3 : 2, hop = dim ? 1 - bond : 1;
+        for (let k = 0; k < nb; k++){ const hx = x0 - 8 + k * (16 / (nb - 1)); s += `<path d="M${f1(hx)},274 V304" stroke="#9aa3b5" stroke-width="2" stroke-dasharray="3 3" opacity="${f3(hop)}"/>`; }
+        s += tile(x0, 312, COMPB[seq[i]], 1);
+        s += tile(xs[i], ys[i], seq[i], 1, dim && bond > .5 ? ORANGE : null);
+      }
+      if (bond > 0) s += `<path d="M${f1(xs[2] + 15)},${f1(ys[2] + 10)} H${f1(xs[3] - 15)} M${f1(xs[2] + 15)},${f1(ys[2] + 20)} H${f1(xs[3] - 15)}" stroke="${ORANGE}" stroke-width="4" opacity="${f3(bond)}"/>`;
+      s += `<text x="430" y="176" class="t15 mid" opacity="${f3(bond)}">Thymine ${resolved("dimer") ? "dimer" : "?"} (a pyrimidine dimer)</text>`;
       s += pill(560, 380, "The kink blocks replication until it's repaired", PURPLE, v);
       s += `<text x="560" y="430" class="t13 mid muted" opacity="${f3(v)}">Ionizing radiation works differently: it makes free radicals that attack DNA</text>`;
       return s;

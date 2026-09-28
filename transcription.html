@@ -236,6 +236,7 @@
   </div>
 </div>
 
+<script src="bioart.js"></script>
 <script>
 (function(){
   /* ---------- Sequence and layout ---------- */
@@ -605,7 +606,7 @@
     o += `<text x="${X(0)-26}" y="${f1(cTop(0)+18)}" class="prime">5'</text><text x="${X(N-1)+26}" y="${f1(cTop(N-1)+18)}" class="prime">3'</text>`;
     o += `<text x="${X(0)-26}" y="${f1(tTop(0)+18)}" class="prime">3'</text><text x="${X(N-1)+26}" y="${f1(tTop(N-1)+18)}" class="prime">5'</text>`;
     if (s.strand > 0.01){
-      o += `<g opacity="${f3(s.strand)}"><text x="${X(0)-12}" y="${f1(cTop(0)-10)}" class="slbl">Coding strand</text><text x="${X(0)-12}" y="${f1(tTop(0)+46)}" class="slbl tpl">${resolved("template") ? "Template" : "?"} strand</text></g>`;
+      o += `<g opacity="${f3(s.strand)}"><text x="${X(0)-12}" y="${f1(cTop(0)-10)}" class="slbl">Coding strand</text><text x="${X(0)-12}" y="${f1(tTop(0)+80)}" class="slbl tpl">${resolved("template") ? "Template" : "?"} strand</text></g>`;
     }
     // RNA (drawn between the strands so it passes behind the coding strand)
     let rn = "";
@@ -654,15 +655,22 @@
     return o;
   }
 
+  const BA = window.BioArt;
+  const BACT_CELL = BA.capsule(500, 240, 448, 188, 0.03, 4);
+  const EUK_CELL = BA.blob(500, 236, 474, 208, 0.03, 29, 96, 0.55);
+  const NUC = BA.blob(290, 240, 232, 172, 0.02, 9, 90), NUC_O = BA.grow(NUC, 8);
+  const RIB_L = BA.smoothClosed(BA.blob(0, 0, 25, 17, 0.08, 3, 16)), RIB_S = BA.smoothClosed(BA.blob(0, 0, 21, 8, 0.08, 6, 14));
+  const ribL = (x, y, fill) => `<path d="${RIB_L}" transform="translate(${f1(x)} ${f1(y)})" fill="${fill || "#c97b4a"}"/>`;
+  const ribS = (x, y, fill) => `<path d="${RIB_S}" transform="translate(${f1(x)} ${f1(y)})" fill="${fill || "#e3a877"}"/>`;
   function bactSVG(t){
     const T = 12, tt = t % T, first = t < T;
     const A = Math.min(tt > 11.2 ? clamp((12 - tt) / 0.8, 0, 1) : 1, (!first && tt < 0.4) ? tt / 0.4 : 1);
     const px = 190 + seg(tt, 0.3, 8.3) * 640;
-    let o = `<rect x="50" y="45" width="900" height="390" rx="160" fill="#f1f7ec" stroke="#6f9a5f" stroke-width="6"/><rect x="61" y="56" width="878" height="368" rx="150" fill="none" stroke="#b5d3a8" stroke-width="2"/>`;
+    let o = `<defs><pattern id="pgT" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#c6dcb5"/><path d="M0,6 H12 M6,0 V12" stroke="#93b57d" stroke-width="1.6"/></pattern></defs>`;
+    o += BA.outline(BA.grow(BACT_CELL, 13), "url(#pgT)", "#5f8a4f", 2.5) + BA.bilayer(BACT_CELL, {fill:"#f1f7ec", head:"#c9a15a", tail:"#f4e8cc"}, "txB");
     o += `<text x="500" y="98" class="cap">Bacterial cell: no nucleus</text>`;
     o += `<text x="800" y="152" class="region bac">${resolved("cytoplasm") ? "Cytoplasm" : "?"}</text>`;
-    let r = ""; for (let x = 156; x < 850; x += 12) r += `M${x},340V356`;
-    o += `<path d="${r}" stroke="#9aa3b5" stroke-width="2"/><path d="M150,340H850M150,356H850" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/><text x="150" y="386" class="small">DNA</text>`;
+    o += BA.helix(150, 850, 348, {amp:9, per:40}) + `<text x="150" y="386" class="small">DNA</text>`;
     let g = "";
     if (px > 212){
       const hx = Math.max(px - 60, 190);
@@ -684,7 +692,7 @@
         const n = clamp(Math.floor((rb.rx - 208) / 16) + 1, 1, 9);
         let beads = "";
         for (let j = 0; j < n; j++) beads += `<circle cx="${f1(rb.rx + (j % 2 ? 6 : -6) - j * 2)}" cy="${214 - j * 11}" r="5" fill="${BEAD[j % 5]}"/>`;
-        g += `<g opacity="${f3(sc)}">${sc > 0.6 ? beads : ""}<ellipse cx="${f1(rb.rx)}" cy="${f1(205 + 31 * sc)}" rx="25" ry="17" fill="#c97b4a"/><ellipse cx="${f1(rb.rx)}" cy="${f1(292 - 29 * sc)}" rx="21" ry="8" fill="#e3a877"/></g>`;
+        g += `<g opacity="${f3(sc)}">${sc > 0.6 ? beads : ""}${ribL(rb.rx, 205 + 31 * sc)}${ribS(rb.rx, 292 - 29 * sc)}</g>`;
         if (k === 0){
           g += `<text x="${f1(rb.rx)}" y="294" class="small mid" opacity="${f3(sc)}">Ribosome</text>`;
           if (n >= 3) g += `<text x="${f1(rb.rx + 16)}" y="${214 - (n - 1) * 11 + 4}" class="small">Polypeptide</text>`;
@@ -709,14 +717,15 @@
     const ym = 300 - 95 * lift + 35 * drop, ox = 470 * slide;
     const xv = tt < 2.9 ? px - 22 : 1e9;
 
-    let o = `<rect x="25" y="25" width="950" height="420" rx="36" fill="#f7f5fb" stroke="#8f7fb0" stroke-width="5"/>`;
+    let o = BA.bilayer(EUK_CELL, {fill:"#f7f5fb", head:"#b3a3d6", tail:"#ece6f6"}, "txE");
     o += `<text x="770" y="92" class="region">Cytoplasm</text>`;
-    const cx = 290, cy = 240, rx = 235, ry = 175;
-    const arc = (ax, ay) => { const a1 = 7 * Math.PI / 180; const x1 = cx + ax * Math.cos(a1), y1 = cy + ay * Math.sin(a1), y2 = cy - ay * Math.sin(a1); return `M${f1(x1)},${f1(y1)} A${ax},${ay} 0 1 1 ${f1(x1)},${f1(y2)}`; };
-    o += `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#ebe4f5"/><path d="${arc(rx, ry)}" fill="none" stroke="#7e6aa8" stroke-width="4"/><path d="${arc(rx - 9, ry - 9)}" fill="none" stroke="#7e6aa8" stroke-width="2"/>`;
-    o += `<text x="${cx}" y="98" class="region">${resolved("nucleus") ? "Nucleus" : "?"}</text><text x="532" y="292" class="small">Nuclear pore</text>`;
-    let r = ""; for (let x = 126; x < 460; x += 12) r += `M${x},340V354`;
-    o += `<path d="${r}" stroke="#9aa3b5" stroke-width="2"/><path d="M120,340H460M120,354H460" stroke="#0f766e" stroke-width="4" stroke-linecap="round"/><text x="468" y="351" class="small">DNA</text>`;
+    const cx = 290, cy = 240;
+    /* nucleus: double membrane, with a pore on the right where the mature mRNA exits */
+    o += BA.outline(NUC_O, "#ebe4f5", "#7e6aa8", 3.5) + BA.outline(NUC, "none", "#a898c8", 1.8);
+    const pk = 0, pgx = (NUC[pk][0] + NUC_O[pk][0]) / 2, pgy = (NUC[pk][1] + NUC_O[pk][1]) / 2;
+    o += `<rect x="${f1(pgx - 9)}" y="${f1(pgy - 13)}" width="18" height="26" fill="#f7f5fb"/><path d="M${f1(pgx - 8)},${f1(pgy - 13)} h16 M${f1(pgx - 8)},${f1(pgy + 13)} h16" stroke="#7e6aa8" stroke-width="3.5" stroke-linecap="round"/>`;
+    o += `<text x="${cx}" y="98" class="region">${resolved("nucleus") ? "Nucleus" : "?"}</text>`;
+    o += BA.helix(120, 460, 347, {amp:8, per:36}) + `<text x="120" y="328" class="small">DNA</text>`;
 
     const SEGS = [
       {x1:125, x2:200, e:true, sh:0,    c:162.5},
@@ -756,7 +765,7 @@
     [162.5, 285, 407.5].forEach(x => { m += L(x, ym + 28, "Exon", win(tt, 3.6, 6.3)); });
     [227.5, 342.5].forEach(x => { m += L(x, ym + 28, resolved("introns") ? "Intron" : "?", win(tt, 3.6, 6.3)); });
     m += L(250 + ox, ym + 34, "Mature mRNA", win(tt, 7.4, 14.2));
-    if (rib > 0) m += `<g opacity="${f3(rib)}"><ellipse cx="650" cy="${f1(lerp(170, 222, rib))}" rx="30" ry="20" fill="#c97b4a"/><ellipse cx="650" cy="${f1(lerp(310, 252, rib))}" rx="26" ry="9" fill="#e3a877"/></g>`;
+    if (rib > 0) m += `<g opacity="${f3(rib)}"><path d="${RIB_L}" transform="translate(650 ${f1(lerp(170, 222, rib))}) scale(1.2)" fill="#c97b4a"/><path d="${RIB_S}" transform="translate(650 ${f1(lerp(310, 252, rib))}) scale(1.2)" fill="#e3a877"/></g>`;
     m += L(650, 188, "Ribosome", win(tt, 10.2, 14.2));
 
     o += `<g opacity="${f3(A)}">${m}</g>`;
