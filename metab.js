@@ -119,7 +119,7 @@
       <header><div><a class="backlink" href="index.html">All modules</a><h1>${cfg.title}<span class="chap">Chapter 5</span></h1></div>
         <div class="controls"><div class="seg" role="group" aria-label="Mode"><button id="learnBtn" aria-pressed="true">Learn</button><button id="testBtn" aria-pressed="false">Test</button></div><button class="ghost" id="restartBtn">Restart</button></div></header>
       <p class="modehint" id="modeHint"></p>
-      <div class="stage"><svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="${cfg.title} diagram"></svg></div>
+      <div class="stage"><svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="${cfg.title} diagram"></svg><div class="stagelay" id="stageLay"></div></div>
       <div class="tablewrap" id="tableWrap" hidden></div>
       <section class="bubble" id="bubble" aria-live="polite">
         <div class="stepno" id="stepNo"></div><div class="title" id="stepTitle"></div>
@@ -176,7 +176,7 @@
       g.dataset.step = idx;
       const i0 = idx;
       G.wire(g, S, {pass:() => { if (idx !== i0) return; gates[i0] = true; renderGate(); if (stepResolved(idx)) resolvedNow(); else updateButtons(); },
-        msg:gateMsg, redraw:() => { if (idx === i0) renderGate(); }, A, dragify});
+        msg:gateMsg, redraw:() => { if (idx === i0) renderGate(); }, A, dragify, svg});
     }
 
     /* ---- UI ---- */
@@ -235,6 +235,9 @@
       if (changed) sceneT = 0;
       frozen = !res;
       $("gate").dataset.step = "";
+      /* per-step extras: interactive SVG handlers are cleared, and an optional HTML overlay sits on the stage */
+      svg.onpointerdown = svg.onpointermove = svg.onpointerup = svg.onpointercancel = null; svg.style.cursor = ""; svg.style.touchAction = "";
+      $("stageLay").innerHTML = STEPS[i].stageHTML || "";
       renderBubble(); renderNav(); renderTable(); renderGate(); render();
     }
     const goTo = i => enterStep(clamp(i, 0, LAST));
@@ -312,6 +315,8 @@
       if (e.key === "ArrowLeft" && idx > 0) goTo(idx - 1);
     });
     setMode("learn");
+    const hs = /^#step-(\d+)$/.exec(location.hash || "");
+    if (hs) goTo(+hs[1] - 1);
     requestAnimationFrame(frame);
     window.__m = {goTo, check, moveOn, setMode, get idx(){ return idx; }, STEPS, gates, gstate, pass:() => { gates[idx] = true; renderGate(); resolvedNow(); }};
   }
