@@ -298,10 +298,10 @@
   /* lagging strand: fork stops at A1, A2, A3; one Okazaki fragment per stop */
   const A1 = 12, A2 = 20, A3 = 28;
   S[7] = {...S[6], a:A1, leadOn:1};
-  const LAG = n => ({...S[7], a:[A1, A1, A2, A2, A3, A3, A3][n], lagOn:1, lagStep:n});
+  const LAG = n => ({...S[7], a:[A1, A1, A2, A2, A3, A3, A3, A3][n], lagOn:1, lagStep:n});
   S[8] = LAG(1); S[81] = LAG(2); S[82] = LAG(3); S[83] = LAG(4);
   S[9] = LAG(5);
-  S[10] = LAG(6);
+  S[10] = LAG(7);
   S[11] = {...S[10], gene:0, origins:1};
   S[12] = {...S[10], lagStep:6};
 
@@ -326,14 +326,14 @@
      text:`DNA polymerase can't start a new strand from scratch, so {{primase}} lays down a short RNA primer once, right at the fork. From there, DNA polymerase builds the new strand continuously, adding nucleotides 5' to 3' as it chases the fork down the template.`},
     {title:"The lagging strand: building backward", state:S[8], more:"laggingDetail",
      text:`Now look at the top template strand. Its new partner also has to be built 5' to 3', but on this side that means working <b>away</b> from the fork. Primase lays down an RNA primer near the fork, and DNA polymerase builds backward from it, until it runs into the far end of the replication bubble. Stuck!`},
-    {title:"Falling off, finding a new primer", state:S[81], more:"laggingDetail",
-     text:`DNA polymerase can't go any farther, so it falls off the DNA. Meanwhile, helicase keeps unzipping, exposing more of the top template. Primase adds a new RNA primer near the fork, and DNA polymerase finds it and hops on.`},
-    {title:"Building the next fragment", state:S[82], more:"laggingDetail",
-     text:`DNA polymerase builds backward again, until it bumps into the piece it made before and gets stuck again. Each of these short pieces of new DNA is one of the {{okazaki}}.`},
-    {title:"Again and again", state:S[83], more:"laggingDetail",
-     text:`The cycle repeats as the fork moves: fall off, find the next primer, build backward, get stuck. That's why the lagging strand is made in pieces, while the leading strand below is built in one continuous strand.`},
-    {title:"Sealing the gaps", state:S[9], more:"ligaseDetail",
-     text:`Once the fork finishes, each RNA primer on the lagging strand is chewed out and replaced with DNA, leaving a small nick between neighboring fragments. {{ligase}} seals each nick, joining every fragment into one continuous new strand.`},
+    {title:"Falling off, finding a new primer", state:S[81], more:"laggingDetail", gate:"lagFind", live:true,
+     text:`DNA polymerase can't go any farther, so it falls off the DNA. Meanwhile, helicase keeps unzipping, exposing more of the top template, and primase adds a new RNA primer near the fork. Your turn: drag DNA polymerase onto the new primer!`},
+    {title:"Building the next fragment", state:S[82], more:"laggingDetail", gate:"lagBuild", live:true,
+     text:`Now drag DNA polymerase to the left to build the new strand backward, away from the fork, until it bumps into the piece it made before. Each of these short pieces of new DNA is one of the {{okazaki}}.`},
+    {title:"Again and again", state:S[83], more:"laggingDetail", gate:"lagAgain", live:true,
+     text:`The cycle repeats as the fork moves: fall off, find the next primer, build backward, get stuck. You do it this time: drag DNA polymerase to the newest primer, then drag it left to build the fragment. That's why the lagging strand is made in pieces, while the leading strand below is one continuous strand.`},
+    {title:"Sealing the gaps", state:S[9], more:"ligaseDetail", gate:"lagSeal", live:true,
+     text:`The RNA primers can't stay. A second DNA polymerase (DNA polymerase I in bacteria) chews out each RNA primer and fills the space with DNA. That leaves a small nick in the backbone between neighboring fragments. {{ligase}} seals each nick, joining every fragment into one continuous new strand. Click each gap on the diagram to send in ligase!`},
     {title:"Leading vs. lagging, side by side", state:S[10],
      text:`Both new strands are built by the same DNA polymerase enzyme, reading a template 3' to 5' and building 5' to 3', but the fork's direction makes the two jobs look completely different.<div class="cmpwrap"><div class="cmpbox" style="background:#e1f3e8;border:2px solid #1b7f4e"><b style="color:#1b7f4e">Leading strand</b><br>Built continuously, in one long piece, chasing the fork. Needs only <b>one</b> RNA primer, right at the start.</div><div class="cmpbox" style="background:#fbe8e7;border:2px solid #b83a34"><b style="color:#b83a34">Lagging strand</b><br>Built in short, separate Okazaki fragments, moving away from the fork. Needs a <b>new</b> primer for every fragment, later removed and sealed by ligase.</div></div>`},
     {title:"How many origins?", state:S[11], more:"originsCompare",
@@ -412,7 +412,18 @@
       <div class="msbeaker heavy" data-beaker="heavy"><svg width="110" height="120" viewBox="0 0 110 120" aria-hidden="true">${flask(55, 114, 90, HEAVY, {cells:dishIn === "heavy", id:"gateFlH"})}</svg><span class="mblbl">Heavy nitrogen (¹⁵N)</span>${dishIn === "heavy" ? dishHtml : ""}</div>
       <div class="msbeaker light" data-beaker="light"><svg width="110" height="120" viewBox="0 0 110 120" aria-hidden="true">${flask(55, 114, 90, LIGHTN, {cells:dishIn === "light", id:"gateFlL"})}</svg><span class="mblbl">Light nitrogen (¹⁴N)</span>${dishIn === "light" ? dishHtml : ""}</div>
     </div>`;
+  const lagGate = (title, doneText, lines) => ({title, doneText, html:() => `<div style="font-size:.95rem">${lines}</div>`, wire:() => {}});
+  function finishLI(g){
+    if (g === "lagFind") LI.found = true;
+    if (g === "lagBuild"){ LI.fill = FRAGS[1].L; LI.done = true; }
+    if (g === "lagAgain"){ LI.found = true; LI.fill = FRAGS[2].L; LI.done = true; }
+    if (g === "lagSeal"){ LI.sealed = {1:0, 2:0}; }
+  }
   const GATES = {
+    lagFind:lagGate("Your turn: find the new primer", "DNA polymerase found the new primer!", "☝ In the diagram above, drag <b>DNA polymerase</b> onto the new purple RNA primer near the fork."),
+    lagBuild:lagGate("Your turn: build the next fragment", "You built Okazaki fragment 2!", "☝ Drag <b>DNA polymerase</b> to the left along the top strand. Watch new DNA appear behind it!"),
+    lagAgain:lagGate("Your turn: one more cycle", "You built Okazaki fragment 3!", "☝ First drag <b>DNA polymerase</b> onto the newest primer, then drag it left to build the fragment."),
+    lagSeal:lagGate("Your turn: be DNA ligase", "Every nick sealed: one continuous strand!", "☝ Click each small gap (nick) between the Okazaki fragments in the diagram."),
     incubateHeavy:{
       title:"Grow the starting culture in heavy nitrogen",
       doneText:"Starting culture ready: fully heavy (¹⁵N) DNA on both strands.",
@@ -573,10 +584,32 @@
      falling off, finding the next primer, and finally ligase sealing the nicks. */
   const FRAGS = [{pl:A1 - 3, pr:A1 - 1, L:0}, {pl:A2 - 3, pr:A2 - 1, L:A1}, {pl:A3 - 3, pr:A3 - 1, L:A2}];
   const sg = (t, a, b) => smooth(clamp((t - a) / (b - a), 0, 1));
+  /* Student interaction on the lagging-strand steps (drag DNA polymerase, click nicks) */
+  let LI = {};
+  const resetLI = () => { LI = {found:false, fill:null, done:false, drag:null, sealed:{}, cele:null, polC:null}; };
+  resetLI();
   function lagFrame(step, t, aState){
     /* returns what to draw on the lagging side at time t (seconds) of a given lagging step */
-    const f = {a:aState, frags:[], pol:null, primase:null, ligase:null, pDNA:0, sealed:0, msg:null, build:false};
+    const f = {a:aState, frags:[], pol:null, primase:null, ligase:null, pDNA:0, msg:null, build:false, target:null, hint:null, nicks:[], ligs:[], sealAll:false, snapshot:false};
     const frag = (k, fill, primerOp) => f.frags.push({...FRAGS[k], fill, primerOp});
+    /* shared: DNA polymerase waiting to be dragged to a primer, then dragged along to build */
+    const findThenBuild = (k, restX, readyAt) => {
+      if (!LI.found){
+        const off = sg(t, .3, 1.2);
+        if (LI.drag) f.pol = {abs:{x:LI.drag.x, y:LI.drag.y}, op:1};
+        else f.pol = {x:restX, lift:off * 34, op:t > readyAt ? 1 : lerp(1, .45, off)};
+        if (t > readyAt){ f.target = {x:FRAGS[k].pl}; if (!LI.drag) f.hint = "Drag DNA polymerase to the new primer!"; }
+        return false;
+      }
+      return true;
+    };
+    const buildPhase = k => {
+      const fill = LI.fill === null ? FRAGS[k].pl : LI.fill;
+      f.frags[k] = {...FRAGS[k], fill, primerOp:1};
+      f.pol = {x:fill, lift:0, op:1, drag:!LI.done};
+      if (!LI.done){ f.build = true; f.hint = "Drag DNA polymerase left to build!"; }
+      else f.msg = k === 1 ? "Stuck again! It bumped into the last fragment" : "Stuck again!";
+    };
     if (step === 1){
       f.primase = {x:FRAGS[0].pr, op:sg(t, .2, .8) * (1 - sg(t, 1.9, 2.4))};
       frag(0, lerp(FRAGS[0].pl, 0, sg(t, 2.6, 6.2)), sg(t, .8, 1.6));
@@ -587,39 +620,69 @@
       frag(0, 0, 1);
       f.primase = {x:FRAGS[1].pr, op:sg(t, 3.4, 3.9) * (1 - sg(t, 5.0, 5.4))};
       if (t > 3.4) frag(1, FRAGS[1].pl, sg(t, 3.9, 4.7));
-      const off = sg(t, .3, 1.3), land = sg(t, 5.2, 6.6);
-      f.pol = {x:lerp(0, FRAGS[1].pl, land), lift:(off * (1 - land)) * 34, op:lerp(1, .45, off * (1 - land))};
-      if (t > .3 && t < 2.4) f.msg = "DNA polymerase falls off";
-      if (t > 5.2) f.msg = "It finds the new primer";
+      if (findThenBuild(1, 0, 5.0)){ f.pol = {x:FRAGS[1].pl, lift:0, op:1}; f.msg = "It found the new primer!"; }
+      else if (t > .3 && t < 2.4) f.msg = "DNA polymerase falls off";
     } else if (step === 3){
-      frag(0, 0, 1); frag(1, lerp(FRAGS[1].pl, FRAGS[1].L, sg(t, .6, 4.0)), 1);
-      f.pol = {x:f.frags[1].fill, lift:0, op:1};
-      f.build = t > .6 && t < 4.0; if (t > 4.2) f.msg = "Stuck again! It bumped into the last fragment";
+      frag(0, 0, 1); frag(1, FRAGS[1].pl, 1);
+      buildPhase(1);
     } else if (step === 4){
       f.a = lerp(A2, A3, sg(t, 1.3, 3.1));
       frag(0, 0, 1); frag(1, FRAGS[1].L, 1);
       f.primase = {x:FRAGS[2].pr, op:sg(t, 3.1, 3.6) * (1 - sg(t, 4.3, 4.7))};
-      if (t > 3.1) frag(2, lerp(FRAGS[2].pl, FRAGS[2].L, sg(t, 6.0, 8.6)), sg(t, 3.6, 4.3));
-      const off = sg(t, .3, 1.2), land = sg(t, 4.5, 5.7);
-      f.pol = {x:t < 4.5 ? FRAGS[1].L : (t < 6 ? lerp(FRAGS[1].L, FRAGS[2].pl, land) : f.frags[2].fill), lift:off * (1 - land) * 34, op:lerp(1, .45, off * (1 - land))};
-      f.build = t > 6 && t < 8.6;
-      if (t > .3 && t < 2.2) f.msg = "Falls off again";
-      else if (t > 4.5 && t < 6) f.msg = "Finds the next primer";
-      else if (t > 8.8) f.msg = "Stuck again";
+      if (t > 3.1) frag(2, FRAGS[2].pl, sg(t, 3.6, 4.3));
+      if (findThenBuild(2, FRAGS[1].L, 4.4)) buildPhase(2);
+      else if (t > .3 && t < 2.2) f.msg = "Falls off again";
     } else if (step === 5){
       frag(0, 0, 1); frag(1, FRAGS[1].L, 1); frag(2, FRAGS[2].L, 1);
       const off = sg(t, .2, 1.0);
       f.pol = {x:FRAGS[2].L, lift:off * 34, op:1 - off};
       f.pDNA = sg(t, 1.2, 2.6);
-      f.ligase = {x:lerp(-1, A3 - 1, sg(t, 3.0, 6.5)), op:sg(t, 2.8, 3.2) * (1 - sg(t, 6.8, 7.3))};
-      f.sealed = f.ligase.x;
-      if (t > 1.2 && t < 2.9) f.msg = "RNA primers are swapped for DNA";
-      if (t > 6.8) f.msg = "One continuous strand!";
+      if (t > 1.2 && t < 2.9) f.msg = "DNA polymerase swaps each RNA primer for DNA";
+      const ready = t > 2.9;
+      [1, 2].forEach(k => {
+        const st = LI.sealed[k];
+        if (st === undefined) f.nicks.push({k, x:FRAGS[k].L, ask:ready});
+        else { const age = (performance.now() - st) / 1000; if (age < 1.6) f.ligs.push({x:FRAGS[k].L, age}); if (age < .9) f.nicks.push({k, x:FRAGS[k].L, ask:false, closing:age / .9}); }
+      });
+      if (ready && Object.keys(LI.sealed).length < 2) f.hint = "Click each gap where DNA ligase should seal the strand";
+      if (Object.keys(LI.sealed).length === 2) f.msg = "One continuous strand!";
     } else if (step === 6){
-      FRAGS.forEach((fr, k) => { if (aState >= fr.pr + 1) frag(k, fr.L, 1); });
-      f.pDNA = 1; f.sealed = 99;
+      /* slider: each fragment starts with a primer at the fork and is built backward, then everything is sealed at the end */
+      const AK = [A1, A2, A3];
+      FRAGS.forEach((fr, k) => {
+        if (aState < AK[k]) return;
+        const q = clamp((aState - AK[k]) / 1.6, 0, 1);
+        frag(k, lerp(fr.pl, fr.L, q), clamp((aState - AK[k]) / .4, 0, 1));
+        if (q < 1){ f.pol = {x:lerp(fr.pl, fr.L, q), lift:0, op:1}; f.build = true; }
+        if (aState - AK[k] < .5) f.primase = {x:fr.pr, op:1};
+      });
+      const seal = clamp((aState - (END - .3)) / .3, 0, 1);
+      f.pDNA = seal; f.sealAll = seal > .9;
+      if (seal > 0){ f.ligase = {x:FRAGS[1].L, op:seal}; f.msg = "Primers replaced with DNA, and ligase seals the gaps"; }
+    } else if (step === 7){
+      /* snapshot for the side-by-side comparison */
+      frag(0, 0, 1); frag(1, FRAGS[1].L, 1); frag(2, lerp(FRAGS[2].pl, FRAGS[2].L, .5), 1);
+      f.pol = {x:f.frags[2].fill, lift:0, op:1}; f.build = true; f.snapshot = true;
+      f.primase = {x:A3, op:1};
+      f.msg = "Lagging strand: many primers, built in pieces, away from the fork";
     }
     return f;
+  }
+  /* celebration: confetti burst + banner */
+  function celebrate(x, y, text){ LI.cele = {x, y, text, t0:performance.now()}; }
+  function confettiSVG(){
+    const c = LI.cele; if (!c) return "";
+    const age = (performance.now() - c.t0) / 1000; if (age > 2.6) return "";
+    const cols = ["#f2b134", "#2f9e63", "#3b7dd8", "#e05a8a", "#8e5bd0", "#e8744f"];
+    let o = "";
+    if (age < 1.6) for (let i = 0; i < 28; i++){
+      const a = i / 28 * Math.PI * 2 + (i % 3) * .2, sp = 90 + (i * 37 % 60), px = c.x + Math.cos(a) * sp * age, py = c.y + Math.sin(a) * sp * age + 120 * age * age;
+      o += `<rect x="${f1(px - 4)}" y="${f1(py - 2)}" width="8" height="4" rx="1" fill="${cols[i % cols.length]}" transform="rotate(${f1(i * 40 + age * 400)} ${f1(px)} ${f1(py)})" opacity="${f3(1 - age / 1.6)}"/>`;
+    }
+    const op = smooth(clamp(age / .25, 0, 1)) * (1 - smooth(clamp((age - 2.1) / .5, 0, 1))), sc = 1 + .15 * Math.max(0, 1 - age / .3);
+    const w = c.text.length * 9.4 + 70;
+    o += `<g opacity="${f3(op)}" transform="translate(500 34) scale(${f3(sc)})"><rect x="${f1(-w / 2)}" y="-22" width="${f1(w)}" height="44" rx="22" fill="#1b7f4e" stroke="#fff" stroke-width="3"/><text x="0" y="7" font-size="18" font-weight="800" fill="#fff" text-anchor="middle">🎉 ${c.text}</text></g>`;
+    return o;
   }
   function primerTile(x, y, b, op){
     const rb = b === "T" ? "U" : b;
@@ -661,6 +724,11 @@
         else o += tile(X(i), newLeadY(i), CODING[i], s.leadOn);
       }
       if (a < END - 0.1 && !(lag && lag.pDNA > .5)) o += enzymeIcon(X(lim), newLeadY(lim) + 4, "#2f9e63", "#1b7f4e", "DNA polymerase", s.leadOn);
+      if (lag && lag.snapshot){
+        const ly = newLeadY(lim) + 17;
+        o += `<path d="M${f1(X(lim) + 36)},${f1(ly)} h40" stroke="#1b7f4e" stroke-width="3" marker-end="url(#dhG)"/><text x="${f1(X(lim) + 58)}" y="${f1(ly - 10)}" class="small mid" fill="#1b7f4e">toward the fork</text>`;
+        o += `<rect x="250" y="438" width="500" height="28" rx="14" fill="#1b7f4e"/><text x="500" y="457" font-size="14.5" font-weight="800" fill="#fff" text-anchor="middle">Leading strand: one primer, built in one piece, toward the fork</text>`;
+      }
     }
 
     // lagging strand
@@ -673,22 +741,51 @@
         for (let i = dnaFrom; i <= dnaTo; i++) o += tile(X(i), newLagY(i), comp(CODING[i]));
         for (let i = fr.pl; i <= fr.pr; i++) o += primerTile(X(i), newLagY(i), comp(CODING[i]), fr.primerOp * (1 - lag.pDNA)) + tile(X(i), newLagY(i), comp(CODING[i]), fr.primerOp * lag.pDNA);
         /* nick between this fragment and the one to its left, until ligase seals it */
-        if (k > 0 && fr.fill <= fr.L + 0.01 && lag.sealed < fr.L){
+        if (k > 0 && fr.fill <= fr.L + 0.01 && Math.round(s.lagStep) !== 5 && !lag.sealAll){
           o += `<circle cx="${f1(X(fr.L) - DX / 2)}" cy="${f1(newLagY(fr.L) - 8)}" r="7" fill="#fff" stroke="#e8744f" stroke-width="3"/>`;
         }
-        if (lag.pDNA < .5 && !lag.build && fr.fill <= fr.L + 0.01 && [3, 4].includes(Math.round(s.lagStep))){
+        if (lag.pDNA < .5 && (!lag.build || lag.snapshot) && fr.fill <= fr.L + 0.01 && [3, 4, 7].includes(Math.round(s.lagStep))){
           const x1 = X(fr.L) - 10, x2 = X(fr.pr) + 10, y = Math.min(newLagY(fr.L), newLagY(fr.pr)) - 10;
           o += `<path d="M${x1},${y + 6} v-6 H${x2} v6" fill="none" stroke="#b86b4b" stroke-width="1.8"/><text x="${f1((x1 + x2) / 2)}" y="${y - 6}" class="small mid" fill="#8a4a24">Okazaki fragment ${k + 1}</text>`;
         }
       });
       if (lag.primase && lag.primase.op > .01) o += enzymeIcon(X(lag.primase.x), newLagY(lag.primase.x) - 34, "#8e5bd0", "#5b3fb0", "Primase", lag.primase.op);
+      const pulse = .5 + .5 * Math.sin(performance.now() / 180);
+      /* drop target on the new primer */
+      if (lag.target){
+        const tx = X(lag.target.x) - 10, ty = newLagY(lag.target.x) - 21;
+        o += `<circle cx="${f1(tx)}" cy="${f1(ty)}" r="${f1(34 + 4 * pulse)}" fill="#2f9e63" fill-opacity=".10" stroke="#2f9e63" stroke-width="3" stroke-dasharray="7 6"/><text x="${f1(tx)}" y="${f1(ty - 44)}" class="small mid" fill="#1b7f4e">drop here</text>`;
+      }
+      LI.polC = null;
       if (lag.pol && lag.pol.op > .01){
-        const px = lag.pol.x, py = newLagY(Math.max(0, px)) - 34 - lag.pol.lift;
-        o += enzymeIcon(X(px) - 10, py, "#2f9e63", "#1b7f4e", "DNA polymerase", lag.pol.op);
-        if (lag.build) o += `<path d="M${f1(X(px) - 46)},${f1(py + 13)} h-40" stroke="#1b7f4e" stroke-width="3" marker-end="url(#dhG)"/><text x="${f1(X(px) - 70)}" y="${f1(py + 2)}" class="small mid" fill="#1b7f4e">builds this way</text>`;
+        let cx, cy;
+        if (lag.pol.abs){ cx = lag.pol.abs.x; cy = lag.pol.abs.y - 13; }
+        else { cx = X(lag.pol.x) - 10; cy = newLagY(Math.max(0, lag.pol.x)) - 34 - lag.pol.lift; }
+        const grab = !!(lag.target || lag.pol.drag);
+        if (grab) o += `<ellipse cx="${f1(cx)}" cy="${f1(cy + 13)}" rx="${f1(40 + 5 * pulse)}" ry="${f1(33 + 4 * pulse)}" fill="none" stroke="#f2b134" stroke-width="3" opacity="${f3(.5 + .4 * pulse)}"/>`;
+        o += enzymeIcon(cx, cy, "#2f9e63", "#1b7f4e", "DNA polymerase", lag.pol.op);
+        if (grab) LI.polC = {x:cx, y:cy + 13};
+        if (lag.build) o += `<path d="M${f1(cx - 36)},${f1(cy + 13)} h-40" stroke="#1b7f4e" stroke-width="3" marker-end="url(#dhG)"/><text x="${f1(cx - 60)}" y="${f1(cy + 2)}" class="small mid" fill="#1b7f4e">builds this way</text>`;
+      }
+      /* nicks to click (sealing step) and ligase sealing them */
+      lag.nicks.forEach(n => {
+        const nx = X(n.x) - DX / 2, ny = newLagY(n.x) - 8;
+        if (n.ask) o += `<circle cx="${f1(nx)}" cy="${f1(ny)}" r="${f1(20 + 4 * pulse)}" fill="#e05a8a" fill-opacity=".12" stroke="#e05a8a" stroke-width="3" stroke-dasharray="5 5"/>`;
+        o += `<circle cx="${f1(nx)}" cy="${f1(ny)}" r="${f1(7 * (1 - (n.closing || 0)))}" fill="#fff" stroke="#e8744f" stroke-width="3"/>`;
+      });
+      lag.ligs.forEach(l => {
+        const nx = X(l.x) - DX / 2, ny = newLagY(l.x) - 8, drop = smooth(clamp(l.age / .5, 0, 1)), op = 1 - smooth(clamp((l.age - 1.1) / .5, 0, 1));
+        o += enzymeIcon(nx, lerp(ny - 120, ny - 44, drop), "#e05a8a", "#a3305d", "DNA ligase", op);
+        if (l.age > .5 && l.age < 1.2){ const k = Math.sin(Math.PI * (l.age - .5) / .7); for (let q = 0; q < 8; q++){ const ang = q * Math.PI / 4; o += `<path d="M${f1(nx + 10 * Math.cos(ang))},${f1(ny + 10 * Math.sin(ang))} L${f1(nx + (10 + 14 * k) * Math.cos(ang))},${f1(ny + (10 + 14 * k) * Math.sin(ang))}" stroke="#f2b134" stroke-width="3" stroke-linecap="round"/>`; } }
+      });
+      const celeOn = LI.cele && (performance.now() - LI.cele.t0) < 2600;
+      if (lag.hint && !celeOn){
+        const w = lag.hint.length * 8 + 34;
+        const hx = clamp(660, w / 2 + 10, 990 - w / 2);
+        o += `<g opacity="${f3(.8 + .2 * pulse)}"><rect x="${f1(hx - w / 2)}" y="18" width="${f1(w)}" height="32" rx="16" fill="#f2b134"/><text x="${hx}" y="39" font-size="15" font-weight="800" fill="#3b2a00" text-anchor="middle">☝ ${lag.hint}</text></g>`;
       }
       if (lag.ligase && lag.ligase.op > .01) o += enzymeIcon(X(lag.ligase.x), newLagY(Math.max(0, lag.ligase.x)) - 34, "#e05a8a", "#a3305d", "DNA ligase", lag.ligase.op);
-      if (lag.msg){
+      if (lag.msg && !lag.hint && !celeOn){
         const w = lag.msg.length * 8.2 + 34, cx = clamp(X(lag.pol && lag.pol.op > .3 ? lag.pol.x : A2) + 230, w / 2 + 10, 990 - w / 2), stuck = /Stuck/.test(lag.msg);
         o += `<rect x="${f1(cx - w / 2)}" y="18" width="${f1(w)}" height="32" rx="16" fill="${stuck ? "#b83a34" : "#3f4cc0"}"/><text x="${f1(cx)}" y="39" font-size="15" font-weight="800" fill="#fff" text-anchor="middle">${lag.msg}</text>`;
       }
@@ -720,10 +817,17 @@
     o += BA.outline(BA.grow(nc, 6), "#efe7fb", "#8e5bd0", 2.4) + BA.outline(nc, "none", "#b9a6ee", 1.4);
     o += `<text x="750" y="132" class="small mid" style="fill:#6b4bb8">Nucleus</text>`;
     o += BA.helix(598, 902, 205, {amp:5, per:24});
-    [638, 712, 788, 862].forEach(x => {
-      o += `<path d="M${x - 20},205 Q${x},180 ${x + 20},205 Q${x},230 ${x - 20},205 Z" fill="#fff" fill-opacity=".85" stroke="#e8744f" stroke-width="2.5"/>`;
-      o += `<circle cx="${x}" cy="205" r="4.5" fill="#3f4cc0"/>`;
+    [638, 712, 788, 862].forEach((x, i) => {
+      const hw = 24, h = 17, y = 205;
+      /* two old strands (teal) bow apart; new strands (gold) are built inside; forks move outward */
+      o += `<path d="M${x - hw},${y} Q${x},${y - h * 2} ${x + hw},${y}" fill="#fff" stroke="none"/><path d="M${x - hw},${y} Q${x},${y + h * 2} ${x + hw},${y}" fill="#fff" stroke="none"/>`;
+      o += `<path d="M${x - hw},${y} Q${x},${y - h * 2} ${x + hw},${y}" fill="none" stroke="#0f766e" stroke-width="3"/><path d="M${x - hw},${y} Q${x},${y + h * 2} ${x + hw},${y}" fill="none" stroke="#0f766e" stroke-width="3"/>`;
+      o += `<path d="M${x - hw + 7},${y - 5} Q${x},${y - h * 2 + 9} ${x + hw - 7},${y - 5}" fill="none" stroke="#f2b134" stroke-width="3"/><path d="M${x - hw + 7},${y + 5} Q${x},${y + h * 2 - 9} ${x + hw - 7},${y + 5}" fill="none" stroke="#f2b134" stroke-width="3"/>`;
+      o += `<path d="M${x - hw - 2},${y} l7,-5 v10 z M${x + hw + 2},${y} l-7,-5 v10 z" fill="#e8744f"/>`;
+      o += `<circle cx="${x}" cy="${y}" r="4.5" fill="#3f4cc0" stroke="#fff" stroke-width="1.5"/>`;
     });
+    o += `<path d="M638,${205 + 22} L638,${258}" stroke="#6b4bb8" stroke-width="1.5"/><text x="638" y="272" class="small mid" style="fill:#6b4bb8">replication bubble</text>`;
+    o += `<path d="M712,${205 - 6} L735,158" stroke="#3f4cc0" stroke-width="1.5"/><text x="742" y="154" class="small" style="fill:#3f4cc0">origin</text>`;
     o += `<text x="750" y="318" class="small mid">${resolved("multiple") ? "Multiple" : "?"} origins → many bubbles merge</text>`;
     o += `<text x="750" y="336" class="small mid">Slower per fork: ~50 nt/sec</text>`;
     o += `<text x="750" y="354" class="small mid">Large, linear chromosomes</text>`;
@@ -954,22 +1058,74 @@
     svg.setAttribute("viewBox", `${f1(x0)} 0 ${f1(w)} ${f1(h)}`);
     let o = DEFS;
     if (cur.gene > 0.01){
-      const ls = Math.round(cur.lagStep), lt = ls > 0 ? lagFrame(ls, stepResolved(idx) ? (performance.now() - stepT0) / 1000 : 99, cur.a) : null;
+      const ls = Math.round(cur.lagStep), lt = ls > 0 ? lagFrame(ls, (stepResolved(idx) || STEPS[idx].live) ? (performance.now() - stepT0) / 1000 : 99, cur.a) : null;
       o += `<g opacity="${f3(cur.gene)}">${forkSVG(cur, lt)}</g>`;
     }
     if (cur.origins > 0.01) o += `<g opacity="${f3(cur.origins)}">${originsSVG()}</g>`;
     if (cur.ms > 0.01) o += `<g opacity="${f3(cur.ms)}">${msSVG()}</g>`;
     const tt = reduced ? 0 : (performance.now() - T0) / 1000;
+    o += confettiSVG();
     if (cur.hero > 0.01) o += `<g opacity="${f3(cur.hero)}">${heroSVG(tt)}</g>`;
     if (cur.models > 0.01) o += `<g opacity="${f3(cur.models)}">${modelsSVG(tt)}</g>`;
     if (cur.ms3 > 0.01) o += `<g opacity="${f3(cur.ms3)}">${ms3SVG(tt)}</g>`;
     svg.innerHTML = o;
   }
 
+  /* dragging DNA polymerase and clicking nicks right on the diagram */
+  const svgPt = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+  const lagActive = () => ["lagFind", "lagBuild", "lagAgain", "lagSeal"].includes(STEPS[idx].gate) && !gates[idx];
+  const tNow = () => (performance.now() - stepT0) / 1000;
+  svg.addEventListener("pointerdown", e => {
+    if (!lagActive()) return;
+    const p = svgPt(e), g = STEPS[idx].gate;
+    if (g === "lagSeal"){
+      if (tNow() < 2.9) return;
+      const hit = [1, 2].find(k => LI.sealed[k] === undefined && Math.hypot(p.x - (X(FRAGS[k].L) - DX / 2), p.y - (138 - 8)) < 34);
+      if (hit){
+        LI.sealed[hit] = performance.now();
+        if (Object.keys(LI.sealed).length === 2){ celebrate(500, 150, "Great job! Every gap is sealed!"); gateMsg("Ligase sealed every nick. The lagging strand is now one continuous piece of DNA!", "good"); setTimeout(passGate, 1600); }
+        else gateMsg("Sealed! DNA ligase joined those two fragments. Find the other gap.", "good");
+      } else gateMsg("Look for the small orange gaps (nicks) between the fragments.", "bad");
+      return;
+    }
+    if (!LI.polC || Math.hypot(p.x - LI.polC.x, p.y - LI.polC.y) > 48) return;
+    e.preventDefault(); svg.style.touchAction = "none";
+    try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+    LI.drag = {x:p.x, y:p.y, mode:(g === "lagBuild" || LI.found) ? "build" : "find"};
+  });
+  svg.addEventListener("pointermove", e => {
+    if (!LI.drag) return;
+    const p = svgPt(e); LI.drag.x = p.x; LI.drag.y = p.y;
+    if (LI.drag.mode === "build"){
+      const k = STEPS[idx].gate === "lagBuild" ? 1 : 2, fr = FRAGS[k];
+      const ix = (p.x + 10 - X0) / DX;
+      LI.fill = Math.max(fr.L, Math.min(LI.fill === null ? fr.pl : LI.fill, ix));
+      if (LI.fill <= fr.L + 0.35 && !LI.done){
+        LI.fill = fr.L; LI.done = true; LI.drag = null;
+        celebrate(X(fr.L), 120, `Awesome! You built Okazaki fragment ${k + 1}!`);
+        gateMsg(`Stuck again: it bumped into fragment ${k}. You built Okazaki fragment ${k + 1}!`, "good");
+        setTimeout(passGate, 1600);
+      }
+    }
+  });
+  const endDrag = () => {
+    const d = LI.drag; if (!d) return; LI.drag = null;
+    if (d.mode !== "find") return;
+    const k = STEPS[idx].gate === "lagFind" ? 1 : 2, fr = FRAGS[k];
+    const tx = X(fr.pl) - 10, ty = 138 - 21;
+    if (Math.hypot(d.x - tx, d.y - ty) < 70){
+      LI.found = true;
+      celebrate(tx, ty, "Good job! It found the primer!");
+      if (STEPS[idx].gate === "lagFind"){ gateMsg("DNA polymerase landed on the new primer, ready to build.", "good"); setTimeout(passGate, 1500); }
+      else gateMsg("Nice! Now drag DNA polymerase to the left to build the fragment.", "good");
+    } else gateMsg("DNA polymerase needs a primer to start. Drop it on the new purple primer near the fork.", "bad");
+  };
+  svg.addEventListener("pointerup", endDrag); svg.addEventListener("pointercancel", endDrag);
+
   let last = performance.now();
   function frame(now){
     if (stepTween(now)) dirty = true;
-    if (cur.hero > .01 || cur.models > .01 || cur.ms3 > .01 || cur.lagStep > .5) dirty = true;
+    if (cur.hero > .01 || cur.models > .01 || cur.ms3 > .01 || cur.lagStep > .5 || LI.cele) dirty = true;
     if (dirty){ render(); dirty = false; }
     requestAnimationFrame(frame);
   }
@@ -1070,8 +1226,8 @@
     idx = i;
     const st = STEPS[i], res = stepResolved(i);
     if (res) furthest = Math.max(furthest, i + 1);
-    animateTo(res ? st.state : prevState(i));
-    stepT0 = performance.now() + 500;
+    animateTo(res || st.live ? st.state : prevState(i));
+    stepT0 = performance.now() + 500; resetLI(); if (gates[i]) finishLI(st.gate);
     renderBubble(); renderNav(); renderGate(); renderSlider(); renderParts(); dirty = true;
   }
   function goTo(i){ enterStep(clamp(i, 0, LAST)); }
@@ -1134,8 +1290,8 @@
   function replay(){
     if (idx === 0) return;
     cur = {...prevState(idx)};
-    if (stepResolved(idx)) animateTo(STEPS[idx].state);
-    stepT0 = performance.now() + 500;
+    if (stepResolved(idx) || STEPS[idx].live) animateTo(STEPS[idx].state);
+    stepT0 = performance.now() + 500; resetLI(); if (gates[idx]) finishLI(STEPS[idx].gate);
     dirty = true;
   }
 
@@ -1161,7 +1317,7 @@
   requestAnimationFrame(frame);
 
   // exposed for testing only
-  window.__rep = {STEPS, goTo, check, moveOn, setMode, openMore, closeMore, get idx(){return idx;}, get cur(){return cur;}, get bl(){return bl;}, matches, GATES};
+  window.__rep = {STEPS, get LI(){ return LI; }, forcePass:() => { if (STEPS[idx].gate && !gates[idx]){ finishLI(STEPS[idx].gate); passGate(); } }, goTo, check, moveOn, setMode, openMore, closeMore, get idx(){return idx;}, get cur(){return cur;}, get bl(){return bl;}, matches, GATES};
 })();
 </script>
 <script>
