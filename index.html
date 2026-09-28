@@ -180,6 +180,7 @@
     eterna:{name:"Eterna: fold your own RNA", href:"eterna.html", fun:true, desc:"Design RNA in a real science game", icon:"eterna", wide:true},
     enzymes:{name:"Enzymes and metabolism", href:"enzymes.html", desc:"Active sites, inhibitors, feedback inhibition", icon:"enz", col:"#6b4bb8", wide:true},
     energy:{name:"Chemistry of energy production", href:"energy-chemistry.html", desc:"Redox, electron carriers, and ATP", icon:"redox", col:"#9a6212", wide:true},
+    respov:{name:"Cellular respiration: the big picture", href:"respiration-overview.html", desc:"The 3 stages, where they happen, and the ATP payoff", icon:"resp", col:"#3f4cc0", wide:true},
     glycolysis:{name:"Glycolysis", href:"glycolysis.html", desc:"Glucose \u2192 2 pyruvate, 2 ATP, 2 NADH", icon:"gly", col:"#b83a34", wide:true},
     krebs:{name:"Krebs cycle, ETC and ATP synthase", href:"krebs-etc.html", desc:"CO\u2082, NADH, chemiosmosis, 32\u201338 ATP", icon:"resp", col:"#3f4cc0", wide:true},
     ferment:{name:"Fermentation and anaerobic respiration", href:"fermentation.html", desc:"Life without oxygen: NAD\u207A, nitrate, sulfate", icon:"ferm", col:"#1b7f4e", wide:true}
@@ -548,7 +549,7 @@
     const GAMES_HTML = `<h2>Games</h2><p class="moddesc">Race the clock! Every round is a brand-new sequence, and your best times are saved on this browser.</p><div class="grid">${GAMES.map(k => tileHTML(k, {noWide:true})).join("")}</div>`;
     /* Chapter 5 modules appear here as each one is revised. Still to come: enzymes, glycolysis, krebs, ferment
        (restore their stops in studypath.js when they go live). */
-    const CH5 = ["energy"];
+    const CH5 = ["energy","respov","glycolysis"];
     const CH5_ENABLED = true;
     const t = k => tileHTML(k, {noDesc:true, noWide:true});
     const el = document.getElementById("modDir");
