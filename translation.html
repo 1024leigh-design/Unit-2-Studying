@@ -43,6 +43,14 @@
 
   .modehint{color:var(--muted);font-size:.92rem;margin:0 0 10px}
   .stage{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative}
+  .trpicks{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+  .trpick{position:relative;display:grid;justify-items:center;gap:6px;padding:12px 8px 10px;border:2px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;font:inherit}
+  .trpick:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .trpick .kbd{position:absolute;top:6px;left:8px;font-size:.75rem;font-weight:800;color:#8a93a3}
+  .trpick .aab{background:var(--aa);color:#fff;border-radius:999px;padding:3px 12px;font-weight:800;font-size:.9rem}
+  .trpick .body{display:flex;gap:3px}
+  .trpick .aclbl{font-size:.75rem;color:var(--muted);font-weight:700}
+  .trpick.rf{border-style:dashed;border-color:#b83a34}.trpick.rf .rfname{font-weight:800;color:#b83a34;margin-top:14px}
   .bondfloat{position:absolute;transform:translate(-50%,-50%);z-index:3;font:700 1rem var(--font);padding:9px 16px;border-radius:999px;border:2px solid #9a6212;background:#f2b134;color:#3b2a00;cursor:pointer;box-shadow:0 4px 12px rgba(29,36,51,.25);animation:bondpulse 1.4s ease-in-out infinite;white-space:nowrap}
   .bondfloat:hover{filter:brightness(1.06)}
   .bondfloat:disabled{animation:none;opacity:.6;cursor:default}
@@ -297,6 +305,7 @@
 </div>
 
 <script src="bioart.js"></script>
+<script src="games.js"></script>
 <script>
 (function(){
   /* ================= Helpers ================= */
@@ -319,7 +328,7 @@
   const CODONS = [0,1,2,3,4].map(k => MRNA.substr(k * 3, 3));
   const AAS = ["Met","Ala","Phe","Gly"];
   const ANTI = ["UAC","CGU","AAG","CCU"];
-  const AACOL = {Met:"#f2b134", Ala:"#2f9e63", Phe:"#3b7dd8", Gly:"#8e5bd0"};
+  const AACOL = {Met:"#f2b134", Ala:"#2f9e63", Phe:"#3b7dd8", Gly:"#8e5bd0", Leu:"#0f766e", Ser:"#c2446d", Tyr:"#a8760f", Cys:"#b8a31a", Trp:"#6b4bb8", Pro:"#e8744f", His:"#3f4cc0", Gln:"#1b7f4e", Arg:"#2c5aa0", Ile:"#5a8f2e", Thr:"#9a4dc2", Asn:"#d0508a", Lys:"#1f4e8c", Val:"#4d9a8a", Asp:"#b83a34", Glu:"#c9532f"};
   const BX = j => 190 + j * 36 + Math.floor(j / 3) * 12;
   const CX = k => BX(3 * k + 1);
 
@@ -470,6 +479,8 @@
      after:`mRNA is read 5' to 3'. Proteins are built N-terminus to C-terminus.`},
     {part:P4, title:"Termination: the stop codon", v:M(TERM), more:"term",
      text:`Finally, the stop codon UAA reaches the A site. Know all three stop codons: <b>UAA, UAG, and UGA</b>. No tRNA has an anticodon that matches a {{stop}} codon, so no new amino acid arrives. The finished polypeptide is released, the last tRNA leaves, and the two ribosomal subunits come apart. Your new protein: Met-Ala-Phe-Gly!`},
+    {part:P4, title:"Translation Race", v:{scene:"race"}, gate:"race",
+     text:`Time to put it all together! The ribosome reads one codon at a time. Pick the tRNA whose anticodon pairs with the codon in the A site (A with U, G with C), as fast as you can. At the stop codon no tRNA fits, so send in the release factor. Every round is a brand-new mRNA, and your times are saved on this browser.`},
     {part:P4, title:"Prokaryotes vs. eukaryotes", v:{scene:"compare"}, more:"compare", table:TBL_CMP, links:[["Transcription module","transcription.html"],["Pre-transcriptional control module","pretranscriptional-control.html"]],
      text:`Bacteria have no nucleus, so transcription and translation happen in the same place, the cytoplasm. Ribosomes can hop onto an mRNA and start translating before transcription is even {{complete}}. In eukaryotes, the mRNA is made and processed in the nucleus first, then exported to ribosomes in the cytoplasm.`,
      after:`You just went from DNA to protein. Amazing work!`}
@@ -500,8 +511,8 @@
     g.hidden = false;
     const G = GATES[st.gate];
     g.className = "gate" + (gates[idx] ? " done" : "");
-    if (gates[idx]){ g.innerHTML = `<div class="gtitle">\u2713 ${G.doneText}</div>`; return; }
-    g.innerHTML = `<div class="gtitle">${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
+    if (gates[idx] && !G.keep){ g.innerHTML = `<div class="gtitle">\u2713 ${G.doneText}</div>`; return; }
+    g.innerHTML = `<div class="gtitle">${gates[idx] ? "\u2713 " : ""}${G.title}</div>` + G.html() + `<div class="gmsg" id="gateMsg"></div>`;
     G.wire(g);
   }
   const PAIR = {A:"U", U:"A", G:"C", C:"G"};
@@ -586,7 +597,75 @@
     {codon:"UUC", aa:"Phe", cards:[["AAC","Leu"],["UAG","Ile"],["AAG","Phe"]], chain:["Met","Ala"]},
     {codon:"GGA", aa:"Gly", cards:[["CCU","Gly"],["CUU","Glu"],["GCU","Arg"]], chain:["Met","Ala","Phe"]}
   ];
+  /* ===== Translation Race: random mRNA every round ===== */
+  const TR_KEY = "bio112-tl-race", STOPS = ["UAA", "UAG", "UGA"];
+  const SENSE = Object.keys(CODE).filter(c => CODE[c] !== "Stop" && c !== "AUG");
+  const antiOf = c => [...c].map(b => PAIR[b]).join("");
+  const TR = {codons:[], pos:0, chain:[], miss:0, done:false, sw:BioGames.stopwatch(), round:0, opts:[]};
+  function trNew(){
+    TR.codons = ["AUG", ...Array.from({length:6}, () => BioGames.pick(SENSE)), BioGames.pick(STOPS)];
+    TR.pos = 0; TR.chain = []; TR.miss = 0; TR.done = false; TR.sw.reset(); TR.round++; trOptions();
+  }
+  function trOptions(){
+    const c = TR.codons[TR.pos], isStop = CODE[c] === "Stop";
+    const opts = [], used = new Set();
+    const addT = cod => { const ac = antiOf(cod); if (used.has(ac)) return false; used.add(ac); opts.push({ac, aa:CODE[cod], ok:cod === c}); return true; };
+    if (isStop) opts.push({rf:true, ok:true}); else addT(c);
+    /* one near-miss (a single base off) plus random others */
+    let tries = 0;
+    while (opts.length < 4 && tries++ < 60){
+      let cod;
+      if (tries < 6 && !isStop){ const k = Math.floor(Math.random() * 3); cod = c.slice(0, k) + BioGames.pick("AUGC".replace(c[k], "")) + c.slice(k + 1); }
+      else cod = BioGames.pick(SENSE);
+      if (CODE[cod] === "Stop" || CODE[cod] === CODE[c]) continue;
+      addT(cod);
+    }
+    TR.opts = opts.sort(() => Math.random() - .5);
+  }
+  trNew();
+  function trPick(i){
+    if (TR.done || STEPS[idx].gate !== "race") return;
+    const o = TR.opts[i]; if (!o) return;
+    const c = TR.codons[TR.pos];
+    if (!o.ok){
+      TR.miss++;
+      gateMsg(CODE[c] === "Stop" ? `No tRNA pairs with the stop codon ${c}. Send in the release factor!` : `Anticodon ${o.ac} doesn't pair with ${c}. You need ${antiOf(c)} (A with U, G with C).`, "bad");
+      const m = $("trMiss"); if (m) m.textContent = TR.miss; return;
+    }
+    TR.sw.start();
+    if (o.rf){
+      TR.done = true;
+      const t = TR.sw.stop(), res = BioGames.add(TR_KEY, {t, m:TR.miss, label:TR.chain.join("-")});
+      BioGames.celebrate(res.newBest ? `New best time! ${BioGames.fmt(t)}` : `Protein made in ${BioGames.fmt(t)}!`);
+      if (!gates[idx]) passGate(); else renderGate();
+      gateMsg(`Released! You built ${TR.chain.join("-")} in ${BioGames.fmt(t)} with ${TR.miss} mistake${TR.miss === 1 ? "" : "s"}. Hit <b>New mRNA</b> to go again.`, "good");
+      return;
+    }
+    TR.chain.push(o.aa); TR.pos++; trOptions(); renderGate();
+  }
+  document.addEventListener("keydown", e => {
+    if (STEPS[idx].gate !== "race" || e.ctrlKey || e.metaKey) return;
+    if (["1","2","3","4"].includes(e.key)){ e.preventDefault(); trPick(+e.key - 1); }
+    else if (e.key === "Enter" && TR.done){ e.preventDefault(); trNew(); renderGate(); }
+  });
   const GATES = {
+    race:{keep:true, title:"Translation Race: build the protein!", doneText:"Protein released!",
+      html:() => {
+        const best = BioGames.best(TR_KEY), c = TR.codons[TR.pos];
+        const card = (o, i) => o.rf
+          ? `<button class="trpick rf" data-pick="${i}" type="button"><span class="kbd">${i + 1}</span><span class="rfname">Release factor</span><span class="aclbl">for stop codons</span></button>`
+          : `<button class="trpick" data-pick="${i}" type="button"><span class="kbd">${i + 1}</span><span class="aab" style="--aa:${AACOL[o.aa] || "#9aa3b5"}">${o.aa}</span><span class="body">${[...o.ac].map(gtile).join("")}</span><span class="aclbl">anticodon</span></button>`;
+        return `<div class="gracebar"><span>⏱ <span class="gclock" id="trClock">${BioGames.fmt(TR.sw.time)}</span></span><span class="gstat">Round ${TR.round}</span><span class="gstat">Mistakes: <span id="trMiss">${TR.miss}</span></span><span class="gstat">Best: ${best === null ? "––" : BioGames.fmt(best)}</span><button class="btn ${TR.done ? "primary" : "secondary"}" id="trNewBtn" type="button">New mRNA ▶</button></div>
+          ${TR.done ? "" : `<div class="grow" style="margin-top:4px"><span class="glbl">Codon in the A site (${TR.pos + 1} of ${TR.codons.length})</span>${[...c].map(gtile).join("")}</div>
+          <div style="font-size:.92rem;color:var(--muted)">Tap a card or press 1–4. The clock starts on your first correct pick.</div>
+          <div class="trpicks">${TR.opts.map(card).join("")}</div>`}
+          ${BioGames.board(TR_KEY)}`;
+      },
+      wire:g => {
+        g.querySelectorAll("[data-pick]").forEach(b => b.addEventListener("click", () => trPick(+b.dataset.pick)));
+        g.querySelector("#trNewBtn").addEventListener("click", () => { trNew(); renderGate(); gateMsg("New mRNA. Go!", ""); });
+        TR.sw.attach(g.querySelector("#trClock"));
+      }},
     trna:{
       title:"Your turn: inspect the A-site codon, then drag the matching tRNA into place",
       doneText:"Match! The tRNA with anticodon CGU pairs with GCA and brings alanine.",
@@ -796,12 +875,33 @@
   const MINI_L = BA.smoothClosed(BA.blob(0, 0, 21, 13, 0.08, 3, 16)), MINI_S = BA.smoothClosed(BA.blob(0, 0, 18, 7, 0.08, 6, 14));
   function miniRibo(x, y){ return `<path d="${MINI_L}" transform="translate(${x} ${y - 6})" fill="#d4905e" stroke="#b8683c" stroke-width="1.5"/><path d="${MINI_S}" transform="translate(${x} ${y + 14})" fill="#ecb98f" stroke="#c07e4c" stroke-width="1.5"/>`; }
 
+  /* Translation Race scene: the mRNA with the ribosome on the current codon and the growing chain */
+  function raceSVG(t){
+    const n = TR.codons.length, cw = 104, x0 = 500 - (n * cw) / 2 + cw / 2, y = 300;
+    let o = `<text x="500" y="42" font-size="22" font-weight="800" fill="#1d2433" text-anchor="middle">Translation Race</text><text x="500" y="68" font-size="15" fill="#5a6376" text-anchor="middle">Round ${TR.round} · ⏱ ${BioGames.fmt(TR.sw.time)}</text>`;
+    o += `<path d="M${x0 - cw / 2 - 20},${y + 40} H${x0 + (n - 1) * cw + cw / 2 + 20}" stroke="#e8744f" stroke-width="5" stroke-linecap="round"/>`;
+    o += `<text x="${x0 - cw / 2 - 30}" y="${y + 46}" class="t15 end muted">5'</text><text x="${x0 + (n - 1) * cw + cw / 2 + 30}" y="${y + 46}" class="t15 muted">3'</text>`;
+    if (!TR.done){ const rx0 = x0 + Math.min(TR.pos, n - 1) * cw; o += `<ellipse cx="${rx0}" cy="${y - 26}" rx="70" ry="34" fill="url(#lsuG)" opacity=".75" stroke="#b8683c" stroke-width="2"/><ellipse cx="${rx0}" cy="${y + 66}" rx="62" ry="18" fill="url(#ssuG)" opacity=".85" stroke="#c07e4c" stroke-width="2"/><text x="${rx0}" y="${y - 30}" class="t12 mid" style="fill:#7a4a24">ribosome</text>`; }
+    o = RIBO_DEFS + o;
+    TR.codons.forEach((c, k) => {
+      const x = x0 + k * cw, on = k === TR.pos && !TR.done, doneC = k < TR.pos;
+      [...c].forEach((b, j) => { o += tile(x + (j - 1) * 28, y + 7, b, doneC ? .55 : 1); });
+      if (CODE[c] === "Stop") o += `<text x="${x}" y="${y + 84}" class="t12 mid" style="fill:#b83a34">stop</text>`;
+      if (on){ const pu = .5 + .5 * Math.sin(t * 6); o += `<rect x="${x - 46}" y="${y}" width="92" height="44" rx="10" fill="none" stroke="#f2b134" stroke-width="${f1(3 + pu)}"/>`; }
+    });
+    /* growing chain, N-terminus first */
+    TR.chain.forEach((aa, k) => { o += bead(150 + k * 58, 170, aa, 1, 22); if (k) o += `<path d="M${150 + (k - 1) * 58 + 22},170 H${150 + k * 58 - 22}" stroke="#9aa3b5" stroke-width="3"/>`; });
+    if (!TR.chain.length) o += `<text x="500" y="176" class="t15 mid muted">Your protein will grow here</text>`;
+    if (TR.done) o += `<rect x="250" y="396" width="500" height="44" rx="22" fill="#1b7f4e"/><text x="500" y="424" font-size="17" font-weight="800" fill="#fff" text-anchor="middle">Protein released! Press Enter for a new mRNA</text>`;
+    return o;
+  }
   function render(){
     const d = vis, t = frozen ? 0 : sceneT;
     let o = "";
     if (d.scene === "main") o = mainSVG(cur, d.flags || {}, sceneT);
     else if (d.scene === "code") o = codeSVG(t, frozen);
     else if (d.scene === "compare") o = compareSVG(t);
+    else if (d.scene === "race") o = raceSVG(t);
     svg.innerHTML = o;
     placeBondBtn();
   }
@@ -969,6 +1069,7 @@
   });
 
   setMode("learn");
+  if (location.hash === "#game") goTo(STEPS.findIndex(st => st.gate === "race"));
   requestAnimationFrame(frame);
   window.__tl = {goTo, check, moveOn, setMode, openMore, STEPS, CODE, get idx(){ return idx; }, get cur(){ return cur; }};
 })();

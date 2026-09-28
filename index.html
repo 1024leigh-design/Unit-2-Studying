@@ -65,6 +65,8 @@
   .donechk{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#1b7f4e;color:#fff;font-style:normal;font-size:.7rem;vertical-align:1px;margin-left:4px}
   .tile span{font-size:.79rem;color:var(--muted);line-height:1.3}
   .tile.wide{grid-column:span 2}
+  .tile .gbest{display:block;margin-top:4px;font-size:.8rem;font-weight:700;color:#8a5a00}
+  .tile .gbest.none{color:var(--muted);font-weight:400}
   .tile.soon{border-style:dashed;background:#f7f8fb;cursor:default;opacity:.88}
   .tile.soon:hover{transform:none;box-shadow:none;border-color:var(--line)}
   .tile.soon b::after{content:" \00b7 coming soon";font-weight:400;color:var(--muted);font-size:.78rem}
@@ -168,6 +170,11 @@
     mutations:{name:"Mutations", href:"mutations.html", desc:"Silent, missense, nonsense, frameshift", icon:"mut", col:"#e8744f", wide:true},
     editor:{name:"DNA Editor", href:"mutations.html#editor", desc:"Mutate a gene, watch the protein change", icon:"mut", col:"#e8744f"},
     splice:{name:"Splice Lab", href:"posttranscriptional-control.html#splice", desc:"Be the snRNP, cut out introns", icon:"post", col:"#8e5bd0"},
+    repgame:{name:"Replication Race", href:"dna-replication.html#game", desc:"Pair A with T and G with C against the clock", icon:"rep", col:"#0f766e", game:"bio112-rep-race"},
+    txgame:{name:"Transcription Race", href:"transcription.html#game", desc:"Type the mRNA for a DNA template, fast", icon:"tx", col:"#3f4cc0", game:"bio112-elong-scores"},
+    tlgame:{name:"Translation Race", href:"translation.html#game", desc:"Match tRNAs to codons and build the protein", icon:"tl", col:"#1b7f4e", game:"bio112-tl-race"},
+    splicegame:{name:"Splice Lab race", href:"posttranscriptional-control.html#splice", desc:"Find 6 proteins from one gene, fast", icon:"post", col:"#8e5bd0", game:"bio112-splice-race"},
+    editgame:{name:"DNA Editor race", href:"mutations.html#editor", desc:"Make all 6 kinds of mutation, fast", icon:"mut", col:"#e8744f", game:"bio112-editor-race"},
     translation:{name:"Translation", href:"translation.html", desc:"Ribosomes read codons and build protein", icon:"tl", col:"#1b7f4e", wide:true},
     posttx:{name:"Post-transcriptional control", href:"posttranscriptional-control.html", desc:"Splicing, riboswitches, and miRNA", icon:"post", col:"#8e5bd0", wide:true},
     eterna:{name:"Eterna: fold your own RNA", href:"eterna.html", fun:true, desc:"Design RNA in a real science game", icon:"eterna", wide:true},
@@ -529,12 +536,16 @@
     const m = MOD[k], ic = ICON[m.icon] || "";
     const cls = `tile${(m.wide && !opts.noWide) ? " wide" : ""}${m.soon ? " soon" : ""}${m.fun ? " fun" : ""}`;
     let doneMod = false; try { doneMod = !!(m.wide && m.href && localStorage.getItem("bio112-done:" + m.href.split("#")[0]) === "1"); } catch (e) {}
-    const inner = `${ic}<b>${m.name}${doneMod ? ' <i class="donechk" title="Test mode complete">\u2713</i>' : ""}</b>${opts.noDesc ? "" : `<span>${m.desc}</span>`}`;
+    let bestTxt = "";
+    if (m.game){ try { const a = JSON.parse(localStorage.getItem(m.game) || "[]"); if (Array.isArray(a) && a.length){ const b = Math.min(...a.map(r => r.t)); bestTxt = `<span class="gbest">🏆 Best: ${b >= 60 ? Math.floor(b / 60) + ":" + (b % 60).toFixed(1).padStart(4, "0") : b.toFixed(1) + "s"} · ${a.length} round${a.length === 1 ? "" : "s"}</span>`; } else bestTxt = `<span class="gbest none">Not played yet</span>`; } catch (e) {} }
+    const inner = `${ic}<b>${m.name}${doneMod ? ' <i class="donechk" title="Test mode complete">\u2713</i>' : ""}</b>${opts.noDesc ? "" : `<span>${m.desc}</span>`}${bestTxt}`;
     return m.soon ? `<div class="${cls}">${inner}</div>` : `<a class="${cls}" style="--tc:${m.col || "#5b3fb0"}" href="${m.href}">${inner}</a>`;
   };
   (function(){
     const CH8 = ["replication","pretx","transcription","posttx","translation","mutations"];
     const LABS_DIR = ["build","lab","splice","editor"];
+    const GAMES = ["repgame","txgame","tlgame","splicegame","editgame"];
+    const GAMES_HTML = `<h2>Games</h2><p class="moddesc">Race the clock! Every round is a brand-new sequence, and your best times are saved on this browser.</p><div class="grid">${GAMES.map(k => tileHTML(k, {noWide:true})).join("")}</div>`;
     /* Chapter 5 modules appear here as each one is revised. Still to come: enzymes, glycolysis, krebs, ferment
        (restore their stops in studypath.js when they go live). */
     const CH5 = ["energy"];
@@ -547,7 +558,7 @@
         <div class="grid">${CH8.map(t).join("")}</div>
         <h2>Practice labs</h2>
         <p class="moddesc">Ready to put it to the test? These hands-on labs let you test your knowledge and explore the material at your own pace.</p>
-        <div class="grid">${LABS_DIR.map(t).join("")}</div>`;
+        <div class="grid">${LABS_DIR.map(t).join("")}</div>${GAMES_HTML}`;
       return;
     }
     el.innerHTML = `<div class="modtabs" role="tablist">
@@ -559,6 +570,7 @@
         <h2>Practice labs</h2>
         <p class="moddesc">Ready to put it to the test? These hands-on labs let you test your knowledge and explore the material at your own pace.</p>
         <div class="grid">${LABS_DIR.map(t).join("")}</div>
+        ${GAMES_HTML}
       </div>
       <div class="modpanel" data-panel="ch5" hidden>
         <div class="grid">${CH5.map(t).join("")}</div>
