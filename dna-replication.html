@@ -147,6 +147,10 @@
   .mspetri.dragging{position:fixed;z-index:60;pointer-events:none;box-shadow:0 10px 24px rgba(29,36,51,.28);cursor:grabbing}
   .mspetri.lifted{opacity:.25}
   .mspetri.nope{animation:shake .32s}
+  .subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;align-items:center}
+  .subtabs .lbl{font-size:.85rem;font-weight:700;color:var(--muted);margin-right:4px}
+  .subtabs button{font:700 .9rem var(--font);border-radius:999px;padding:6px 14px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+  .subtabs button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
   .msbeakers{display:flex;gap:22px;flex-wrap:wrap}
   .msbeaker{width:150px;min-height:150px;border:2px solid transparent;border-radius:16px;display:grid;align-content:end;justify-items:center;gap:6px;padding:8px 8px 10px;position:relative}
   .msbeaker.over{border-color:var(--accent);background:var(--accent-soft)}
@@ -185,6 +189,7 @@
     </div>
   </header>
   <p class="modehint" id="modeHint"></p>
+  <div class="subtabs" id="partTabs"></div>
 
   <div class="stage">
     <svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="Animated diagram of DNA replication"></svg>
@@ -279,7 +284,7 @@
   function closeMore(){ $("moreOverlay").hidden = true; }
 
   /* ---------- Scene states ---------- */
-  const B = {a:ORIGIN, gene:1, origins:0, originLabel:0, helicase:0, leadOn:0, lagOn:0, zoom:0, ms:0, hero:0, models:0, ms3:0};
+  const B = {a:ORIGIN, gene:1, origins:0, originLabel:0, helicase:0, leadOn:0, lagOn:0, zoom:0, ms:0, hero:0, models:0, ms3:0, lagStep:0};
   const S_HERO = {...B, gene:0, hero:1}, S_MODELS = {...B, gene:0, models:1}, S_MS3 = {...B, gene:0, ms3:1};
   const S = [];
   const MS = {...B, gene:0, ms:1};
@@ -290,12 +295,15 @@
   S[4] = {...MS};
   S[5] = {...B, originLabel:1};
   S[6] = {...S[5], a:8, helicase:1};
-  S[7] = {...S[6], a:16, leadOn:1};
-  S[8] = {...S[7], a:24, lagOn:1};
-  S[9] = {...S[8], a:END};
-  S[10] = {...S[9]};
+  /* lagging strand: fork stops at A1, A2, A3; one Okazaki fragment per stop */
+  const A1 = 12, A2 = 20, A3 = 28;
+  S[7] = {...S[6], a:A1, leadOn:1};
+  const LAG = n => ({...S[7], a:[A1, A1, A2, A2, A3, A3, A3][n], lagOn:1, lagStep:n});
+  S[8] = LAG(1); S[81] = LAG(2); S[82] = LAG(3); S[83] = LAG(4);
+  S[9] = LAG(5);
+  S[10] = LAG(6);
   S[11] = {...S[10], gene:0, origins:1};
-  S[12] = {...S[10]};
+  S[12] = {...S[10], lagStep:6};
 
   const STEPS = [
     {title:"Copying the code of life", state:S_HERO,
@@ -316,8 +324,14 @@
      text:`{{helicase}} arrives at the origin and pries the two strands apart, breaking the hydrogen bonds between base pairs. Ahead of the fork, an enzyme called topoisomerase relieves the twisting strain this creates, so the helix can keep unwinding smoothly.`},
     {title:"The leading strand", state:S[7], more:"whyPrimer",
      text:`DNA polymerase can't start a new strand from scratch, so {{primase}} lays down a short RNA primer once, right at the fork. From there, DNA polymerase builds the new strand continuously, adding nucleotides 5' to 3' as it chases the fork down the template.`},
-    {title:"The lagging strand", state:S[8], more:"laggingDetail",
-     text:`The other template strand runs the opposite direction, so DNA polymerase can't simply chase the fork here. Instead, primase lays a new primer every time enough template is exposed, and each short new piece is built backward, away from the fork. These short pieces are called {{okazaki}}.`},
+    {title:"The lagging strand: building backward", state:S[8], more:"laggingDetail",
+     text:`Now look at the top template strand. Its new partner also has to be built 5' to 3', but on this side that means working <b>away</b> from the fork. Primase lays down an RNA primer near the fork, and DNA polymerase builds backward from it, until it runs into the far end of the replication bubble. Stuck!`},
+    {title:"Falling off, finding a new primer", state:S[81], more:"laggingDetail",
+     text:`DNA polymerase can't go any farther, so it falls off the DNA. Meanwhile, helicase keeps unzipping, exposing more of the top template. Primase adds a new RNA primer near the fork, and DNA polymerase finds it and hops on.`},
+    {title:"Building the next fragment", state:S[82], more:"laggingDetail",
+     text:`DNA polymerase builds backward again, until it bumps into the piece it made before and gets stuck again. Each of these short pieces of new DNA is one of the {{okazaki}}.`},
+    {title:"Again and again", state:S[83], more:"laggingDetail",
+     text:`The cycle repeats as the fork moves: fall off, find the next primer, build backward, get stuck. That's why the lagging strand is made in pieces, while the leading strand below is built in one continuous strand.`},
     {title:"Sealing the gaps", state:S[9], more:"ligaseDetail",
      text:`Once the fork finishes, each RNA primer on the lagging strand is chewed out and replaced with DNA, leaving a small nick between neighboring fragments. {{ligase}} seals each nick, joining every fragment into one continuous new strand.`},
     {title:"Leading vs. lagging, side by side", state:S[10],
@@ -329,11 +343,14 @@
      after:`Every new DNA molecule: one old strand, one new strand. That's semi-conservative replication.`}
   ];
   const LAST = STEPS.length - 1;
+  const P2 = STEPS.findIndex(st => st.title === "Finding the origin");
+  const PARTS = [{name:"1. Basics & Meselson-Stahl", from:0, to:P2 - 1}, {name:"2. How DNA is copied", from:P2, to:LAST}];
+  const partOf = i => PARTS.findIndex(p => i >= p.from && i <= p.to);
 
   /* ---------- App state ---------- */
   let mode = "learn", idx = 0, furthest = 0;
   let bl = {};
-  let cur = {...S_HERO}, tw = null, dirty = true;
+  let cur = {...S_HERO}, tw = null, dirty = true, stepT0 = performance.now();
   const T0 = performance.now();
   const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -535,7 +552,7 @@
   function stepTween(now){
     if (!tw) return false;
     const p = clamp((now - tw.t0) / tw.dur, 0, 1);
-    for (const k in tw.to) cur[k] = lerp(tw.from[k], tw.to[k], smooth(p));
+    for (const k in tw.to) cur[k] = k === "lagStep" ? tw.to[k] : lerp(tw.from[k], tw.to[k], smooth(p));
     if (p >= 1) tw = null;
     return true;
   }
@@ -551,17 +568,76 @@
       + `<path d="M${f1(cx-18)},${f1(cy+3)} Q${f1(cx-23)},${f1(cy-11)} ${f1(cx-7)},${f1(cy-15)} Q${f1(cx+6)},${f1(cy-18)} ${f1(cx+16)},${f1(cy-10)} Q${f1(cx+25)},${f1(cy-2)} ${f1(cx+19)},${f1(cy+9)} Q${f1(cx+11)},${f1(cy+19)} ${f1(cx-2)},${f1(cy+17)} Q${f1(cx-14)},${f1(cy+16)} ${f1(cx-18)},${f1(cy+3)} Z" fill="${color}" stroke="${dark}" stroke-width="2"/>`
       + `<rect x="${f1(cx-52)}" y="${f1(cy-42)}" width="104" height="22" rx="11" fill="${dark}"/><text x="${f1(cx)}" y="${f1(cy-27)}" class="pill">${label}</text></g>`;
   }
-  function forkSVG(s){
+  /* ===== Replication fork =====
+     The lagging strand is drawn from a per-step timeline: primer, polymerase building backward, getting stuck,
+     falling off, finding the next primer, and finally ligase sealing the nicks. */
+  const FRAGS = [{pl:A1 - 3, pr:A1 - 1, L:0}, {pl:A2 - 3, pr:A2 - 1, L:A1}, {pl:A3 - 3, pr:A3 - 1, L:A2}];
+  const sg = (t, a, b) => smooth(clamp((t - a) / (b - a), 0, 1));
+  function lagFrame(step, t, aState){
+    /* returns what to draw on the lagging side at time t (seconds) of a given lagging step */
+    const f = {a:aState, frags:[], pol:null, primase:null, ligase:null, pDNA:0, sealed:0, msg:null, build:false};
+    const frag = (k, fill, primerOp) => f.frags.push({...FRAGS[k], fill, primerOp});
+    if (step === 1){
+      f.primase = {x:FRAGS[0].pr, op:sg(t, .2, .8) * (1 - sg(t, 1.9, 2.4))};
+      frag(0, lerp(FRAGS[0].pl, 0, sg(t, 2.6, 6.2)), sg(t, .8, 1.6));
+      f.pol = {x:f.frags[0].fill, lift:(1 - sg(t, 1.8, 2.5)) * 34, op:sg(t, 1.8, 2.5)};
+      f.build = t > 2.6 && t < 6.2; if (t > 6.4) f.msg = "Stuck! It hit the end of the bubble";
+    } else if (step === 2){
+      f.a = lerp(A1, A2, sg(t, 1.4, 3.4));
+      frag(0, 0, 1);
+      f.primase = {x:FRAGS[1].pr, op:sg(t, 3.4, 3.9) * (1 - sg(t, 5.0, 5.4))};
+      if (t > 3.4) frag(1, FRAGS[1].pl, sg(t, 3.9, 4.7));
+      const off = sg(t, .3, 1.3), land = sg(t, 5.2, 6.6);
+      f.pol = {x:lerp(0, FRAGS[1].pl, land), lift:(off * (1 - land)) * 34, op:lerp(1, .45, off * (1 - land))};
+      if (t > .3 && t < 2.4) f.msg = "DNA polymerase falls off";
+      if (t > 5.2) f.msg = "It finds the new primer";
+    } else if (step === 3){
+      frag(0, 0, 1); frag(1, lerp(FRAGS[1].pl, FRAGS[1].L, sg(t, .6, 4.0)), 1);
+      f.pol = {x:f.frags[1].fill, lift:0, op:1};
+      f.build = t > .6 && t < 4.0; if (t > 4.2) f.msg = "Stuck again! It bumped into the last fragment";
+    } else if (step === 4){
+      f.a = lerp(A2, A3, sg(t, 1.3, 3.1));
+      frag(0, 0, 1); frag(1, FRAGS[1].L, 1);
+      f.primase = {x:FRAGS[2].pr, op:sg(t, 3.1, 3.6) * (1 - sg(t, 4.3, 4.7))};
+      if (t > 3.1) frag(2, lerp(FRAGS[2].pl, FRAGS[2].L, sg(t, 6.0, 8.6)), sg(t, 3.6, 4.3));
+      const off = sg(t, .3, 1.2), land = sg(t, 4.5, 5.7);
+      f.pol = {x:t < 4.5 ? FRAGS[1].L : (t < 6 ? lerp(FRAGS[1].L, FRAGS[2].pl, land) : f.frags[2].fill), lift:off * (1 - land) * 34, op:lerp(1, .45, off * (1 - land))};
+      f.build = t > 6 && t < 8.6;
+      if (t > .3 && t < 2.2) f.msg = "Falls off again";
+      else if (t > 4.5 && t < 6) f.msg = "Finds the next primer";
+      else if (t > 8.8) f.msg = "Stuck again";
+    } else if (step === 5){
+      frag(0, 0, 1); frag(1, FRAGS[1].L, 1); frag(2, FRAGS[2].L, 1);
+      const off = sg(t, .2, 1.0);
+      f.pol = {x:FRAGS[2].L, lift:off * 34, op:1 - off};
+      f.pDNA = sg(t, 1.2, 2.6);
+      f.ligase = {x:lerp(-1, A3 - 1, sg(t, 3.0, 6.5)), op:sg(t, 2.8, 3.2) * (1 - sg(t, 6.8, 7.3))};
+      f.sealed = f.ligase.x;
+      if (t > 1.2 && t < 2.9) f.msg = "RNA primers are swapped for DNA";
+      if (t > 6.8) f.msg = "One continuous strand!";
+    } else if (step === 6){
+      FRAGS.forEach((fr, k) => { if (aState >= fr.pr + 1) frag(k, fr.L, 1); });
+      f.pDNA = 1; f.sealed = 99;
+    }
+    return f;
+  }
+  function primerTile(x, y, b, op){
+    const rb = b === "T" ? "U" : b;
+    return `<g opacity="${f3(op)}"><rect x="${f1(x-11.5)}" y="${f1(y)}" width="23" height="26" rx="5" fill="#f1e9fd" stroke="#8e5bd0" stroke-width="2"/><text x="${f1(x)}" y="${f1(y+18)}" class="bt" fill="#5b3fb0">${rb}</text></g>`;
+  }
+  function forkSVG(s, lt){
     const midY = 272;
-    const sep = i => smooth(clamp((s.a - i) / 4, 0, 1));
+    const lag = s.lagOn > 0.01 && lt ? lt : null;
+    const a = lag ? lag.a : s.a;
+    const sep = i => smooth(clamp((a - i) / 4, 0, 1));
     const topY = i => midY - 20 - 88 * sep(i);
     const botY = i => midY + 20 + 88 * sep(i);
     const newLeadY = i => botY(i) + 26;
     const newLagY = i => topY(i) - 26;
     const path = fn => { let d = ""; for (let u = 0; u <= N - 1; u += 0.2){ d += (d ? "L" : "M") + f1(X0 + u * DX) + "," + f1(fn(u)); } return d; };
-    const pathRange = (fn, a, b) => { let d = ""; for (let u = a; u <= b + 0.001; u += 0.2){ d += (d ? "L" : "M") + f1(X0 + u * DX) + "," + f1(fn(u)); } return d; };
+    const pathRange = (fn, p, q) => { let d = ""; for (let u = p; u <= q + 0.001; u += 0.2){ d += (d ? "L" : "M") + f1(X0 + u * DX) + "," + f1(fn(u)); } return d; };
     let o = "";
-    // parental backbones (continuous throughout)
+    // parental backbones
     o += `<path d="${path(topY)}" fill="none" stroke="#64748b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;
     o += `<path d="${path(botY)}" fill="none" stroke="#0f766e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;
     for (let i = 0; i < N; i++){ o += tile(X(i), topY(i), CODING[i]); o += tile(X(i), botY(i), TEMPLATE[i]); }
@@ -569,47 +645,56 @@
     o += `<text x="${X0-30}" y="${f1(botY(0)+18)}" class="prime">3'</text><text x="${X(N-1)+26}" y="${f1(botY(N-1)+18)}" class="prime">5'</text>`;
 
     if (s.originLabel > 0.01){
-      /* above the DNA while it's closed; once the fork opens, it slides into the empty gap between the two arms */
       const op = sep(0), lx = X(0) + lerp(62, 72, op), ly = lerp(midY - 66, midY, op);
       o += `<g opacity="${f3(s.originLabel)}">`;
       if (op < 0.5) o += `<path d="M${X(0)},${f1(midY - 22)} L${f1(lx - 50)},${f1(ly + 13)}" stroke="#e0b45c" stroke-width="3" opacity="${f3(1 - op * 2)}"/>`;
       o += `<rect x="${f1(lx - 78)}" y="${f1(ly - 13)}" width="156" height="26" rx="13" fill="#fbe3b5" stroke="#e0b45c" stroke-width="2"/><text x="${f1(lx)}" y="${f1(ly + 5)}" class="small mid">${resolved("origin") ? "Origin of replication" : "?"}</text></g>`;
     }
 
-    const sealed = s.a >= END - 0.4;
-    // leading strand: one continuous new piece from ORIGIN to current fork position
+    // leading strand: one primer at the origin, then DNA only as far as the polymerase has reached (right behind helicase)
     if (s.leadOn > 0.01){
-      const lim = clamp(s.a, ORIGIN, END);
+      const pDNA = lag ? lag.pDNA : 0;
+      const lim = clamp(a - 1.2, ORIGIN, END);
       if (lim > ORIGIN + 0.05) o += `<path d="${pathRange(newLeadY, ORIGIN, lim)}" fill="none" stroke="#2f9e63" stroke-width="4" stroke-linecap="round" opacity="${f3(s.leadOn)}"/>`;
-      for (let i = 0; i <= Math.floor(lim); i++) o += tile(X(i), newLeadY(i), CODING[i], s.leadOn);
-    }
-    // lagging strand: fragments, gaps visible until sealed
-    if (s.lagOn > 0.01){
-      const lim = clamp(s.a, ORIGIN, END);
-      const nFrag = Math.ceil(lim / FL) || 0;
-      let curFragStart = null;
-      for (let k = 0; k < nFrag; k++){
-        const segStart = k * FL, segEnd = Math.min((k + 1) * FL, lim);
-        if (segEnd - segStart < 0.05) continue;
-        o += `<path d="${pathRange(newLagY, segStart, segEnd)}" fill="none" stroke="#c9532f" stroke-width="4" stroke-linecap="round" opacity="${f3(s.lagOn)}"/>`;
-        for (let i = Math.ceil(segStart); i <= Math.floor(segEnd); i++) o += tile(X(i), newLagY(i), TEMPLATE[i] === "A" ? "T" : TEMPLATE[i] === "T" ? "A" : TEMPLATE[i] === "G" ? "C" : "G", s.lagOn);
-        if (!sealed) o += `<circle cx="${f1(X(segStart)+6)}" cy="${f1(newLagY(segStart)+13)}" r="4" fill="none" stroke="#e8744f" stroke-width="2" opacity="${f3(s.lagOn)}"/>`;
-        if (segEnd < segStart + FL - 0.05) curFragStart = segStart;
+      for (let i = 0; i <= Math.floor(lim); i++){
+        if (i < 3) o += primerTile(X(i), newLeadY(i), CODING[i], s.leadOn * (1 - pDNA)) + tile(X(i), newLeadY(i), CODING[i], s.leadOn * pDNA);
+        else o += tile(X(i), newLeadY(i), CODING[i], s.leadOn);
       }
-      if (sealed && nFrag > 0) o += `<path d="${pathRange(newLagY, 0, lim)}" fill="none" stroke="#c9532f" stroke-width="2" stroke-dasharray="1 5" opacity="${f3(s.lagOn*0.5)}"/>`;
-      if (!sealed && curFragStart !== null){
-        o += enzymeIcon(X(curFragStart), newLagY(curFragStart) - 30, "#8e5bd0", "#5b3fb0", "Primase", s.lagOn);
+      if (a < END - 0.1 && !(lag && lag.pDNA > .5)) o += enzymeIcon(X(lim), newLeadY(lim) + 4, "#2f9e63", "#1b7f4e", "DNA polymerase", s.leadOn);
+    }
+
+    // lagging strand
+    if (lag){
+      const comp = b => ({A:"T", T:"A", G:"C", C:"G"})[b];
+      lag.frags.forEach((fr, k) => {
+        const dnaFrom = Math.ceil(fr.fill - 0.001), dnaTo = fr.pl - 1;
+        if (dnaTo >= dnaFrom) o += `<path d="${pathRange(newLagY, Math.max(dnaFrom - 0.4, fr.L), dnaTo + 0.5)}" fill="none" stroke="#c9532f" stroke-width="4" stroke-linecap="round"/>`;
+        o += `<path d="${pathRange(newLagY, fr.pl - 0.4, fr.pr + 0.4)}" fill="none" stroke="${lag.pDNA > .5 ? "#c9532f" : "#8e5bd0"}" stroke-width="4" stroke-linecap="round" opacity="${f3(fr.primerOp)}"/>`;
+        for (let i = dnaFrom; i <= dnaTo; i++) o += tile(X(i), newLagY(i), comp(CODING[i]));
+        for (let i = fr.pl; i <= fr.pr; i++) o += primerTile(X(i), newLagY(i), comp(CODING[i]), fr.primerOp * (1 - lag.pDNA)) + tile(X(i), newLagY(i), comp(CODING[i]), fr.primerOp * lag.pDNA);
+        /* nick between this fragment and the one to its left, until ligase seals it */
+        if (k > 0 && fr.fill <= fr.L + 0.01 && lag.sealed < fr.L){
+          o += `<circle cx="${f1(X(fr.L) - DX / 2)}" cy="${f1(newLagY(fr.L) - 8)}" r="7" fill="#fff" stroke="#e8744f" stroke-width="3"/>`;
+        }
+        if (lag.pDNA < .5 && !lag.build && fr.fill <= fr.L + 0.01 && [3, 4].includes(Math.round(s.lagStep))){
+          const x1 = X(fr.L) - 10, x2 = X(fr.pr) + 10, y = Math.min(newLagY(fr.L), newLagY(fr.pr)) - 10;
+          o += `<path d="M${x1},${y + 6} v-6 H${x2} v6" fill="none" stroke="#b86b4b" stroke-width="1.8"/><text x="${f1((x1 + x2) / 2)}" y="${y - 6}" class="small mid" fill="#8a4a24">Okazaki fragment ${k + 1}</text>`;
+        }
+      });
+      if (lag.primase && lag.primase.op > .01) o += enzymeIcon(X(lag.primase.x), newLagY(lag.primase.x) - 34, "#8e5bd0", "#5b3fb0", "Primase", lag.primase.op);
+      if (lag.pol && lag.pol.op > .01){
+        const px = lag.pol.x, py = newLagY(Math.max(0, px)) - 34 - lag.pol.lift;
+        o += enzymeIcon(X(px) - 10, py, "#2f9e63", "#1b7f4e", "DNA polymerase", lag.pol.op);
+        if (lag.build) o += `<path d="M${f1(X(px) - 46)},${f1(py + 13)} h-40" stroke="#1b7f4e" stroke-width="3" marker-end="url(#dhG)"/><text x="${f1(X(px) - 70)}" y="${f1(py + 2)}" class="small mid" fill="#1b7f4e">builds this way</text>`;
       }
-      if (sealed) o += `<text x="${X(lim/2)}" y="${f1(newLagY(0)-30)}" class="small mid" fill="#1b7f4e">DNA ligase sealed every gap</text>`;
+      if (lag.ligase && lag.ligase.op > .01) o += enzymeIcon(X(lag.ligase.x), newLagY(Math.max(0, lag.ligase.x)) - 34, "#e05a8a", "#a3305d", "DNA ligase", lag.ligase.op);
+      if (lag.msg){
+        const w = lag.msg.length * 8.2 + 34, cx = clamp(X(lag.pol && lag.pol.op > .3 ? lag.pol.x : A2) + 230, w / 2 + 10, 990 - w / 2), stuck = /Stuck/.test(lag.msg);
+        o += `<rect x="${f1(cx - w / 2)}" y="18" width="${f1(w)}" height="32" rx="16" fill="${stuck ? "#b83a34" : "#3f4cc0"}"/><text x="${f1(cx)}" y="39" font-size="15" font-weight="800" fill="#fff" text-anchor="middle">${lag.msg}</text>`;
+      }
     }
-    // helicase + leading polymerase at the fork tip
-    if (s.helicase > 0.01){
-      o += enzymeIcon(X(s.a + 1.6), midY, "#3b7dd8", "#1f4e8c", "DNA helicase", s.helicase);
-    }
-    if (s.leadOn > 0.01 && s.a < END - 0.1){
-      const lp = clamp(s.a - 6, ORIGIN, END);
-      o += enzymeIcon(X(lp), newLeadY(lp), "#2f9e63", "#1b7f4e", "DNA polymerase", s.leadOn);
-    }
+    // helicase at the fork tip
+    if (s.helicase > 0.01 && a < END + 0.5) o += enzymeIcon(X(a + 1.6), midY, "#3b7dd8", "#1f4e8c", "DNA helicase", s.helicase);
     return o;
   }
 
@@ -822,7 +907,7 @@
       const [x, y] = P[n], pul = 1 + .12 * Math.sin(t * 5 + i);
       o += `<circle cx="${x}" cy="${y}" r="${f1(15 * pul)}" fill="${hc}" opacity=".18"/><circle cx="${x}" cy="${y}" r="11.5" fill="#fff" stroke="${hc}" stroke-width="3"/><text x="${x}" y="${y + 5}" font-size="14" font-weight="800" fill="${hc}" text-anchor="middle">N</text>`;
     });
-    o += lbl(84, 204, "phosphate", 11.5, "#8a4a24") + lbl(160, 278, "sugar", 11.5, "#5a6376") + lbl(300, 180, "base (A)", 11.5, "#5a6376");
+    o += lbl(84, 204, "phosphate", 11.5, "#8a4a24") + lbl(160, 278, "sugar", 11.5, "#5a6376") + lbl(250, 196, "base (A)", 11.5, "#5a6376");
     return {svg:o, heavy, hc};
   }
   function ms3SVG(t){
@@ -832,9 +917,8 @@
     /* panel 1 */
     o += panel(14, 1, "Why nitrogen?");
     const nuc = nucleotide(t);
-    o += `<g transform="translate(-18,16) scale(1.1)">${nuc.svg}</g>`;
-    o += `<rect x="30" y="342" width="280" height="36" rx="18" fill="${nuc.hc}"/>` + lbl(170, 366, nuc.heavy ? "¹⁵N = heavy (1 extra neutron)" : "¹⁴N = normal, light nitrogen", 14.5, "#fff");
-    o += lbl(170, 404, "Every DNA base contains nitrogen,", 14, "#343b4a", 400) + lbl(170, 424, "so DNA built in ¹⁵N broth is heavier", 14, "#343b4a", 400) + lbl(170, 444, "than DNA built in ¹⁴N broth.", 14, "#343b4a", 400);
+    o += `<g transform="translate(-24,26) scale(1.14)">${nuc.svg}</g>`;
+    o += `<rect x="30" y="372" width="280" height="36" rx="18" fill="${nuc.hc}"/>` + lbl(170, 396, nuc.heavy ? "¹⁵N = heavy (1 extra neutron)" : "¹⁴N = normal, light nitrogen", 14.5, "#fff");
     /* panel 2 */
     o += panel(344, 2, "Grow, extract, spin");
     const cols = [[402, HEAVY, "¹⁵N broth", "many gens", [{f:.72, c:HEAVY}], false], [500, LIGHTN, "¹⁴N broth", "1 gen", [], true], [598, LIGHTN, "¹⁴N broth", "2 gens", [], true]];
@@ -845,10 +929,9 @@
       o += ctube(c[0], 300, 92, 30, c[4], {q:c[5]}) + lbl(c[0], 412, "Gen " + i, 13, "#343b4a");
     });
     o += `<text x="444" y="274" font-size="11.5" font-weight="700" fill="#5a6376" text-anchor="middle">extract</text><text x="444" y="287" font-size="11.5" font-weight="700" fill="#5a6376" text-anchor="middle">+ spin</text>`;
-    o += lbl(500, 438, "After every generation: take a sample,", 13.5, "#343b4a", 400) + lbl(500, 454, "pull out the DNA, and spin it.", 13.5, "#343b4a", 400);
     /* panel 3 */
     o += panel(674, 3, "Reading the tube");
-    const TX = 740, TT = 110, TH = 280;
+    const TX = 800, TT = 112, TH = 318;
     const bands = [{f:.40, c:LIGHTN, n:"¹⁴N / ¹⁴N", d:"light DNA"}, {f:.55, c:"#6c8c6a", n:"¹⁵N / ¹⁴N", d:"hybrid DNA"}, {f:.70, c:HEAVY, n:"¹⁵N / ¹⁵N", d:"heavy DNA"}];
     o += ctube(TX, TT, TH, 50, bands.map(b => ({f:b.f, c:b.c, op:.85})), {});
     /* molecules sinking to where their density matches the salt */
@@ -857,21 +940,23 @@
     o += `<path d="M${TX - 58},${TT + 40} V${TT + TH - 40}" stroke="#7a8292" stroke-width="2.5"/><path d="M${TX - 58},${TT + TH - 32} l-6,-11 h12 z" fill="#7a8292"/>`;
     o += `<text x="${TX - 66}" y="${TT + TH / 2}" font-size="12" font-weight="700" fill="#5a6376" text-anchor="middle" transform="rotate(-90 ${TX - 66} ${TT + TH / 2})">denser</text>`;
     bands.forEach(b => { const y = TT + TH * b.f; o += `<path d="M${TX + 28},${f1(y)} H${TX + 46}" stroke="${b.c}" stroke-width="2.5"/><text x="${TX + 52}" y="${f1(y - 2)}" font-size="14" font-weight="800" fill="${b.c}">${b.n}</text><text x="${TX + 52}" y="${f1(y + 15)}" font-size="12.5" font-weight="700" fill="#5a6376">${b.d}</text>`; });
-    o += lbl(830, 424, "Heavier DNA sinks lower. Each band is", 13.5, "#343b4a", 400) + lbl(830, 442, "millions of molecules with the same density.", 13.5, "#343b4a", 400);
     return o;
   }
 
-  const DEFS = `<defs><marker id="dh" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#e8744f"/></marker></defs>`;
+  const DEFS = `<defs><marker id="dh" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#e8744f"/></marker><marker id="dhG" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0L10,5L0,10z" fill="#1b7f4e"/></marker></defs>`;
 
   function render(){
     const narrow = stage.clientWidth > 0 && stage.clientWidth < 700;
     const z = narrow ? cur.zoom : 0;
     const w = 1000 - 200 * z, h = 470;
-    const focus = X(cur.a);
+    const focus = X(cur.lagStep >= .5 ? lagFrame(Math.round(cur.lagStep), 99, cur.a).a : cur.a);
     const x0 = clamp(focus - w / 2, 0, 1000 - w);
     svg.setAttribute("viewBox", `${f1(x0)} 0 ${f1(w)} ${f1(h)}`);
     let o = DEFS;
-    if (cur.gene > 0.01) o += `<g opacity="${f3(cur.gene)}">${forkSVG(cur)}</g>`;
+    if (cur.gene > 0.01){
+      const ls = Math.round(cur.lagStep), lt = ls > 0 ? lagFrame(ls, stepResolved(idx) ? (performance.now() - stepT0) / 1000 : 99, cur.a) : null;
+      o += `<g opacity="${f3(cur.gene)}">${forkSVG(cur, lt)}</g>`;
+    }
     if (cur.origins > 0.01) o += `<g opacity="${f3(cur.origins)}">${originsSVG()}</g>`;
     if (cur.ms > 0.01) o += `<g opacity="${f3(cur.ms)}">${msSVG()}</g>`;
     const tt = reduced ? 0 : (performance.now() - T0) / 1000;
@@ -884,7 +969,7 @@
   let last = performance.now();
   function frame(now){
     if (stepTween(now)) dirty = true;
-    if (cur.hero > .01 || cur.models > .01 || cur.ms3 > .01) dirty = true;
+    if (cur.hero > .01 || cur.models > .01 || cur.ms3 > .01 || cur.lagStep > .5) dirty = true;
     if (dirty){ render(); dirty = false; }
     requestAnimationFrame(frame);
   }
@@ -949,15 +1034,22 @@
     nextBtn.disabled = open || !gateDone(idx);
     backBtn.disabled = idx === 0;
     replayBtn.disabled = idx === 0;
-    nextBtn.textContent = idx === LAST ? "Start over" : "Next";
+    nextBtn.textContent = idx === LAST ? "Start over" : (idx === PARTS[0].to ? "Next: How DNA is copied →" : "Next");
   }
 
+  function renderParts(){
+    const el = $("partTabs"), cp = partOf(idx);
+    el.innerHTML = `<span class="lbl">DNA replication modules:</span>` + PARTS.map((p, k) => `<button data-part="${k}" aria-pressed="${k === cp}">${p.name}</button>`).join("");
+    el.querySelectorAll("[data-part]").forEach(b => b.addEventListener("click", () => { const p = PARTS[+b.dataset.part]; furthest = Math.max(furthest, p.from); goTo(p.from); }));
+  }
   function renderNav(){
     const dots = $("dots"); dots.innerHTML = "";
+    const P = PARTS[partOf(idx)];
     STEPS.forEach((st, i) => {
+      if (i < P.from || i > P.to) return;
       const b = document.createElement("button");
       b.className = "dot" + (i === idx ? " current" : (i < furthest || i < idx ? " seen" : ""));
-      b.textContent = i + 1;
+      b.textContent = i - P.from + 1;
       b.setAttribute("aria-label", `Go to step ${i + 1}: ${st.title}`);
       b.disabled = mode === "test" && i > furthest;
       b.addEventListener("click", () => goTo(i));
@@ -979,7 +1071,8 @@
     const st = STEPS[i], res = stepResolved(i);
     if (res) furthest = Math.max(furthest, i + 1);
     animateTo(res ? st.state : prevState(i));
-    renderBubble(); renderNav(); renderGate(); renderSlider(); dirty = true;
+    stepT0 = performance.now() + 500;
+    renderBubble(); renderNav(); renderGate(); renderSlider(); renderParts(); dirty = true;
   }
   function goTo(i){ enterStep(clamp(i, 0, LAST)); }
 
@@ -987,7 +1080,7 @@
     if (!stepResolved(idx)){ updateButtons(); renderNav(); renderGate(); return; }
     furthest = Math.max(furthest, idx + 1);
     updateButtons(); renderNav(); showAfter();
-    animateTo(STEPS[idx].state);
+    animateTo(STEPS[idx].state); stepT0 = performance.now() + 500;
     dirty = true;
     nextBtn.focus({preventScroll:true});
   }
@@ -1042,6 +1135,7 @@
     if (idx === 0) return;
     cur = {...prevState(idx)};
     if (stepResolved(idx)) animateTo(STEPS[idx].state);
+    stepT0 = performance.now() + 500;
     dirty = true;
   }
 
