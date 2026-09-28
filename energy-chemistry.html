@@ -42,8 +42,8 @@
   };
   const MORE = {
     oil:{title:"Why electrons carry energy", html:`<p>Electrons held loosely in bonds with carbon and hydrogen (like in glucose or fats) are "high energy." When they move to an atom that pulls on them strongly, like oxygen, energy is released. Cells capture that energy in small steps instead of all at once, which is exactly what the electron transport chain does.</p><p>In biology, oxidation often looks like losing hydrogen atoms (a hydrogen = a proton + an electron), and reduction looks like gaining them. That's why NAD⁺ becoming NADH counts as reduction.</p>`},
-    vit:{title:"B vitamins in your cells", html:`<p>NAD⁺ is built from niacin (vitamin B3), and FAD is built from riboflavin (vitamin B2). Severe niacin deficiency causes a disease called pellagra, partly because cells can't make enough NAD⁺ for their metabolism. (Not for memorization.)</p>`},
-    atp:{title:"How much ATP do you use?", html:`<p>You recycle roughly your own body weight in ATP every day! Each ATP is used and rebuilt from ADP + P thousands of times. A bacterium dividing quickly also burns through ATP to build new proteins, DNA, and cell wall.</p>`}
+    vit:{title:"Why do cells bother picking up electrons?", html:`<p><b>Energy lives in electrons.</b> The electrons in the C–H and C–C bonds of glucose and fats are held loosely, so they are "high energy." Oxygen pulls on electrons much harder. When electrons move from a place where they're held loosely to a place where they're held tightly, energy is released, a bit like a ball rolling downhill. Breaking down glucose is really a way of letting those electrons roll downhill.</p><p><b>Why carriers?</b> If glucose handed its electrons straight to oxygen, all that energy would come out at once as heat (that's what burning is). Instead, enzymes pull the electrons off a few at a time and load them onto NAD⁺ and FAD. Now NADH and FADH₂ are holding the high-energy electrons, so the energy is stored in them, ready to deliver.</p><p><b>Dropping them off at the electron transport chain.</b> NADH and FADH₂ carry their electrons to the electron transport chain in the cell membrane. The electrons are passed down a chain of proteins, each holding them a little more tightly, until they reach the final electron acceptor (oxygen, in aerobic respiration). At each step a bit of energy is released and used to pump H⁺ across the membrane. That H⁺ build-up then powers ATP synthase to make ATP. The empty NAD⁺ and FAD go back to pick up more electrons. No carriers, no delivery, and the whole process stops.</p><p><b>B vitamins and "energy."</b> NAD⁺ is built from niacin (vitamin B3), and FAD is built from riboflavin (vitamin B2). That's why B vitamins are often sold as "energy" vitamins. They don't contain energy themselves, but without them you can't build the carriers that move energy from your food to ATP. Severe niacin deficiency causes a disease called pellagra, partly because cells can't make enough NAD⁺.</p>`},
+    atp:{title:"How much ATP do you use?", html:`<p>You recycle roughly your own body weight in ATP every day! Your body only holds about 250 grams of ATP at any moment, so each ATP is used and rebuilt from ADP + P thousands of times a day. A bacterium dividing quickly also burns through ATP to build new proteins, DNA, and cell wall.</p><p><b>Where your Calories go.</b> Your daily metabolic rate (the Calories you burn in a day) is basically a measure of how fast you're making and spending ATP. The Calories you eat are the energy stored in the bonds of food. Breaking the food down captures part of that energy (roughly 40%) in ATP, and the rest is released as heat, which keeps you warm. A person burning about 2,000 Calories a day turns over on the order of 100 moles of ATP. When you exercise, your muscles spend ATP faster, your metabolic rate goes up, and you need more food energy to rebuild that ATP.</p>`}
   };
 
   /* ================= Scenes ================= */
@@ -125,41 +125,75 @@
   function carrierScene(t, R){
     const T = 7, tt = t % T;
     let o = A.tx(500, 44, "Electron carriers: shuttles for high-energy electrons", "t20 mid");
-    const rows = [["NAD", "NADH", "catabolism (breaking down)", "niacin (B3)", 110], ["FAD", "FADH₂", "catabolism (Krebs cycle)", "riboflavin (B2)", 240], ["NADP", "NADPH", "anabolism (building up)", "B vitamins too", 370]];
-    rows.forEach((r, i) => { const p = smooth(seg(tt, .6 + i * 1.3, 1.6 + i * 1.3)) * (1 - smooth(seg(tt, 6.2, 7)));
-      o += A.carrier(170, r[4], r[0] === "FAD" ? "FAD" : r[0], false, {}) + A.eDot(lerp(300, 180, p), r[4] - 36, 10) + A.eDot(lerp(330, 200, p), r[4] - 36, 10);
-      o += A.arrow(270, r[4], 380, r[4], "#5a6376", 3) + A.op(p, A.carrier(470, r[4], r[0] === "FAD" ? "FAD" : r[0], true, {e:false}));
-      o += A.tx(580, r[4] - 4, `Main job: ${r[2]}`, "t14", "") + A.tx(580, r[4] + 20, `Made from ${r[3]}`, "t12", `style="fill:#5a6376"`); });
+    const rows = [["NAD", "catabolism (breaking down)", "niacin (B3)", 110], ["FAD", "catabolism (Krebs cycle)", "riboflavin (B2)", 240], ["NADP", "anabolism (building up)", "B vitamins too", 370]];
+    rows.forEach((r, i) => {
+      const y = r[3], p = smooth(seg(tt, .5 + i * 1.3, 1.7 + i * 1.3)), fade = 1 - smooth(seg(tt, 6.2, 7));
+      const lab = r[0] === "FAD" ? "FADH₂" : r[0] + "H", w = lab.length * 9 + 22, tx = 470 + w / 2;
+      o += A.carrier(170, y, r[0], false, {}) + A.arrow(270, y, 380, y, "#5a6376", 3);
+      /* the loaded carrier appears once the electrons land on it */
+      o += A.op(smooth(seg(p, .85, 1)) * fade, A.carrier(470, y, r[0], true, {e:false}));
+      if (fade > 0){
+        const x1 = lerp(150, tx - 2, p), x2 = lerp(172, tx + 9, p), arc = Math.sin(p * Math.PI) * 34;
+        o += A.op(fade, A.eDot(x1, lerp(y - 26, y - 13, p) - arc, p > .95 ? 6 : 10) + A.eDot(x2, lerp(y - 26, y - 6, p) - arc, p > .95 ? 6 : 10));
+      }
+      o += A.tx(580, y - 4, r[1].charAt(0).toUpperCase() + r[1].slice(1), "t14", "") + A.tx(580, y + 20, `Made from ${r[2]}`, "t12", `style="fill:#5a6376"`);
+    });
     o += A.tx(500, 450, "FAD grabs TWO electrons (and 2 H) to become FADH₂", "t14 mid muted");
     return o;
   }
   function egScene(t, R){
-    const T = 6, tt = t % T, p = smooth(seg(tt, .5, 3));
+    /* The energy line draws itself left to right, like time passing during the reaction */
+    const T = 7, tt = t % T, draw = smooth(seg(tt, .4, 4)), fade = 1 - smooth(seg(tt, 6.3, 7));
     let o = "";
-    const panel = (x0, title, col, y1, y2, note) => {
-      let s = A.tx(x0 + 200, 50, title, "t20 mid", `style="fill:${col}"`) + `<line x1="${x0 + 30}" y1="80" x2="${x0 + 30}" y2="380" stroke="#343b4a" stroke-width="2.5"/><line x1="${x0 + 30}" y1="380" x2="${x0 + 390}" y2="380" stroke="#343b4a" stroke-width="2.5"/>`;
-      s += `<path d="M${x0 + 40},${y1} C${x0 + 150},${y1} ${x0 + 160},130 ${x0 + 210},130 C${x0 + 260},130 ${x0 + 270},${y2} ${x0 + 380},${y2}" fill="none" stroke="${col}" stroke-width="4"/>`;
-      s += A.tx(x0 + 70, y1 + 26, "Reactants", "t12", "") + A.tx(x0 + 380, y2 + 26, "Products", "t12 end") + A.arrow(x0 + 395, y1, x0 + 395, y2, col, 3);
-      s += A.tx(x0 + 200, 420, note, "t14 mid");
+    const panel = (x0, title, col, y1, y2, note, id) => {
+      let s = A.tx(x0 + 210, 50, title, "t20 mid", `style="fill:${col}"`) + `<line x1="${x0 + 30}" y1="80" x2="${x0 + 30}" y2="380" stroke="#343b4a" stroke-width="2.5"/><line x1="${x0 + 30}" y1="380" x2="${x0 + 400}" y2="380" stroke="#343b4a" stroke-width="2.5"/>`;
+      const d = `M${x0 + 40},${y1} C${x0 + 150},${y1} ${x0 + 160},130 ${x0 + 210},130 C${x0 + 260},130 ${x0 + 270},${y2} ${x0 + 380},${y2}`;
+      s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="${f3(1 - draw)}" opacity="${f3(fade)}"/>`;
+      s += A.op(fade, `<circle cx="${x0 + 40}" cy="${y1}" r="6" fill="${col}"/>`) + A.tx(x0 + 44, y1 + 26, "Reactants", "t12", "");
+      s += A.op(smooth(seg(draw, .92, 1)) * fade, `<circle cx="${x0 + 380}" cy="${y2}" r="6" fill="${col}"/>` + A.tx(x0 + 380, y2 + 26, "Products", "t12 end"));
+      s += A.tx(x0 + 215, 404, "Time (the reaction goes on) →", "t12 mid muted");
+      s += A.tx(x0 + 210, 432, note, "t14 mid");
       return s;
     };
     o += panel(40, `${R("endergonic")}`, "#3f4cc0", 320, 200, "Absorbs energy: products have MORE");
     o += panel(540, `${R("exergonic")}`, "#d9443a", 200, 320, "Releases energy: products have LESS");
     o += `<line x1="500" y1="40" x2="500" y2="440" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
-    o += A.op(p, A.tx(240, 455, "Anabolic (building up)", "t14 mid", `style="fill:#1b7f4e"`) + A.tx(740, 455, "Catabolic (breaking down)", "t14 mid", `style="fill:#b83a34"`));
+    o += A.tx(240, 458, "Anabolic (building up)", "t14 mid", `style="fill:#1b7f4e"`) + A.tx(740, 458, "Catabolic (breaking down)", "t14 mid", `style="fill:#b83a34"`);
     o += A.tx(58, 230, "Energy", "t12 mid", `transform="rotate(-90 58 230)"`) + A.tx(558, 230, "Energy", "t12 mid", `transform="rotate(-90 558 230)"`);
     return o;
   }
   function atpScene(t, R){
-    const T = 6, tt = t % T, br = smooth(seg(tt, 1, 2.2)), back = smooth(seg(tt, 3.6, 5));
+    /* Phase 1: the last phosphate breaks off (ATP -> ADP + P + energy, built right into the picture).
+       Phase 2: energy from food puts it back on (phosphorylation). */
+    const T = 9, tt = t % T;
+    const off = smooth(seg(tt, 1, 2.3)), back = smooth(seg(tt, 5.2, 6.8)), pOff = off * (1 - back);
+    const ph1 = tt < 4.6, burst = smooth(seg(tt, 1.2, 1.9)) * (1 - smooth(seg(tt, 3.8, 4.4)));
+    const food = smooth(seg(tt, 4.4, 5.2)) * (1 - smooth(seg(tt, 7.2, 7.8)));
+    const Y = 230, AX = 300, PX = [420, 500, 580], R0 = 25;
     let o = A.tx(500, 44, `${R("phosphorylation") === "?" ? "?" : "Phosphorylation"}: adding a phosphate group`, "t20 mid");
-    const pOff = br * (1 - back);
-    o += A.atp(420, 200, 2, {sc:1.6, label:false}) + `<g transform="translate(${f1(420 + 1.6 * 58 + 110 * pOff)},${f1(200 - 40 * pOff)})">${A.phos(0, 0, 16)}</g>`;
-    if (pOff < .5) o += `<line x1="${f1(420 + 1.6 * 36)}" y1="200" x2="${f1(420 + 1.6 * 48)}" y2="200" stroke="#b25a36" stroke-width="5"/>`;
-    o += A.tx(470, 150, pOff > .5 ? "ADP + P" : "ATP", "t20 mid");
-    o += A.op(pOff, A.tx(700, 180, "⚡ ~7.3 kcal/mol released", "t16", `style="fill:#9a6212"`) + A.tx(700, 206, "powers endergonic work", "t14", `style="fill:#9a6212"`));
-    o += `<path d="M300,300 C380,380 620,380 700,300" fill="none" stroke="#1b7f4e" stroke-width="3"/>` + A.arrow(690, 312, 702, 298, "#1b7f4e", 3);
-    o += A.tx(500, 395, "ATP → ADP + P + energy", "t16 mid") + A.tx(500, 425, "Energy from food puts the phosphate back on: ADP + P → ATP", "t14 mid muted");
+    o += A.tx(500, 92, ph1 ? "Breaking off the last phosphate releases energy" : "Energy from food puts the phosphate back on", "t16 mid", `style="fill:${ph1 ? "#9a6212" : "#1b7f4e"}"`);
+    const p3x = lerp(PX[2], 650, pOff), p3y = Y - Math.sin(pOff * Math.PI) * 30;
+    /* bonds first, so they sit behind the circles */
+    o += `<line x1="${AX + 45}" y1="${Y}" x2="${PX[0]}" y2="${Y}" stroke="#b25a36" stroke-width="5"/><line x1="${PX[0]}" y1="${Y}" x2="${PX[1]}" y2="${Y}" stroke="#b25a36" stroke-width="5"/>`;
+    o += `<line x1="${PX[1]}" y1="${Y}" x2="${f1(p3x)}" y2="${f1(p3y)}" stroke="#b25a36" stroke-width="5" opacity="${f3(1 - smooth(seg(pOff, 0, .25)))}"/>`;
+    o += `<rect x="${AX - 50}" y="${Y - 34}" width="100" height="68" rx="14" fill="${C.atp}"/>` + A.tx(AX, Y + 6, "Adenosine", "t14 mid", `style="fill:#fff"`);
+    const P = (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${R0}" fill="${C.P}" stroke="#fff" stroke-width="3"/><text x="${f1(x)}" y="${f1(y + 7)}" font-size="20" font-weight="700" fill="#fff" text-anchor="middle">P</text>`;
+    o += P(PX[0], Y) + P(PX[1], Y) + P(p3x, p3y);
+    /* energy released as the bond breaks */
+    if (burst > .01){
+      const bx = lerp(545, 830, burst), by = Y - Math.sin(burst * Math.PI) * 90;
+      o += A.op(burst, `<circle cx="${f1(bx)}" cy="${f1(by)}" r="30" fill="#fff6b0" stroke="${C.gold}" stroke-width="3"/><text x="${f1(bx)}" y="${f1(by + 10)}" font-size="28" text-anchor="middle">⚡</text>`);
+    }
+    /* energy from food pushes the phosphate back on */
+    if (food > .01){
+      o += A.op(food, `<rect x="690" y="330" width="210" height="44" rx="22" fill="#e1f3e8" stroke="#1b7f4e" stroke-width="2"/>` + A.tx(795, 358, "⚡ energy from food", "t14 mid", `style="fill:#1b7f4e"`) + A.arrow(730, 326, lerp(660, 600, back), 262, "#1b7f4e", 3));
+    }
+    /* the equation lives in the labels under the pieces */
+    const split = smooth(seg(pOff, .8, 1));
+    o += A.op(1 - smooth(seg(pOff, .45, .75)), A.tx(440, Y + 76, "ATP", "t20 mid"));
+    o += A.op(split, A.tx(400, Y + 76, "ADP", "t20 mid") + A.tx(545, Y + 76, "+", "t20 mid") + A.tx(650, Y + 76, "P", "t20 mid"));
+    o += A.op(Math.min(split, burst), A.tx(740, Y + 76, "+", "t20 mid") + A.tx(830, Y + 76, "energy", "t20 mid", `style="fill:#9a6212"`) + A.tx(830, Y + 98, "(~7.3 kcal/mol)", "t12 mid", `style="fill:#9a6212"`));
+    o += A.tx(500, 440, "ATP powers the cell's work; food energy rebuilds it.", "t14 mid muted");
     return o;
   }
   function twoWaysScene(t, R){
@@ -181,17 +215,29 @@
   function currencyScene(t, R){
     const jobs = [["Biosynthesis", "building proteins, DNA, cell wall", 180], ["Transport", "pumping molecules across membranes", 500], ["Movement", "spinning a flagellum", 820]];
     let o = A.tx(500, 44, `${R("atp")}: the energy currency of the cell`, "t20 mid");
-    o += A.atp(470, 150, 3, {sc:1.8, label:false});
-    jobs.forEach((j, i) => { const on = Math.floor(t / 1.5) % 3 === i; o += A.arrow(500, 190, j[2], 300, on ? "#9a6212" : "#c9cfdb", on ? 4 : 2.5) + `<rect x="${j[2] - 140}" y="310" width="280" height="96" rx="16" fill="${on ? "#fff6d6" : "#fff"}" stroke="${on ? C.gold : "#d9dee7"}" stroke-width="2.5"/>` + A.tx(j[2], 348, j[0], "t16 mid") + A.tx(j[2], 378, j[1], "t12 mid muted"); });
+    o += A.atp(470, 150, 3, {sc:1.8, label:false}) + A.tx(510, 205, "ATP", "t16 mid");
+    jobs.forEach(j => { o += A.arrow(500, 220, j[2], 300, "#9a6212", 3) + `<rect x="${j[2] - 140}" y="310" width="280" height="96" rx="16" fill="#fff6d6" stroke="${C.gold}" stroke-width="2.5"/>` + A.tx(j[2], 348, j[0], "t16 mid") + A.tx(j[2], 378, j[1], "t12 mid muted"); });
     return o;
   }
   function threeScene(t, R){
-    const rows = [["Aerobic respiration", "Final electron acceptor: O₂", "32–38 ATP", "#1b7f4e", 3], ["Anaerobic respiration", "Final acceptor: NOT O₂ (like NO₃⁻, SO₄²⁻)", "moderate ATP", "#9a6212", 2], ["Fermentation", "No electron transport chain", "2 ATP", "#b83a34", 1]];
-    let o = A.tx(500, 44, "Three ways cells break down glucose", "t20 mid");
-    rows.forEach((r, i) => { const y = 100 + i * 115, n = Math.min(r[4] * 6, Math.floor((t * 6) % 22));
-      o += `<rect x="60" y="${y}" width="880" height="96" rx="18" fill="#fff" stroke="${r[3]}" stroke-width="2.5"/>` + A.tx(90, y + 40, i === 2 ? R("fermentation").replace(/^./, c => c.toUpperCase()) : r[0], "t16", `style="fill:${r[3]}"`) + A.tx(90, y + 70, r[1], "t14", `style="fill:#5a6376"`);
-      for (let k = 0; k < r[4] * 6; k++) o += `<circle cx="${640 + (k % 9) * 20}" cy="${y + 30 + Math.floor(k / 9) * 20}" r="7" fill="${k < n ? C.atp : "#eef1f5"}"/>`;
-      o += A.tx(910, y + 88, r[2], "t14 end"); });
+    /* solid dots = ATP always made; striped dots = extra ATP some cells can make */
+    const rows = [["Aerobic respiration", "Final electron acceptor: O₂", "32–38 ATP", "#1b7f4e", 32, 6], ["Anaerobic respiration", "Final acceptor: NOT O₂ (like NO₃⁻, SO₄²⁻)", "moderate ATP", "#9a6212", 8, 20], ["Fermentation", "No electron transport chain", "2 ATP", "#b83a34", 2, 0]];
+    let o = A.tx(500, 40, "Three ways cells break down glucose", "t20 mid");
+    o += `<defs><pattern id="atpStripe" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff"/><rect width="3" height="6" fill="${C.atp}"/></pattern></defs>`;
+    const PER = 14, GAP = 18, X0 = 626;
+    const cyc = t % 9, grow = Math.floor(seg(cyc, .3, 5.5) * 38 + .001);
+    rows.forEach((r, i) => {
+      const y = 62 + i * 118, total = r[4] + r[5];
+      o += `<rect x="50" y="${y}" width="900" height="104" rx="18" fill="#fff" stroke="${r[3]}" stroke-width="2.5"/>` + A.tx(78, y + 42, i === 2 ? R("fermentation").replace(/^./, c => c.toUpperCase()) : r[0], "t16", `style="fill:${r[3]}"`) + A.tx(78, y + 72, r[1], "t14", `style="fill:#5a6376"`);
+      for (let k = 0; k < total; k++){
+        const on = k < grow, cx = X0 + (k % PER) * GAP, cy = y + 22 + Math.floor(k / PER) * GAP;
+        const fill = k < r[4] ? C.atp : "url(#atpStripe)";
+        o += `<circle cx="${cx}" cy="${cy}" r="7" fill="${on ? fill : "#eef1f5"}" stroke="${on ? C.atp : "#d9dee7"}" stroke-width="1.5"/>`;
+      }
+      o += A.tx(930, y + 94, r[2], "t14 end");
+    });
+    o += `<circle cx="330" cy="428" r="7" fill="${C.atp}" stroke="${C.atp}" stroke-width="1.5"/>` + A.tx(344, 433, "= ATP made", "t12", "");
+    o += `<circle cx="470" cy="428" r="7" fill="url(#atpStripe)" stroke="${C.atp}" stroke-width="1.5"/>` + A.tx(484, 433, "= extra ATP possible (depends on the organism)", "t12", "");
     return o;
   }
 
@@ -254,10 +300,10 @@
     {part:P1, title:"Redox in cellular respiration", scene:(t, c) => glucoseScene(t, c.R, c.done), live:true, gate:GATES.glucose,
      stageHTML:`<a class="eqlink" href="oxidation-numbers.html"><span class="eq">C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O</span><span class="hint">Tap to see how the charges are figured out (bonus)</span></a>`,
      text:`Cellular respiration is one big redox reaction: C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O. The carbon from glucose is {{oxidized}}: it loses electrons (and hydrogen). Oxygen is {{reduced}}: it gains electrons (and hydrogen) and becomes water. The electrons don't jump straight across. NAD⁺ picks them up (becoming NADH) and carries them to oxygen. Follow the charges: carbon goes from 0 to +4 (lost electrons), oxygen goes from 0 to −2 (gained electrons), and hydrogen stays +1.`},
-    {part:P1, title:"Electron carriers", scene:(t, c) => carrierScene(t, c.R), gate:GATES.carriers, more:"vit",
+    {part:P1, title:"Electron carriers", scene:(t, c) => carrierScene(t, c.R), live:true, gate:GATES.carriers, more:"vit",
      text:`Cells use electron carriers to shuttle high-energy electrons. {{nad}} accepts electrons and becomes NADH. Its main role is in catabolism, and it's made from niacin (a B vitamin). {{fad}} accepts TWO electrons and becomes FADH₂ (another B vitamin). {{nadp}} accepts electrons and becomes NADPH, and its main role is in anabolism.`,
      after:`Picking up electrons = the carrier is reduced.`},
-    {part:P2, title:"Endergonic vs. exergonic", scene:(t, c) => egScene(t, c.R), gate:GATES.eg,
+    {part:P2, title:"Endergonic vs. exergonic", scene:(t, c) => egScene(t, c.R), live:true, gate:GATES.eg,
      text:`{{endergonic}} reactions absorb more energy than they release (endo = within), so the products have more energy than the reactants. {{exergonic}} reactions release more energy than they absorb (exo = out), so the products have less energy. Catabolic reactions are exergonic. Anabolic reactions are endergonic.`},
     {part:P2, title:"Phosphorylation and ATP", scene:(t, c) => atpScene(t, c.R), more:"atp",
      text:`{{phosphorylation}} is the addition of a phosphate group to a molecule. ATP carries energy in its phosphate bonds: ATP → ADP + P + energy releases about 7.3 kcal/mol. That energy drives endergonic (energy-requiring) reactions. Phosphorylation "energizes" molecules for cellular processes.`},
