@@ -182,7 +182,8 @@
     energy:{name:"Chemistry of energy production", href:"energy-chemistry.html", desc:"Redox, electron carriers, and ATP", icon:"redox", col:"#9a6212", wide:true},
     respov:{name:"Cellular respiration: the big picture", href:"respiration-overview.html", desc:"The 3 stages, where they happen, and the ATP payoff", icon:"resp", col:"#3f4cc0", wide:true},
     glycolysis:{name:"Glycolysis", href:"glycolysis.html", desc:"Glucose \u2192 2 pyruvate, 2 ATP, 2 NADH", icon:"gly", col:"#b83a34", wide:true},
-    krebs:{name:"Krebs cycle, ETC and ATP synthase", href:"krebs-etc.html", desc:"CO\u2082, NADH, chemiosmosis, 32\u201338 ATP", icon:"resp", col:"#3f4cc0", wide:true},
+    krebs:{name:"The Krebs cycle", href:"krebs.html", desc:"Acetyl-CoA \u2192 CO\u2082, NADH, FADH\u2082, and ATP", icon:"resp", col:"#3f4cc0", wide:true},
+    etcmod:{name:"Electron transport chain & ATP synthase", href:"etc.html", desc:"Chemiosmosis, aerobic vs. anaerobic, ~34\u201338 ATP", icon:"resp", col:"#3f4cc0", wide:true},
     ferment:{name:"Fermentation and anaerobic respiration", href:"fermentation.html", desc:"Life without oxygen: NAD\u207A, nitrate, sulfate", icon:"ferm", col:"#1b7f4e", wide:true}
   };
 
@@ -549,7 +550,7 @@
     const GAMES_HTML = `<h2>Games</h2><p class="moddesc">Race the clock! Every round is a brand-new sequence, and your best times are saved on this browser.</p><div class="grid">${GAMES.map(k => tileHTML(k, {noWide:true})).join("")}</div>`;
     /* Chapter 5 modules appear here as each one is revised. Still to come: enzymes, glycolysis, krebs, ferment
        (restore their stops in studypath.js when they go live). */
-    const CH5 = ["energy","respov","glycolysis"];
+    const CH5 = ["energy","respov","glycolysis","krebs","etcmod"];
     const CH5_ENABLED = true;
     const t = k => tileHTML(k, {noDesc:true, noWide:true});
     const el = document.getElementById("modDir");
