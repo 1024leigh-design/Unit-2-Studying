@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biochemical ID Tests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="metab.css">
+<style>
+  .labtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .labtab{border:2px solid var(--line);background:#fff;color:var(--muted);font:700 .85rem var(--font);padding:8px 14px;border-radius:12px;cursor:pointer}
+  .labtab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .labwrap{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+  .labhead{margin-bottom:4px}
+  .labhead h2{margin:0 0 4px;font-size:1.25rem}
+  .labq{color:var(--muted);font-size:.95rem;margin:0 0 16px}
+  .labgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:760px){.labgrid{grid-template-columns:1fr}}
+  .labstage{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:360px;background:#f7f8fb;border-radius:14px;padding:18px 10px}
+  .labpanel h3{font-size:.9rem;font-weight:800;color:var(--ink);margin:0 0 8px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+  .orgrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .orgchip{border:2px solid var(--line);background:#fff;border-radius:12px;padding:8px 12px;font-size:.88rem;font-weight:700;cursor:pointer;text-align:left}
+  .orgchip i{font-weight:700}
+  .orgchip.on{border-color:var(--accent);background:var(--accent-soft)}
+  .stepbtns{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .labnote{background:#fff8e6;border:1px solid #f0d99a;border-radius:10px;padding:8px 12px;font-size:.85rem;color:#8a5a00;margin:8px 0}
+  .labsafety{background:#fbe8e7;border:1px solid #f0bcb8;border-radius:10px;padding:8px 12px;font-size:.83rem;color:#7a2e28;margin:8px 0}
+  .result{border-radius:14px;padding:12px 16px;margin-top:10px;font-size:.95rem}
+  .result.pos{background:var(--good-soft);border:2px solid #9fd3b5}
+  .result.neg{background:var(--bad-soft);border:2px solid #eab3af}
+  .result .tag{display:inline-block;font-weight:800;border-radius:999px;padding:2px 12px;font-size:.8rem;margin-bottom:6px}
+  .result.pos .tag{background:var(--good);color:#fff}
+  .result.neg .tag{background:var(--bad);color:#fff}
+  .explain{font-size:.92rem;line-height:1.55;color:var(--ink)}
+  .ctrltag{font-size:.72rem;font-weight:700;color:var(--muted);background:#eef1f5;border-radius:999px;padding:1px 8px;margin-left:6px}
+  .labfoot{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;margin-top:16px}
+  .why{background:#f3effd;border:1px solid #d9cdf5;border-radius:10px;padding:10px 14px;font-size:.9rem;color:#3d2a6b;margin-top:12px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="metab.js"></script>
+<script>
+(function(){
+  const A = Metab.A;
+  const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"})[c]);
+
+  /* ---------- little SVG props: tube and plate ---------- */
+  function tubeSVG(fill, gas, label){
+    let s = `<svg viewBox="0 0 160 260" width="140">`;
+    s += `<path d="M40,10 L40,170 A40,40 0 0 0 120,170 L120,10" fill="#fff" stroke="#8b93a3" stroke-width="4"/>`;
+    s += `<path d="M44,60 L44,170 A36,36 0 0 0 116,170 L116,60 Z" fill="${fill}" opacity=".88"/>`;
+    if (gas) s += `<rect x="70" y="90" width="20" height="46" rx="6" fill="${fill}" stroke="#5a6376" stroke-width="2"/><rect x="73" y="93" width="14" height="${gas === 2 ? 34 : 0}" rx="4" fill="#fff"/>`;
+    s += `<rect x="34" y="0" width="92" height="16" rx="6" fill="#c9cfdb"/>`;
+    if (label) s += `<text x="80" y="230" font-size="15" font-weight="700" text-anchor="middle" fill="#343b4a">${label}</text>`;
+    return s + `</svg>`;
+  }
+  function plateSVG(mode, label){
+    /* mode: "none" | dot pattern keys for colony color/pattern */
+    let s = `<svg viewBox="0 0 220 220" width="180"><circle cx="110" cy="110" r="100" fill="#fdfdf8" stroke="#c9cfdb" stroke-width="6"/><circle cx="110" cy="110" r="92" fill="none" stroke="#e7e9f0" stroke-width="2"/>`;
+    if (mode && mode.colonies){
+      const pts = [[70,70],[130,60],[150,110],[100,140],[60,120],[110,95],[75,150],[140,150]];
+      pts.forEach(([x,y]) => { s += `<circle cx="${x}" cy="${y}" r="${mode.r||9}" fill="${mode.fill}" ${mode.stroke ? `stroke="${mode.stroke}" stroke-width="2"` : ""} opacity="${mode.op||1}"/>`; if (mode.sheen) s += `<circle cx="${x}" cy="${y}" r="${(mode.r||9)-3}" fill="none" stroke="#6fdc8c" stroke-width="1.5" opacity=".8"/>`; });
+    }
+    if (mode && mode.noGrowth) s += `<text x="110" y="114" font-size="13" font-weight="700" text-anchor="middle" fill="#8a93a3">no growth</text>`;
+    if (label) s += `<text x="110" y="210" font-size="13" font-weight="700" text-anchor="middle" fill="#343b4a">${label}</text>`;
+    return s + `</svg>`;
+  }
+  function stripSVG(color){
+    return `<svg viewBox="0 0 200 90" width="180"><rect x="4" y="4" width="192" height="82" rx="8" fill="#fbf9f2" stroke="#d9cfa6" stroke-width="2"/><circle cx="100" cy="46" r="26" fill="${color}"/><text x="100" y="80" font-size="11" text-anchor="middle" fill="#8a7a4a">reagent strip</text></svg>`;
+  }
+
+  /* ================= Test definitions ================= */
+  const RED = "#c0392b", YEL = "#f0d64a", PINKRED = "#e0463c", ORANGE = "#e08a3c", COPPER = "#b98a52", CLEAR = "#f7f3e3", PURPLE = "#5b3fb0";
+
+  const TESTS = [
+    {key:"durham", tab:"Durham Tube", title:"Durham Sugar Fermentation Test", medium:"tube",
+     question:"Can this bacterium ferment glucose?",
+     setup:`A tube of glucose broth (0.5% sugar) with phenol red as a pH indicator, plus a small inverted Durham tube to catch gas.`,
+     organisms:[
+       {name:"E. coli", control:true, pos:true, why:"E. coli ferments glucose, producing both acid and gas."},
+       {name:"Alcaligenes faecalis", pos:false, why:"This organism can't ferment glucose at all — it gets its energy another way."}
+     ],
+     reagents:[],
+     read:pos => pos
+       ? {cls:"pos", tube:{fill:YEL, gas:2, label:"yellow + bubble"}, tag:"Positive", text:`Fermentation happened: the acid produced turned the broth from red to <b>yellow</b>, and a gas bubble is trapped in the Durham tube. One loop of bacteria was enough to ferment the sugar and drop the pH below the indicator's threshold.`}
+       : {cls:"neg", tube:{fill:RED, gas:0, label:"stays red"}, tag:"Negative", text:`No color change and no bubble. This organism didn't ferment glucose at all here, so no acid (and no gas) was produced — the broth's pH never dropped.`},
+     why:`This is the exact test from the fermentation module: acid production turns the pH indicator yellow, and any gas (like CO₂ or H₂) gets trapped in the Durham tube. Run it with lactose, mannitol, mannose, or maltose instead of glucose to test other sugars.`,
+     link:["Review fermentation and NAD⁺ recycling →", "fermentation.html"]},
+
+    {key:"mr", tab:"Methyl Red", title:"Methyl Red (MR) Test", medium:"tube",
+     question:"Does this bacterium produce a lot of mixed acids from fermentation?",
+     setup:`A tube of MR-VP broth (glucose broth), incubated, then split off for the Methyl Red reagent.`,
+     organisms:[
+       {name:"E. coli", control:true, pos:true, why:"E. coli uses the mixed acid fermentation pathway, producing enough acid to drop the pH below 4.4."},
+       {name:"Enterobacter aerogenes", pos:false, why:"This organism uses the butanediol pathway instead, which produces much less acid."}
+     ],
+     reagents:[{label:"Add methyl red (3–4 drops)", note:"The color develops immediately."}],
+     read:pos => pos
+       ? {cls:"pos", tube:{fill:RED, gas:0, label:"red (pH < 4.4)"}, tag:"Positive", text:`The broth turns <b>red</b>: this organism's mixed-acid fermentation pathway pushed the pH below 4.4, well into methyl red's red range.`}
+       : {cls:"neg", tube:{fill:YEL, gas:0, label:"yellow"}, tag:"Negative", text:`The broth stays <b>yellow</b>. This organism still fermented the sugar, just through a pathway (2,3-butanediol) that produces much less acid, so the pH never drops far enough.`},
+     why:`MR and VP are run on the same broth and almost always give opposite results, because they're testing two competing fermentation pathways that both start at pyruvate: the mixed-acid pathway (lots of acid, MR-positive) and the butanediol pathway (little acid but acetoin, VP-positive).`},
+
+    {key:"vp", tab:"Voges-Proskauer", title:"Voges-Proskauer (VP) Test", medium:"tube",
+     question:"Does this bacterium use the butanediol fermentation pathway?",
+     setup:`The other half of the same MR-VP broth tube, tested for acetoin instead of acid.`,
+     organisms:[
+       {name:"Enterobacter aerogenes", control:true, pos:true, why:"E. aerogenes ferments glucose via the 2,3-butanediol pathway, producing acetoin."},
+       {name:"E. coli", pos:false, why:"E. coli uses the mixed-acid pathway instead and makes essentially no acetoin."}
+     ],
+     reagents:[{label:"Add VP1 — alpha-naphthol (18 drops)"}, {label:"Add VP2 — KOH (18 drops)", note:"May take a few hours to develop. Watch for false negatives!"}],
+     read:pos => pos
+       ? {cls:"pos", tube:{fill:"#e0679e", gas:0, label:"pink/red"}, tag:"Positive", text:`The broth turns <b>pink to red</b>: acetoin (made by the butanediol pathway) reacts with the reagents to form this color, confirming this pathway is in use.`}
+       : {cls:"neg", tube:{fill:COPPER, gas:0, label:"stays copper/brown"}, tag:"Negative", text:`The broth stays copper-brown. No acetoin means this organism isn't using the butanediol pathway — check its Methyl Red result instead.`},
+     why:`Real labs are careful here because false negatives happen if you don't wait long enough. Compare this tube's result to the Methyl Red tube from the exact same organism — a classic enteric bacterium is usually strongly positive for one test and negative for the other.`},
+
+    {key:"oxidase", tab:"Oxidase", title:"Oxidase Test", medium:"strip",
+     question:"Does this bacterium have cytochrome c oxidase?",
+     setup:`A reagent-soaked strip of paper. A loopful of the organism is smeared onto a drop of oxidase reagent, and a second drop is added.`,
+     organisms:[
+       {name:"Pseudomonas aeruginosa", control:true, pos:true, why:"Pseudomonas has cytochrome c oxidase, the last enzyme complex of aerobic electron transport."},
+       {name:"E. coli", pos:false, why:"E. coli's electron transport chain doesn't use cytochrome c oxidase as its terminal enzyme."}
+     ],
+     reagents:[{label:"Add oxidase reagent and wait 20–30 seconds"}],
+     read:pos => pos
+       ? {cls:"pos", strip:PURPLE, tag:"Positive", text:`The smear turns <b>dark purple</b> within 20–30 seconds. Cytochrome c oxidase — Complex IV of the electron transport chain — oxidized the reagent, which only happens if the organism can use O₂ as a final electron acceptor.`}
+       : {cls:"neg", strip:"#e8e4d6", tag:"Negative", text:`No color change. This organism doesn't rely on cytochrome c oxidase to hand electrons to oxygen — its electron transport chain (if it has one at all) ends differently.`},
+     why:`This is the exact enzyme from the electron transport chain module: cytochrome c oxidase is Complex IV, the protein that finally hands electrons to O₂. Cyanide and carbon monoxide poison this same enzyme.`,
+     link:["Review Complex IV in the electron transport chain →", "etc.html"]},
+
+    {key:"nitrate", tab:"Nitrate Reduction", title:"Nitrate Reduction Test", medium:"tube",
+     question:"Can this bacterium use nitrate as a final electron acceptor?",
+     setup:`A tube of nitrate broth.`,
+     organisms:[
+       {name:"E. coli", control:true, pos:true, why:"E. coli readily reduces nitrate to nitrite when oxygen isn't available."},
+       {name:"Micrococcus luteus", pos:false, why:"This organism can't reduce nitrate at all — the reagents will need the zinc-dust confirmation step."}
+     ],
+     reagents:[{label:"Add Nitrate A + Nitrate B (2–3 drops each), mix", note:"Allow about 30 minutes to develop."}],
+     read:pos => pos
+       ? {cls:"pos", tube:{fill:RED, gas:0, label:"red"}, tag:"Positive", text:`The broth turns <b>red</b> right after adding the reagents: nitrate was reduced to nitrite, which reacts with Nitrate A and B to form this color. This organism can run anaerobic respiration using nitrate as its final electron acceptor.`}
+       : {cls:"", tube:{fill:CLEAR, gas:0, label:"no color yet…"}, tag:"Needs zinc", text:`No color after 30 minutes — inconclusive so far. This could mean the organism never touched the nitrate, or that it reduced it all the way past nitrite. Add zinc dust to find out.`,
+          zincLabel:"Add a pinch of zinc dust"},
+     zinc:pos => pos
+       ? {cls:"", tag:"(not needed here)", tube:{fill:RED, gas:0, label:"red"}, text:``}
+       : {cls:"neg", tag:"Confirmed negative", tube:{fill:RED, gas:0, label:"turns red"}, text:`Zinc chemically reduces any leftover nitrate to nitrite itself. Since the tube turns red <i>now</i>, the nitrate was never touched by the bacterium — a confirmed negative.`},
+     safety:`Nitrate Reagent B is a real-lab carcinogen — always handled with gloves and care. This simulation lets you see the chemistry without the hazard.`,
+     why:`This is the same choice cells face in the anaerobic respiration module: with no oxygen around, some bacteria use nitrate instead. The zinc step matters because "no color" is ambiguous — it could mean no reduction happened, or that reduction went all the way to N₂ gas.`,
+     link:["Review anaerobic respiration and alternate electron acceptors →", "etc.html"]},
+
+    {key:"macconkey", tab:"MacConkey", title:"MacConkey Agar", medium:"plate",
+     question:"Is this bacterium gram-negative, and can it ferment lactose?",
+     setup:`A MacConkey agar plate: bile salts and crystal violet make it selective (only gram-negatives grow); lactose plus a pH indicator make it differential.`,
+     organisms:[
+       {name:"E. coli", control:true, pos:true, growth:true, why:"Gram-negative (grows) and a strong lactose fermenter (turns pink)."},
+       {name:"Salmonella", pos:false, growth:true, why:"Gram-negative (grows), but can't ferment lactose, so its colonies stay colorless."},
+       {name:"Staphylococcus aureus", pos:false, growth:false, why:"Gram-positive — the bile salts and crystal violet stop it from growing at all."}
+     ],
+     reagents:[],
+     read:(pos, org) => !org.growth
+       ? {cls:"neg", plate:{noGrowth:true}, tag:"No growth", text:`Nothing grows. MacConkey agar is selective for gram-negative bacteria — the bile salts and crystal violet in the medium stop gram-positive cells like this one cold.`}
+       : pos
+       ? {cls:"pos", plate:{colonies:true, fill:"#e0685f", r:10}, tag:"Positive (lactose+)", text:`Pink-to-red colonies. This confirms the organism is gram-negative (or it wouldn't grow at all) and that it ferments lactose — the acid produced turns the pH indicator pink/red right around the colonies.`}
+       : {cls:"neg", plate:{colonies:true, fill:"#f3efe0", stroke:"#c9c2a8", r:10}, tag:"Negative (lactose−)", text:`Colorless colonies. It grew, so it's gram-negative, but it can't ferment lactose — no acid, so the indicator never changes color.`},
+     why:`MacConkey is both selective AND differential in one plate: the selective axis (does it grow at all?) confirms a Gram stain, and the differential axis (color) confirms a Durham-tube lactose result.`,
+     link:["Compare with the Durham lactose test →", "fermentation.html"]},
+
+    {key:"emb", tab:"EMB", title:"Eosin Methylene Blue (EMB) Agar", medium:"plate",
+     question:"Is this bacterium a coliform, and how strongly does it ferment lactose?",
+     setup:`An EMB plate: eosin Y and methylene blue dyes inhibit gram-positive growth (a bit less strictly than MacConkey) and double as a lactose-fermentation indicator.`,
+     organisms:[
+       {name:"E. coli", control:true, pos:true, growth:true, sheen:true, why:"A strong lactose fermenter — classic green metallic sheen."},
+       {name:"Enterobacter aerogenes", pos:false, growth:true, sheen:false, why:"A weaker, slower lactose fermenter — mucoid, brownish colonies, no sheen."},
+       {name:"Staphylococcus aureus", pos:false, growth:false, why:"Gram-positive — inhibited by the dyes."}
+     ],
+     reagents:[],
+     read:(pos, org) => !org.growth
+       ? {cls:"neg", plate:{noGrowth:true}, tag:"No growth", text:`Nothing grows — the dyes in EMB inhibit gram-positive bacteria, just like MacConkey's bile salts do.`}
+       : org.sheen
+       ? {cls:"pos", plate:{colonies:true, fill:"#243b2e", r:10, sheen:true}, tag:"Strong fermenter", text:`Colonies with a <b>green metallic sheen</b> — the signature of a strong, fast lactose fermenter dumping out enough acid to precipitate both dyes onto the colony surface.`}
+       : {cls:"", plate:{colonies:true, fill:"#6b4a3a", r:10, op:.85}, tag:"Weak fermenter", text:`Dark, mucoid, brownish colonies with no sheen. This organism ferments lactose, just slowly and with less acid — not enough to produce the sheen.`},
+     why:`EMB is a nice contrast to MacConkey: same basic idea (selective for gram-negatives, differential for lactose), but its three-way readout (sheen / no sheen / colorless) can distinguish a fast fermenter from a slow one.`,
+     link:["Compare with MacConkey Agar", "#macconkey"]},
+
+    {key:"msa", tab:"MSA", title:"Mannitol Salt Agar (MSA)", medium:"plate",
+     question:"Is this bacterium salt-tolerant, and can it ferment mannitol?",
+     setup:`An MSA plate: 7.5% NaCl makes it selective for salt-tolerant bacteria (mainly Staphylococcus); mannitol plus phenol red make it differential.`,
+     organisms:[
+       {name:"Staphylococcus aureus", control:true, pos:true, growth:true, why:"Salt-tolerant and a mannitol fermenter — a classic pathogen ID."},
+       {name:"Staphylococcus epidermidis", pos:false, growth:true, why:"Salt-tolerant, but can't ferment mannitol, so the plate stays pink around it."},
+       {name:"E. coli", pos:false, growth:false, why:"Not salt-tolerant — 7.5% NaCl stops it from growing at all."}
+     ],
+     reagents:[],
+     read:(pos, org) => !org.growth
+       ? {cls:"neg", plate:{noGrowth:true}, tag:"No growth", text:`Nothing grows. Most bacteria can't survive 7.5% salt — this medium is highly selective for a small group of salt-tolerant organisms.`}
+       : pos
+       ? {cls:"pos", plate:{colonies:true, fill:"#e8d13a", r:10}, tag:"Positive (mannitol+)", text:`The agar around the colonies turns <b>yellow</b>. This organism tolerated the salt AND fermented mannitol, dropping the pH enough to shift phenol red to yellow.`}
+       : {cls:"neg", plate:{colonies:true, fill:"#e0685f", r:10, op:.6}, tag:"Negative (mannitol−)", text:`It grew (so it's salt-tolerant), but the agar stays pink — no acid means no mannitol fermentation.`},
+     why:`This combination — high salt (selective) plus a sugar and pH indicator (differential) — is exactly the same two-axis logic as MacConkey and EMB, just tuned to identify Staphylococcus and tell apart its species.`}
+  ];
+
+  /* ================= Rendering ================= */
+  const $ = id => document.getElementById(id);
+  let active = TESTS[0].key, state = {};
+
+  function resetState(t){
+    state = {orgIdx:0, step:"pick", zinc:false};
+  }
+
+  function render(){
+    const t = TESTS.find(x => x.key === active);
+    const el = $("labArea");
+    const org = t.organisms[state.orgIdx];
+
+    const tabs = TESTS.map(x => `<button class="labtab ${x.key === active ? "on" : ""}" data-tab="${x.key}">${x.tab}</button>`).join("");
+    $("labTabs").innerHTML = tabs;
+
+    /* stage visual */
+    let stage = "";
+    if (state.step === "pick" || state.step === "inoculate"){
+      stage = t.medium === "plate" ? plateSVG(null, "waiting to inoculate") : t.medium === "strip" ? stripSVG("#e8e4d6") : tubeSVG("#f2b4ad", 0, "waiting to inoculate");
+    } else if (state.step === "incubate"){
+      stage = t.medium === "plate" ? plateSVG(null, "incubating…") : t.medium === "strip" ? stripSVG("#e8e4d6") : tubeSVG("#f2b4ad", 0, "incubating…");
+    } else if (state.step === "reagent"){
+      stage = t.medium === "plate" ? plateSVG(null, "incubating…") : t.medium === "strip" ? stripSVG("#e8e4d6") : tubeSVG("#f2b4ad", 0, "ready for reagent");
+    } else if (state.step === "result"){
+      const r = state.zinc && t.zinc ? t.zinc(org.pos) : t.read(org.pos, org);
+      if (t.medium === "plate") stage = plateSVG(r.plate, r.tag);
+      else if (t.medium === "strip") stage = stripSVG(r.strip);
+      else stage = tubeSVG(r.tube.fill, r.tube.gas, r.tube.label);
+    }
+
+    const orgRow = t.organisms.map((o, i) => `<button class="orgchip ${i === state.orgIdx ? "on" : ""}" data-org="${i}"><i>${esc(o.name)}</i>${o.control ? `<span class="ctrltag">control</span>` : ""}</button>`).join("");
+
+    let controls = "";
+    if (state.step === "pick") controls = `<button class="btn primary" id="doInoc">${t.medium === "plate" ? "Streak the plate" : "Inoculate the tube"}</button>`;
+    else if (state.step === "inoculate") controls = `<button class="btn primary" id="doIncub">Incubate (24–48 hrs)</button>`;
+    else if (state.step === "incubate"){
+      if (t.reagents.length){
+        const rct = state.reagentIdx || 0;
+        const r = t.reagents[rct];
+        controls = `<button class="btn primary" id="doReagent">${r.label}</button>` + (r.note ? `<div class="labnote">${r.note}</div>` : "");
+      } else controls = `<button class="btn primary" id="doRead">Read the result</button>`;
+    } else if (state.step === "reagent"){
+      const rct = state.reagentIdx || 0;
+      if (rct < t.reagents.length - 1) controls = `<button class="btn primary" id="doNextReagent">${t.reagents[rct + 1].label}</button>`;
+      else controls = `<button class="btn primary" id="doRead">Read the result</button>`;
+    } else if (state.step === "result"){
+      const r = state.zinc && t.zinc ? t.zinc(org.pos) : t.read(org.pos, org);
+      controls = `<button class="btn secondary" id="doAgain">Try the other organism</button>`;
+      if (r.zincLabel && !state.zinc) controls = `<button class="btn primary" id="doZinc">${r.zincLabel}</button> ` + controls;
+    }
+
+    let resultHTML = "";
+    if (state.step === "result"){
+      const r = state.zinc && t.zinc ? t.zinc(org.pos) : t.read(org.pos, org);
+      const cls = r.cls || "";
+      resultHTML = `<div class="result ${cls}"><span class="tag">${r.tag}</span><div class="explain">${r.text}</div></div>
+        <div class="why"><b>Why this organism:</b> ${esc(org.why)}</div>`;
+    }
+
+    el.innerHTML = `
+      <div class="labhead"><h2>${t.title}</h2></div>
+      <p class="labq"><b>Question:</b> ${t.question}</p>
+      <p class="labq" style="margin-top:-10px">${t.setup}</p>
+      ${t.safety ? `<div class="labsafety">⚠️ ${t.safety}</div>` : ""}
+      <div class="labgrid">
+        <div class="labpanel">
+          <h3>1. Pick an organism</h3>
+          <div class="orgrow">${orgRow}</div>
+          <h3>2. Run the test</h3>
+          <div class="stepbtns">${controls}</div>
+          ${resultHTML}
+        </div>
+        <div class="labpanel">
+          <h3>The ${t.medium === "plate" ? "plate" : t.medium === "strip" ? "test strip" : "tube"}</h3>
+          <div class="labstage">${stage}</div>
+        </div>
+      </div>
+      <div class="labfoot">
+        <div class="why" style="flex:1">${t.why}</div>
+      </div>
+      ${t.link ? `<div style="margin-top:12px"><a class="btn secondary sm" href="${t.link[1]}">${t.link[0]}</a></div>` : ""}
+    `;
+
+    $("doInoc") && $("doInoc").addEventListener("click", () => { state.step = "inoculate"; render(); });
+    $("doIncub") && $("doIncub").addEventListener("click", () => { state.step = "incubate"; state.reagentIdx = 0; render(); });
+    $("doReagent") && $("doReagent").addEventListener("click", () => { state.step = "reagent"; state.reagentIdx = 0; render(); });
+    $("doNextReagent") && $("doNextReagent").addEventListener("click", () => { state.reagentIdx++; render(); });
+    $("doRead") && $("doRead").addEventListener("click", () => { state.step = "result"; render(); });
+    $("doZinc") && $("doZinc").addEventListener("click", () => { state.zinc = true; render(); });
+    $("doAgain") && $("doAgain").addEventListener("click", () => { const next = (state.orgIdx + 1) % t.organisms.length; resetState(t); state.orgIdx = next; render(); });
+    el.querySelectorAll("[data-org]").forEach(b => b.addEventListener("click", () => { const i = +b.dataset.org; resetState(t); state.orgIdx = i; render(); }));
+  }
+
+  document.getElementById("app").innerHTML = `<div class="wrap">
+    <header><div><a class="backlink" href="index.html">All modules</a><h1>Biochemical ID Tests<span class="chap">Chapter 5 lab</span></h1></div></header>
+    <p class="labq" style="max-width:70ch">Real microbiology labs use short biochemical tests to identify unknown bacteria: inoculate a tube or plate, incubate, sometimes add a reagent, then read the result. Every test below reinforces something from Chapter 5 — fermentation, oxidative phosphorylation, and selective/differential media.</p>
+    <div class="labtabs" id="labTabs"></div>
+    <div class="labwrap" id="labArea"></div>
+  </div>`;
+
+  document.getElementById("labTabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return; active = b.dataset.tab; resetState(); render(); });
+  window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (TESTS.some(t => t.key === h)){ active = h; resetState(); render(); window.scrollTo({top:0, behavior:"smooth"}); } });
+  const hash = location.hash.slice(1);
+  if (TESTS.some(t => t.key === hash)) active = hash;
+  resetState();
+  render();
+})();
+</script>
+<script src="studypath.js"></script>
+</body>
+</html>
