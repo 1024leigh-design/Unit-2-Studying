@@ -6,14 +6,16 @@
 (function(){
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const f1 = v => (+v).toFixed(1);
+  let GEN = 0; /* bumped each start() call, so a stale instance's loops/listeners can tell they're dead */
 
   function start(cfg){
+    const myGen = ++GEN;
     const BL = window.__BL = cfg.BL || {}, MORE = cfg.MORE || {}, STEPS = cfg.steps, H = cfg.H || 1400;
     const PAGE = location.pathname.split("/").pop() || cfg.page;
     document.title = cfg.title;
     (document.getElementById("app") || document.body).innerHTML = `<div class="wrap pwwrap">
       <header><div><a class="backlink" href="index.html">All modules</a><h1>${cfg.title}<span class="chap">Chapter 5</span></h1></div>
-        <div class="controls"><div class="seg" role="group" aria-label="Mode"><button id="learnBtn" aria-pressed="true">Learn</button><button id="testBtn" aria-pressed="false">Test</button></div><button class="ghost" id="restartBtn">Restart</button></div></header>
+        <div class="controls">${cfg.variants ? `<div class="seg pwvariant" role="group" aria-label="Detail level">${cfg.variants.map(v => `<button data-variant="${v.key}" aria-pressed="${v.key === cfg.variant}">${v.label}</button>`).join("")}</div>` : ""}<div class="seg" role="group" aria-label="Mode"><button id="learnBtn" aria-pressed="${cfg.mode === "test" ? "false" : "true"}">Learn</button><button id="testBtn" aria-pressed="${cfg.mode === "test" ? "true" : "false"}">Test</button></div><button class="ghost" id="restartBtn">Restart</button></div></header>
       ${cfg.intro ? `<p class="pwintro">${cfg.intro}</p>` : ""}
       <div class="pwbar" id="pwBar"><div class="pwdo" id="pwDo"></div><div class="pwtally" id="pwTally"></div></div>
       <div class="pwboard" id="pwBoard"><svg id="pwSvg" viewBox="0 0 1000 ${H}" role="img" aria-label="${cfg.title} pathway board"></svg><div class="pwlayer" id="pwLayer"></div></div>
@@ -28,7 +30,7 @@
     fitView();
     const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    let mode = "learn", idx, phase, t0, placed, filled, used = [], drag, bl, openPop, tally, finished;
+    let mode = cfg.mode === "test" ? "test" : "learn", idx, phase, t0, placed, filled, used = [], drag, bl, openPop, tally, finished;
     function reset(){
       idx = 0; phase = "act"; t0 = 0; placed = 0; filled = []; drag = null; bl = {}; openPop = null; tally = {}; finished = false;
       $("pwEnd").hidden = true;
@@ -155,7 +157,7 @@
         layer.appendChild(b);
       });
     }
-    window.addEventListener("resize", () => { fitView(); renderMarkers(); if (openPop !== null){ const i = openPop; openCard(i, i === idx && phase === "pop"); } });
+    window.addEventListener("resize", () => { if (myGen !== GEN) return; fitView(); renderMarkers(); if (openPop !== null){ const i = openPop; openCard(i, i === idx && phase === "pop"); } });
 
     /* ---------- learn more ---------- */
     function openMore(k){ const m = MORE[k]; $("moreTitle").textContent = m.title; $("moreBody").innerHTML = m.html; $("moreOverlay").hidden = false; $("moreClose").focus(); }
@@ -217,6 +219,7 @@
     }
     let T0 = performance.now();
     function frame(now){
+      if (myGen !== GEN) return; /* a newer Pathway.start() replaced this one; let this loop die quietly */
       const t = (now - T0) / 1000;
       if (phase === "anim" && prog(idx) >= 1) toPop();
       const ctx = {idx, phase, prog, placed, filled, t, R, resolved, H};
@@ -243,14 +246,16 @@
     $("learnBtn").addEventListener("click", () => setMode("learn"));
     $("testBtn").addEventListener("click", () => setMode("test"));
     $("restartBtn").addEventListener("click", reset);
-    document.addEventListener("keydown", e => { if (e.key === "Escape"){ if (!$("moreOverlay").hidden) $("moreOverlay").hidden = true; else if (openPop !== null && !(openPop === idx && phase === "pop")) closeCard(); } });
+    document.addEventListener("keydown", e => { if (myGen !== GEN) return; if (e.key === "Escape"){ if (!$("moreOverlay").hidden) $("moreOverlay").hidden = true; else if (openPop !== null && !(openPop === idx && phase === "pop")) closeCard(); } });
+    if (cfg.variants) document.querySelectorAll(".pwvariant button").forEach(b => b.addEventListener("click", () => cfg.onVariant(b.dataset.variant)));
     reset();
     requestAnimationFrame(frame);
-    window.__pw = {get idx(){ return idx; }, get phase(){ return phase; }, get tally(){ return tally; }, auto:() => { const a = S().action; if (phase !== "act") return; if (a.type === "drag"){ while (placed < a.count) placeOne(); } else finishAction(); }, got:() => { const b = document.getElementById("pwGot"); if (b && !b.hidden) b.click(); }, setMode, STEPS};
+    window.__pw = {get idx(){ return idx; }, get phase(){ return phase; }, get tally(){ return tally; }, get mode(){ return mode; }, auto:() => { const a = S().action; if (phase !== "act") return; if (a.type === "drag"){ while (placed < a.count) placeOne(); } else finishAction(); }, got:() => { const b = document.getElementById("pwGot"); if (b && !b.hidden) b.click(); }, setMode, STEPS};
   }
 
   /* styles, injected once */
   const css = `.pwintro{color:var(--muted);margin:0 0 10px;max-width:80ch}
+  .pwvariant{margin-right:10px}
   .pwbar{position:sticky;top:0;z-index:20;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;background:#fff;border:2px solid var(--accent);border-radius:14px;padding:8px 12px;margin-bottom:10px;box-shadow:0 6px 16px rgba(29,36,51,.10)}
   .pwdo{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-weight:700}
   .pwstep{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:.85rem}
