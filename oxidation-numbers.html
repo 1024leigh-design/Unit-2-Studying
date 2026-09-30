@@ -22,7 +22,7 @@
 </head>
 <body>
 <div class="wrap">
-  <header><div><a class="backlink" href="energy-chemistry.html#step-2">Back to Redox in cellular respiration</a><h1>Assigning oxidation numbers<span class="chap">Bonus</span></h1></div></header>
+  <header><div><a class="backlink" href="energy-chemistry.html#step-7">Back to Redox in cellular respiration</a><h1>Assigning oxidation numbers<span class="chap">Bonus</span></h1></div></header>
   <p class="notexam"><b>Just for the curious:</b> you do <b>not</b> need to know how to assign oxidation numbers for the test. This page shows where the "carbon goes from 0 to +4" and "oxygen goes from 0 to −2" numbers come from.</p>
   <div class="rules">
     <h2>Four bookkeeping rules</h2>
@@ -117,7 +117,7 @@
   }
   function setPlay(p){ playing = p; document.getElementById("oxPlay").textContent = p ? "Pause" : (k === STAGES.length - 1 ? "Replay" : "Play"); }
   document.getElementById("oxBack").addEventListener("click", () => go(k - 1));
-  document.getElementById("oxNext").addEventListener("click", () => { if (k === STAGES.length - 1) location.href = "energy-chemistry.html#step-2"; else go(k + 1); });
+  document.getElementById("oxNext").addEventListener("click", () => { if (k === STAGES.length - 1) location.href = "energy-chemistry.html#step-7"; else go(k + 1); });
   document.getElementById("oxPlay").addEventListener("click", () => {
     if (playing) setPlay(false);
     else { if (k === STAGES.length - 1) go(0, true); t0 = performance.now(); setPlay(true); }

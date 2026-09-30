@@ -33,10 +33,16 @@
     net:{show:"2", ans:["2","two"]},
     nadplus:{show:"NAD⁺", ans:["nad","nadplus"]},
     fad:{show:"FAD", ans:["fad"]},
-    total:{show:"38", ans:["38","thirtyeight"]}
+    total:{show:"38", ans:["38","thirtyeight"]},
+    phosphorylation:{show:"phosphorylation", ans:["phosphorylation","phosphorylated","phosphorylate"], fuzzy:true},
+    substrate:{show:"Substrate-level", ans:["substratelevel","substrate"], fuzzy:true},
+    oxidative:{show:"Oxidative", ans:["oxidative"], fuzzy:true},
+    atp:{show:"ATP", ans:["atp","adenosinetriphosphate"], fuzzy:true},
+    fermentation:{show:"fermentation", ans:["fermentation","fermenting","ferment"], fuzzy:true}
   };
   const MORE = {
-    atp:{title:"Why \"up to\" 38 ATP?", html:`<p>38 ATP is the maximum, most often quoted for prokaryotes. In eukaryotes the number is usually a bit lower (about 36), because moving NADH from glycolysis into the mitochondrion costs some energy. Real cells often make even less, since membranes leak some H⁺.</p><p>For the exam, remember the pattern: glycolysis and Krebs make a little ATP directly, and the electron transport chain makes most of it.</p>`}
+    atp:{title:"Why \"up to\" 38 ATP?", html:`<p>38 ATP is the maximum, most often quoted for prokaryotes. In eukaryotes the number is usually a bit lower (about 36), because moving NADH from glycolysis into the mitochondrion costs some energy. Real cells often make even less, since membranes leak some H⁺.</p><p>For the exam, remember the pattern: glycolysis and Krebs make a little ATP directly, and the electron transport chain makes most of it.</p>`},
+    atpdaily:{title:"How much ATP do you use?", html:`<p>You recycle roughly your own body weight in ATP every day! Your body only holds about 250 grams of ATP at any moment, so each ATP is used and rebuilt from ADP + P thousands of times a day. A bacterium dividing quickly also burns through ATP to build new proteins, DNA, and cell wall.</p><p><b>Where your Calories go.</b> Your daily metabolic rate (the Calories you burn in a day) is basically a measure of how fast you're making and spending ATP. The Calories you eat are the energy stored in the bonds of food. Breaking the food down captures part of that energy (roughly 40%) in ATP, and the rest is released as heat, which keeps you warm. A person burning about 2,000 Calories a day turns over on the order of 100 moles of ATP. When you exercise, your muscles spend ATP faster, your metabolic rate goes up, and you need more food energy to rebuild that ATP.</p>`}
   };
 
 
@@ -82,6 +88,112 @@
     o += A.tx(500, 400, "FAD (→ FADH₂) is the other carrier you'll meet, in the Krebs cycle.", "t14 mid muted");
     return o;
   }
+  function atpScene(t, R){
+    /* Phase 1: the last phosphate breaks off (ATP -> ADP + P + energy, built right into the picture).
+       Phase 2: energy from food puts it back on (phosphorylation). */
+    const T = 9, tt = t % T;
+    const off = smooth(seg(tt, 1, 2.3)), back = smooth(seg(tt, 5.2, 6.8)), pOff = off * (1 - back);
+    const ph1 = tt < 4.6, burst = smooth(seg(tt, 1.2, 1.9)) * (1 - smooth(seg(tt, 3.8, 4.4)));
+    const food = smooth(seg(tt, 4.4, 5.2)) * (1 - smooth(seg(tt, 7.2, 7.8)));
+    const Y = 230, AX = 300, PX = [420, 500, 580], R0 = 25;
+    let o = A.tx(500, 44, `${R("phosphorylation") === "?" ? "?" : "Phosphorylation"}: adding a phosphate group`, "t20 mid");
+    o += A.tx(500, 92, ph1 ? "Breaking off the last phosphate releases energy" : "Energy from food puts the phosphate back on", "t16 mid", `style="fill:${ph1 ? "#9a6212" : "#1b7f4e"}"`);
+    const p3x = lerp(PX[2], 650, pOff), p3y = Y - Math.sin(pOff * Math.PI) * 30;
+    /* bonds first, so they sit behind the circles */
+    o += `<line x1="${AX + 45}" y1="${Y}" x2="${PX[0]}" y2="${Y}" stroke="#b25a36" stroke-width="5"/><line x1="${PX[0]}" y1="${Y}" x2="${PX[1]}" y2="${Y}" stroke="#b25a36" stroke-width="5"/>`;
+    o += `<line x1="${PX[1]}" y1="${Y}" x2="${f1(p3x)}" y2="${f1(p3y)}" stroke="#b25a36" stroke-width="5" opacity="${f3(1 - smooth(seg(pOff, 0, .25)))}"/>`;
+    o += `<rect x="${AX - 50}" y="${Y - 34}" width="100" height="68" rx="14" fill="${C.atp}"/>` + A.tx(AX, Y + 6, "Adenosine", "t14 mid", `style="fill:#fff"`);
+    const P = (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${R0}" fill="${C.P}" stroke="#fff" stroke-width="3"/><text x="${f1(x)}" y="${f1(y + 7)}" font-size="20" font-weight="700" fill="#fff" text-anchor="middle">P</text>`;
+    o += P(PX[0], Y) + P(PX[1], Y) + P(p3x, p3y);
+    /* energy released as the bond breaks */
+    if (burst > .01){
+      const bx = lerp(545, 830, burst), by = Y - Math.sin(burst * Math.PI) * 90;
+      o += A.op(burst, `<circle cx="${f1(bx)}" cy="${f1(by)}" r="30" fill="#fff6b0" stroke="${C.gold}" stroke-width="3"/><text x="${f1(bx)}" y="${f1(by + 10)}" font-size="28" text-anchor="middle">⚡</text>`);
+    }
+    /* energy from food pushes the phosphate back on */
+    if (food > .01){
+      o += A.op(food, `<rect x="690" y="330" width="210" height="44" rx="22" fill="#e1f3e8" stroke="#1b7f4e" stroke-width="2"/>` + A.tx(795, 358, "⚡ energy from food", "t14 mid", `style="fill:#1b7f4e"`) + A.arrow(730, 326, lerp(660, 600, back), 262, "#1b7f4e", 3));
+    }
+    /* the equation lives in the labels under the pieces */
+    const split = smooth(seg(pOff, .8, 1));
+    o += A.op(1 - smooth(seg(pOff, .45, .75)), A.tx(440, Y + 76, "ATP", "t20 mid"));
+    o += A.op(split, A.tx(400, Y + 76, "ADP", "t20 mid") + A.tx(545, Y + 76, "+", "t20 mid") + A.tx(650, Y + 76, "P", "t20 mid"));
+    o += A.op(Math.min(split, burst), A.tx(740, Y + 76, "+", "t20 mid") + A.tx(830, Y + 76, "energy", "t20 mid", `style="fill:#9a6212"`) + A.tx(830, Y + 98, "(~7.3 kcal/mol)", "t12 mid", `style="fill:#9a6212"`));
+    o += A.tx(500, 440, "ATP powers the cell's work; food energy rebuilds it.", "t14 mid muted");
+    return o;
+  }
+  /* Two ways to phosphorylate ADP. Left panel: drag the phosphate straight onto ADP (on the diagram).
+     Right panel: H+ actually flows through ATP synthase, from the intermembrane space into the matrix. */
+  const ADPPOS = {x:330, y:290}, PSTART = {x:225, y:185};
+  const hitADP = p => Math.hypot(p.x - ADPPOS.x, p.y - ADPPOS.y) < 60;
+  function leftPanel(R, st, drag, done){
+    const placed = done || st.placed;
+    let s = A.tx(250, 90, `${R("substrate")} phosphorylation`, "t16 mid", `style="fill:#9a6212"`);
+    s += A.carbons(170, 200, 3, {});
+    s += A.tx(170, 240, "Substrate", "t14 mid");
+    const overADP = drag && hitADP(drag);
+    s += `<circle cx="${ADPPOS.x}" cy="${ADPPOS.y}" r="60" fill="none" stroke="${overADP ? C.gold : "transparent"}" stroke-width="4" stroke-dasharray="6 5"/>`;
+    s += A.atp(ADPPOS.x, ADPPOS.y, placed ? 3 : 2, {label:false});
+    s += A.tx(ADPPOS.x, ADPPOS.y + 46, placed ? "ATP!" : "ADP", "t16 mid");
+    if (!placed){
+      let px = PSTART.x, py = PSTART.y;
+      if (drag && drag.kind === "p"){ px = drag.x; py = drag.y; }
+      s += `<g data-drag="p" style="cursor:grab">${A.phos(px, py, 15)}</g>`;
+    }
+    s += A.tx(250, 390, "P moves straight from a", "t14 mid") + A.tx(250, 412, "substrate onto ADP (glycolysis, Krebs)", "t14 mid");
+    return s;
+  }
+  function rightPanel(t, R){
+    const T = 5, tt = t % T;
+    let s = A.tx(750, 90, `${R("oxidative")} phosphorylation`, "t16 mid", `style="fill:#3f4cc0"`);
+    s += A.membrane(590, 930, 230, 50);
+    s += A.tx(700, 178, "High H⁺", "t12 mid muted") + A.tx(700, 194, "(intermembrane space)", "t11 mid muted");
+    s += A.tx(700, 322, "Low H⁺ (matrix)", "t12 mid muted");
+    for (let k = 0; k < 3; k++){ const x = 630 + k * 50; s += A.eDot(x, 150 - 6 * Math.sin(t * 3 + k), 9); }
+    s += `<rect x="845" y="165" width="34" height="130" rx="12" fill="#5a8fd8"/>`;
+    s += A.tx(862, 316, "ATP synthase", "t12 mid");
+    const enter = smooth(seg(tt, 0, .15)), through = smooth(seg(tt, 0, .8)), leave = smooth(seg(tt, .85, 1));
+    for (let k = 0; k < 2; k++) s += A.op(1 - enter, A.hion(815 + k * 45, 150, 10));
+    s += A.op(1 - leave, A.hion(862, lerp(150, 282, through), 12));
+    s += A.op(smooth(seg(tt, .75, 1)), A.atp(862, 335, 3, {label:false, sc:.85}));
+    s += A.tx(750, 390, "Energy from the electron transport", "t14 mid") + A.tx(750, 412, "chain pumps H⁺, which flows back through ATP synthase", "t14 mid");
+    return s;
+  }
+  function twoWaysScene(t, R, g, done){
+    const st = g || {}, drag = st.drag && st.drag.moved ? st.drag : null;
+    let o = A.tx(500, 44, "Two ways cells phosphorylate ADP", "t20 mid") + `<line x1="500" y1="70" x2="500" y2="440" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
+    o += leftPanel(R, st, drag, done);
+    o += rightPanel(t, R);
+    return o;
+  }
+  function currencyScene(t, R){
+    const jobs = [["Biosynthesis", "building proteins, DNA, cell wall", 180], ["Transport", "pumping molecules across membranes", 500], ["Movement", "spinning a flagellum", 820]];
+    let o = A.tx(500, 44, `${R("atp")}: the energy currency of the cell`, "t20 mid");
+    o += A.atp(470, 150, 3, {sc:1.8, label:false}) + A.tx(510, 205, "ATP", "t16 mid");
+    jobs.forEach(j => { o += A.arrow(500, 220, j[2], 300, "#9a6212", 3) + `<rect x="${j[2] - 140}" y="310" width="280" height="96" rx="16" fill="#fff6d6" stroke="${C.gold}" stroke-width="2.5"/>` + A.tx(j[2], 348, j[0], "t16 mid") + A.tx(j[2], 378, j[1], "t12 mid muted"); });
+    return o;
+  }
+  function threeScene(t, R){
+    /* solid dots = ATP always made; striped dots = extra ATP some cells can make */
+    const rows = [["Aerobic respiration", "Final electron acceptor: O₂", "32–38 ATP", "#1b7f4e", 32, 6], ["Anaerobic respiration", "Final acceptor: NOT O₂ (like NO₃⁻, SO₄²⁻)", "moderate ATP", "#9a6212", 8, 20], ["Fermentation", "No electron transport chain", "2 ATP", "#b83a34", 2, 0]];
+    let o = A.tx(500, 40, "Three ways cells break down glucose", "t20 mid");
+    o += `<defs><pattern id="atpStripe" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff"/><rect width="3" height="6" fill="${C.atp}"/></pattern></defs>`;
+    const PER = 14, GAP = 18, X0 = 626;
+    const cyc = t % 9, grow = Math.floor(seg(cyc, .3, 5.5) * 38 + .001);
+    rows.forEach((r, i) => {
+      const y = 62 + i * 118, total = r[4] + r[5];
+      o += `<rect x="50" y="${y}" width="900" height="104" rx="18" fill="#fff" stroke="${r[3]}" stroke-width="2.5"/>` + A.tx(78, y + 42, i === 2 ? R("fermentation").replace(/^./, c => c.toUpperCase()) : r[0], "t16", `style="fill:${r[3]}"`) + A.tx(78, y + 72, r[1], "t14", `style="fill:#5a6376"`);
+      for (let k = 0; k < total; k++){
+        const on = k < grow, cx = X0 + (k % PER) * GAP, cy = y + 22 + Math.floor(k / PER) * GAP;
+        const fill = k < r[4] ? C.atp : "url(#atpStripe)";
+        o += `<circle cx="${cx}" cy="${cy}" r="7" fill="${on ? fill : "#eef1f5"}" stroke="${on ? C.atp : "#d9dee7"}" stroke-width="1.5"/>`;
+      }
+      o += A.tx(930, y + 94, r[2], "t14 end");
+    });
+    o += `<circle cx="330" cy="428" r="7" fill="${C.atp}" stroke="${C.atp}" stroke-width="1.5"/>` + A.tx(344, 433, "= ATP made", "t12", "");
+    o += `<circle cx="470" cy="428" r="7" fill="url(#atpStripe)" stroke="${C.atp}" stroke-width="1.5"/>` + A.tx(484, 433, "= extra ATP possible (depends on the organism)", "t12", "");
+    return o;
+  }
   /* the big picture: what each stage makes, per glucose */
   function bigScene(t, R){
     const T = 9, k = Math.floor((t % T) / 3);
@@ -110,10 +222,31 @@
         cards:[["g","Glycolysis","cyto","Glycolysis happens outside the mitochondrion."],["k","Krebs cycle","mat","The Krebs cycle happens in the fluid inside the mitochondrion."],["e","Electron transport chain","inn","The ETC is embedded in a membrane."]]}),
       Metab.sortGate({title:"Prokaryote (no mitochondria!): where does each stage happen?", done:"In bacteria, glycolysis and Krebs are in the cytoplasm, and the ETC is in the plasma membrane.", bins:[["cyto","Cytoplasm"],["pm","Plasma membrane"]],
         cards:[["g","Glycolysis","cyto"],["k","Krebs cycle","cyto","Bacteria have no mitochondria, so where is the fluid part?"],["e","Electron transport chain","pm","The ETC needs a membrane. Which one do bacteria have?"]]}),
-      "Eukaryote done! Now try a bacterium, which has no mitochondria.")
+      "Eukaryote done! Now try a bacterium, which has no mitochondria."),
+    ways:{title:"Your turn: make ATP by substrate-level phosphorylation", done:"You moved a phosphate straight from the substrate onto ADP.",
+      init:() => ({placed:false, drag:null}),
+      html:() => `<div style="font-size:.95rem">Drag the phosphate (P) on the diagram from the substrate onto ADP.</div>`,
+      wire:(g, st, api) => {
+        const svg = api.svg; svg.style.touchAction = "none";
+        const toSVG = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+        svg.onpointerdown = e => {
+          const d = e.target.closest && e.target.closest("[data-drag]"); if (!d || st.placed) return;
+          e.preventDefault(); const p = toSVG(e);
+          st.drag = {kind:"p", x:p.x, y:p.y, sx:p.x, sy:p.y, moved:false};
+          try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+        };
+        svg.onpointermove = e => { const d = st.drag; if (!d) return; const p = toSVG(e); d.x = p.x; d.y = p.y; if (Math.hypot(p.x - d.sx, p.y - d.sy) > 8) d.moved = true; };
+        svg.onpointerup = svg.onpointercancel = e => {
+          const d = st.drag; if (!d) return; st.drag = null;
+          const p = toSVG(e);
+          if (!d.moved || hitADP(p)){ st.placed = true; api.redraw(); api.msg("ADP + P → ATP. No electron transport chain needed!", "good"); setTimeout(api.pass, 1000); }
+          else api.msg("Drop the phosphate right onto ADP.", "bad");
+        };
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the phosphate (P) from the substrate onto ADP (or just tap it).", "");
+      }}
   };
 
-  const P1 = "Before: the big picture", P2 = "After: putting it together";
+  const P1 = "Before: the big picture", P2 = "Energy and ATP", P3 = "After: putting it together";
   const STEPS = [
     {part:P1, title:"Cellular respiration", scene:(t, c) => overviewScene(t, c.R),
      text:`Cellular respiration is how cells break down glucose and other organic molecules to make ATP. It is catabolic, {{exergonic}}, and enzyme-controlled. It has three stages: {{glycolysis}}, the {{krebs}}, and the {{etc}}.`},
@@ -121,7 +254,16 @@
      text:`In eukaryotes, glycolysis happens in the {{cytoplasm}}, the Krebs cycle happens in the {{matrix}}, and the electron transport chain is in the {{inner}}. Prokaryotes have no mitochondria! Glycolysis and the Krebs cycle both happen in the cytoplasm, and the electron transport chain is in the {{plasma}}.`},
     {part:P1, title:"The roles of NAD⁺ and FAD", scene:(t, c) => nadScene(t, c.R),
      text:`{{nadplus}} is the electron carrier of glycolysis. It picks up electrons and becomes NADH. With oxygen, NADH delivers those electrons to the electron transport chain to make lots more ATP. Without oxygen, fermentation hands them back so NAD⁺ can be reused. {{fad}} is the other carrier. It picks up TWO electrons to become FADH₂, and you'll see it in the Krebs cycle.`},
-    {part:P2, title:"One glucose, start to finish", scene:(t, c) => bigScene(t, c.R), more:"atp",
+    {part:P2, title:"Phosphorylation and ATP", scene:(t, c) => atpScene(t, c.R), more:"atpdaily",
+     text:`{{phosphorylation}} is the addition of a phosphate group to a molecule. ATP carries energy in its phosphate bonds: ATP → ADP + P + energy releases about 7.3 kcal/mol. That energy drives endergonic (energy-requiring) reactions. Phosphorylation "energizes" molecules for cellular processes.`},
+    {part:P2, title:"Two ways to make ATP", scene:(t, c) => twoWaysScene(t, c.R, c.g, c.done), live:true, gate:GATES.ways,
+     text:`Cells add phosphate to ADP in two main ways. {{substrate}} phosphorylation is the direct transfer of a phosphate from a substrate to ADP. It happens in glycolysis and the Krebs cycle. {{oxidative}} phosphorylation uses energy from the electron transport chain: as H⁺ is pumped across the membrane and then flows back through ATP synthase, that flow makes most of the cell's ATP.`},
+    {part:P2, title:"ATP: the energy currency", scene:(t, c) => currencyScene(t, c.R),
+     text:`{{atp}} is the energy currency of the cell. Catabolic reactions "earn" it, and cells "spend" it on work: biosynthesis (building molecules), transport across membranes, and movement.`},
+    {part:P2, title:"Three ways to break down glucose", scene:(t, c) => threeScene(t, c.R),
+     table:{cap:"Carbohydrate catabolism at a glance", head:["Process","Final electron acceptor","ATP per glucose"], rows:[["Aerobic respiration","O₂","32–38 ATP (lots!)"],["Anaerobic respiration","Something other than O₂ (like nitrate or sulfate)","Moderate"],["Fermentation","No electron transport chain","2 ATP"]]},
+     text:`Cells break down glucose in three ways. Aerobic respiration uses oxygen and makes lots of ATP (32–38). Anaerobic respiration uses other electron acceptors (not O₂) and makes a moderate amount. {{fermentation}} needs no electron transport chain and makes only 2 ATP. Every one of them starts with glycolysis!`},
+    {part:P3, title:"One glucose, start to finish", scene:(t, c) => bigScene(t, c.R), more:"atp",
      table:{cap:"Aerobic respiration at a glance (per glucose)", head:["Stage","Where (eukaryote / prokaryote)","What it makes"],
        rows:[["Glycolysis","Cytoplasm / cytoplasm","Net 2 ATP, 2 NADH, 2 pyruvate"],["Krebs cycle (with the pyruvate → acetyl CoA step)","Matrix / cytoplasm","2 ATP, 8 NADH, 2 FADH₂, 6 CO₂"],["Electron transport chain","Inner mitochondrial membrane / plasma membrane","Most of the ATP; O₂ is the final electron acceptor and becomes H₂O"]]},
      text:`Glycolysis and the Krebs cycle make only a little ATP directly, by substrate-level phosphorylation. Their real job is loading NADH and FADH₂ with electrons. The {{etc}} uses those electrons to make most of the ATP, for a total of up to {{total}} ATP per glucose in prokaryotes. The six carbons of glucose leave as 6 CO₂, and oxygen becomes water.`,

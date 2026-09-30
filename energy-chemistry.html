@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chemistry of Energy Production</title>
+<title>Enzymes and Energy Production</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
@@ -23,6 +23,18 @@
   const A = Metab.A, {f1, f3, lerp, clamp, smooth, seg, C} = A;
   const blob = (x, y, label, col, o) => A.op(o === undefined ? 1 : o, `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="78" ry="54" fill="${col}" stroke="#343b4a" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 6)}" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">${label}</text>`);
 
+  /* small shared helpers for the new activation-energy / enzyme graphics */
+  const eaBracket = (x, yBase, yPeak, col, label) => {
+    let s = `<line x1="${f1(x - 16)}" y1="${f1(yBase)}" x2="${f1(x + 16)}" y2="${f1(yBase)}" stroke="${col}" stroke-width="2.5"/>`;
+    s += `<line x1="${f1(x)}" y1="${f1(yBase)}" x2="${f1(x)}" y2="${f1(yPeak)}" stroke="${col}" stroke-width="2.5" stroke-dasharray="5 4"/>`;
+    s += `<line x1="${f1(x - 16)}" y1="${f1(yPeak)}" x2="${f1(x + 16)}" y2="${f1(yPeak)}" stroke="${col}" stroke-width="2.5"/>`;
+    s += A.tx(x + 26, (yBase + yPeak) / 2 + 5, label, "t14", `style="fill:${col};font-weight:700"`);
+    return s;
+  };
+  const hexPoints = (cx, cy, r) => Array.from({length:6}, (_, i) => { const a = Math.PI / 6 + i * Math.PI / 3; return `${f1(cx + r * Math.cos(a))},${f1(cy + r * Math.sin(a))}`; }).join(" ");
+  const enzTop = (x, y, sc) => ({x, y:y - 60 * sc});
+  const enzAllo = (x, y, sc) => ({x:x + 79 * sc, y:y + 23 * sc});
+
   const BL = {
     oxidation:{show:"Oxidation", ans:["oxidation","oxidized","oxidize"], fuzzy:true},
     reduction:{show:"Reduction", ans:["reduction","reduced","reduce"], fuzzy:true},
@@ -34,19 +46,154 @@
     nadp:{show:"NADP⁺", ans:["nadp","nadpplus"]},
     endergonic:{show:"Endergonic", ans:["endergonic","endothermic"], fuzzy:true},
     exergonic:{show:"Exergonic", ans:["exergonic","exothermic"], fuzzy:true},
-    phosphorylation:{show:"phosphorylation", ans:["phosphorylation","phosphorylated","phosphorylate"], fuzzy:true},
-    substrate:{show:"Substrate-level", ans:["substratelevel","substrate"], fuzzy:true},
-    oxidative:{show:"Oxidative", ans:["oxidative"], fuzzy:true},
-    atp:{show:"ATP", ans:["atp","adenosinetriphosphate"], fuzzy:true},
-    fermentation:{show:"fermentation", ans:["fermentation","fermenting","ferment"], fuzzy:true}
+    activation:{show:"activation energy", ans:["activationenergy","activation"], fuzzy:true},
+    enzyme:{show:"Enzymes", ans:["enzyme","enzymes"], fuzzy:true},
+    active:{show:"active site", ans:["activesite","active"], fuzzy:true},
+    allosteric:{show:"allosteric site", ans:["allostericsite","allosteric"], fuzzy:true},
+    competitive:{show:"Competitive", ans:["competitive"], fuzzy:true},
+    noncompetitive:{show:"Noncompetitive", ans:["noncompetitive","noncompetitive"], fuzzy:true}
   };
   const MORE = {
     oil:{title:"Why electrons carry energy", html:`<p>Electrons held loosely in bonds with carbon and hydrogen (like in glucose or fats) are "high energy." When they move to an atom that pulls on them strongly, like oxygen, energy is released. Cells capture that energy in small steps instead of all at once, which is exactly what the electron transport chain does.</p><p>In biology, oxidation often looks like losing hydrogen atoms (a hydrogen = a proton + an electron), and reduction looks like gaining them. That's why NAD⁺ becoming NADH counts as reduction.</p>`},
-    vit:{title:"Why do cells bother picking up electrons?", html:`<p><b>Energy lives in electrons.</b> The electrons in the C–H and C–C bonds of glucose and fats are held loosely, so they are "high energy." Oxygen pulls on electrons much harder. When electrons move from a place where they're held loosely to a place where they're held tightly, energy is released, a bit like a ball rolling downhill. Breaking down glucose is really a way of letting those electrons roll downhill.</p><p><b>Why carriers?</b> If glucose handed its electrons straight to oxygen, all that energy would come out at once as heat (that's what burning is). Instead, enzymes pull the electrons off a few at a time and load them onto NAD⁺ and FAD. Now NADH and FADH₂ are holding the high-energy electrons, so the energy is stored in them, ready to deliver.</p><p><b>Dropping them off at the electron transport chain.</b> NADH and FADH₂ carry their electrons to the electron transport chain in the cell membrane. The electrons are passed down a chain of proteins, each holding them a little more tightly, until they reach the final electron acceptor (oxygen, in aerobic respiration). At each step a bit of energy is released and used to pump H⁺ across the membrane. That H⁺ build-up then powers ATP synthase to make ATP. The empty NAD⁺ and FAD go back to pick up more electrons. No carriers, no delivery, and the whole process stops.</p><p><b>B vitamins and "energy."</b> NAD⁺ is built from niacin (vitamin B3), and FAD is built from riboflavin (vitamin B2). That's why B vitamins are often sold as "energy" vitamins. They don't contain energy themselves, but without them you can't build the carriers that move energy from your food to ATP. Severe niacin deficiency causes a disease called pellagra, partly because cells can't make enough NAD⁺.</p>`},
-    atp:{title:"How much ATP do you use?", html:`<p>You recycle roughly your own body weight in ATP every day! Your body only holds about 250 grams of ATP at any moment, so each ATP is used and rebuilt from ADP + P thousands of times a day. A bacterium dividing quickly also burns through ATP to build new proteins, DNA, and cell wall.</p><p><b>Where your Calories go.</b> Your daily metabolic rate (the Calories you burn in a day) is basically a measure of how fast you're making and spending ATP. The Calories you eat are the energy stored in the bonds of food. Breaking the food down captures part of that energy (roughly 40%) in ATP, and the rest is released as heat, which keeps you warm. A person burning about 2,000 Calories a day turns over on the order of 100 moles of ATP. When you exercise, your muscles spend ATP faster, your metabolic rate goes up, and you need more food energy to rebuild that ATP.</p>`}
+    vit:{title:"Why do cells bother picking up electrons?", html:`<p><b>Energy lives in electrons.</b> The electrons in the C–H and C–C bonds of glucose and fats are held loosely, so they are "high energy." Oxygen pulls on electrons much harder. When electrons move from a place where they're held loosely to a place where they're held tightly, energy is released, a bit like a ball rolling downhill. Breaking down glucose is really a way of letting those electrons roll downhill.</p><p><b>Why carriers?</b> If glucose handed its electrons straight to oxygen, all that energy would come out at once as heat (that's what burning is). Instead, enzymes pull the electrons off a few at a time and load them onto NAD⁺ and FAD. Now NADH and FADH₂ are holding the high-energy electrons, so the energy is stored in them, ready to deliver.</p><p><b>Dropping them off at the electron transport chain.</b> NADH and FADH₂ carry their electrons to the electron transport chain in the cell membrane. The electrons are passed down a chain of proteins, each holding them a little more tightly, until they reach the final electron acceptor (oxygen, in aerobic respiration). At each step a bit of energy is released and used to pump H⁺ across the membrane. That H⁺ build-up then powers ATP synthase to make ATP. The empty NAD⁺ and FAD go back to pick up more electrons. No carriers, no delivery, and the whole process stops.</p><p><b>B vitamins and "energy."</b> NAD⁺ is built from niacin (vitamin B3), and FAD is built from riboflavin (vitamin B2). That's why B vitamins are often sold as "energy" vitamins. They don't contain energy themselves, but without them you can't build the carriers that move energy from your food to ATP. Severe niacin deficiency causes a disease called pellagra, partly because cells can't make enough NAD⁺.</p>`}
   };
 
   /* ================= Scenes ================= */
+  function egScene(t, R){
+    /* Frozen-vs-animated is decided per step below: this version always draws the full curve */
+    let o = "";
+    const panel = (x0, title, col, y1, y2, note) => {
+      let s = A.tx(x0 + 210, 50, title, "t20 mid", `style="fill:${col}"`) + `<line x1="${x0 + 30}" y1="80" x2="${x0 + 30}" y2="380" stroke="#343b4a" stroke-width="2.5"/><line x1="${x0 + 30}" y1="380" x2="${x0 + 400}" y2="380" stroke="#343b4a" stroke-width="2.5"/>`;
+      const draw = smooth(seg((t % 7), .4, 4));
+      const d = `M${x0 + 40},${y1} C${x0 + 150},${y1} ${x0 + 160},130 ${x0 + 210},130 C${x0 + 260},130 ${x0 + 270},${y2} ${x0 + 380},${y2}`;
+      s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="${f3(1 - draw)}"/>`;
+      s += `<circle cx="${x0 + 40}" cy="${y1}" r="6" fill="${col}"/>` + A.tx(x0 + 44, y1 + 26, "Reactants", "t12", "");
+      s += A.op(smooth(seg(draw, .92, 1)), `<circle cx="${x0 + 380}" cy="${y2}" r="6" fill="${col}"/>` + A.tx(x0 + 380, y2 + 26, "Products", "t12 end"));
+      s += A.tx(x0 + 215, 404, "Time (the reaction goes on) →", "t12 mid muted");
+      s += A.tx(x0 + 210, 432, note, "t14 mid");
+      return s;
+    };
+    o += panel(40, `${R("endergonic")}`, "#3f4cc0", 320, 200, "Absorbs energy: products have MORE");
+    o += panel(540, `${R("exergonic")}`, "#d9443a", 200, 320, "Releases energy: products have LESS");
+    o += `<line x1="500" y1="40" x2="500" y2="440" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
+    o += A.tx(240, 458, "Anabolic (building up)", "t14 mid", `style="fill:#1b7f4e"`) + A.tx(740, 458, "Catabolic (breaking down)", "t14 mid", `style="fill:#b83a34"`);
+    o += A.tx(58, 230, "Energy", "t12 mid", `transform="rotate(-90 58 230)"`) + A.tx(558, 230, "Energy", "t12 mid", `transform="rotate(-90 558 230)"`);
+    return o;
+  }
+  function eaScene(t, R){
+    /* Same two panels as before, but frozen (no drawing-in animation) with the activation energy marked */
+    let o = "";
+    const panel = (x0, title, col, y1, y2, note) => {
+      let s = A.tx(x0 + 210, 50, title, "t20 mid", `style="fill:${col}"`) + `<line x1="${x0 + 30}" y1="80" x2="${x0 + 30}" y2="380" stroke="#343b4a" stroke-width="2.5"/><line x1="${x0 + 30}" y1="380" x2="${x0 + 400}" y2="380" stroke="#343b4a" stroke-width="2.5"/>`;
+      const d = `M${x0 + 40},${y1} C${x0 + 150},${y1} ${x0 + 160},130 ${x0 + 210},130 C${x0 + 260},130 ${x0 + 270},${y2} ${x0 + 380},${y2}`;
+      s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="4"/>`;
+      s += `<circle cx="${x0 + 40}" cy="${y1}" r="6" fill="${col}"/>` + A.tx(x0 + 44, y1 + 26, "Reactants", "t12", "");
+      s += `<circle cx="${x0 + 380}" cy="${y2}" r="6" fill="${col}"/>` + A.tx(x0 + 380, y2 + 26, "Products", "t12 end");
+      s += eaBracket(x0 + 210, y1, 130, col, "Eₐ");
+      s += A.tx(x0 + 215, 404, "Time (the reaction goes on) →", "t12 mid muted");
+      s += A.tx(x0 + 210, 432, note, "t14 mid");
+      return s;
+    };
+    o += panel(40, "Endergonic", "#3f4cc0", 320, 200, "Absorbs energy overall: products have MORE");
+    o += panel(540, "Exergonic", "#d9443a", 200, 320, "Releases energy overall: products have LESS");
+    o += `<line x1="500" y1="40" x2="500" y2="440" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
+    o += A.tx(58, 230, "Energy", "t12 mid", `transform="rotate(-90 58 230)"`) + A.tx(558, 230, "Energy", "t12 mid", `transform="rotate(-90 558 230)"`);
+    return o;
+  }
+  function enzymeEaScene(t, R){
+    const y1 = 320, y2 = 210, peakNo = 110, peakYes = 235;
+    let o = A.tx(500, 42, "Enzymes lower the activation energy needed", "t20 mid");
+    o += `<line x1="170" y1="70" x2="170" y2="380" stroke="#343b4a" stroke-width="2.5"/><line x1="170" y1="380" x2="860" y2="380" stroke="#343b4a" stroke-width="2.5"/>`;
+    o += A.tx(90, 225, "Energy", "t12 mid", `transform="rotate(-90 90 225)"`);
+    o += A.tx(515, 404, "Time (the reaction goes on) →", "t12 mid muted");
+    const dNo = `M180,${y1} C340,${y1} 360,${peakNo} 515,${peakNo} C660,${peakNo} 690,${y2} 850,${y2}`;
+    const dYes = `M180,${y1} C310,${y1} 335,${peakYes} 515,${peakYes} C670,${peakYes} 695,${y2} 850,${y2}`;
+    o += `<path d="${dNo}" fill="none" stroke="#b83a34" stroke-width="3.5" stroke-dasharray="8 6"/>`;
+    o += `<path d="${dYes}" fill="none" stroke="#1b7f4e" stroke-width="4.5"/>`;
+    o += `<circle cx="180" cy="${y1}" r="7" fill="#343b4a"/>` + A.tx(184, y1 + 26, "Reactants", "t12", "");
+    o += `<circle cx="850" cy="${y2}" r="7" fill="#343b4a"/>` + A.tx(850, y2 + 26, "Products", "t12 end");
+    o += eaBracket(490, y1, peakNo, "#b83a34", "Eₐ without enzyme");
+    o += eaBracket(590, y1, peakYes, "#1b7f4e", "Eₐ with enzyme");
+    o += A.enzyme(700, 320, {sc:.8, label:"Enzyme"});
+    o += A.arrow(660, 295, 545, 245, "#1b7f4e", 2.5);
+    o += A.tx(500, 432, "Enzymes speed up reactions by lowering Eₐ.", "t14 mid muted");
+    o += A.tx(500, 452, "They don't change the reactants, products, or the overall energy released or absorbed.", "t12 mid muted");
+    return o;
+  }
+  function sitesScene(t, R){
+    const EX = 430, EY = 250, ESC = 1.6;
+    const act = enzTop(EX, EY, ESC), allo = enzAllo(EX, EY, ESC);
+    let o = A.tx(500, 42, "Every enzyme has an active site; many also have an allosteric site", "t18 mid");
+    o += A.enzyme(EX, EY, {sc:ESC, allo:true, label:"Enzyme"});
+    o += A.tx(act.x, act.y - 90, "Active site", "t16 mid", `style="fill:#3f4cc0"`);
+    o += A.tx(act.x, act.y - 70, "substrate binds & reacts here", "t11 mid muted");
+    o += A.arrow(act.x, act.y - 55, act.x, act.y - 8, "#3f4cc0", 3);
+    o += A.tx(allo.x + 190, allo.y - 10, "Allosteric site", "t16 mid", `style="fill:#9a6212"`);
+    o += A.tx(allo.x + 190, allo.y + 10, "a regulator binds here", "t11 mid muted");
+    o += A.arrow(allo.x + 175, allo.y, allo.x + 24, allo.y, "#9a6212", 3);
+    o += A.tx(500, 414, "A molecule that fits the active site is the substrate.", "t14 mid muted");
+    o += A.tx(500, 434, "A molecule that binds the allosteric site changes the enzyme's shape instead.", "t12 mid muted");
+    return o;
+  }
+  const ENZI = {x:500, y:250, sc:1.7};
+  const hitSite = p => {
+    const act = enzTop(ENZI.x, ENZI.y, ENZI.sc), allo = enzAllo(ENZI.x, ENZI.y, ENZI.sc);
+    if (Math.hypot(p.x - act.x, p.y - act.y) < 55) return "active";
+    if (Math.hypot(p.x - allo.x, p.y - allo.y) < 46) return "allo";
+    return null;
+  };
+  const INH_START = {x:220, y:400};
+  function inhibitionScene(t, R, g, done){
+    const st = g || {}, drag = st.drag && st.drag.moved ? st.drag : null;
+    const mode = st.mode;
+    const act = enzTop(ENZI.x, ENZI.y, ENZI.sc), allo = enzAllo(ENZI.x, ENZI.y, ENZI.sc);
+    let o = A.tx(500, 24, "Drag the inhibitor onto the active site or the allosteric site", "t18 mid");
+    const open = mode ? 0 : 1;
+    o += A.enzyme(ENZI.x, ENZI.y, {sc:ENZI.sc, allo:true, open, label:"Enzyme"});
+    if (!mode) o += A.tx(act.x, act.y - 56, "Substrate fits here", "t12 mid muted");
+    let ix = INH_START.x, iy = INH_START.y;
+    if (mode === "competitive"){ ix = act.x; iy = act.y; }
+    else if (mode === "noncompetitive"){ ix = allo.x; iy = allo.y; }
+    if (drag){ ix = drag.x; iy = drag.y; }
+    o += `<g data-drag="inh" style="cursor:${mode ? "default" : "grab"}"><polygon points="${hexPoints(ix, iy, 24)}" fill="#d9443a" stroke="#7a1f1f" stroke-width="2.5"/>` + A.tx(ix, iy + 5, "I", "t14 mid", `style="fill:#fff"`) + `</g>`;
+    o += A.tx(act.x, act.y - 78, "Active site", "t13 mid", `style="fill:#3f4cc0"`);
+    o += A.tx(allo.x + 16, allo.y - 26, "Allosteric site", "t13 mid", `style="fill:#9a6212"`);
+    if (mode === "competitive") o += `<rect x="260" y="380" width="480" height="66" rx="14" fill="#fbe8e7"/>` + A.tx(500, 405, "Competitive inhibition", "t16 mid", `style="fill:#b83a34"`) + A.tx(500, 430, "The inhibitor blocks the active site directly, competing with the substrate.", "t13 mid", `style="fill:#b83a34"`);
+    else if (mode === "noncompetitive") o += `<rect x="230" y="380" width="540" height="66" rx="14" fill="#fff6d6"/>` + A.tx(500, 405, "Noncompetitive inhibition", "t16 mid", `style="fill:#9a6212"`) + A.tx(500, 430, "Binding the allosteric site changes the enzyme's shape, so the active site stops working.", "t13 mid", `style="fill:#9a6212"`);
+    else o += A.tx(500, 430, "Try dropping it on each site to see both kinds of inhibition.", "t14 mid muted");
+    return o;
+  }
+  /* Step: electrons flow carbon (glucose) -> NAD+ -> oxygen, on a loop from the moment the step opens */
+  function glucoseScene(t, R, done){
+    const T = 6.5, tt = t % T;
+    const p1 = smooth(seg(tt, .6, 2.2)), p2 = smooth(seg(tt, 3.2, 4.8)), back = smooth(seg(tt, 6, 6.5));
+    const full = p1 >= 1 && p2 < .02, water = smooth(seg(tt, 4.6, 5.2)) * (1 - back);
+    const X = [170, 500, 830], Y = 250;
+    const big = (x, y, k, body) => `<g transform="translate(${x} ${y}) scale(${k}) translate(${-x} ${-y})">${body}</g>`;
+    let o = "";
+    o += A.glucoseRing(X[0], Y, {r:16}) + A.tx(X[0], Y + 68, "Carbon", "t16 mid") + A.tx(X[0], Y + 88, "(in glucose)", "t12 mid muted");
+    o += big(X[1], Y, 1.7, A.carrier(X[1], Y, "NAD", full, {e:false})) + A.tx(X[1], Y + 68, "NAD⁺ / NADH", "t16 mid") + A.tx(X[1], Y + 88, "electron carrier", "t12 mid muted");
+    o += A.op(1 - water, big(X[2], Y, 2.2, A.o2(X[2], Y))) + A.op(water, big(X[2], Y, 1.7, A.h2o(X[2] - 22, Y + 4) + A.h2o(X[2] + 22, Y - 4)));
+    o += A.tx(X[2], Y + 68, "Oxygen", "t16 mid") + A.op(water, A.tx(X[2], Y + 88, "becomes water", "t12 mid muted"));
+    o += A.arrow(X[0] + 80, Y, X[1] - 90, Y, "#c9cfdb", 2.5) + A.arrow(X[1] + 90, Y, X[2] - 70, Y, "#c9cfdb", 2.5);
+    for (let k = 0; k < 2; k++){
+      let x, y, show = 1;
+      if (p1 < 1){ x = lerp(X[0] - 10 + k * 22, X[1] - 12 + k * 26, p1); y = Y - 60 - Math.sin(p1 * Math.PI) * 45; }
+      else if (p2 > 0){ x = lerp(X[1] - 12 + k * 26, X[2] - 12 + k * 26, p2); y = Y - 50 - Math.sin(p2 * Math.PI) * 45 + (p2 * 10 - 10) * 0; }
+      else { x = X[1] - 12 + k * 26; y = Y - 50; }
+      if (p2 >= 1) show = 1 - smooth(seg(tt, 4.8, 5.4));
+      o += A.op(show, A.eDot(x, y, 13));
+    }
+    const cap = tt < 3 ? "NAD⁺ picks up electrons from carbon and becomes NADH" : "NADH drops the electrons off at oxygen and becomes NAD⁺ again";
+    o += A.tx(500, 124, cap, "t16 mid", `style="fill:#8a5a00"`);
+    if (done){
+      o += `<rect x="60" y="358" width="220" height="62" rx="14" fill="#e7e9fb"/>` + A.tx(170, 382, "Carbon is oxidized", "t16 mid", `style="fill:#2c3796"`) + A.tx(170, 406, "0 → +4 (lost e⁻)", "t14 mid", `style="fill:#2c3796"`);
+      o += `<rect x="370" y="358" width="260" height="62" rx="14" fill="#e3f4ea"/>` + A.tx(500, 382, "NAD⁺ → NADH: reduced", "t14 mid", `style="fill:#1b7f4e"`) + A.tx(500, 406, "NADH → NAD⁺: oxidized", "t14 mid", `style="fill:#1b7f4e"`);
+      o += `<rect x="720" y="358" width="220" height="62" rx="14" fill="#fbe8e7"/>` + A.tx(830, 382, "Oxygen is reduced", "t16 mid", `style="fill:#b83a34"`) + A.tx(830, 406, "0 → −2 (gained e⁻)", "t14 mid", `style="fill:#b83a34"`);
+    } else o += A.tx(500, 392, "Watch the electrons, then sort the cards below: oxidized or reduced?", "t16 mid", `style="fill:#3f4cc0"`);
+    o += A.tx(500, 446, "Hydrogen stays +1. Charge going UP = lost electrons = oxidized.", "t14 mid muted");
+    return o;
+  }
   /* Step 1 is hands-on right in the diagram: drag the electrons, then drag the labels onto the molecules */
   const RX = {don:230, acc:770, y:262, rx:135, ry:88};
   const hitMol = p => { for (const k of ["don", "acc"]){ const x = RX[k]; if (((p.x - x) / (RX.rx + 10)) ** 2 + ((p.y - RX.y) / (RX.ry + 10)) ** 2 <= 1) return k; } return null; };
@@ -91,158 +238,80 @@
     o += A.tx(500, 446, "LEO the lion says GER: Lose Electrons = Oxidation, Gain Electrons = Reduction", "t14 mid muted");
     return o;
   }
-  /* Step 2: electrons flow carbon (glucose) -> NAD+ -> oxygen, on a loop from the moment the step opens */
-  function glucoseScene(t, R, done){
-    const T = 6.5, tt = t % T;
-    const p1 = smooth(seg(tt, .6, 2.2)), p2 = smooth(seg(tt, 3.2, 4.8)), back = smooth(seg(tt, 6, 6.5));
-    const full = p1 >= 1 && p2 < .02, water = smooth(seg(tt, 4.6, 5.2)) * (1 - back);
-    const X = [170, 500, 830], Y = 250;
-    const big = (x, y, k, body) => `<g transform="translate(${x} ${y}) scale(${k}) translate(${-x} ${-y})">${body}</g>`;
-    let o = "";
-    o += A.glucoseRing(X[0], Y, {r:16}) + A.tx(X[0], Y + 68, "Carbon", "t16 mid") + A.tx(X[0], Y + 88, "(in glucose)", "t12 mid muted");
-    o += big(X[1], Y, 1.7, A.carrier(X[1], Y, "NAD", full, {e:false})) + A.tx(X[1], Y + 68, "NAD⁺ / NADH", "t16 mid") + A.tx(X[1], Y + 88, "electron carrier", "t12 mid muted");
-    o += A.op(1 - water, big(X[2], Y, 2.2, A.o2(X[2], Y))) + A.op(water, big(X[2], Y, 1.7, A.h2o(X[2] - 22, Y + 4) + A.h2o(X[2] + 22, Y - 4)));
-    o += A.tx(X[2], Y + 68, "Oxygen", "t16 mid") + A.op(water, A.tx(X[2], Y + 88, "becomes water", "t12 mid muted"));
-    o += A.arrow(X[0] + 80, Y, X[1] - 90, Y, "#c9cfdb", 2.5) + A.arrow(X[1] + 90, Y, X[2] - 70, Y, "#c9cfdb", 2.5);
-    for (let k = 0; k < 2; k++){
-      let x, y, show = 1;
-      if (p1 < 1){ x = lerp(X[0] - 10 + k * 22, X[1] - 12 + k * 26, p1); y = Y - 60 - Math.sin(p1 * Math.PI) * 45; }
-      else if (p2 > 0){ x = lerp(X[1] - 12 + k * 26, X[2] - 12 + k * 26, p2); y = Y - 50 - Math.sin(p2 * Math.PI) * 45 + (p2 * 10 - 10) * 0; }
-      else { x = X[1] - 12 + k * 26; y = Y - 50; }
-      if (p2 >= 1) show = 1 - smooth(seg(tt, 4.8, 5.4));
-      o += A.op(show, A.eDot(x, y, 13));
-    }
-    const cap = tt < 3 ? "NAD⁺ picks up electrons from carbon and becomes NADH" : "NADH drops the electrons off at oxygen and becomes NAD⁺ again";
-    o += A.tx(500, 124, cap, "t16 mid", `style="fill:#8a5a00"`);
-    if (done){
-      o += `<rect x="60" y="358" width="220" height="62" rx="14" fill="#e7e9fb"/>` + A.tx(170, 382, "Carbon is oxidized", "t16 mid", `style="fill:#2c3796"`) + A.tx(170, 406, "0 → +4 (lost e⁻)", "t14 mid", `style="fill:#2c3796"`);
-      o += `<rect x="370" y="358" width="260" height="62" rx="14" fill="#e3f4ea"/>` + A.tx(500, 382, "NAD⁺ → NADH: reduced", "t14 mid", `style="fill:#1b7f4e"`) + A.tx(500, 406, "NADH → NAD⁺: oxidized", "t14 mid", `style="fill:#1b7f4e"`);
-      o += `<rect x="720" y="358" width="220" height="62" rx="14" fill="#fbe8e7"/>` + A.tx(830, 382, "Oxygen is reduced", "t16 mid", `style="fill:#b83a34"`) + A.tx(830, 406, "0 → −2 (gained e⁻)", "t14 mid", `style="fill:#b83a34"`);
-    } else o += A.tx(500, 392, "Watch the electrons, then sort the cards below: oxidized or reduced?", "t16 mid", `style="fill:#3f4cc0"`);
-    o += A.tx(500, 446, "Hydrogen stays +1. Charge going UP = lost electrons = oxidized.", "t14 mid muted");
-    return o;
-  }
-  function carrierScene(t, R){
-    const T = 7, tt = t % T;
-    let o = A.tx(500, 44, "Electron carriers: shuttles for high-energy electrons", "t20 mid");
-    const rows = [["NAD", "catabolism (breaking down)", "niacin (B3)", 110], ["FAD", "catabolism (Krebs cycle)", "riboflavin (B2)", 240], ["NADP", "anabolism (building up)", "B vitamins too", 370]];
-    rows.forEach((r, i) => {
-      const y = r[3], p = smooth(seg(tt, .5 + i * 1.3, 1.7 + i * 1.3)), fade = 1 - smooth(seg(tt, 6.2, 7));
-      const lab = r[0] === "FAD" ? "FADH₂" : r[0] + "H", w = lab.length * 9 + 22, tx = 470 + w / 2;
-      o += A.carrier(170, y, r[0], false, {}) + A.arrow(270, y, 380, y, "#5a6376", 3);
-      /* the loaded carrier appears once the electrons land on it */
-      o += A.op(smooth(seg(p, .85, 1)) * fade, A.carrier(470, y, r[0], true, {e:false}));
-      if (fade > 0){
-        const x1 = lerp(150, tx - 2, p), x2 = lerp(172, tx + 9, p), arc = Math.sin(p * Math.PI) * 34;
-        o += A.op(fade, A.eDot(x1, lerp(y - 26, y - 13, p) - arc, p > .95 ? 6 : 10) + A.eDot(x2, lerp(y - 26, y - 6, p) - arc, p > .95 ? 6 : 10));
-      }
-      o += A.tx(580, y - 4, r[1].charAt(0).toUpperCase() + r[1].slice(1), "t14", "") + A.tx(580, y + 20, `Made from ${r[2]}`, "t12", `style="fill:#5a6376"`);
+  /* Step: electron carriers. Interactive right on the diagram: drag the electron package onto the matching carrier */
+  const CARR = {
+    nad:{y:120, note:["Catabolism (breaking down)", "Made from niacin (B3)"]},
+    fad:{y:250, note:["Catabolism (Krebs cycle)", "Made from riboflavin (B2)"]}
+  };
+  const hitCarrier = p => { for (const k of ["nad", "fad"]){ if (Math.hypot(p.x - 470, p.y - CARR[k].y) < 58) return k; } return null; };
+  const CARR_TOK = {e1:[250, 410], e2:[640, 410]};
+  function carrierScene(t, R, g, done){
+    const st = g || {}, drag = st.drag && st.drag.moved ? st.drag : null;
+    const loaded = {nad:done || (st.nad ? true : false), fad:done || (st.fad ? true : false)};
+    let o = A.tx(500, 40, "Electron carriers: shuttles for high-energy electrons", "t20 mid");
+    ["nad", "fad"].forEach(k => {
+      const c = CARR[k], over = drag && hitCarrier(drag) === k, label = k === "nad" ? "NAD" : "FAD";
+      o += A.carrier(170, c.y, label, false, {}) + A.arrow(230, c.y, 380, c.y, "#5a6376", 3);
+      o += `<circle cx="470" cy="${c.y}" r="58" fill="none" stroke="${over ? C.gold : "transparent"}" stroke-width="4" stroke-dasharray="6 5"/>`;
+      if (loaded[k]) o += A.carrier(470, c.y, label, true, {e:false});
+      else o += `<rect x="${470 - 46}" y="${c.y - 14}" width="92" height="28" rx="14" fill="#fff" stroke="#c7cdf5" stroke-width="2" stroke-dasharray="5 4"/>` + A.tx(470, c.y + 5, k === "nad" ? "NAD⁺" : "FAD", "t14 mid", `style="fill:#aab0c6"`);
+      o += A.tx(610, c.y - 4, c.note[0], "t14", "") + A.tx(610, c.y + 20, c.note[1], "t12", `style="fill:#5a6376"`);
     });
-    o += A.tx(500, 450, "FAD grabs TWO electrons (and 2 H) to become FADH₂", "t14 mid muted");
-    return o;
-  }
-  function egScene(t, R){
-    /* The energy line draws itself left to right, like time passing during the reaction */
-    const T = 7, tt = t % T, draw = smooth(seg(tt, .4, 4)), fade = 1 - smooth(seg(tt, 6.3, 7));
-    let o = "";
-    const panel = (x0, title, col, y1, y2, note, id) => {
-      let s = A.tx(x0 + 210, 50, title, "t20 mid", `style="fill:${col}"`) + `<line x1="${x0 + 30}" y1="80" x2="${x0 + 30}" y2="380" stroke="#343b4a" stroke-width="2.5"/><line x1="${x0 + 30}" y1="380" x2="${x0 + 400}" y2="380" stroke="#343b4a" stroke-width="2.5"/>`;
-      const d = `M${x0 + 40},${y1} C${x0 + 150},${y1} ${x0 + 160},130 ${x0 + 210},130 C${x0 + 260},130 ${x0 + 270},${y2} ${x0 + 380},${y2}`;
-      s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="${f3(1 - draw)}" opacity="${f3(fade)}"/>`;
-      s += A.op(fade, `<circle cx="${x0 + 40}" cy="${y1}" r="6" fill="${col}"/>`) + A.tx(x0 + 44, y1 + 26, "Reactants", "t12", "");
-      s += A.op(smooth(seg(draw, .92, 1)) * fade, `<circle cx="${x0 + 380}" cy="${y2}" r="6" fill="${col}"/>` + A.tx(x0 + 380, y2 + 26, "Products", "t12 end"));
-      s += A.tx(x0 + 215, 404, "Time (the reaction goes on) →", "t12 mid muted");
-      s += A.tx(x0 + 210, 432, note, "t14 mid");
-      return s;
-    };
-    o += panel(40, `${R("endergonic")}`, "#3f4cc0", 320, 200, "Absorbs energy: products have MORE");
-    o += panel(540, `${R("exergonic")}`, "#d9443a", 200, 320, "Releases energy: products have LESS");
-    o += `<line x1="500" y1="40" x2="500" y2="440" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
-    o += A.tx(240, 458, "Anabolic (building up)", "t14 mid", `style="fill:#1b7f4e"`) + A.tx(740, 458, "Catabolic (breaking down)", "t14 mid", `style="fill:#b83a34"`);
-    o += A.tx(58, 230, "Energy", "t12 mid", `transform="rotate(-90 58 230)"`) + A.tx(558, 230, "Energy", "t12 mid", `transform="rotate(-90 558 230)"`);
-    return o;
-  }
-  function atpScene(t, R){
-    /* Phase 1: the last phosphate breaks off (ATP -> ADP + P + energy, built right into the picture).
-       Phase 2: energy from food puts it back on (phosphorylation). */
-    const T = 9, tt = t % T;
-    const off = smooth(seg(tt, 1, 2.3)), back = smooth(seg(tt, 5.2, 6.8)), pOff = off * (1 - back);
-    const ph1 = tt < 4.6, burst = smooth(seg(tt, 1.2, 1.9)) * (1 - smooth(seg(tt, 3.8, 4.4)));
-    const food = smooth(seg(tt, 4.4, 5.2)) * (1 - smooth(seg(tt, 7.2, 7.8)));
-    const Y = 230, AX = 300, PX = [420, 500, 580], R0 = 25;
-    let o = A.tx(500, 44, `${R("phosphorylation") === "?" ? "?" : "Phosphorylation"}: adding a phosphate group`, "t20 mid");
-    o += A.tx(500, 92, ph1 ? "Breaking off the last phosphate releases energy" : "Energy from food puts the phosphate back on", "t16 mid", `style="fill:${ph1 ? "#9a6212" : "#1b7f4e"}"`);
-    const p3x = lerp(PX[2], 650, pOff), p3y = Y - Math.sin(pOff * Math.PI) * 30;
-    /* bonds first, so they sit behind the circles */
-    o += `<line x1="${AX + 45}" y1="${Y}" x2="${PX[0]}" y2="${Y}" stroke="#b25a36" stroke-width="5"/><line x1="${PX[0]}" y1="${Y}" x2="${PX[1]}" y2="${Y}" stroke="#b25a36" stroke-width="5"/>`;
-    o += `<line x1="${PX[1]}" y1="${Y}" x2="${f1(p3x)}" y2="${f1(p3y)}" stroke="#b25a36" stroke-width="5" opacity="${f3(1 - smooth(seg(pOff, 0, .25)))}"/>`;
-    o += `<rect x="${AX - 50}" y="${Y - 34}" width="100" height="68" rx="14" fill="${C.atp}"/>` + A.tx(AX, Y + 6, "Adenosine", "t14 mid", `style="fill:#fff"`);
-    const P = (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${R0}" fill="${C.P}" stroke="#fff" stroke-width="3"/><text x="${f1(x)}" y="${f1(y + 7)}" font-size="20" font-weight="700" fill="#fff" text-anchor="middle">P</text>`;
-    o += P(PX[0], Y) + P(PX[1], Y) + P(p3x, p3y);
-    /* energy released as the bond breaks */
-    if (burst > .01){
-      const bx = lerp(545, 830, burst), by = Y - Math.sin(burst * Math.PI) * 90;
-      o += A.op(burst, `<circle cx="${f1(bx)}" cy="${f1(by)}" r="30" fill="#fff6b0" stroke="${C.gold}" stroke-width="3"/><text x="${f1(bx)}" y="${f1(by + 10)}" font-size="28" text-anchor="middle">⚡</text>`);
-    }
-    /* energy from food pushes the phosphate back on */
-    if (food > .01){
-      o += A.op(food, `<rect x="690" y="330" width="210" height="44" rx="22" fill="#e1f3e8" stroke="#1b7f4e" stroke-width="2"/>` + A.tx(795, 358, "⚡ energy from food", "t14 mid", `style="fill:#1b7f4e"`) + A.arrow(730, 326, lerp(660, 600, back), 262, "#1b7f4e", 3));
-    }
-    /* the equation lives in the labels under the pieces */
-    const split = smooth(seg(pOff, .8, 1));
-    o += A.op(1 - smooth(seg(pOff, .45, .75)), A.tx(440, Y + 76, "ATP", "t20 mid"));
-    o += A.op(split, A.tx(400, Y + 76, "ADP", "t20 mid") + A.tx(545, Y + 76, "+", "t20 mid") + A.tx(650, Y + 76, "P", "t20 mid"));
-    o += A.op(Math.min(split, burst), A.tx(740, Y + 76, "+", "t20 mid") + A.tx(830, Y + 76, "energy", "t20 mid", `style="fill:#9a6212"`) + A.tx(830, Y + 98, "(~7.3 kcal/mol)", "t12 mid", `style="fill:#9a6212"`));
-    o += A.tx(500, 440, "ATP powers the cell's work; food energy rebuilds it.", "t14 mid muted");
-    return o;
-  }
-  function twoWaysScene(t, R){
-    const T = 7, tt = t % T, p = smooth(seg(tt, .6, 2.2)), q = smooth(seg(tt, 3.4, 5));
-    let o = A.tx(500, 44, "Two ways cells phosphorylate ADP", "t20 mid") + `<line x1="500" y1="70" x2="500" y2="440" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
-    o += A.tx(250, 90, `${R("substrate")} phosphorylation`, "t16 mid", `style="fill:#9a6212"`);
-    o += A.carbons(170, 200, 3, {}) + (p < .95 ? `<g transform="translate(${f1(lerp(225, 334, p))},${f1(lerp(180, 290, p))})">${A.phos(0, 0, 11)}</g>` : "") + A.tx(170, 240, "Substrate", "t14 mid");
-    o += A.atp(290, 290, p > .95 ? 3 : 2, {label:false}) + A.tx(310, 330, p > .95 ? "ATP!" : "ADP", "t16 mid");
-    o += A.tx(250, 390, "P moves straight from a", "t14 mid") + A.tx(250, 412, "substrate onto ADP (glycolysis, Krebs)", "t14 mid");
-    o += A.tx(750, 90, `${R("oxidative")} phosphorylation`, "t16 mid", `style="fill:#3f4cc0"`);
-    o += A.membrane(560, 940, 220, 50);
-    for (let k = 0; k < 4; k++){ const x = 600 + k * 60 + 30 * q; o += A.eDot(x, 190 - 6 * Math.sin(t * 3 + k), 9); }
-    for (let k = 0; k < 5; k++) o += A.hion(600 + k * 45, 150 - (k % 2) * 16, 11);
-    o += `<rect x="850" y="190" width="40" height="60" rx="8" fill="#5a8fd8"/>` + A.tx(870, 280, "ATP synthase", "t12 mid");
-    o += A.op(q, A.atp(860, 320, 3, {label:false, sc:.9}));
-    o += A.tx(750, 390, "Energy from the electron transport", "t14 mid") + A.tx(750, 412, "chain is used to make ATP", "t14 mid");
-    return o;
-  }
-  function currencyScene(t, R){
-    const jobs = [["Biosynthesis", "building proteins, DNA, cell wall", 180], ["Transport", "pumping molecules across membranes", 500], ["Movement", "spinning a flagellum", 820]];
-    let o = A.tx(500, 44, `${R("atp")}: the energy currency of the cell`, "t20 mid");
-    o += A.atp(470, 150, 3, {sc:1.8, label:false}) + A.tx(510, 205, "ATP", "t16 mid");
-    jobs.forEach(j => { o += A.arrow(500, 220, j[2], 300, "#9a6212", 3) + `<rect x="${j[2] - 140}" y="310" width="280" height="96" rx="16" fill="#fff6d6" stroke="${C.gold}" stroke-width="2.5"/>` + A.tx(j[2], 348, j[0], "t16 mid") + A.tx(j[2], 378, j[1], "t12 mid muted"); });
-    return o;
-  }
-  function threeScene(t, R){
-    /* solid dots = ATP always made; striped dots = extra ATP some cells can make */
-    const rows = [["Aerobic respiration", "Final electron acceptor: O₂", "32–38 ATP", "#1b7f4e", 32, 6], ["Anaerobic respiration", "Final acceptor: NOT O₂ (like NO₃⁻, SO₄²⁻)", "moderate ATP", "#9a6212", 8, 20], ["Fermentation", "No electron transport chain", "2 ATP", "#b83a34", 2, 0]];
-    let o = A.tx(500, 40, "Three ways cells break down glucose", "t20 mid");
-    o += `<defs><pattern id="atpStripe" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff"/><rect width="3" height="6" fill="${C.atp}"/></pattern></defs>`;
-    const PER = 14, GAP = 18, X0 = 626;
-    const cyc = t % 9, grow = Math.floor(seg(cyc, .3, 5.5) * 38 + .001);
-    rows.forEach((r, i) => {
-      const y = 62 + i * 118, total = r[4] + r[5];
-      o += `<rect x="50" y="${y}" width="900" height="104" rx="18" fill="#fff" stroke="${r[3]}" stroke-width="2.5"/>` + A.tx(78, y + 42, i === 2 ? R("fermentation").replace(/^./, c => c.toUpperCase()) : r[0], "t16", `style="fill:${r[3]}"`) + A.tx(78, y + 72, r[1], "t14", `style="fill:#5a6376"`);
-      for (let k = 0; k < total; k++){
-        const on = k < grow, cx = X0 + (k % PER) * GAP, cy = y + 22 + Math.floor(k / PER) * GAP;
-        const fill = k < r[4] ? C.atp : "url(#atpStripe)";
-        o += `<circle cx="${cx}" cy="${cy}" r="7" fill="${on ? fill : "#eef1f5"}" stroke="${on ? C.atp : "#d9dee7"}" stroke-width="1.5"/>`;
-      }
-      o += A.tx(930, y + 94, r[2], "t14 end");
+    /* NADP is shown already loaded, just for context (not part of this activity) */
+    o += A.carrier(170, 330, "NADP", false, {}) + A.arrow(230, 330, 380, 330, "#5a6376", 3) + A.carrier(470, 330, "NADP", true, {e:false});
+    o += A.tx(610, 326, "Anabolism (building up)", "t14", "") + A.tx(610, 350, "Made from B vitamins too", "t12", `style="fill:#5a6376"`);
+    ["e1", "e2"].forEach(tk => {
+      const key = tk === "e1" ? "nad" : "fad"; if (loaded[key]) return;
+      let [cx, cy] = CARR_TOK[tk];
+      if (drag && drag.kind === tk){ cx = drag.x; cy = drag.y; }
+      const sel = st.pick === tk;
+      o += `<g data-drag="${tk}" style="cursor:grab"><rect x="${f1(cx - 64)}" y="${f1(cy - 20)}" width="128" height="40" rx="20" fill="#fff6d6" stroke="${sel ? C.gold : "#c98a0e"}" stroke-width="${sel ? 5 : 2.5}"/>` + A.tx(cx, cy + 6, tk === "e1" ? "2 e⁻ + H⁺" : "2 e⁻ + 2 H⁺", "t14 mid", `style="fill:#8a5a00"`) + `</g>`;
     });
-    o += `<circle cx="330" cy="428" r="7" fill="${C.atp}" stroke="${C.atp}" stroke-width="1.5"/>` + A.tx(344, 433, "= ATP made", "t12", "");
-    o += `<circle cx="470" cy="428" r="7" fill="url(#atpStripe)" stroke="${C.atp}" stroke-width="1.5"/>` + A.tx(484, 433, "= extra ATP possible (depends on the organism)", "t12", "");
+    if (!loaded.nad || !loaded.fad) o += A.tx(500, 452, "Drag each electron package onto the carrier it matches", "t14 mid muted");
+    else o += A.tx(500, 452, "FAD grabs TWO electrons (and 2 H) to become FADH₂", "t14 mid muted");
     return o;
   }
 
   /* ================= Activities ================= */
   const GATES = {
+    eg:Metab.sortGate({title:"Your turn: endergonic or exergonic?", done:"Sorted! Breaking down releases energy; building up absorbs it.",
+      bins:[["end","Endergonic (absorbs energy)"],["ex","Exergonic (releases energy)"]],
+      cards:[["a","Glucose → CO₂ + H₂O","ex","Breaking glucose down releases energy."],["b","Amino acids → protein","end","Building a protein takes energy."],["c","ATP → ADP + P","ex","Breaking off a phosphate releases energy."],["d","ADP + P → ATP","end","Making ATP stores energy, so it absorbs energy."],["e","Photosynthesis","end","Photosynthesis builds glucose using light energy."],["f","Catabolic reactions","ex","Catabolism = breaking down = releasing energy."]]}),
+    enzymeFacts:Metab.sortGate({title:"Your turn: true or not true about enzymes?", done:"Enzymes speed reactions up by lowering Eₐ, without being consumed or changing the reaction's overall energy change.",
+      bins:[["true","True about enzymes"],["false","NOT true about enzymes"]],
+      cards:[["a","Speeds up the reaction","true","That's exactly what a catalyst does."],["b","Lowers the activation energy","true","Enzymes provide an easier path to the transition state."],["c","Gets used up in the reaction","false","Enzymes come out unchanged and can be reused again and again."],["d","Changes whether a reaction releases or absorbs energy overall","false","Enzymes only change the speed, not the overall energy change."]]}),
+    sites:Metab.sortGate({title:"Your turn: active site or allosteric site?", done:"The active site is where the substrate binds and the reaction happens. The allosteric site is a separate regulatory spot.",
+      bins:[["active","Active site"],["allo","Allosteric site"]],
+      cards:[["a","Where the substrate binds and the reaction happens","active","This is the pocket shaped to fit the substrate."],["b","A separate spot where a regulator binds","allo","Allosteric means \"other site\" — away from the active site."],["c","Directly shapes the substrate into the transition state","active","The active site is doing the chemistry."],["d","Binding here can turn the enzyme on or off without touching the substrate","allo","It works by changing the enzyme's overall shape."]]}),
+    inhibit:{title:"Your turn: try both kinds of inhibition", done:"You tried both! Competitive inhibitors block the active site; noncompetitive inhibitors bind elsewhere and change the enzyme's shape.",
+      init:() => ({mode:null, seen:{competitive:false, noncompetitive:false}, drag:null}),
+      html:() => `<div style="font-size:.95rem">Drag the red inhibitor (I) on the diagram onto the active site, then onto the allosteric site.</div>`,
+      wire:(g, st, api) => {
+        const svg = api.svg; svg.style.touchAction = "none";
+        const toSVG = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+        function place(type){
+          st.mode = type; st.seen[type] = true; st.pickInh = false; api.redraw();
+          if (st.seen.competitive && st.seen.noncompetitive){ api.msg("Nice work. Competitive inhibitors block the active site; noncompetitive inhibitors bind the allosteric site and change the enzyme's shape.", "good"); setTimeout(api.pass, 1300); }
+          else api.msg(type === "competitive" ? "Competitive inhibition: it blocks the active site directly. Now try the allosteric site." : "Noncompetitive inhibition: it changes the enzyme's shape from the allosteric site. Now try the active site.", "good");
+        }
+        svg.onpointerdown = e => {
+          const d = e.target.closest && e.target.closest("[data-drag]");
+          if (!d){ if (st.pickInh){ const hit = hitSite(toSVG(e)); if (hit === "active") place("competitive"); else if (hit === "allo") place("noncompetitive"); } return; }
+          e.preventDefault(); const p = toSVG(e);
+          st.drag = {x:p.x, y:p.y, sx:p.x, sy:p.y, moved:false};
+          try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+        };
+        svg.onpointermove = e => { const d = st.drag; if (!d) return; const p = toSVG(e); d.x = p.x; d.y = p.y; if (Math.hypot(p.x - d.sx, p.y - d.sy) > 8) d.moved = true; };
+        svg.onpointerup = svg.onpointercancel = e => {
+          const d = st.drag; if (!d) return; st.drag = null;
+          if (!d.moved){ st.pickInh = true; api.msg("Now tap the active site or the allosteric site.", ""); return; }
+          const hit = hitSite(toSVG(e));
+          if (hit === "active") place("competitive");
+          else if (hit === "allo") place("noncompetitive");
+          else api.msg("Drop the inhibitor right on the active site or the allosteric site.", "bad");
+        };
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the red inhibitor onto a site on the enzyme (or tap it, then tap a site).", "");
+      }},
     redox:{title:"Your turn: work right on the diagram above", done:"The donor lost electrons (oxidized) and the acceptor gained them (reduced).",
       init:() => ({moved:false, tags:{}, drag:null, pick:null}),
       html:st => `<div style="font-size:.95rem">${!st.moved ? "<b>1.</b> Drag the electrons (e⁻) on the diagram from molecule A to molecule B. You can also just tap them." : "<b>2.</b> Drag the <b>Oxidized</b> and <b>Reduced</b> labels onto the molecules in the diagram. (Or tap a label, then tap a molecule.)"}</div>`,
@@ -276,48 +345,61 @@
       bins:[["ox","Oxidized (lost e⁻)"],["red","Reduced (gained e⁻)"]],
       cards:[["c","Carbon: 0 → +4","ox","The charge went UP (more positive). Losing negative electrons does that."],["o","Oxygen: 0 → −2","red","The charge went DOWN (more negative). It gained electrons."],["n","NAD⁺ → NADH","red","NAD⁺ picks up electrons to become NADH. Gaining = reduction."],["d","NADH → NAD⁺","ox","NADH drops off its electrons at the end. Losing = oxidation."]]}),
     carriers:{title:"Your turn: load the electron carriers", done:"Loaded! NAD⁺ → NADH and FAD → FADH₂ now carry high-energy electrons.",
-      init:() => ({nad:0, fad:0}),
-      html:st => `<div class="row"><span class="tok" data-e="1" style="background:#fff6d6;border-color:#f2b134">2 e⁻ + H⁺</span><span class="tok" data-e="2" style="background:#fff6d6;border-color:#f2b134">2 e⁻ + 2 H⁺</span></div>
-        <div class="zones"><div class="zone ${st.nad ? "ok" : ""}" data-zone="nad"><span class="zl">${st.nad ? "NADH ✓" : "NAD⁺ (empty)"}</span></div><div class="zone ${st.fad ? "ok" : ""}" data-zone="fad"><span class="zl">${st.fad ? "FADH₂ ✓" : "FAD (empty)"}</span></div></div>`,
-      wire:(g, st, api) => { g.querySelectorAll("[data-e]").forEach(el => api.dragify(el, {tap:() => { st.pick = el.dataset.e; api.msg("Now tap a carrier.", ""); }, drop:z => load(el.dataset.e, z.dataset.zone)}));
-        g.querySelectorAll("[data-zone]").forEach(z => z.addEventListener("click", () => { if (st.pick){ load(st.pick, z.dataset.zone); st.pick = null; } }));
-        function load(e, z){ const want = z === "nad" ? "1" : "2"; if (e !== want){ api.msg(z === "nad" ? "NAD⁺ picks up 2 electrons but only ONE H⁺ to become NADH." : "FAD becomes FADH₂, so it needs TWO hydrogens.", "bad"); return false; } st[z] = 1; api.redraw(); if (st.nad && st.fad){ api.msg("Both carriers were reduced. They'll deliver these electrons to the electron transport chain.", "good"); setTimeout(api.pass, 1100); } else api.msg("Loaded! One more.", "good"); return true; }
-        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the right electron package onto each carrier. Look at the H's in NADH vs. FADH₂.", ""); }},
-    eg:Metab.sortGate({title:"Your turn: endergonic or exergonic?", done:"Sorted! Breaking down releases energy; building up absorbs it.",
-      bins:[["end","Endergonic (absorbs energy)"],["ex","Exergonic (releases energy)"]],
-      cards:[["a","Glucose → CO₂ + H₂O","ex","Breaking glucose down releases energy."],["b","Amino acids → protein","end","Building a protein takes energy."],["c","ATP → ADP + P","ex","Breaking off a phosphate releases energy."],["d","ADP + P → ATP","end","Making ATP stores energy, so it absorbs energy."],["e","Photosynthesis","end","Photosynthesis builds glucose using light energy."],["f","Catabolic reactions","ex","Catabolism = breaking down = releasing energy."]]}),
-    ways:{title:"Your turn: make ATP by substrate-level phosphorylation", done:"You moved a phosphate straight from the substrate onto ADP.",
-      html:() => `<div class="row"><div class="pad"><span class="lbl">Substrate (from glycolysis)</span><div class="row"><span class="tok" data-p="1" style="background:#fdeee5;border-color:#e8744f">P</span></div></div><div class="zone" data-zone="adp" style="min-width:200px"><span class="zl">ADP: drop the phosphate here</span></div></div>`,
-      wire:(g, st, api) => { api.dragify(g.querySelector("[data-p]"), {tap:go, drop:go}); function go(){ g.querySelector("[data-zone]").classList.add("ok"); g.querySelector("[data-zone] .zl").textContent = "ATP! ✓"; g.querySelector("[data-p]").remove(); api.msg("ADP + P → ATP. No electron transport chain needed!", "good"); setTimeout(api.pass, 1000); return true; }
-        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the phosphate (P) from the substrate onto ADP.", ""); }}
+      init:() => ({nad:0, fad:0, drag:null, pick:null}),
+      html:() => `<div style="font-size:.95rem">Drag each electron package on the diagram onto the carrier it matches. Look at the H's in NADH vs. FADH₂.</div>`,
+      wire:(g, st, api) => {
+        const svg = api.svg; svg.style.touchAction = "none";
+        const toSVG = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+        function load(tk, z){
+          const want = tk === "e1" ? "nad" : "fad";
+          if (z !== want){ api.msg(z === "nad" ? "NAD⁺ only picks up ONE H⁺ (that's the other package)." : "FAD needs the package with TWO H⁺ to become FADH₂.", "bad"); return; }
+          st[z] = 1; st.pick = null; api.redraw();
+          if (st.nad && st.fad){ api.msg("Both carriers were reduced. They'll deliver these electrons to the electron transport chain.", "good"); setTimeout(api.pass, 1100); }
+          else api.msg("Loaded! One more.", "good");
+        }
+        svg.onpointerdown = e => {
+          const d = e.target.closest && e.target.closest("[data-drag]");
+          if (!d){ if (st.pick){ const z = hitCarrier(toSVG(e)); if (z) load(st.pick, z); } return; }
+          e.preventDefault(); const p = toSVG(e);
+          st.drag = {kind:d.dataset.drag, x:p.x, y:p.y, sx:p.x, sy:p.y, moved:false};
+          try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+        };
+        svg.onpointermove = e => { const d = st.drag; if (!d) return; const p = toSVG(e); d.x = p.x; d.y = p.y; if (Math.hypot(p.x - d.sx, p.y - d.sy) > 8) d.moved = true; };
+        svg.onpointerup = svg.onpointercancel = e => {
+          const d = st.drag; if (!d) return; st.drag = null;
+          if (!d.moved){ st.pick = d.kind; api.msg("Now tap the carrier it belongs on.", ""); return; }
+          const z = hitCarrier(toSVG(e));
+          if (z) load(d.kind, z); else api.msg("Drop the package right onto a carrier.", "bad");
+        };
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the electron packages onto the matching carriers.", "");
+      }}
   };
 
-  const P1 = "Redox reactions", P2 = "Energy and ATP", P3 = "The big picture";
+  const P1 = "Enzymes and reactions", P2 = "Oxidation and reduction";
   const STEPS = [
-    {part:P1, title:"Oxidation and reduction", scene:(t, c) => redoxScene(t, c.R, c.g, c.done), live:true, gate:GATES.redox, more:"oil",
+    {part:P1, title:"Endergonic vs. exergonic", scene:(t, c) => egScene(t, c.R), live:true, gate:GATES.eg,
+     text:`{{endergonic}} reactions absorb more energy than they release (endo = within), so the products have more energy than the reactants. {{exergonic}} reactions release more energy than they absorb (exo = out), so the products have less energy. Catabolic reactions are exergonic. Anabolic reactions are endergonic.`},
+    {part:P1, title:"Activation energy", scene:(t, c) => eaScene(t, c.R),
+     text:`Before reactants can become products, they must pass through a high-energy, unstable arrangement called the transition state. The extra energy needed to reach it is called {{activation}} (Eₐ) — marked on the graphs above as the climb from the reactants up to the peak. Every reaction needs some activation energy to get started, even one that releases energy overall (exergonic reactions still have to get over the hump first).`},
+    {part:P1, title:"Enzymes lower activation energy", scene:(t, c) => enzymeEaScene(t, c.R), gate:GATES.enzymeFacts,
+     text:`{{enzyme}} are biological catalysts: proteins that speed up reactions without being used up themselves. They work by lowering the activation energy needed, often by holding the substrate in a position that makes the transition state easier to reach. Lowering Eₐ doesn't change whether a reaction is endergonic or exergonic, and it doesn't change the reactants or products. It just makes the reaction happen faster.`},
+    {part:P1, title:"Active site vs. allosteric site", scene:(t, c) => sitesScene(t, c.R), gate:GATES.sites,
+     text:`Enzymes have an {{active}}, a pocket shaped to fit the substrate, where the reaction actually happens. Many enzymes also have an {{allosteric}}, a separate spot where a regulatory molecule can bind and change the enzyme's shape, turning the enzyme on or off.`},
+    {part:P1, title:"Competitive vs. noncompetitive inhibition", scene:(t, c) => inhibitionScene(t, c.R, c.g, c.done), live:true, gate:GATES.inhibit,
+     text:`Inhibitors block enzymes in two ways. {{competitive}} inhibitors resemble the substrate and bind the active site directly, competing with it for the same spot. {{noncompetitive}} inhibitors bind the allosteric site instead, changing the enzyme's shape so the active site no longer works, even though the inhibitor never touches it.`,
+     after:`Competitive = blocks the active site. Noncompetitive = changes the enzyme's shape from elsewhere.`},
+    {part:P2, title:"Oxidation and reduction", scene:(t, c) => redoxScene(t, c.R, c.g, c.done), live:true, gate:GATES.redox, more:"oil",
      text:`Cells get their energy from chemical reactions. In a reaction, two molecules meet and their atoms rearrange: covalent bonds (pairs of shared electrons) break, and new ones form. Often, electrons move from one molecule, the electron donor, to the other, the electron acceptor. {{oxidation}} is the LOSS of electrons, and it releases energy. {{reduction}} is the GAIN of electrons, and it requires energy input. The two always happen together, so these are called {{redox}} reactions. Remember OIL RIG: Oxidation Is Loss, Reduction Is Gain.`,
      after:`OIL RIG! Oxidation Is Loss, Reduction Is Gain.`},
-    {part:P1, title:"Redox in cellular respiration", scene:(t, c) => glucoseScene(t, c.R, c.done), live:true, gate:GATES.glucose,
+    {part:P2, title:"Redox in cellular respiration", scene:(t, c) => glucoseScene(t, c.R, c.done), live:true, gate:GATES.glucose,
      stageHTML:`<a class="eqlink" href="oxidation-numbers.html"><span class="eq">C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O</span><span class="hint">Tap to see how the charges are figured out (bonus)</span></a>`,
      text:`Cellular respiration is one big redox reaction: C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O. The carbon from glucose is {{oxidized}}: it loses electrons (and hydrogen). Oxygen is {{reduced}}: it gains electrons (and hydrogen) and becomes water. The electrons don't jump straight across. NAD⁺ picks them up (becoming NADH) and carries them to oxygen. Follow the charges: carbon goes from 0 to +4 (lost electrons), oxygen goes from 0 to −2 (gained electrons), and hydrogen stays +1.`},
-    {part:P1, title:"Electron carriers", scene:(t, c) => carrierScene(t, c.R), live:true, gate:GATES.carriers, more:"vit",
+    {part:P2, title:"Electron carriers", scene:(t, c) => carrierScene(t, c.R, c.g, c.done), live:true, gate:GATES.carriers, more:"vit",
      text:`Cells use electron carriers to shuttle high-energy electrons. {{nad}} accepts electrons and becomes NADH. Its main role is in catabolism, and it's made from niacin (a B vitamin). {{fad}} accepts TWO electrons and becomes FADH₂ (another B vitamin). {{nadp}} accepts electrons and becomes NADPH, and its main role is in anabolism.`,
-     after:`Picking up electrons = the carrier is reduced.`},
-    {part:P2, title:"Endergonic vs. exergonic", scene:(t, c) => egScene(t, c.R), live:true, gate:GATES.eg,
-     text:`{{endergonic}} reactions absorb more energy than they release (endo = within), so the products have more energy than the reactants. {{exergonic}} reactions release more energy than they absorb (exo = out), so the products have less energy. Catabolic reactions are exergonic. Anabolic reactions are endergonic.`},
-    {part:P2, title:"Phosphorylation and ATP", scene:(t, c) => atpScene(t, c.R), more:"atp",
-     text:`{{phosphorylation}} is the addition of a phosphate group to a molecule. ATP carries energy in its phosphate bonds: ATP → ADP + P + energy releases about 7.3 kcal/mol. That energy drives endergonic (energy-requiring) reactions. Phosphorylation "energizes" molecules for cellular processes.`},
-    {part:P2, title:"Two ways to make ATP", scene:(t, c) => twoWaysScene(t, c.R), gate:GATES.ways,
-     text:`Cells add phosphate to ADP in two main ways. {{substrate}} phosphorylation is the direct transfer of a phosphate from a substrate to ADP. It happens in glycolysis and the Krebs cycle. {{oxidative}} phosphorylation uses energy from electron transport to add the phosphate, and it makes most of the cell's ATP.`},
-    {part:P2, title:"ATP: the energy currency", scene:(t, c) => currencyScene(t, c.R),
-     text:`{{atp}} is the energy currency of the cell. Catabolic reactions "earn" it, and cells "spend" it on work: biosynthesis (building molecules), transport across membranes, and movement.`},
-    {part:P3, title:"Three ways to break down glucose", scene:(t, c) => threeScene(t, c.R),
-     table:{cap:"Carbohydrate catabolism at a glance", head:["Process","Final electron acceptor","ATP per glucose"], rows:[["Aerobic respiration","O₂","32–38 ATP (lots!)"],["Anaerobic respiration","Something other than O₂ (like nitrate or sulfate)","Moderate"],["Fermentation","No electron transport chain","2 ATP"]]},
-     text:`Now you know the chemistry, here's where it's headed. Cells break down glucose in three ways. Aerobic respiration uses oxygen and makes lots of ATP (32–38). Anaerobic respiration uses other electron acceptors (not O₂) and makes a moderate amount. {{fermentation}} needs no electron transport chain and makes only 2 ATP. Every one of them starts with glycolysis!`,
-     after:`Next: the big picture of cellular respiration, then glycolysis.`}
+     after:`Picking up electrons = the carrier is reduced.`}
   ];
 
-  Metab.start({title:"Chemistry of Energy Production", page:"energy-chemistry.html", BL, MORE, STEPS,
+  Metab.start({title:"Enzymes and Energy Production", page:"energy-chemistry.html", BL, MORE, STEPS,
     nextLabel:"Next up: step 1 of cellular respiration", next:[["Respiration: the big picture →","respiration-overview.html"],["Glycolysis →","glycolysis.html"],["All modules","index.html"]]});
 })();
 </script>
