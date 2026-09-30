@@ -551,7 +551,7 @@
     const GAMES_HTML = `<h2>Games</h2><p class="moddesc">Race the clock! Every round is a brand-new sequence, and your best times are saved on this browser.</p><div class="grid">${GAMES.map(k => tileHTML(k, {noWide:true})).join("")}</div>`;
     /* Chapter 5 modules appear here as each one is revised. Still to come: enzymes, glycolysis, krebs, ferment
        (restore their stops in studypath.js when they go live). */
-    const CH5 = ["energy","respov","glycolysis","krebs","etcmod","idtests"];
+    const CH5 = ["energy","respov","glycolysis","krebs","etcmod","ferment","idtests"];
     const CH5_ENABLED = true;
     const t = k => tileHTML(k, {noDesc:true, noWide:true});
     const el = document.getElementById("modDir");
@@ -577,7 +577,7 @@
       </div>
       <div class="modpanel" data-panel="ch5" hidden>
         <div class="grid">${CH5.map(t).join("")}</div>
-        <p class="moddesc">More Chapter 5 modules are on the way!</p>
+        <p class="moddesc">Glucose to ATP, start to finish, plus the lab tests that confirm it.</p>
       </div>`;
     el.querySelectorAll(".modtab").forEach(b => b.addEventListener("click", () => {
       el.querySelectorAll(".modtab").forEach(x => x.setAttribute("aria-selected", String(x === b)));

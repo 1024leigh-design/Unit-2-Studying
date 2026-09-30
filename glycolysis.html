@@ -158,8 +158,8 @@
         o += lbl(CX, Y.go - 50, "2 pyruvate", RED, 16);
         o += A.op(a, A.arrow(CX - 20, Y.go - 34, 180, Y.go + 30, "#3f4cc0", 3) + A.arrow(CX + 20, Y.go - 34, 460, Y.go + 30, RED, 3));
         o += A.op(a, lbl(205, Y.go - 12, `with ${R("oxygen") === "?" ? "?" : "O₂"}`, "#3f4cc0", 14, "end") + lbl(435, Y.go - 12, "no O₂", RED, 14, "start"));
-        o += A.op(b, `<rect x="60" y="${Y.go + 40}" width="240" height="90" rx="16" fill="#e7e9fb"/>` + lbl(180, Y.go + 76, R("krebs"), "#2c3796", 17) + lbl(180, Y.go + 104, "→ lots more ATP", "#343b4a", 13));
-        o += A.op(b, `<rect x="340" y="${Y.go + 40}" width="240" height="90" rx="16" fill="#fbe8e7"/>` + lbl(460, Y.go + 76, R("fermentation") === "?" ? "?" : "Fermentation", RED, 17) + lbl(460, Y.go + 104, "→ recycles NAD⁺", "#343b4a", 13));
+        o += A.op(b, `<a href="krebs.html" style="cursor:pointer"><rect x="60" y="${Y.go + 40}" width="240" height="90" rx="16" fill="#e7e9fb" stroke="#c9d0f5" stroke-width="2"/>` + lbl(180, Y.go + 76, R("krebs"), "#2c3796", 17) + lbl(180, Y.go + 104, "→ lots more ATP (click)", "#343b4a", 12) + `</a>`);
+        o += A.op(b, `<a href="fermentation.html" style="cursor:pointer"><rect x="340" y="${Y.go + 40}" width="240" height="90" rx="16" fill="#fbe8e7" stroke="#f0c0bb" stroke-width="2"/>` + lbl(460, Y.go + 76, R("fermentation") === "?" ? "?" : "Fermentation", RED, 17) + lbl(460, Y.go + 104, "→ recycles NAD⁺ (click)", "#343b4a", 12) + `</a>`);
       }
       return o;
     }
@@ -202,7 +202,7 @@
       intro:`Glucose is all alone at the top of the board. Follow the prompt in the bar, act on the board, and read each card as it pops up. Closed cards shrink to numbered markers you can reopen anytime.`,
       tally:[["used", "ATP spent", RED], ["made", "ATP made", GREEN], ["nadh", "NADH", "#2f9e63"], ["net", "net ATP", "#3f4cc0", t => (t.made || 0) - (t.used || 0)]],
       endTitle:"You built glycolysis!", endText:"1 glucose → 2 pyruvate, with a net 2 ATP and 2 NADH. Tap any numbered marker to review a step. Curious how it actually happens? Try “The Full Pathway” above.",
-      next:[["The Krebs Cycle →", "krebs.html"], ["Big picture: respiration overview", "respiration-overview.html"], ["All modules", "index.html"]]};
+      next:[["All modules", "index.html"]], hideRestart:true};
   }
 
   /* ================================================================= */
@@ -334,8 +334,8 @@
         o += lbl(CX, Y.go - 50, "2 pyruvate", RED, 16);
         o += A.op(a, A.arrow(CX - 20, Y.go - 34, 180, Y.go + 30, "#3f4cc0", 3) + A.arrow(CX + 20, Y.go - 34, 460, Y.go + 30, RED, 3));
         o += A.op(a, lbl(205, Y.go - 12, `with ${R("oxygen") === "?" ? "?" : "O₂"}`, "#3f4cc0", 14, "end") + lbl(435, Y.go - 12, "no O₂", RED, 14, "start"));
-        o += A.op(b, `<rect x="60" y="${Y.go + 40}" width="240" height="90" rx="16" fill="#e7e9fb"/>` + lbl(180, Y.go + 76, R("krebs"), "#2c3796", 17) + lbl(180, Y.go + 104, "→ lots more ATP", "#343b4a", 13));
-        o += A.op(b, `<rect x="340" y="${Y.go + 40}" width="240" height="90" rx="16" fill="#fbe8e7"/>` + lbl(460, Y.go + 76, R("fermentation") === "?" ? "?" : "Fermentation", RED, 17) + lbl(460, Y.go + 104, "→ recycles NAD⁺", "#343b4a", 13));
+        o += A.op(b, `<a href="krebs.html" style="cursor:pointer"><rect x="60" y="${Y.go + 40}" width="240" height="90" rx="16" fill="#e7e9fb" stroke="#c9d0f5" stroke-width="2"/>` + lbl(180, Y.go + 76, R("krebs"), "#2c3796", 17) + lbl(180, Y.go + 104, "→ lots more ATP (click)", "#343b4a", 12) + `</a>`);
+        o += A.op(b, `<a href="fermentation.html" style="cursor:pointer"><rect x="340" y="${Y.go + 40}" width="240" height="90" rx="16" fill="#fbe8e7" stroke="#f0c0bb" stroke-width="2"/>` + lbl(460, Y.go + 76, R("fermentation") === "?" ? "?" : "Fermentation", RED, 17) + lbl(460, Y.go + 104, "→ recycles NAD⁺ (click)", "#343b4a", 12) + `</a>`);
       }
       return o;
     }
@@ -402,7 +402,7 @@
       intro:`Same pathway, every enzyme and intermediate named. The names are labeled on the board — the cards focus on energy, control points, and how this connects to vitamins, minerals, and the sugar you eat.`,
       tally:[["used", "ATP spent", RED], ["made", "ATP made", GREEN], ["nadh", "NADH", "#2f9e63"], ["net", "net ATP", "#3f4cc0", t => (t.made || 0) - (t.used || 0)]],
       endTitle:"You built the full pathway!", endText:"Same 1 glucose → 2 pyruvate, net 2 ATP and 2 NADH — now with every enzyme, cofactor, and control point. Tap any numbered marker to review a step.",
-      next:[["The Krebs Cycle →", "krebs.html"], ["Big picture: respiration overview", "respiration-overview.html"], ["All modules", "index.html"]]};
+      next:[["All modules", "index.html"]], hideRestart:true};
   }
 
   /* ================================================================= */
