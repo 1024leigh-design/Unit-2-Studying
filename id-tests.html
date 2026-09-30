@@ -59,7 +59,12 @@
   }
   function plateSVG(mode, label){
     /* mode: "none" | dot pattern keys for colony color/pattern */
-    let s = `<svg viewBox="0 0 220 220" width="180"><circle cx="110" cy="110" r="100" fill="#fdfdf8" stroke="#c9cfdb" stroke-width="6"/><circle cx="110" cy="110" r="92" fill="none" stroke="#e7e9f0" stroke-width="2"/>`;
+    let s = `<svg viewBox="0 0 220 220" width="180"><circle cx="110" cy="110" r="100" fill="${(mode && mode.bg) || "#fdfdf8"}" stroke="#c9cfdb" stroke-width="6"/><circle cx="110" cy="110" r="92" fill="none" stroke="#e7e9f0" stroke-width="2"/>`;
+    if (mode && mode.streak){
+      /* a single zig-zag streak, e.g. for starch/casein plates read by a clearing zone rather than colony dots */
+      s += `<path d="M40,80 Q70,60 100,80 T160,80 M40,110 Q70,130 100,110 T160,110 M40,140 Q70,160 100,140 T160,140" fill="none" stroke="#8a8065" stroke-width="5" stroke-linecap="round" opacity=".55"/>`;
+      if (mode.halo) s += `<path d="M40,80 Q70,60 100,80 T160,80 M40,110 Q70,130 100,110 T160,110 M40,140 Q70,160 100,140 T160,140" fill="none" stroke="#fdfdf8" stroke-width="22" stroke-linecap="round" opacity=".9"/><path d="M40,80 Q70,60 100,80 T160,80 M40,110 Q70,130 100,110 T160,110 M40,140 Q70,160 100,140 T160,140" fill="none" stroke="#8a8065" stroke-width="5" stroke-linecap="round" opacity=".55"/>`;
+    }
     if (mode && mode.colonies){
       const pts = [[70,70],[130,60],[150,110],[100,140],[60,120],[110,95],[75,150],[140,150]];
       pts.forEach(([x,y]) => { s += `<circle cx="${x}" cy="${y}" r="${mode.r||9}" fill="${mode.fill}" ${mode.stroke ? `stroke="${mode.stroke}" stroke-width="2"` : ""} opacity="${mode.op||1}"/>`; if (mode.sheen) s += `<circle cx="${x}" cy="${y}" r="${(mode.r||9)-3}" fill="none" stroke="#6fdc8c" stroke-width="1.5" opacity=".8"/>`; });
@@ -197,7 +202,76 @@
        : pos
        ? {cls:"pos", plate:{colonies:true, fill:"#e8d13a", r:10}, tag:"Positive (mannitol+)", text:`The agar around the colonies turns <b>yellow</b>. This organism tolerated the salt AND fermented mannitol, dropping the pH enough to shift phenol red to yellow.`}
        : {cls:"neg", plate:{colonies:true, fill:"#e0685f", r:10, op:.6}, tag:"Negative (mannitol−)", text:`It grew (so it's salt-tolerant), but the agar stays pink — no acid means no mannitol fermentation.`},
-     why:`This combination — high salt (selective) plus a sugar and pH indicator (differential) — is exactly the same two-axis logic as MacConkey and EMB, just tuned to identify Staphylococcus and tell apart its species.`}
+     why:`This combination — high salt (selective) plus a sugar and pH indicator (differential) — is exactly the same two-axis logic as MacConkey and EMB, just tuned to identify Staphylococcus and tell apart its species.`},
+
+    {key:"citrate", tab:"Citrate Utilization", title:"Citrate Utilization Test (Simmons Citrate)", medium:"tube",
+     question:"Can this bacterium use citrate as its only carbon source?",
+     setup:`A Simmons citrate agar slant: citrate is the only carbon source available, with bromothymol blue as a pH indicator.`,
+     organisms:[
+       {name:"Enterobacter aerogenes", control:true, pos:true, why:"Has citrate permease and can pull citrate into the cell to use as its sole carbon source, raising the pH as it grows."},
+       {name:"E. coli", pos:false, why:"Can't transport citrate into the cell at all, so it can't use it as a carbon source here."}
+     ],
+     reagents:[],
+     read:pos => pos
+       ? {cls:"pos", tube:{fill:"#3f7bd1", gas:0, label:"turns blue"}, tag:"Positive", text:`The slant turns <b>Prussian blue</b>. Using citrate as fuel releases byproducts that raise the pH, shifting bromothymol blue from green to blue — and growth is visible right along the streak.`}
+       : {cls:"neg", tube:{fill:"#5f9e5a", gas:0, label:"stays green"}, tag:"Negative", text:`No growth and no color change — this organism simply can't get its carbon from citrate alone.`},
+     why:`Citrate is a Krebs cycle intermediate! This test asks whether a bacterium can pull citrate in from outside the cell and use it directly as fuel, instead of only making its own via citrate synthase.`,
+     link:["Review citrate synthase in the Krebs cycle →", "krebs.html"]},
+
+    {key:"catalase", tab:"Catalase", title:"Catalase Test", medium:"tube",
+     question:"Does this bacterium break down hydrogen peroxide?",
+     setup:`A needle pull of bacteria from a slant culture, with a few drops of 3% hydrogen peroxide added directly.`,
+     organisms:[
+       {name:"Staphylococcus aureus", control:true, pos:true, why:"Produces catalase, which breaks down the reactive oxygen byproducts of aerobic metabolism."},
+       {name:"Streptococcus pyogenes", pos:false, why:"Doesn't produce catalase — a classic way to tell Staphylococcus and Streptococcus apart."}
+     ],
+     reagents:[{label:"Add 3% hydrogen peroxide"}],
+     read:pos => pos
+       ? {cls:"pos", tube:{fill:"#eef3f6", gas:2, label:"instant bubbling"}, tag:"Positive", text:`Vigorous bubbling, immediately. Catalase broke the hydrogen peroxide down into water and O₂ gas — you're watching the gas bubbles form in real time.`}
+       : {cls:"neg", tube:{fill:"#eef3f6", gas:0, label:"no bubbles"}, tag:"Negative", text:`Nothing happens. No catalase means there's no enzyme available to break down hydrogen peroxide.`},
+     why:`Aerobic metabolism — like the electron transport chain — can generate small amounts of reactive oxygen byproducts. Catalase is one of the main enzymes cells use to detoxify them, which makes this a quick screen for an oxygen-based lifestyle.`,
+     link:["Review the electron transport chain →", "etc.html"]},
+
+    {key:"starch", tab:"Starch Hydrolysis", title:"Starch Hydrolysis Test", medium:"plate",
+     question:"Does this bacterium produce amylase to break down starch?",
+     setup:`A starch agar plate, streaked and incubated, then flooded with Gram's iodine to develop.`,
+     organisms:[
+       {name:"Bacillus subtilis", control:true, pos:true, why:"Secretes amylase, which breaks starch down into maltose, glucose, and dextrins outside the cell."},
+       {name:"E. coli", pos:false, why:"Doesn't secrete amylase, so the starch around its growth stays untouched."}
+     ],
+     reagents:[{label:"Flood the plate with Gram's iodine"}],
+     read:pos => pos
+       ? {cls:"pos", plate:{streak:true, halo:true, bg:"#4a3f8f"}, tag:"Positive", text:`Iodine turns the intact starch blue-black, but a <b>clear zone</b> surrounds the growth — amylase broke down the starch there before the iodine could bind it.`}
+       : {cls:"neg", plate:{streak:true, bg:"#4a3f8f"}, tag:"Negative", text:`Iodine turns the whole plate blue-black, right up to the growth, with no clearing — the starch around it was never touched.`},
+     why:`Starch is a carbohydrate polymer — far too big to cross the cell membrane. Amylase is an extracellular enzyme, secreted outside the cell, that breaks it into pieces small enough (like glucose) to take up and feed into glycolysis.`},
+
+    {key:"indole", tab:"Indole", title:"Indole Test", medium:"tube",
+     question:"Does this bacterium produce tryptophanase?",
+     setup:`A tube of tryptone broth (1% tryptophan), with Kovac's reagent layered on top to develop.`,
+     organisms:[
+       {name:"E. coli", control:true, pos:true, why:"Produces tryptophanase, cleaving tryptophan into indole and pyruvate."},
+       {name:"Enterobacter aerogenes", pos:false, why:"Doesn't produce tryptophanase, so no indole forms here."}
+     ],
+     reagents:[{label:"Add Kovac's reagent (10–12 drops)"}],
+     read:pos => pos
+       ? {cls:"pos", tube:{fill:"#c0392b", gas:0, label:"red ring on top"}, tag:"Positive", text:`A <b>red layer</b> forms on the surface. Tryptophanase split tryptophan into indole (what Kovac's reagent detects) and pyruvate — pyruvate that can head straight into the Krebs cycle.`}
+       : {cls:"neg", tube:{fill:"#e8d13a", gas:0, label:"stays yellow"}, tag:"Negative", text:`The reagent layer stays yellow — no indole means this organism doesn't cleave tryptophan this way.`},
+     why:`This is amino acid catabolism in action: breaking down tryptophan leaves behind pyruvate, one of the exact entry points fat- and protein-derived fuel use to reach the Krebs cycle.`,
+     link:["Review how amino acids feed the Krebs cycle →", "krebs.html"]},
+
+    {key:"h2s", tab:"H₂S (Kligler's)", title:"Hydrogen Sulfide Test (Kligler's Iron Agar)", medium:"tube",
+     question:"Does this bacterium produce hydrogen sulfide from cysteine?",
+     setup:`A Kligler's iron agar deep tube (glucose, lactose, phenol red, and iron salts), stabbed with a needle.`,
+     organisms:[
+       {name:"Proteus mirabilis", control:true, pos:true, why:"Produces cysteine desulfurase, releasing H₂S from the amino acid cysteine."},
+       {name:"E. coli", pos:false, why:"Doesn't produce H₂S here — no black precipitate forms."}
+     ],
+     reagents:[],
+     read:pos => pos
+       ? {cls:"pos", tube:{fill:"#2b2b2b", gas:0, label:"black precipitate"}, tag:"Positive", text:`A <b>black precipitate</b> forms along the stab line. H₂S released from cysteine reacts with iron salts in the medium to form iron sulfide — visibly black.`}
+       : {cls:"neg", tube:{fill:"#e8744f", gas:0, label:"no black color"}, tag:"Negative", text:`No black precipitate forms. This organism isn't breaking cysteine down to release H₂S here.`},
+     why:`Another amino acid catabolism test: cysteine desulfurase strips sulfur out of the amino acid cysteine. It's a different side-branch than the ones that feed carbon into the Krebs cycle, but part of the same larger picture — bacteria have many ways to pull energy and building blocks out of protein.`,
+     link:["Review how amino acids feed the Krebs cycle →", "krebs.html"]}
   ];
 
   /* ================= Rendering ================= */

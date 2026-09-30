@@ -233,8 +233,8 @@
       if (mode === "test") try { localStorage.setItem("bio112-done:" + PAGE, "1"); } catch (e) {}
       if (window.BioGames) BioGames.celebrate("Pathway complete!");
       const E = $("pwEnd"); E.hidden = false;
-      E.innerHTML = `<div class="pwendin"><b>${cfg.endTitle || "You built the whole pathway!"}</b><p>${cfg.endText || "Tap any numbered marker on the board to review a step."}</p><div class="pwlinks">${(cfg.next || []).map(([l, h]) => `<a class="btn ${h === "index.html" ? "secondary" : "primary"}" href="${h}">${l}</a>`).join("")}<button class="btn secondary" id="pwAgain">Start over</button></div></div>`;
-      $("pwAgain").addEventListener("click", reset);
+      E.innerHTML = `<div class="pwendin"><b>${cfg.endTitle || "You built the whole pathway!"}</b><p>${cfg.endText || "Tap any numbered marker on the board to review a step."}</p><div class="pwlinks">${(cfg.next || []).map(([l, h]) => `<a class="btn ${h === "index.html" ? "secondary" : "primary"}" href="${h}">${l}</a>`).join("")}${cfg.hideRestart ? "" : `<button class="btn secondary" id="pwAgain">Start over</button>`}</div></div>`;
+      if (!cfg.hideRestart) $("pwAgain").addEventListener("click", reset);
       setTimeout(() => E.scrollIntoView({behavior:reduced ? "auto" : "smooth", block:"center"}), 600);
     }
 
