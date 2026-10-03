@@ -15,13 +15,18 @@
 <script>
 (function(){
   const A = Metab.A, {f1, f3, lerp, clamp, smooth, seg, C} = A;
-  const tri = (x, y, s, col) => `<polygon points="${f1(x)},${f1(y - 16 * s)} ${f1(x + 17 * s)},${f1(y + 12 * s)} ${f1(x - 17 * s)},${f1(y + 12 * s)}" fill="${col || C.green}" stroke="#1b6b43" stroke-width="2"/>`;
-  const half = (x, y, s, col) => `<path d="M${f1(x - 16 * s)},${f1(y - 14 * s)} L${f1(x + 16 * s)},${f1(y - 14 * s)} L${f1(x + 16 * s)},${f1(y)} A${f1(16 * s)},${f1(16 * s)} 0 0 1 ${f1(x - 16 * s)},${f1(y)} Z" fill="${col || C.blue}" stroke="#2c3796" stroke-width="2"/>`;
-  const sq = (x, y, s, col) => `<rect x="${f1(x - 15 * s)}" y="${f1(y - 15 * s)}" width="${f1(30 * s)}" height="${f1(30 * s)}" rx="4" fill="${col || C.orange}" stroke="#a8461f" stroke-width="2"/>`;
-  /* a substrate made of two parts (triangle + half circle) that the enzyme splits */
-  const substrate = (x, y, gapv, s) => tri(x - 16 * (s || 1) - gapv, y, s || 1, C.green) + half(x + 16 * (s || 1) + gapv, y + 6, s || 1, "#e8744f");
-  /* enzyme drawn with a triangle-shaped active site on top */
-  const enz = (x, y, o) => A.enzyme(x, y, {notch:"tri", ...(o || {})});
+  /* enzyme with a V-shaped active site; w/d = notch half-width/depth (22/30 is an exact fit for SB) */
+  const E = (x, y, o) => { o = o || {}; const sc = o.sc || 1, w = o.w === undefined ? 22 : o.w, d = o.d === undefined ? 30 : o.d;
+    return `<g transform="translate(${f1(x)},${f1(y)}) scale(${sc})"><path d="M-60,-46 L${f1(-w)},-46 L0,${f1(-46 + d)} L${f1(w)},-46 L60,-46 C84,-46 88,-20 88,4 C88,40 60,54 0,54 C-60,54 -88,40 -88,4 C-88,-20 -84,-46 -60,-46 Z" fill="${o.col || C.enz}" stroke="#3e4aa8" stroke-width="2.5" stroke-linejoin="round"/>${o.label ? `<text x="0" y="16" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">${o.label}</text>` : ""}${o.allo ? `<rect x="66" y="10" width="26" height="26" rx="6" fill="#fff" stroke="#3e4aa8" stroke-width="2" stroke-dasharray="4 3"/>` : ""}</g>`; };
+  /* substrate: ONE molecule whose V-shaped bottom matches the active site. Docked center = (enzX, enzY - 43*sc). gap > 0 splits it into two products */
+  const SB = (x, y, sc, gap, o) => { o = o || {}; const g = gap || 0, col = o.col || "#2f9e63", k = o.stroke || "#1b6b43";
+    const P = pts => `<polygon points="${pts.map(p => f1(p[0]) + "," + f1(p[1])).join(" ")}" fill="${col}" stroke="${k}" stroke-width="2.5" stroke-linejoin="round"/>`;
+    let s = `<g transform="translate(${f1(x)},${f1(y)}) scale(${sc || 1})"${o.op === undefined ? "" : ` opacity="${f3(o.op)}"`}>`;
+    if (g <= 0) s += P([[-22, -27], [22, -27], [22, -3], [0, 27], [-22, -3]]) + (o.bond ? `<line x1="0" y1="-22" x2="0" y2="19" stroke="#fff" stroke-width="3" stroke-dasharray="5 3" opacity="${f3(o.bond)}"/>` : "");
+    else s += P([[-22 - g, -27], [-g, -27], [-g, 27], [-22 - g, -3]]) + P([[22 + g, -27], [g, -27], [g, 27], [22 + g, -3]]);
+    return s + `</g>`; };
+  const sq = (x, y, s, col) => `<rect x="${f1(x - 22 * s)}" y="${f1(y - 22 * s)}" width="${f1(44 * s)}" height="${f1(44 * s)}" rx="5" fill="${col || C.orange}" stroke="#a8461f" stroke-width="2.5"/>`;
+  const circ = (x, y, s) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(24 * s)}" fill="#4f7fd8" stroke="#2c3796" stroke-width="2.5"/>`;
 
   /* ================= Blanks ================= */
   const BL = {
@@ -147,35 +152,83 @@
     o += `<circle cx="${f1(b1[0])}" cy="${f1(b1[1])}" r="13" fill="#2f9e63"/><circle cx="${f1(b2[0])}" cy="${f1(b2[1])}" r="13" fill="#b83a34"/>`;
     return o;
   }
+  /* "be the enzyme": shapes float on the diagram; the matching substrate is dragged into the active site */
+  const FIT = {EX:500, EY:330, SC:1.5, home:{sq:[175, 215], circ:[175, 370], fit:[835, 330]}};
+  FIT.DY = FIT.EY - 43 * FIT.SC;
   function stepsScene(t, R, g, done){
-    const T = 9, tt = t % T, inn = smooth(seg(tt, .4, 1.8)), cut = smooth(seg(tt, 3, 4)), out = smooth(seg(tt, 4.6, 6.2));
+    const st = g || {}, {EX, EY, SC, DY} = FIT;
+    let stage, inn = 1, cut = 0, out = 0;
+    if (done){ const T = 9, tt = t % T; inn = smooth(seg(tt, .4, 1.8)); cut = smooth(seg(tt, 3, 4)); out = smooth(seg(tt, 4.6, 6.2)); stage = tt < 1.8 ? 0 : tt < 3 ? 1 : tt < 4.6 ? 2 : 3; }
+    else if (st.stage === 2){ const ct = (performance.now() - st.catAt) / 1000; cut = smooth(seg(ct, .1, .9)); out = smooth(seg(ct, 1, 2)); stage = ct < 1 ? 2 : 3; }
+    else { stage = st.stage === 1 ? 1 : 0; inn = stage; }
     let o = A.tx(500, 44, "How an enzyme works", "t20 mid");
-    const labels = ["1. Substrate binds", "2. E-S complex", "3. Bonds break", "4. Products leave"];
-    const st = tt < 1.8 ? 0 : tt < 3 ? 1 : tt < 4.6 ? 2 : 3;
-    labels.forEach((l, i) => { o += `<rect x="${60 + i * 225}" y="72" width="210" height="38" rx="19" fill="${i === st ? C.blue : "#eef1f5"}"/>` + A.tx(165 + i * 225, 97, l, "t14 mid", i === st ? `style="fill:#fff"` : ""); });
-    o += enz(500, 340, {sc:1.4, open:1 - .25 * inn * (1 - out), label:"Enzyme"});
-    o += A.tx(500, 450, `The ${R("activesite")} (the notch) fits only one substrate shape`, "t14 mid muted");
-    const sy = lerp(170, 266, inn), g2 = 26 * cut + 150 * out;
-    o += tri(500 - g2, sy - 30 * out, 1.4, C.green) + half(540 + g2, sy + 4 - 30 * out, 1.3, "#e8744f");
-    if (cut < .9 && inn > .5) o += `<line x1="514" y1="${f1(sy)}" x2="526" y2="${f1(sy)}" stroke="#343b4a" stroke-width="4" opacity="${f3(1 - cut)}"/>`;
-    o += A.tx(520, sy - 50, out > .3 ? R("products") : inn > .9 ? R("esc") : R("substrate"), "t16 mid");
+    ["1. Substrate binds", "2. E-S complex", "3. Bonds break", "4. Products leave"].forEach((l, i) => { o += `<rect x="${60 + i * 225}" y="66" width="210" height="36" rx="18" fill="${i === stage ? C.blue : "#eef1f5"}"/>` + A.tx(165 + i * 225, 90, l, "t14 mid", i === stage ? `style="fill:#fff"` : ""); });
+    o += E(EX, EY, {sc:SC, label:"Enzyme"});
+    /* the active site is the V-shaped pocket on top of the enzyme */
+    const empty = !done && stage === 0;
+    if (empty) o += `<polyline points="${EX - 33},${EY - 69} ${EX},${EY - 24} ${EX + 33},${EY - 69}" fill="none" stroke="${C.gold}" stroke-width="5" stroke-linejoin="round" opacity="${f3(.55 + .45 * Math.sin(t * 4))}"/>`;
+    o += `<line x1="${EX - 22}" y1="${EY - 48}" x2="362" y2="236" stroke="#3e4aa8" stroke-width="2"/><circle cx="${EX - 22}" cy="${EY - 48}" r="4" fill="#3e4aa8"/>` + A.tx(354, 238, R("activesite") === "?" ? "?" : "Active site", "t16 end", `style="fill:#3e4aa8"`);
+    /* the substrate (one molecule, one color) */
+    const drag = !done && st.drag && st.drag.moved ? st.drag : null, bob = k => 6 * Math.sin(t * 2 + k);
+    if (done || stage >= 1){
+      const sy = lerp(150, DY, inn) - 95 * out, gap = 8 * cut + 50 * out;
+      o += SB(EX, sy, SC, gap, {bond:inn > .5 ? 1 - cut : 0});
+      o += A.tx(EX, sy - 52, out > .3 ? R("products") : inn > .9 ? R("esc") : R("substrate"), "t16 mid");
+    }
+    if (!done){
+      Object.keys(FIT.home).forEach((k, i) => {
+        if (k === "fit" && stage >= 1) return;
+        let [x, y] = FIT.home[k]; y += bob(i);
+        if (drag && drag.kind === k){ x = drag.x; y = drag.y; }
+        const shape = k === "fit" ? SB(x, y, SC, 0, {bond:1}) : k === "sq" ? sq(x, y, SC) : circ(x, y, SC);
+        o += `<g data-drag="${k}" style="cursor:grab"><circle cx="${f1(x)}" cy="${f1(y)}" r="52" fill="#fff" opacity="0"/>${shape}</g>`;
+      });
+      if (stage === 0) o += A.tx(835, 290 + bob(2) - 30, "Substrate?", "t13 mid muted") + A.tx(175, 165 + bob(0), "Substrate?", "t13 mid muted") + A.tx(175, 318 + bob(1), "Substrate?", "t13 mid muted");
+      if (stage === 1) o += `<g data-drag="cat" style="cursor:pointer"><rect x="395" y="420" width="210" height="42" rx="21" fill="${C.gold}" stroke="#a87410" stroke-width="2"/>` + A.tx(500, 447, "⚡ Tap to catalyze!", "t16 mid", `style="fill:#3d2a00"`) + `</g>`;
+    }
+    if (done || stage !== 1) o += A.tx(500, 450, `The ${R("activesite")}'s shape fits only one substrate`, "t14 mid muted");
     return o;
   }
   function inducedScene(t, R){
-    const T = 6, tt = t % T, inn = smooth(seg(tt, .5, 1.8)), grip = smooth(seg(tt, 1.8, 2.6)) * (1 - smooth(seg(tt, 4.6, 5.4)));
-    let o = A.tx(500, 44, `The ${R("inducedfit")} model`, "t20 mid");
-    o += enz(330, 330, {sc:1.5, open:1 - .45 * grip, label:"Enzyme"});
-    o += tri(330, lerp(150, 262, inn) - 30 * smooth(seg(tt, 4.6, 5.6)), 1.3, C.green);
-    o += A.tx(330, 440, grip > .5 ? "Active site closes around the substrate" : "Active site is a loose fit at first", "t14 mid");
-    const count = Math.floor(t * 4.3);
-    o += `<rect x="600" y="140" width="330" height="190" rx="18" fill="#fff" stroke="#d9dee7" stroke-width="2"/>` + A.tx(765, 180, R("turnover") === "?" ? "?" : "Turnover number", "t16 mid");
-    o += A.tx(765, 250, String(count), "t20 mid", `style="font-size:54px"`) + A.tx(765, 300, "substrates converted per enzyme per second", "t12 mid muted");
+    let o = A.tx(250, 44, `The ${R("inducedfit")} model`, "t20 mid") + A.tx(750, 44, R("turnover") === "?" ? "?" : "Turnover number", "t20 mid");
+    o += `<line x1="500" y1="30" x2="500" y2="460" stroke="#c9cfdb" stroke-width="2"/>`;
+    /* left: the active site starts loose (wide V), then closes snugly around the substrate */
+    const T = 6, tt = t % T, inn = smooth(seg(tt, .4, 1.6)), grip = smooth(seg(tt, 1.9, 2.7)) * (1 - smooth(seg(tt, 4.6, 5.2))), lift = smooth(seg(tt, 4.9, 5.8));
+    const ex = 250, ey = 330, sc = 1.5;
+    o += A.tx(250, 76, "The active site changes shape when the substrate binds", "t13 mid muted");
+    o += E(ex, ey, {sc, w:lerp(38, 22, grip), label:"Enzyme"});
+    o += SB(ex, lerp(130, ey - 43 * sc, inn) - 110 * lift, sc, 0, {op:1 - lift});
+    o += A.op(grip * (1 - lift), A.arrow(ex - 105, ey - 84, ex - 50, ey - 84, "#b8860b", 4) + A.arrow(ex + 105, ey - 84, ex + 50, ey - 84, "#b8860b", 4));
+    o += A.pill(250, 438, grip > .5 ? "Snug fit: the site closes in" : "Loose fit at first", grip > .5 ? C.green : "#7a8292", 1, 15);
+    /* right: one enzyme, one (slowed-down) second: count how many substrates it converts */
+    const W = 5, TT = 7.5, ut = t % TT, run = Math.min(ut, W), eX = 790, eY = 330, dockY = eY - 43;
+    o += A.tx(750, 76, "Substrates ONE enzyme converts in ONE second", "t13 mid muted");
+    o += `<line x1="528" y1="200" x2="722" y2="200" stroke="#c9cfdb" stroke-width="5" stroke-linecap="round"/>`;
+    o += E(eX, eY, {});
+    for (let j = 0; j < 5; j++){
+      const u = run - j, tray = [935, 384 - 34 * j];
+      if (u < 0){ const x = 700 - 44 * (j - run); if (x > 545) o += SB(x, 172, .8, 0, {op:clamp((x - 545) / 30, 0, 1)}); }
+      else if (u < 1){
+        const dr = smooth(seg(u, 0, .3)), ct = smooth(seg(u, .3, .5)), ou = smooth(seg(u, .55, .95));
+        if (ou <= 0) o += SB(lerp(700, eX, dr), lerp(172, dockY, dr), lerp(.8, 1, dr), 6 * ct, {bond:dr > .9 ? 1 - ct : 0});
+        else o += SB(lerp(eX, tray[0], ou), lerp(dockY, tray[1], ou) - 60 * Math.sin(Math.PI * ou), lerp(1, .6, ou), lerp(6, 3, ou));
+      } else o += SB(tray[0], tray[1], .6, 3);
+    }
+    const count = clamp(Math.floor(run - .55) + 1, 0, 5);
+    o += A.tx(eX, 418, `Converted: ${count}`, "t16 mid") + A.tx(935, 418, "Products", "t13 mid muted");
+    /* stopwatch: one full sweep = one second */
+    const f = run / W, cx = 600, cy = 320, r = 38, hx = cx + r * Math.sin(2 * Math.PI * f), hy = cy - r * Math.cos(2 * Math.PI * f);
+    o += `<rect x="${cx - 7}" y="${cy - r - 14}" width="14" height="10" rx="3" fill="#5a6376"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="#5a6376" stroke-width="3"/>`;
+    o += f >= .999 ? `<circle cx="${cx}" cy="${cy}" r="${r - 3}" fill="#ffe6a3"/>` : f > 0 ? `<path d="M${cx},${cy} L${cx},${cy - r + 3} A${r - 3},${r - 3} 0 ${f > .5 ? 1 : 0} 1 ${f1(cx + (r - 3) * Math.sin(2 * Math.PI * f))},${f1(cy - (r - 3) * Math.cos(2 * Math.PI * f))} Z" fill="#ffe6a3"/>` : "";
+    o += `<line x1="${cx}" y1="${cy}" x2="${f1(hx)}" y2="${f1(hy)}" stroke="#343b4a" stroke-width="3" stroke-linecap="round"/>` + A.tx(cx, cy + 62, "1 second", "t14 mid") + A.tx(cx, cy + 80, "(slowed down)", "t12 mid muted");
+    if (ut > W) o += A.pill(750, 122, "This enzyme's turnover number = 5 per second", C.green, smooth(seg(ut, W, W + .4)), 16);
+    o += A.tx(750, 456, "Real enzymes are far faster: some convert millions per second!", "t12 mid muted");
     return o;
   }
   function cofactorScene(t, R, g, done){
     const T = 6, tt = t % T, dock = done ? smooth(seg(tt, .6, 1.8)) : 0;
     let o = A.tx(500, 44, `${R("cofactors")} + ${R("apoenzyme")} = a working enzyme`, "t20 mid");
-    o += A.enzyme(380, 300, {sc:1.6, notch:"tri", col:dock > .9 ? C.enz : "#aeb4c8", label:dock > .9 ? "Active!" : "Apoenzyme"});
+    o += E(380, 300, {sc:1.6, col:dock > .9 ? C.enz : "#aeb4c8", label:dock > .9 ? "Active!" : "Apoenzyme"});
     o += `<circle cx="${f1(lerp(760, 525, dock))}" cy="${f1(lerp(180, 322, dock))}" r="22" fill="#0f9fb0" stroke="#0a6e7a" stroke-width="2.5"/>` + A.tx(lerp(760, 525, dock), lerp(186, 328, dock), "Mg²⁺", "t12 mid wht");
     o += A.tx(760, 150, dock < .1 ? "Cofactor (metal ion)" : "", "t14 mid");
     o += A.tx(380, 420, dock > .9 ? "Protein + cofactor: now it can bind substrate" : "Protein part alone is inactive", "t14 mid");
@@ -208,7 +261,7 @@
   function alloScene(t, R){
     const T = 7, tt = t % T, bind = smooth(seg(tt, 1, 2.2)) * (1 - smooth(seg(tt, 5.4, 6.4)));
     let o = A.tx(500, 44, `Active site vs. ${R("allosteric")} site`, "t20 mid");
-    o += A.enzyme(500, 300, {sc:1.9, notch:"tri", open:1 - .6 * bind, allo:true, col:bind > .5 ? "#8f98c8" : C.enz});
+    o += E(500, 300, {sc:1.9, w:lerp(22, 10, bind), d:lerp(30, 14, bind), allo:true, col:bind > .5 ? "#8f98c8" : C.enz});
     o += A.arrow(330, 140, 470, 218, "#343b4a", 2.5) + A.tx(320, 130, "Active site: substrate binds here", "t14 end");
     o += A.arrow(770, 200, 680, 322, "#343b4a", 2.5) + A.tx(700, 190, `${R("allosteric") === "?" ? "?" : "Allosteric"} site: a separate spot`, "t14");
     o += `<circle cx="${f1(lerp(860, 673, bind))}" cy="${f1(lerp(420, 345, bind))}" r="13" fill="#6b4bb8" stroke="#fff" stroke-width="2"/>`;
@@ -219,12 +272,14 @@
     const T = 8, tt = t % T, b = smooth(seg(tt, .8, 2));
     let o = A.tx(250, 44, `${R("competitive")} inhibition`, "t16 mid") + A.tx(750, 44, `${R("noncompetitive")} inhibition`, "t16 mid");
     o += `<line x1="500" y1="70" x2="500" y2="440" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
-    o += enz(250, 300, {sc:1.3, label:"Enzyme"}) + tri(250, lerp(130, 222, b), 1.1, "#8e5bd0") + A.tx(250, lerp(100, 190, b) - 10, "Inhibitor", "t12 mid");
-    o += tri(120, 150, 1.1, C.green) + A.tx(120, 120, "Substrate", "t12 mid") + tri(390, 170, 1.1, C.green);
+    const iy = lerp(130, 300 - 43 * 1.3, b);
+    o += E(250, 300, {sc:1.3, label:"Enzyme"}) + SB(250, iy, 1.3, 0, {col:"#8e5bd0", stroke:"#5b3fb0"}) + A.tx(250, iy - 44, "Inhibitor", "t12 mid");
+    o += SB(115, 165, 1, 0) + A.tx(115, 125, "Substrate", "t12 mid") + SB(395, 180, 1, 0);
     o += A.tx(250, 405, "Same shape as the substrate:", "t14 mid") + A.tx(250, 427, "blocks the active site", "t14 mid");
     o += A.tx(250, 455, "More substrate can outcompete it", "t12 mid", `style="fill:#1b7f4e"`);
-    o += A.enzyme(750, 300, {sc:1.3, notch:"tri", open:1 - .8 * b, allo:true, label:"Enzyme"}) + `<circle cx="${f1(lerp(900, 855, b))}" cy="${f1(lerp(190, 313, b))}" r="12" fill="#5a6376" stroke="#fff" stroke-width="2"/>` + A.tx(lerp(900, 855, b), lerp(170, 293, b) - 6, "Hg²⁺", "t12 mid");
-    o += tri(700, lerp(150, 175, b), 1.1, C.green) + A.tx(700, 120, b > .5 ? "Can't fit!" : "Substrate", "t12 mid");
+    o += E(750, 300, {sc:1.3, w:lerp(22, 8, b), d:lerp(30, 10, b), allo:true, label:"Enzyme"}) + `<circle cx="${f1(lerp(900, 855, b))}" cy="${f1(lerp(190, 313, b))}" r="12" fill="#5a6376" stroke="#fff" stroke-width="2"/>` + A.tx(lerp(900, 855, b), lerp(170, 293, b) - 6, "Hg²⁺", "t12 mid");
+    const sy2 = lerp(150, 195, b);
+    o += SB(750, sy2, 1.3, 0) + A.tx(750, sy2 - 44, b > .5 ? "Can't fit!" : "Substrate", "t12 mid", b > .5 ? `style="fill:#b83a34"` : "");
     o += A.tx(750, 405, "Binds the allosteric site:", "t14 mid") + A.tx(750, 427, "changes the enzyme's shape", "t14 mid");
     o += A.tx(750, 455, "More substrate does NOT help", "t12 mid", `style="fill:#b83a34"`);
     return o;
@@ -308,16 +363,40 @@
       }},
     lowers:quiz("Quick check", "Right: enzymes lower the activation energy, so the reaction happens faster.", "What does an enzyme change about a reaction?", ["The activation energy", "The energy stored in the products", "Whether energy is released or used"], 0, "Yes! Only the height of the hill changes. The starting and ending energy stay the same."),
     fit:{title:"Your turn: be the enzyme", done:"Catalyzed! The enzyme released the products and is ready to use again.",
-      init:() => ({stage:0, uses:0}),
-      html:st => `<div class="row"><div class="pad" style="text-align:center"><svg class="gsvg" viewBox="-100 -80 200 150" width="200"><path d="M-60,-46 L-17,-46 L0,-18 L17,-46 L60,-46 C84,-46 88,-20 88,4 C88,40 60,54 0,54 C-60,54 -88,40 -88,4 C-88,-20 -84,-46 -60,-46 Z" fill="#6c7ae0" stroke="#3e4aa8" stroke-width="2.5"/>${st.stage === 1 ? `<polygon points="0,-60 16,-30 -16,-30" fill="#2f9e63" stroke="#1b6b43" stroke-width="2" transform="translate(0,14)"/>` : ""}<text x="0" y="22" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">Enzyme</text></svg>
-        <div class="zone" data-zone="site" style="min-height:40px"><span class="zl">Active site: drop a substrate here</span></div></div>
-        <div style="display:grid;gap:8px"><span class="lbl">Substrates floating by</span><div class="row">${st.stage === 0 ? `<span class="tok" data-s="tri">▲ triangle</span><span class="tok" data-s="sq">■ square</span><span class="tok" data-s="circ">● circle</span>` : ""}</div>
-        ${st.stage === 1 ? `<button class="btn primary" id="catBtn">⚡ Catalyze the reaction</button>` : ""}<div class="lbl">Times this enzyme has been used: ${st.uses}</div></div></div>`,
+      init:() => ({stage:0, uses:0, drag:null}),
+      html:st => `<div style="font-size:.95rem">${st.stage === 1 ? "Now tap <b>⚡ Tap to catalyze!</b> on the diagram to break the substrate's bond." : "Drag the shape that fits the enzyme's active site right onto the enzyme in the diagram (or just tap it)."}</div><div class="lbl" style="margin-top:6px">Times this enzyme has been used: ${st.uses} of 2</div>`,
       wire:(g, st, api) => {
-        g.querySelectorAll("[data-s]").forEach(el => api.dragify(el, {targets:() => [g.querySelector("[data-zone]")], tap:() => drop(el.dataset.s), drop:() => drop(el.dataset.s)}));
-        function drop(s){ if (s !== "tri"){ api.msg("That shape doesn't fit the active site. Enzymes are specific: only one substrate shape fits.", "bad"); return false; } st.stage = 1; api.redraw(); api.msg("It fits! This is the enzyme-substrate complex. Now catalyze it.", "good"); return true; }
-        const cb = g.querySelector("#catBtn"); if (cb) cb.addEventListener("click", () => { st.stage = 0; st.uses++; api.redraw(); if (st.uses >= 2){ api.msg("Products released, and the enzyme is unchanged. That's a catalyst!", "good"); setTimeout(api.pass, 1000); } else api.msg("Bonds broke and two products floated away. The enzyme isn't used up. Do it again!", "good"); });
-        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the substrate that fits the active site (or tap it).", "");
+        const svg = api.svg; svg.style.touchAction = "none";
+        const toSVG = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+        function tryShape(k){
+          if (st.stage !== 0) return;
+          if (k !== "fit"){ api.msg(k === "sq" ? "The square's flat bottom can't fit into the V-shaped active site. Enzymes are specific!" : "The round shape doesn't match the V-shaped active site. Only one substrate shape fits.", "bad"); return; }
+          st.stage = 1; api.redraw(); api.msg("It fits like a puzzle piece! That's the enzyme-substrate complex. Now catalyze it.", "good");
+        }
+        function catalyze(){
+          if (st.stage !== 1) return;
+          st.stage = 2; st.catAt = performance.now(); api.redraw(); api.msg("The bond breaks and the two products are released...", "");
+          setTimeout(() => { st.stage = 0; st.uses++; api.redraw();
+            if (st.uses >= 2){ api.msg("Products released, and the enzyme is unchanged. That's a catalyst!", "good"); setTimeout(api.pass, 900); }
+            else api.msg("The enzyme wasn't used up. A new substrate is floating by: do it again!", "good"); }, 2200);
+        }
+        svg.onpointerdown = e => {
+          const d = e.target.closest && e.target.closest("[data-drag]"); if (!d) return;
+          e.preventDefault(); const k = d.dataset.drag;
+          if (k === "cat"){ catalyze(); return; }
+          if (st.stage !== 0) return;
+          const p = toSVG(e); st.drag = {kind:k, x:p.x, y:p.y, sx:p.x, sy:p.y, moved:false};
+          try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+        };
+        svg.onpointermove = e => { const d = st.drag; if (!d) return; const p = toSVG(e); d.x = p.x; d.y = p.y; if (Math.hypot(p.x - d.sx, p.y - d.sy) > 8) d.moved = true; };
+        svg.onpointerup = svg.onpointercancel = e => {
+          const d = st.drag; if (!d) return; st.drag = null;
+          if (!d.moved){ tryShape(d.kind); return; }
+          const p = toSVG(e);
+          if (Math.hypot(p.x - FIT.EX, p.y - FIT.DY) < 110) tryShape(d.kind);
+          else api.msg("Drop it right onto the enzyme's active site (the V-shaped pocket on top).", "bad");
+        };
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Which shape fits the active site? Drag it onto the enzyme (or tap it).", "");
       }},
     cofactor:{title:"Your turn: activate the apoenzyme", done:"Activated! Apoenzyme + cofactor = a working enzyme.",
       html:() => `<div class="row"><div class="zone" data-zone="apo" style="min-width:220px"><span class="zl">Apoenzyme (inactive): drop its helper here</span></div>
@@ -371,7 +450,7 @@
     {part:P2, title:"Enzymes lower the barrier", scene:(t, c) => energyScene(t, c.R, c.g, c.done), gate:GATES.lowers, more:"names",
      text:`Enzymes are biological {{catalysts}}, mostly proteins. They speed up reactions without being used up. An enzyme {{lowers}} the activation energy, so the reaction happens more easily and the reaction rate goes up.`,
      after:`↓ activation energy → ↑ reaction rate`},
-    {part:P2, title:"How an enzyme works", scene:(t, c) => stepsScene(t, c.R, c.g, c.done), gate:GATES.fit,
+    {part:P2, title:"How an enzyme works", scene:(t, c) => stepsScene(t, c.R, c.g, c.done), live:true, gate:GATES.fit,
      text:`The molecule an enzyme acts on is its {{substrate}} (a reactant). 1) The substrate binds to a specific spot on the enzyme called the {{activesite}}. 2) Together they form the {{esc}}. 3) The enzyme helps bonds break or form. 4) The {{products}} are released, and the enzyme is free to work again.`},
     {part:P2, title:"Induced fit and turnover number", scene:(t, c) => inducedScene(t, c.R),
      text:`The active site isn't a rigid lock. In the {{inducedfit}} model, the active site changes shape when the substrate binds, creating a tighter, optimal fit. How efficient is an enzyme? The {{turnover}} is the number of substrate molecules one enzyme converts per second.`},
