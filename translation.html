@@ -297,7 +297,7 @@
 
 <div class="overlay" id="moreOverlay" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
-    <span class="ptag" id="moreTag">Learn more: just for the curious, not on the exam</span>
+    <span class="ptag" id="moreTag">Learn more: just for the curious</span>
     <h2 id="moreTitle"></h2>
     <div id="moreBody"></div>
     <button class="btn primary close" id="moreClose">Back to the module</button>
@@ -934,7 +934,7 @@
     return h + `</tbody></table></div>`;
   }
   function openPanel(tag, title, html){ $("moreTag").textContent = tag; $("moreTitle").textContent = title; $("moreBody").innerHTML = html; $("moreOverlay").hidden = false; $("moreClose").focus(); }
-  const openMore = k => openPanel("Learn more: just for the curious, not on the exam", MORE[k].title, MORE[k].html);
+  const openMore = k => openPanel("Learn more: just for the curious", MORE[k].title, MORE[k].html);
   const closeMore = () => { $("moreOverlay").hidden = true; };
 
   /* ================= Step UI ================= */
@@ -948,7 +948,7 @@
   function footer(){
     const st = STEPS[idx];
     let h = (st.links || []).map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
-    if (st.more) h += `<button class="more-btn" data-more="${st.more}">Learn more</button><span class="more-note">Extra deep-dive, not on the exam</span>`;
+    if (st.more) h += `<button class="more-btn" data-more="${st.more}">Learn more</button>`;
     $("bubbleFoot").innerHTML = h;
     $("bubbleFoot").querySelectorAll("[data-more]").forEach(b => b.addEventListener("click", () => openMore(b.dataset.more)));
   }
