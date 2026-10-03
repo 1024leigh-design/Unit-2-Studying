@@ -69,19 +69,27 @@
     let o = `<rect x="20" y="20" width="960" height="430" rx="30" fill="#f7f9fc" stroke="#d9dee7" stroke-width="2"/>`;
     o += A.tx(500, 58, `All chemical reactions in a cell = ${R("metabolism")}`, "t20 mid");
     o += `<line x1="500" y1="90" x2="500" y2="430" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
-    /* catabolism: a big molecule breaks apart and releases energy */
+    /* catabolism: bond breaks, energy + ATP released */
     o += A.tx(255, 100, `${R("catabolism")}: breaking down`, "t16 mid", `style="fill:#b83a34"`);
-    if (br < .5) o += `<line x1="217" y1="230" x2="293" y2="230" stroke="${C.carbon}" stroke-width="4" opacity="${f3(1 - br * 2)}"/>`;
-    o += A.carbons(lerp(217.5, 150, br), lerp(230, 215, br), 3, {}) + A.carbons(lerp(292.5, 360, br), lerp(230, 250, br), 3, {});
-    for (let k = 0; k < 5; k++){ const a = -Math.PI / 2 + (k - 2) * .45, d = 40 + 90 * br; o += A.op(br * (1 - seg(tt, 3.2, 4)), `<text x="${f1(255 + d * Math.cos(a))}" y="${f1(230 + d * Math.sin(a))}" font-size="26" text-anchor="middle">⚡</text>`); }
-    o += A.pill(255, 350, "Releases energy (makes ATP)", "#b83a34", 1) + A.tx(255, 400, "Example: glucose → CO₂ + H₂O", "t14 mid muted");
-    /* anabolism: small pieces are joined, using energy */
+    o += `<rect x="75" y="115" width="360" height="290" rx="20" fill="none" stroke="#f0c0bc" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    if (br < .5) o += `<line x1="217" y1="225" x2="293" y2="225" stroke="${C.carbon}" stroke-width="5" opacity="${f3(1 - br * 2)}"/>`;
+    o += A.carbons(lerp(217.5, 145, br), lerp(225, 210, br), 3, {}) + A.carbons(lerp(292.5, 365, br), lerp(225, 245, br), 3, {});
+    /* ATP produced from catabolism */
+    const atpGrow = smooth(seg(tt, 2.0, 3.2)), atpFade = smooth(seg(tt, 5.2, 6.2));
+    o += A.op(atpGrow * (1 - atpFade), `<g transform="translate(255,320) scale(${f3(.72 + .28 * atpGrow)})">${A.atp(0, 0, 3, {sc:1, label:false})}<text x="38" y="-26" font-size="13" font-weight="700" fill="#1b7f4e" text-anchor="middle">ATP made!</text></g>`);
+    for (let k = 0; k < 5; k++){ const a = -Math.PI / 2 + (k - 2) * .42, d = 35 + 80 * br; o += A.op(br * (1 - seg(tt, 3.0, 3.8)), `<text x="${f1(255 + d * Math.cos(a))}" y="${f1(225 + d * Math.sin(a))}" font-size="22" text-anchor="middle">⚡</text>`); }
+    o += A.tx(255, 420, "e.g. glucose → CO₂ + H₂O", "t13 mid muted");
+    /* anabolism: small pieces join, ATP consumed */
     o += A.tx(745, 100, `${R("anabolism")}: building up`, "t16 mid", `style="fill:#1b7f4e"`);
-    const pieces = [[640, 190], [860, 180], [650, 290], [850, 290]];
-    if (bu < .95) pieces.forEach((p, i) => { o += A.carbons(lerp(p[0], 745 + (i - 1.5) * 25, bu), lerp(p[1], 230, bu), 1, {}); });
-    else o += A.carbons(745, 230, 4, {col:"#1b7f4e"});
-    o += A.op(bu > .1 && bu < 1 ? 1 : 0, `<text x="745" y="180" font-size="26" text-anchor="middle">⚡</text>`);
-    o += A.pill(745, 350, "Uses energy (spends ATP)", "#1b7f4e", 1) + A.tx(745, 400, "Example: amino acids → protein", "t14 mid muted");
+    o += `<rect x="565" y="115" width="360" height="290" rx="20" fill="none" stroke="#b0ddc0" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    const pieces = [[640, 185], [860, 175], [648, 278], [852, 278]];
+    if (bu < .95) pieces.forEach((p, i) => { o += A.carbons(lerp(p[0], 745 + (i - 1.5) * 24, bu), lerp(p[1], 228, bu), 1, {}); });
+    else o += A.carbons(745, 228, 4, {col:"#1b7f4e"});
+    /* ATP consumed into anabolism */
+    const atpIn = smooth(seg(tt, 4.0, 5.0)), atpGone = smooth(seg(tt, 5.0, 5.8));
+    o += A.op(atpIn * (1 - atpGone), `<g transform="translate(745,318) scale(${f3(.85 - .3 * atpGone)})">${A.atp(0, 0, 3, {sc:1, label:false})}<text x="38" y="-26" font-size="13" font-weight="700" fill="#b83a34" text-anchor="middle">ATP used!</text></g>`);
+    o += A.op(bu > .08 && bu < .92 ? 1 : 0, `<text x="745" y="175" font-size="22" text-anchor="middle">⚡</text>`);
+    o += A.tx(745, 420, "e.g. amino acids → protein", "t13 mid muted");
     return o;
   }
   function pathwayScene(t, R){
@@ -89,27 +97,31 @@
     let o = A.tx(500, 50, `A ${R("pathway")}: one enzyme per step`, "t20 mid");
     const X = [140, 380, 620, 860], L = ["A", "B", "C", "D"];
     X.forEach((x, i) => {
-      o += `<circle cx="${x}" cy="180" r="42" fill="${i === k ? "#fff6d6" : "#fff"}" stroke="${i === k ? C.gold : "#9aa3b5"}" stroke-width="${i === k ? 5 : 2.5}"/>` + A.tx(x, 192, L[i], "t20 mid");
-      if (i < 3){ o += A.arrow(x + 50, 180, X[i + 1] - 52, 180, "#5a6376", 3); o += A.enzyme((x + X[i + 1]) / 2, 250, {sc:.42, label:""}) + A.tx((x + X[i + 1]) / 2, 305, `Enzyme ${i + 1}`, "t12 mid"); }
+      o += `<circle cx="${x}" cy="175" r="42" fill="${i === k ? "#fff6d6" : "#fff"}" stroke="${i === k ? C.gold : "#9aa3b5"}" stroke-width="${i === k ? 5 : 2.5}"/>` + A.tx(x, 187, L[i], "t20 mid");
+      if (i < 3){ o += A.arrow(x + 50, 175, X[i + 1] - 52, 175, "#5a6376", 3); o += A.enzyme((x + X[i + 1]) / 2, 248, {sc:.42, label:""}) + A.tx((x + X[i + 1]) / 2, 302, `Enzyme ${i + 1}`, "t12 mid"); }
     });
-    o += A.tx(500, 350, `Catabolic: glycolysis, Krebs cycle, fatty acid oxidation`, "t14 mid", `style="fill:#b83a34"`);
-    o += A.tx(500, 380, `Anabolic: protein synthesis, DNA replication, photosynthesis`, "t14 mid", `style="fill:#1b7f4e"`);
-    o += A.tx(500, 420, `${R("amphibolic") === "?" ? "?" : "Amphibolic"}: both! (Krebs cycle intermediates can be burned OR used as building blocks)`, "t14 mid", `style="fill:#5b3fb0"`);
+    /* Key idea: each enzyme is specific — only catalyzes ONE step */
+    o += `<rect x="60" y="325" width="880" height="110" rx="18" fill="#fff" stroke="#d9dee7" stroke-width="1.5"/>`;
+    o += A.tx(500, 355, "Each enzyme is specific: it only speeds up its own one reaction.", "t15 mid");
+    o += A.tx(500, 383, "Enzyme 1 cannot do Enzyme 3's job — and it won't even try.", "t14 mid muted");
+    o += A.tx(250, 418, `${R("amphibolic") === "?" ? "?" : "Amphibolic"}: can go catabolic OR anabolic`, "t13 mid", `style="fill:#5b3fb0"`);
+    o += A.tx(680, 418, "e.g. Krebs cycle intermediates → energy OR building blocks", "t13 mid", `style="fill:#5b3fb0"`);
     return o;
   }
   /* collision theory: little particle simulation driven by the activity sliders */
   function collisionScene(t, R, g){
     const temp = g.temp || 1, n = g.conc || 12;
+    const tempScaled = temp / 3.33; /* map 1-10 slider to 0-3 range */
     if (!g.sim || g.sim.n !== n){ g.sim = {n, p:Array.from({length:n}, (_, i) => ({x:120 + (i * 97) % 760, y:120 + (i * 53) % 250, a:i * 2.4, k:i % 2, prod:false})), t:t, made:0, hits:[]}; }
     const S = g.sim, dt = Math.min(.05, Math.max(0, t - S.t)); S.t = t;
-    const sp = 60 + 90 * temp;
+    const sp = 60 + 90 * tempScaled;
     S.p.forEach(q => { q.x += Math.cos(q.a) * sp * dt; q.y += Math.sin(q.a) * sp * dt; if (q.x < 80 || q.x > 920) q.a = Math.PI - q.a; if (q.y < 100 || q.y > 390) q.a = -q.a; q.x = clamp(q.x, 80, 920); q.y = clamp(q.y, 100, 390); });
-    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++){ const a = S.p[i], b = S.p[j]; if (a.prod || b.prod || a.k === b.k) continue; if (Math.hypot(a.x - b.x, a.y - b.y) < 26){ const tmp = a.a; a.a = b.a; b.a = tmp; S.hits.push({x:(a.x + b.x) / 2, y:(a.y + b.y) / 2, t, ok:temp >= 2}); if (temp >= 2 || ((i + j + Math.floor(t)) % 5 === 0)){ a.prod = b.prod = true; S.made++; } a.x += 14 * Math.cos(a.a); b.x += 14 * Math.cos(b.a); } }
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++){ const a = S.p[i], b = S.p[j]; if (a.prod || b.prod || a.k === b.k) continue; if (Math.hypot(a.x - b.x, a.y - b.y) < 26){ const tmp = a.a; a.a = b.a; b.a = tmp; S.hits.push({x:(a.x + b.x) / 2, y:(a.y + b.y) / 2, t, ok:tempScaled >= 2}); if (tempScaled >= 2 || ((i + j + Math.floor(t)) % 5 === 0)){ a.prod = b.prod = true; S.made++; } a.x += 14 * Math.cos(a.a); b.x += 14 * Math.cos(b.a); } }
     S.hits = S.hits.filter(h => t - h.t < .5);
     let o = `<rect x="60" y="80" width="880" height="330" rx="20" fill="#fbfcff" stroke="#c9cfdb" stroke-width="2"/>` + A.tx(500, 50, `${R("collision") === "?" ? "?" : "Collision"} theory: molecules must collide with enough energy`, "t20 mid");
     S.hits.forEach(h => { o += A.op(1 - (t - h.t) * 2, `<circle cx="${f1(h.x)}" cy="${f1(h.y)}" r="${f1(14 + 40 * (t - h.t))}" fill="none" stroke="${h.ok ? C.gold : "#9aa3b5"}" stroke-width="3"/>`); });
     S.p.forEach(q => { o += `<circle cx="${f1(q.x)}" cy="${f1(q.y)}" r="12" fill="${q.prod ? C.gold : q.k ? "#7fb2f0" : "#2f4fb0"}" stroke="#fff" stroke-width="2"/>`; });
-    const fast = temp + n / 12;
+    const fast = tempScaled + n / 12;
     o += `<text x="90" y="446" class="t14"><tspan style="fill:#2f4fb0">●</tspan> reactant 1   <tspan style="fill:#7fb2f0">●</tspan> reactant 2   <tspan style="fill:#f2b134">●</tspan> product</text>`;
     o += A.pill(800, 440, `Reaction rate: ${fast >= 4 ? "FAST" : fast >= 2.6 ? "medium" : "slow"}`, fast >= 4 ? C.green : fast >= 2.6 ? "#9a6212" : "#7a8292", 1, 15);
     if (S.p.every(q => q.prod) || S.made > n) g.sim = null;
@@ -122,14 +134,16 @@
     o += `<text x="70" y="250" class="t14 mid" transform="rotate(-90 70 250)">Energy</text>` + A.tx(520, 452, "Progress of the reaction →", "t14 mid");
     const curve = h => `M130,300 C300,300 330,${h} 480,${h} C630,${h} 660,370 900,370`;
     o += `<path d="${curve(110)}" fill="none" stroke="#b83a34" stroke-width="5"/><path d="${curve(230)}" fill="none" stroke="#2f9e63" stroke-width="5" stroke-dasharray="${done ? "0" : "10 8"}"/>`;
-    o += A.tx(480, 96, "Without enzyme", "t14 mid", `style="fill:#b83a34"`) + A.tx(480, 256, "With enzyme", "t14 mid", `style="fill:#1b7f4e"`);
-    o += A.arrow(560, 300, 560, 116, "#b83a34", 2.5) + A.tx(548, 180, "big barrier", "t12 end", `style="fill:#b83a34"`);
-    o += A.arrow(420, 300, 420, 236, "#1b7f4e", 2.5) + A.tx(410, 280, "small barrier", "t12 end", `style="fill:#1b7f4e"`);
-    o += `<line x1="130" y1="300" x2="330" y2="300" stroke="#9aa3b5" stroke-dasharray="4 4"/>` + A.tx(140, 330, "Reactants", "t14", ``) + A.tx(900, 400, "Products", "t14 end");
-    /* two balls roll over: the enzyme one gets over sooner */
+    /* labels on the descending side of each curve, not at the peaks */
+    o += A.tx(762, 138, "Without enzyme", "t13 mid", `style="fill:#b83a34"`);
+    o += A.tx(762, 272, "With enzyme", "t13 mid", `style="fill:#1b7f4e"`);
+    /* dashed starting-energy line extended to show barrier heights */
+    o += `<line x1="130" y1="300" x2="570" y2="300" stroke="#9aa3b5" stroke-dasharray="4 4"/>`;
+    o += A.tx(140, 328, "Reactants", "t14", ``) + A.tx(900, 400, "Products", "t14 end");
+    /* balls: green (with enzyme) clears the barrier; red (without enzyme) always gets stuck */
     const pt = (h, p) => { const u = p, x = 130 + 770 * u; const y = u < .45 ? lerp(300, h, smooth(u / .45)) : lerp(h, 370, smooth((u - .45) / .55)); return [x, y - 14]; };
-    const pe = smooth(seg(tt, .5, 3)), pn = tt < 3.4 ? seg(tt, .5, 2.6) * .42 : smooth(seg(tt, 3.4, 6.4));
-    const b1 = pt(230, pe), b2 = pt(110, Math.min(pn, 1));
+    const pe = smooth(seg(tt, .5, 3)), pn = seg(tt, .5, 2.6) * .42;
+    const b1 = pt(230, pe), b2 = pt(110, pn);
     o += `<circle cx="${f1(b1[0])}" cy="${f1(b1[1])}" r="13" fill="#2f9e63"/><circle cx="${f1(b2[0])}" cy="${f1(b2[1])}" r="13" fill="#b83a34"/>`;
     return o;
   }
@@ -241,17 +255,54 @@
     wire:(g, st, api) => { g.querySelectorAll("[data-i]").forEach(b => b.addEventListener("click", () => { const i = +b.dataset.i; if (i === right){ b.classList.add("right"); api.msg(why, "good"); setTimeout(api.pass, 1100); } else { b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong"); api.msg("Not quite. Try another answer.", "bad"); } })); }});
 
   const GATES = {
-    catana:Metab.sortGate({title:"Your turn: sort each process", done:"Sorted! Catabolic breaks down and releases energy; anabolic builds up and uses energy.",
-      bins:[["cat","Catabolic (breakdown)"],["ana","Anabolic (build up)"]],
-      cards:[["g","Glycolysis","cat","Glycolysis breaks glucose apart. Is that building or breaking?"],["k","Krebs cycle","cat","The Krebs cycle finishes breaking down glucose to CO₂."],["f","Fatty acid oxidation","cat","Oxidation breaks the fatty acid down."],["p","Protein synthesis","ana","Building a protein from amino acids uses energy."],["d","DNA replication","ana","Copying DNA builds a new strand."],["ph","Photosynthesis","ana","Photosynthesis builds glucose from CO₂."]]}),
-    collide:{title:"Your turn: speed up the reaction", done:"Fast! Higher temperature and more reactants mean more (and harder) collisions.", live:true,
+    catana:(()=>{
+      const CARDS = [["g","Glycolysis","cat","Glycolysis breaks glucose apart — building or breaking?"],["k","Krebs cycle","cat","The Krebs cycle finishes breaking down glucose to CO₂."],["f","Fatty acid oxidation","cat","Oxidation breaks the fatty acid down."],["p","Protein synthesis","ana","Building a protein from amino acids uses energy."],["d","DNA replication","ana","Copying DNA builds a new strand — that's building up."],["ph","Photosynthesis","ana","Photosynthesis builds glucose from CO₂ and light energy."]];
+      return {title:"Your turn: sort each process", done:"Sorted! Catabolic breaks down and releases energy; anabolic builds up and uses energy.",
+        init:() => ({placed:{}, pick:null}),
+        html:st => {
+          const unplaced = CARDS.filter(c => !st.placed[c[0]]);
+          const catCards = CARDS.filter(c => st.placed[c[0]] === "cat");
+          const anaCards = CARDS.filter(c => st.placed[c[0]] === "ana");
+          return `<div class="row" data-tray="1" style="flex-wrap:wrap;gap:8px 10px;margin-bottom:10px">${unplaced.map(c => `<span class="tok" data-card="${c[0]}">${c[1]}</span>`).join("") || `<span class="lbl" style="color:#1b7f4e;font-weight:700">All sorted! ✓</span>`}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="zone" data-zone="cat" style="border-color:#b83a34;background:#fff5f5;min-height:70px"><span class="zl" style="color:#b83a34;font-weight:700">🔴 Catabolic — breakdown</span><div class="zin" style="margin-top:6px">${catCards.map(c => `<span class="tok placed">${c[1]}</span>`).join("")}</div></div>
+            <div class="zone" data-zone="ana" style="border-color:#1b7f4e;background:#f0faf4;min-height:70px"><span class="zl" style="color:#1b7f4e;font-weight:700">🟢 Anabolic — build up</span><div class="zin" style="margin-top:6px">${anaCards.map(c => `<span class="tok placed">${c[1]}</span>`).join("")}</div></div>
+          </div>`;
+        },
+        wire:(g, st, api) => {
+          const put = (cardId, bin) => {
+            const card = CARDS.find(c => c[0] === cardId);
+            if (bin !== card[2]){ api.msg(card[3] || "Not quite — try again!", "bad"); return false; }
+            st.placed[card[0]] = bin; st.pick = null; api.redraw();
+            const left = CARDS.filter(c => !st.placed[c[0]]).length;
+            if (!left){ api.msg("All sorted!", "good"); setTimeout(api.pass, 900); }
+            else api.msg("Yes! " + left + " left.", "good");
+            return true;
+          };
+          g.querySelectorAll("[data-card]").forEach(el => {
+            api.dragify(el, {drop:z => put(el.dataset.card, z.dataset.zone), tap:() => { st.pick = el.dataset.card; g.querySelectorAll("[data-card]").forEach(q => q.style.outline = q === el ? "3px solid #f2b134" : ""); api.msg("Now tap the column it belongs in.", ""); }});
+          });
+          g.querySelectorAll("[data-zone]").forEach(z => z.addEventListener("click", () => { if (st.pick){ put(st.pick, z.dataset.zone); } }));
+          if (!g.querySelector("#gateMsg").textContent) api.msg("Drag each process into the correct column (or tap a card, then tap a column).", "");
+        }
+      };
+    })(),
+    collide:{title:"Your turn: speed up the reaction", done:"Fast! Higher temperature and more reactants mean more (and harder) collisions.", live:true, keep:true,
       init:() => ({temp:1, conc:12}),
-      html:st => `<div class="slider"><label>Temperature <span>${["", "cool", "warm", "hot"][st.temp]}</span></label><input type="range" min="1" max="3" step="1" value="${st.temp}" id="sTemp"></div>
-        <div class="slider"><label>Concentration of reactants <span>${st.conc} molecules</span></label><input type="range" min="8" max="30" step="2" value="${st.conc}" id="sConc"></div>`,
+      html:st => {
+        const tempLabel = st.temp <= 3 ? "cool" : st.temp <= 6 ? "warm" : st.temp <= 8 ? "hot" : "very hot";
+        return `<div class="slider"><label>Temperature <span>${tempLabel} (${st.temp}/10)</span></label><input type="range" min="1" max="10" step="1" value="${st.temp}" id="sTemp"></div>
+        <div class="slider"><label>Concentration of reactants <span>${st.conc} molecules</span></label><input type="range" min="8" max="30" step="2" value="${st.conc}" id="sConc"></div>`;
+      },
       wire:(g, st, api) => {
-        const up = () => { st.temp = +g.querySelector("#sTemp").value; st.conc = +g.querySelector("#sConc").value; g.querySelector("label span").textContent = ["", "cool", "warm", "hot"][st.temp]; g.querySelectorAll("label span")[1].textContent = st.conc + " molecules";
-          if (st.temp + st.conc / 12 >= 4){ api.msg("Watch the gold products pile up. More collisions, with more energy, means a faster reaction rate!", "good"); if (!st.passed){ st.passed = true; setTimeout(api.pass, 1600); } }
-          else api.msg(st.temp >= 2 ? "Hotter molecules collide with more energy. Now add more reactants." : "Heat things up, or pack in more molecules.", ""); };
+        const up = () => {
+          st.temp = +g.querySelector("#sTemp").value; st.conc = +g.querySelector("#sConc").value;
+          const tempLabel = st.temp <= 3 ? "cool" : st.temp <= 6 ? "warm" : st.temp <= 8 ? "hot" : "very hot";
+          g.querySelector("label span").textContent = `${tempLabel} (${st.temp}/10)`; g.querySelectorAll("label span")[1].textContent = st.conc + " molecules";
+          const tempScaled = st.temp / 3.33;
+          if (tempScaled + st.conc / 12 >= 4){ api.msg("Watch the gold products pile up. More collisions, with more energy, means a faster reaction rate!", "good"); if (!st.passed){ st.passed = true; setTimeout(api.pass, 1600); } }
+          else api.msg(tempScaled >= 2 ? "Hotter molecules collide with more energy. Now add more reactants." : "Heat things up, or pack in more molecules.", "");
+        };
         g.querySelectorAll("input").forEach(i => i.addEventListener("input", up));
         if (!g.querySelector("#gateMsg").textContent) api.msg("Use the sliders to get the reaction rate to FAST.", "");
       }},

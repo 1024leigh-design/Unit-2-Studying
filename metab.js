@@ -132,7 +132,7 @@
       <div class="bridge" id="bridge" hidden></div>
       <nav class="stepnav"><div class="navbtns"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="replayBtn">Replay</button></div><div class="dots" id="dots"></div><div class="navbtns"><button class="btn primary" id="nextBtn">Next</button></div></nav>
     </div>
-    <div class="overlay" id="moreOverlay" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle"><span class="ptag">Learn more: just for the curious, not on the exam</span><h2 id="moreTitle"></h2><div id="moreBody"></div><button class="btn primary close" id="moreClose">Back to the module</button></div></div>`;
+    <div class="overlay" id="moreOverlay" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle"><span class="ptag">Learn more: just for the curious</span><h2 id="moreTitle"></h2><div id="moreBody"></div><button class="btn primary close" id="moreClose">Back to the module</button></div></div>`;
 
     const $ = id => document.getElementById(id);
     const svg = $("scene"), textEl = $("stepText"), afterEl = $("stepAfter"), fb = $("feedback"), checkRow = $("checkRow"), nextBtn = $("nextBtn"), backBtn = $("backBtn"), bubble = $("bubble");
@@ -185,7 +185,7 @@
     function footer(){
       const st = STEPS[idx];
       let h = (st.links || []).map(l => `<a class="btn secondary sm" href="${l[1]}">${l[0]}</a>`).join("");
-      if (st.more) h += `<button class="more-btn" data-more="${st.more}">Learn more</button><span class="more-note">Extra deep-dive, not on the exam</span>`;
+      if (st.more) h += `<button class="more-btn" data-more="${st.more}">Learn more</button>`;
       $("bubbleFoot").innerHTML = h;
       $("bubbleFoot").querySelectorAll("[data-more]").forEach(b => b.addEventListener("click", () => openMore(b.dataset.more)));
     }

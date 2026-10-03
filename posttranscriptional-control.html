@@ -443,7 +443,7 @@
 
 <div class="overlay" id="moreOverlay" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
-    <span class="ptag">Learn more: just for the curious, not on the exam</span>
+    <span class="ptag">Learn more: just for the curious</span>
     <h2 id="moreTitle"></h2>
     <div id="moreBody"></div>
     <button class="btn primary close" id="moreClose">Back to the module</button>
@@ -943,7 +943,7 @@
   function footer(){
     const st = STEPS[idx];
     let h = (st.links || []).map(l => `<a class="btn secondary" href="${l[1]}">${l[0]}</a>`).join("");
-    if (st.more) h += `<button class="more-btn" data-more="${st.more}">Learn more</button><span class="more-note">Extra deep-dive, not on the exam</span>`;
+    if (st.more) h += `<button class="more-btn" data-more="${st.more}">Learn more</button>`;
     $("bubbleFoot").innerHTML = h;
     $("bubbleFoot").querySelectorAll("[data-more]").forEach(b => b.addEventListener("click", () => openMore(b.dataset.more)));
   }
