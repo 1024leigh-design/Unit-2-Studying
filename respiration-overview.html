@@ -20,7 +20,6 @@
     glycolysis:{show:"glycolysis", ans:["glycolysis"], fuzzy:true},
     krebs:{show:"Krebs cycle", ans:["krebscycle","krebs","citricacidcycle","tcacycle","tca"], fuzzy:true},
     etc:{show:"electron transport chain", ans:["electrontransportchain","etc","electrontransport"], fuzzy:true},
-    exergonic:{show:"exergonic", ans:["exergonic"], fuzzy:true},
     matrix:{show:"mitochondrial matrix", ans:["mitochondrialmatrix","matrix"], fuzzy:true},
     inner:{show:"inner mitochondrial membrane", ans:["innermitochondrialmembrane","innermembrane","innermitochondria"], fuzzy:true},
     plasma:{show:"plasma membrane", ans:["plasmamembrane","cellmembrane","membrane","cytoplasmicmembrane"], fuzzy:true},
@@ -47,45 +46,165 @@
 
 
   /* ================= Scenes ================= */
+  /* slide 1: the whole equation drawn molecule by molecule. Glucose's 6 carbons fly over to become the 6 CO2,
+     the 6 O2 become 6 H2O, and ATP coins pile up as the three stages light up in turn. */
+  const OV = {ring:[95, 200], o2:[], co2:[], h2o:[], coins:[]};
+  for (let i = 0; i < 6; i++){ const c = i % 2, r = Math.floor(i / 2); OV.o2.push([218 + c * 52, 150 + r * 50]); OV.co2.push([556 + c * 80, 150 + r * 50]); OV.h2o.push([742 + c * 52, 150 + r * 50]); }
+  for (let k = 0; k < 38; k++) OV.coins.push([872 + (k % 5) * 18, 132 + Math.floor(k / 5) * 17]);
+  const coinAt = k => k < 2 ? 2.0 : k < 4 ? 3.2 : 3.9 + (k - 4) * .045;
   function overviewScene(t, R){
-    const T = 8, k = Math.floor((t % T) / 2);
-    let o = A.tx(500, 44, "Cellular respiration: glucose → energy (ATP)", "t20 mid");
-    const box = (x, i, title, sub, col) => `<rect x="${x - 125}" y="130" width="250" height="120" rx="18" fill="${k === i ? "#fff6d6" : "#fff"}" stroke="${k === i ? C.gold : col}" stroke-width="${k === i ? 4 : 2.5}"/>` + A.tx(x, 178, title, "t16 mid", `style="fill:${col}"`) + A.tx(x, 208, sub, "t12 mid muted");
-    o += A.glucoseRing(60, 190, {r:8}) + A.tx(60, 250, "Glucose", "t12 mid");
-    o += box(250, 0, `1. ${R("glycolysis") === "?" ? "?" : "Glycolysis"}`, "glucose → pyruvate", "#b83a34") + A.arrow(378, 190, 400, 190, "#5a6376", 3);
-    o += box(530, 1, `2. ${R("krebs")}`, "completes glucose breakdown", "#9a6212") + A.arrow(658, 190, 680, 190, "#5a6376", 3);
-    o += box(810, 2, "3. Electron transport", "makes most of the ATP", "#3f4cc0");
-    o += A.tx(500, 330, "C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O + ATP", "t20 mid");
-    o += A.tx(500, 380, "Catabolic, exergonic, and enzyme-controlled", "t16 mid", `style="fill:#5b3fb0"`);
-    [250, 530, 810].forEach((x, i) => { o += A.atp(x - 10, 290, 3, {label:false, sc:.7}); });
+    const T = 10.5, tt = t % T, reset = smooth(seg(tt, 9.6, 10.3)), fwd = 1 - reset;
+    const stage = tt >= 1.2 && tt < 2.4 ? 0 : tt >= 2.4 && tt < 3.6 ? 1 : tt >= 3.6 && tt < 5 ? 2 : -1;
+    let o = A.tx(500, 40, "Cellular respiration: one glucose, completely broken down", "t20 mid") + A.tx(500, 76, "C₆H₁₂O₆ + 6 O₂ → 6 CO₂ + 6 H₂O + ATP", "t16 mid", `style="fill:#5b3fb0"`);
+    /* plus signs, the big arrow, and the labels that always stay put */
+    o += A.tx(165, 210, "+", "t20 mid") + A.tx(705, 210, "+", "t20 mid") + A.tx(845, 210, "+", "t20 mid");
+    o += A.arrow(312, 200, 528, 200, "#5a6376", 5) + A.tx(420, 186, "enzymes, step by step", "t12 mid muted");
+    o += A.tx(95, 286, "C₆H₁₂O₆", "t16 mid") + A.tx(95, 304, "1 glucose", "t12 mid muted");
+    o += A.tx(244, 286, "6 O₂", "t16 mid") + A.tx(244, 304, "oxygen", "t12 mid muted");
+    o += A.tx(596, 286, "6 CO₂", "t16 mid") + A.tx(596, 304, "carbon dioxide", "t12 mid muted");
+    o += A.tx(768, 286, "6 H₂O", "t16 mid") + A.tx(768, 304, "water", "t12 mid muted");
+    o += A.tx(908, 286, "up to 38", "t16 mid", `style="fill:#5b3fb0"`) + A.tx(908, 304, "ATP", "t12 mid", `style="fill:#5b3fb0"`);
+    /* glucose ring: bonds fade as the carbons leave, one at a time */
+    const ringPt = i => { const a = -Math.PI / 2 + i * Math.PI / 3; return [OV.ring[0] + 34 * Math.cos(a), OV.ring[1] + 34 * Math.sin(a)]; };
+    const cp = i => smooth(seg(tt, 1.2 + .28 * i, 3.4 + .28 * i));
+    for (let i = 0; i < 6; i++){ const a = ringPt(i), b = ringPt((i + 1) % 6), on = Math.min(1 - cp(i), 1 - cp((i + 1) % 6)) * fwd + reset;
+      o += `<line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="${C.carbon}" stroke-width="5" opacity="${f3(clamp(on, 0, 1))}"/>`; }
+    for (let i = 0; i < 6; i++){
+      const p = cp(i), s = ringPt(i), d = OV.co2[i], arr = smooth(seg(p, .8, 1));
+      const x = lerp(s[0], d[0], p), y = lerp(s[1], d[1], p) - 70 * Math.sin(Math.PI * p);
+      if (arr > 0) o += A.op(arr * fwd, `<circle cx="${d[0] - 21}" cy="${d[1]}" r="10" fill="${C.O}"/><circle cx="${d[0] + 21}" cy="${d[1]}" r="10" fill="${C.O}"/><line x1="${d[0] - 13}" y1="${d[1]}" x2="${d[0] + 13}" y2="${d[1]}" stroke="#343b4a" stroke-width="3"/>`);
+      o += A.op(fwd, `<circle cx="${f1(x)}" cy="${f1(y)}" r="12" fill="${C.carbon}" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">C</text>`);
+      if (reset > 0) o += A.op(reset, `<circle cx="${f1(s[0])}" cy="${f1(s[1])}" r="12" fill="${C.carbon}" stroke="#fff" stroke-width="2"/><text x="${f1(s[0])}" y="${f1(s[1] + 4)}" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">C</text>`);
+    }
+    o += A.op(clamp(1 - cp(0) + reset, 0, 1), A.tx(OV.ring[0], OV.ring[1] + 5, "glucose", "t11 mid muted"));
+    /* O2 travels last (it's the final electron acceptor in stage 3) and becomes water */
+    for (let i = 0; i < 6; i++){
+      const p = smooth(seg(tt, 3.6 + .12 * i, 5 + .12 * i)), s = OV.o2[i], d = OV.h2o[i], arr = smooth(seg(p, .85, 1));
+      const x = lerp(s[0], d[0], p), y = lerp(s[1], d[1], p) + 60 * Math.sin(Math.PI * p);
+      o += A.op(1 - arr, A.o2(x, y)) + A.op(arr * fwd, A.h2o(d[0], d[1]));
+      if (reset > 0) o += A.op(reset, A.o2(s[0], s[1]));
+    }
+    /* ATP coins: 2 from glycolysis, 2 from Krebs, the rest from the ETC */
+    OV.coins.forEach((c, k) => { const on = smooth(seg(tt, coinAt(k), coinAt(k) + .25)) * fwd, col = k < 2 ? "#b83a34" : k < 4 ? "#9a6212" : "#3f4cc0";
+      o += `<circle cx="${c[0]}" cy="${c[1]}" r="7" fill="${on > .02 ? C.atp : "#f1eef8"}" stroke="${on > .02 ? col : "#ddd6ee"}" stroke-width="${on > .02 ? 2.5 : 1.2}" opacity="${f3(.35 + .65 * on)}"/>`; });
+    /* the three stages, lit in turn as the molecules move */
+    const ST = [[`1. ${R("glycolysis") === "?" ? "?" : "Glycolysis"}`, "glucose split → 2 pyruvate", "#b83a34", "#fbe8e7"], [`2. ${R("krebs")}`, "carbons leave as CO₂", "#9a6212", "#fff3dc"], [`3. ${R("etc") === "?" ? "?" : "Electron transport chain"}`, "O₂ takes electrons → H₂O, most ATP", "#3f4cc0", "#e7e9fb"]];
+    ST.forEach((s, i) => { const x = 180 + i * 320, on = stage === i;
+      o += `<rect x="${x - 145}" y="340" width="290" height="70" rx="18" fill="${on ? s[3] : "#fff"}" stroke="${s[2]}" stroke-width="${on ? 5 : 2.5}"/>` + A.tx(x, 370, s[0], "t16 mid", `style="fill:${s[2]}"`) + A.tx(x, 395, s[1], "t12 mid");
+      if (i < 2) o += A.arrow(x + 150, 375, x + 170, 375, "#5a6376", 3); });
+    o += A.tx(500, 446, "Every carbon of glucose leaves as CO₂. The O₂ ends up in water. The energy is caught as ATP.", "t14 mid", `style="fill:#5a6376"`);
     return o;
+  }
+  /* ---- organic cells with phospholipid-bilayer membranes ---- */
+  /* sample a closed curve f(a) evenly by arc length: returns n points with outward normals */
+  function along(f, n){
+    const M = 720, P = [], L = [0];
+    for (let i = 0; i <= M; i++) P.push(f(i / M * 2 * Math.PI));
+    for (let i = 1; i <= M; i++) L.push(L[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    const out = []; let j = 0;
+    for (let k = 0; k < n; k++){
+      const want = k / n * L[M]; while (j < M - 1 && L[j + 1] < want) j++;
+      const u = (want - L[j]) / ((L[j + 1] - L[j]) || 1), x = lerp(P[j][0], P[j + 1][0], u), y = lerp(P[j][1], P[j + 1][1], u);
+      let nx = P[j + 1][1] - P[j][1], ny = -(P[j + 1][0] - P[j][0]); const d = Math.hypot(nx, ny) || 1;
+      out.push([x, y, nx / d, ny / d]);
+    }
+    return out;
+  }
+  const pathOf = (f, n) => "M" + Array.from({length:n}, (_, i) => { const p = f(i / n * 2 * Math.PI); return f1(p[0]) + "," + f1(p[1]); }).join(" L") + " Z";
+  /* two rows of round heads with tails pointing in toward each other */
+  function bilayer(f, n, o){
+    o = o || {}; const w = o.w || 6, hr = o.hr || 2.8; let tails = "", heads = "";
+    along(f, n).forEach(([x, y, nx, ny]) => {
+      const ox = x + nx * w, oy = y + ny * w, ix = x - nx * w, iy = y - ny * w;
+      tails += `M${f1(ox)},${f1(oy)} L${f1(x + nx * .8)},${f1(y + ny * .8)} M${f1(ix)},${f1(iy)} L${f1(x - nx * .8)},${f1(y - ny * .8)} `;
+      heads += `<circle cx="${f1(ox)}" cy="${f1(oy)}" r="${hr}"/><circle cx="${f1(ix)}" cy="${f1(iy)}" r="${hr}"/>`;
+    });
+    return `<path d="${tails}" stroke="${o.tail || "#c9a15a"}" stroke-width="1.4" fill="none"/><g fill="${o.head || "#e0a83e"}">${heads}</g>`;
+  }
+  const wobble = (cx, cy, rx, ry, w, ph, rot) => a => { const r = 1 + w * Math.sin(3 * a + ph) + w * .5 * Math.sin(5 * a + ph * 1.7), x = rx * r * Math.cos(a), y = ry * r * Math.sin(a), c = Math.cos(rot || 0), s = Math.sin(rot || 0); return [cx + x * c - y * s, cy + x * s + y * c]; };
+  const dots = (pts, col) => pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="2.6" fill="${col}"/>`).join("");
+  let WHERE_STATIC = null;
+  function whereStatic(){
+    if (WHERE_STATIC) return WHERE_STATIC;
+    /* eukaryote: cell, nucleus, one mitochondrion with a folded inner membrane */
+    const cell = wobble(250, 262, 212, 172, .035, .6), mOut = wobble(298, 322, 128, 64, .02, 1.2, -.08);
+    const mIn = a => { const fold = Math.pow(Math.max(0, Math.sin(7 * a)), 3), r = .8 - .32 * fold, c = Math.cos(-.08), s = Math.sin(-.08), x = 128 * r * Math.cos(a), y = 64 * r * Math.sin(a); return [298 + x * c - y * s, 322 + x * s + y * c]; };
+    let e = `<path d="${pathOf(cell, 240)}" fill="#f6f1fb"/>` + bilayer(cell, 230);
+    e += dots([[90, 300], [110, 340], [200, 410], [250, 150], [380, 160], [420, 240], [70, 250], [160, 120], [330, 420], [430, 330]], "#9a86cf");
+    e += `<circle cx="128" cy="205" r="56" fill="#ebe4f8" stroke="#7d64c4" stroke-width="2.5"/><circle cx="128" cy="205" r="49" fill="none" stroke="#7d64c4" stroke-width="2.5" stroke-dasharray="26 6"/><circle cx="138" cy="210" r="15" fill="#b9a6e0"/>`;
+    e += `<path d="M95,190 q8,-14 18,-2 t18,4 M100,228 q10,10 20,0 t20,2 M150,180 q8,10 16,0" fill="none" stroke="#9a86cf" stroke-width="2"/>` + A.tx(128, 248, "nucleus", "t11 mid", `style="fill:#5b3fb0"`);
+    e += `<path d="${pathOf(mOut, 200)}" fill="#fde9dc"/>` + bilayer(mOut, 150, {head:"#d9673f", tail:"#e8a083", w:5, hr:2.4});
+    e += `<path d="${pathOf(mIn, 400)}" fill="#fbd0b8"/>` + bilayer(mIn, 230, {head:"#c4532f", tail:"#e8a083", w:4.5, hr:2.2});
+    e += A.tx(298, 405, "mitochondrion", "t11 mid", `style="fill:#a8401f"`);
+    /* prokaryote: rod with a cell wall, plasma membrane bilayer, nucleoid and plasmids */
+    const rod = (sc) => a => { const c = Math.cos(a), s = Math.sin(a), n = 2 / 4; return [800 + 150 * sc * Math.sign(c) * Math.pow(Math.abs(c), n), 258 + 82 * sc * Math.sign(s) * Math.pow(Math.abs(s), n) + 6 * Math.sin(a * 2)]; };
+    let p = `<path d="${pathOf(rod(1.08), 240)}" fill="#e3efd9" stroke="#5f8a4f" stroke-width="6"/><path d="${pathOf(rod(1), 240)}" fill="#f1f7ec"/>` + bilayer(rod(.985), 200);
+    p += dots([[690, 230], [760, 320], [905, 250], [840, 200], [700, 290], [930, 290], [770, 205]], "#7fae6c");
+    const nuc = a => { const r = 30 + 7 * Math.sin(7 * a) + 4 * Math.sin(13 * a + 1); return [862 + r * Math.cos(a), 262 + r * .8 * Math.sin(a)]; };
+    p += `<path d="${pathOf(nuc, 160)}" fill="none" stroke="#7a5cc0" stroke-width="2.5"/>` + A.tx(862, 318, "nucleoid (DNA)", "t11 mid", `style="fill:#5b3fb0"`);
+    [[905, 208], [692, 318]].forEach(([x, y]) => { p += `<circle cx="${x}" cy="${y}" r="10" fill="none" stroke="#c4532f" stroke-width="2.5"/><circle cx="${x}" cy="${y}" r="6" fill="none" stroke="#c4532f" stroke-width="1.5"/>`; });
+    p += A.tx(890, 212, "plasmid", "t11 end", `style="fill:#a8401f"`);
+    WHERE_STATIC = {e, p};
+    return WHERE_STATIC;
   }
   function whereScene(t, R){
-    let o = A.tx(250, 44, "Eukaryote", "t20 mid") + A.tx(750, 44, "Prokaryote", "t20 mid") + `<line x1="500" y1="60" x2="500" y2="450" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
-    /* eukaryote: cytoplasm + mitochondrion */
-    o += `<rect x="30" y="70" width="440" height="370" rx="36" fill="#f7f5fb" stroke="#8f7fb0" stroke-width="3"/>`;
-    o += `<ellipse cx="290" cy="300" rx="160" ry="100" fill="#fde9dc" stroke="#c4532f" stroke-width="4"/><path d="M160,300 q20,-50 40,0 q20,50 40,0 q20,-50 40,0 q20,50 40,0 q20,-50 40,0 q20,50 40,0" fill="none" stroke="#c4532f" stroke-width="3"/>`;
-    o += A.pill(140, 120, "1. Glycolysis", "#b83a34", 1, 13) + A.tx(140, 150, R("cytoplasm") === "?" ? "?" : "Cytoplasm", "t14 mid");
-    o += A.pill(290, 250, "2. Krebs", "#9a6212", 1, 13) + A.tx(290, 350, R("matrix") === "?" ? "?" : "Matrix (inside)", "t12 mid");
-    o += A.pill(360, 190, "3. ETC", "#3f4cc0", 1, 13) + A.tx(290, 420, R("inner") === "?" ? "?" : "ETC: inner mitochondrial membrane", "t12 mid");
-    /* prokaryote */
-    o += `<rect x="540" y="130" width="420" height="250" rx="120" fill="#f1f7ec" stroke="#5f8a4f" stroke-width="10"/><rect x="552" y="142" width="396" height="226" rx="110" fill="none" stroke="#c9a15a" stroke-width="3"/>`;
-    o += A.pill(700, 230, "1. Glycolysis", "#b83a34", 1, 13) + A.pill(820, 280, "2. Krebs", "#9a6212", 1, 13) + A.tx(750, 330, "both in the cytoplasm", "t14 mid");
-    o += A.pill(750, 120, "3. ETC", "#3f4cc0", 1, 13) + A.tx(750, 410, R("plasma") === "?" ? "?" : "ETC: plasma membrane (no mitochondria!)", "t14 mid");
+    const S = whereStatic();
+    let o = A.tx(250, 40, "Eukaryote", "t20 mid") + A.tx(750, 40, "Prokaryote", "t20 mid") + `<line x1="500" y1="56" x2="500" y2="450" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
+    o += S.e;
+    o += A.pill(318, 140, "1. Glycolysis", "#b83a34", 1, 13) + A.tx(318, 166, R("cytoplasm") === "?" ? "?" : "in the cytoplasm", "t12 mid");
+    o += A.pill(298, 328, "2. Krebs", "#9a6212", 1, 13) + A.tx(298, 352, R("matrix") === "?" ? "?" : "matrix", "t11 mid", `style="fill:#7a3418"`);
+    o += A.pill(410, 205, "3. ETC", "#3f4cc0", 1, 13) + A.tx(410, 230, R("inner") === "?" ? "?" : "inner membrane", "t11 mid", `style="fill:#2c3796"`) + A.arrow(400, 238, 378, 288, "#3f4cc0", 2.5);
+    /* bacterial flagella whip from the left pole */
+    for (let k = 0; k < 2; k++){ let d = ""; for (let x = 640; x >= 520; x -= 4){ const y = 240 + k * 40 + 9 * Math.sin((x + t * 140 + k * 30) / 16) * (640 - x) / 120; d += (x === 640 ? "M" : " L") + x + "," + f1(y); } o += `<path d="${d}" fill="none" stroke="#5f8a4f" stroke-width="3" stroke-linecap="round"/>`; }
+    o += A.tx(565, 218, "flagella", "t11 mid", `style="fill:#3f6b33"`);
+    o += S.p;
+    o += A.pill(740, 228, "1. Glycolysis", "#b83a34", 1, 13) + A.pill(740, 290, "2. Krebs", "#9a6212", 1, 13) + A.tx(750, 380, "Glycolysis and Krebs: both in the cytoplasm", "t12 mid");
+    o += A.pill(800, 120, "3. ETC", "#3f4cc0", 1, 13) + A.arrow(800, 134, 800, 166, "#3f4cc0", 2.5);
+    o += A.tx(750, 412, R("plasma") === "?" ? "?" : "ETC: in the plasma membrane", "t14 mid", `style="fill:#2c3796"`) + A.tx(750, 434, "(no mitochondria!)", "t12 mid muted");
     return o;
   }
+  /* NADH's journey: loop A (with O2) delivers to the ETC; loop B (no O2) dumps the electrons in fermentation
+     and the regenerated NAD+ travels the long way back to where it started */
+  const NADP = {home:[330, 215], etc:[690, 122], ferm:[690, 304]};
+  const bez = (p, a, b, c, d) => { const v = 1 - p; return [v * v * v * a[0] + 3 * v * v * p * b[0] + 3 * v * p * p * c[0] + p * p * p * d[0], v * v * v * a[1] + 3 * v * v * p * b[1] + 3 * v * p * p * c[1] + p * p * p * d[1]]; };
+  const LOOP = [[760, 354], [720, 476], [330, 476], [330, 240]];
   function nadScene(t, R){
-    const T = 6, tt = t % T, p = smooth(seg(tt, .6, 2.4)), q = smooth(seg(tt, 3, 4.8));
-    let o = A.tx(500, 44, "Where do NADH's electrons go next?", "t20 mid");
-    o += A.carrier(160, 200, "NAD", false) + A.arrow(220, 200, 330, 200, "#5a6376", 3) + A.tx(275, 185, "picks up e⁻", "t12 mid");
-    o += A.carrier(410, 200, "NAD", true) + A.tx(410, 250, "in glycolysis", "t12 mid muted");
-    o += A.arrow(470, 190, 650, 120, "#3f4cc0", 3) + A.tx(560, 130, "with O₂", "t14 mid", `style="fill:#3f4cc0"`);
-    o += `<rect x="660" y="80" width="300" height="84" rx="16" fill="#e7e9fb"/>` + A.tx(810, 116, "Electron transport chain", "t16 mid", `style="fill:#2c3796"`) + A.tx(810, 144, "(lots of ATP)", "t14 mid");
-    o += A.arrow(470, 215, 650, 290, "#b83a34", 3) + A.tx(560, 290, "no O₂", "t14 mid", `style="fill:#b83a34"`);
-    o += `<rect x="660" y="250" width="300" height="84" rx="16" fill="#fbe8e7"/>` + A.tx(810, 286, "Fermentation", "t16 mid", `style="fill:#b83a34"`) + A.tx(810, 314, "(gives NAD⁺ back)", "t14 mid");
-    const ex = lerp(430, 630, p), ey = lerp(190, 150, p);
-    o += A.op(1 - q, A.eDot(ex, ey, 11) + A.eDot(ex + 20, ey + 6, 11));
-    o += A.tx(500, 400, "FAD (→ FADH₂) is the other carrier you'll meet, in the Krebs cycle.", "t14 mid muted");
+    const T = 11, tt = t % T, B = tt >= 5.5, u = B ? tt - 5.5 : tt;
+    const load = smooth(seg(u, .3, 1.1)), go = smooth(seg(u, 1.4, 2.5)), drop = smooth(seg(u, 2.6, 3.2)), back = smooth(seg(u, 3.4, 5));
+    const dock = B ? NADP.ferm : NADP.etc, H = NADP.home;
+    let cx, cy;
+    if (u < 3.4){ cx = lerp(H[0], dock[0], go); cy = lerp(H[1], dock[1], go); }
+    else if (B){ [cx, cy] = bez(back, LOOP[0], LOOP[1], LOOP[2], [H[0], H[1]]); }
+    else { cx = lerp(dock[0], H[0], back); cy = lerp(dock[1], H[1], back); }
+    const full = load > .9 && drop < .5;
+    let o = A.tx(500, 38, "Where do NADH's electrons go next?", "t20 mid") + A.tx(500, 62, "FAD (→ FADH₂) is the other carrier; you'll meet it in the Krebs cycle.", "t12 mid muted");
+    /* the two destinations */
+    o += A.arrow(390, 200, 650, 132, B ? "#c9cfdb" : "#3f4cc0", 3, "8 6") + A.tx(505, 146, "with O₂", "t14 mid", `style="fill:${B ? "#9aa3b5" : "#3f4cc0"}"`);
+    o += A.arrow(390, 232, 650, 296, B ? "#b83a34" : "#c9cfdb", 3, "8 6") + A.tx(530, 252, "no O₂", "t14 mid", `style="fill:${B ? "#b83a34" : "#9aa3b5"}"`);
+    o += `<rect x="700" y="80" width="270" height="92" rx="18" fill="${B ? "#f4f5fb" : "#e7e9fb"}" stroke="#3f4cc0" stroke-width="${B ? 1.5 : 4}"/>` + A.tx(835, 112, "Electron transport chain", "t16 mid", `style="fill:#2c3796"`) + A.tx(835, 134, "electrons' energy → lots of ATP", "t12 mid");
+    for (let k = 0; k < 3; k++){ const on = B ? 0 : smooth(seg(u, 3 + k * .2, 3.25 + k * .2)) * (1 - smooth(seg(u, 4.9, 5.4))); o += A.op(on, `<circle cx="${805 + k * 30}" cy="156" r="10" fill="${C.atp}"/><text x="${805 + k * 30}" y="160" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">ATP</text>`); }
+    o += `<rect x="700" y="262" width="270" height="92" rx="18" fill="${B ? "#fbe8e7" : "#fdf6f5"}" stroke="#b83a34" stroke-width="${B ? 4 : 1.5}"/>` + A.tx(835, 294, "Fermentation", "t16 mid", `style="fill:#b83a34"`) + A.tx(835, 316, "electrons go onto pyruvate", "t12 mid") + A.op(B ? drop : 0, A.tx(835, 338, "→ lactic acid or ethanol", "t12 mid", `style="fill:#8a2621"`));
+    /* the recycling loop: NAD+ comes all the way back to pick up more electrons */
+    let d = ""; for (let i = 0; i <= 40; i++){ const p = bez(i / 40, ...LOOP); d += (i ? " L" : "M") + f1(p[0]) + "," + f1(p[1]); }
+    o += `<path d="${d}" fill="none" stroke="${B ? "#b83a34" : "#e3c4c1"}" stroke-width="3" stroke-dasharray="8 6"/>` + A.arrow(330, 270, 330, 242, B ? "#b83a34" : "#e3c4c1", 3);
+    o += A.tx(545, 462, "NAD⁺ is recycled, so glycolysis can keep going", "t14 mid", `style="fill:${B ? "#b83a34" : "#c9a9a6"}"`);
+    /* the electron source */
+    o += A.glucoseRing(95, 215, {r:9}) + A.tx(95, 268, "glucose", "t12 mid") + A.tx(95, 284, "(glycolysis)", "t11 mid muted");
+    /* high-energy callout under the carrier's home */
+    o += `<rect x="24" y="318" width="282" height="96" rx="16" fill="#fff8dc" stroke="#e0b84a" stroke-width="2"/>` + A.tx(165, 344, "NADH = NAD⁺ +", "t16 mid", `style="fill:#8a5a00"`) + A.tx(165, 368, "2 HIGH-ENERGY electrons", "t16 mid", `style="fill:#8a5a00"`) + A.tx(165, 394, "energy from glucose, ready to deliver", "t12 mid muted");
+    /* the carrier (drawn big), glowing while it holds the electrons */
+    if (full) o += `<ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="${f1(64 + 5 * Math.sin(t * 6))}" ry="${f1(34 + 3 * Math.sin(t * 6))}" fill="#fff3b0" opacity=".85" stroke="${C.gold}" stroke-width="2"/>`;
+    o += `<g transform="translate(${f1(cx)},${f1(cy)}) scale(1.45) translate(${f1(-cx)},${f1(-cy)})">${A.carrier(cx, cy, "NAD", full, {e:false})}</g>`;
+    /* the two electrons: glucose → carrier → destination */
+    for (let k = 0; k < 2; k++){
+      const sx = 95 + (k ? 12 : -12), sy = 185, ex = cx + (k ? 16 : -16), ey = cy - 44;
+      let x, y, op = 1;
+      if (load < 1){ x = lerp(sx, ex, load); y = lerp(sy, ey, load) - 50 * Math.sin(Math.PI * load); op = u < .3 ? 0 : 1; }
+      else if (drop <= 0){ x = ex; y = ey; }
+      else { x = lerp(ex, dock[0] + 145 + (k ? 12 : -12), drop); y = lerp(ey, dock[1] + 6, drop); op = 1 - smooth(seg(drop, .6, 1)); }
+      if (op > .01) o += A.op(op, (full ? `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(19 + 3 * Math.sin(t * 8 + k))}" fill="#ffe36b" opacity=".6"/>` : "") + A.eDot(x, y, 13));
+    }
+    if (full) o += A.tx(cx, cy - 72, "⚡ high-energy e⁻", "t12 mid", `style="fill:#8a5a00"`);
     return o;
   }
   function atpScene(t, R){
@@ -194,21 +313,42 @@
     o += `<circle cx="470" cy="428" r="7" fill="url(#atpStripe)" stroke="${C.atp}" stroke-width="1.5"/>` + A.tx(484, 433, "= extra ATP possible (depends on the organism)", "t12", "");
     return o;
   }
-  /* the big picture: what each stage makes, per glucose */
+  /* the big picture: three bold stage columns, then a 38-coin bar showing where the ATP comes from */
+  const coin = (x, y, r, col) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="${C.atp}" stroke="${col || "#fff"}" stroke-width="2.5"/><text x="${f1(x)}" y="${f1(y + r * .35)}" font-size="${f1(r * .8)}" font-weight="700" fill="#fff" text-anchor="middle">ATP</text>`;
+  const nadhChip = (x, y, s) => `<rect x="${f1(x - 26)}" y="${f1(y - 13)}" width="52" height="26" rx="13" fill="${s === "FADH₂" ? C.fad : C.nad}"/><text x="${f1(x)}" y="${f1(y + 5)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">${s}</text>` + A.eDot(x + 24, y - 12, 6);
   function bigScene(t, R){
     const T = 9, k = Math.floor((t % T) / 3);
-    let o = A.tx(500, 40, "One glucose, start to finish (aerobic respiration)", "t20 mid");
-    const col = ["#b83a34", "#9a6212", "#3f4cc0"], xs = [180, 500, 820];
-    const title = ["1. Glycolysis", "2. Krebs cycle", "3. Electron transport"];
-    const where = [["cytoplasm", "(all cells)"], ["mitochondrial matrix", "(bacteria: cytoplasm)"], ["inner mito. membrane", "(bacteria: plasma membrane)"]];
-    const out = [["2 ATP (net)", "2 NADH", "2 pyruvate"], ["2 ATP", "8 NADH, 2 FADH₂", "6 CO₂"], ["~34 ATP", "O₂ → H₂O", "NAD⁺ and FAD recycled"]];
-    xs.forEach((x, i) => {
-      o += `<rect x="${x - 140}" y="70" width="280" height="290" rx="18" fill="${k === i ? "#fff6d6" : "#fff"}" stroke="${k === i ? C.gold : col[i]}" stroke-width="${k === i ? 4 : 2.5}"/>`;
-      o += A.tx(x, 108, title[i], "t16 mid", `style="fill:${col[i]}"`) + A.tx(x, 134, where[i][0], "t12 mid muted") + A.tx(x, 154, where[i][1], "t12 mid muted");
-      out[i].forEach((s, j) => { o += A.tx(x, 210 + j * 44, s, "t14 mid"); });
-      if (i < 2) o += A.arrow(x + 144, 220, x + 176, 220, "#5a6376", 3);
+    let o = A.tx(500, 36, "One glucose, start to finish (aerobic respiration)", "t20 mid");
+    const S = [
+      {x:170, col:"#b83a34", bg:"#fdeceb", title:"1. Glycolysis", where:"cytoplasm", bact:"(same in bacteria)",
+        rows:[["atp", 2, "2 ATP (net)"], ["nadh", "NADH", "2 NADH"], ["pyr", 0, "2 pyruvate"]]},
+      {x:500, col:"#9a6212", bg:"#fff4de", title:"2. Krebs cycle", where:"mitochondrial matrix", bact:"(bacteria: cytoplasm)",
+        rows:[["atp", 2, "2 ATP"], ["nadh2", 0, "8 NADH + 2 FADH₂"], ["co2", 0, "6 CO₂ released"]]},
+      {x:830, col:"#3f4cc0", bg:"#ebedfc", title:"3. Electron transport", where:"inner mito. membrane", bact:"(bacteria: plasma membrane)",
+        rows:[["atp", 3, "~34 ATP"], ["h2o", 0, "O₂ + e⁻ → H₂O"], ["rec", 0, "NAD⁺ & FAD reused"]]}];
+    S.forEach((s, i) => {
+      const on = k === i, x0 = s.x - 150;
+      o += `<rect x="${x0}" y="56" width="300" height="290" rx="20" fill="${s.bg}" stroke="${s.col}" stroke-width="${on ? 5 : 2.5}"/>`;
+      o += `<path d="M${x0},76 a20,20 0 0 1 20,-20 h260 a20,20 0 0 1 20,20 v34 h-300 Z" fill="${s.col}"/>` + A.tx(s.x, 92, s.title, "t20 mid", `style="fill:#fff"`);
+      o += A.tx(s.x, 134, s.where, "t16 mid", `style="fill:${s.col}"`) + A.tx(s.x, 154, s.bact, "t12 mid muted");
+      s.rows.forEach((r, j) => {
+        const y = 196 + j * 50, ix = x0 + 44;
+        if (r[0] === "atp") o += Array.from({length:r[1]}, (_, q) => coin(ix - 16 + q * 21, y, 9.5)).join("");
+        else if (r[0] === "nadh") o += nadhChip(ix, y, "NADH");
+        else if (r[0] === "nadh2") o += nadhChip(ix - 2, y - 8, "NADH") + `<g transform="translate(${f1(ix + 10)},${y + 8}) scale(.8) translate(${f1(-ix - 10)},${-y - 8})">${nadhChip(ix + 10, y + 8, "FADH₂")}</g>`;
+        else if (r[0] === "pyr") o += A.carbons(ix, y, 3, {r:7, gap:15});
+        else if (r[0] === "co2") o += A.co2(ix, y);
+        else if (r[0] === "h2o") o += A.h2o(ix, y);
+        else o += A.carrier(ix, y, "NAD", false);
+        o += A.tx(x0 + 98, y + 6, r[2], "t16", "");
+      });
+      if (i < 2) o += A.arrow(s.x + 152, 210, s.x + 178, 210, "#343b4a", 4);
     });
-    o += A.tx(500, 410, "Total: up to 38 ATP per glucose (most from the ETC)", "t16 mid", `style="fill:#1b7f4e"`);
+    /* where the ATP comes from: 38 coins colored by stage */
+    o += `<rect x="20" y="376" width="960" height="84" rx="20" fill="#f3f0fa"/>` + A.tx(40, 408, "Up to 38 ATP", "t20", `style="fill:#5b3fb0"`) + A.tx(40, 430, "per glucose: 2 + 2 + ~34 from the ETC", "t12", `style="fill:#5a6376"`) + A.tx(40, 448, "(eukaryotes: about 36)", "t12 muted");
+    const grow = Math.floor(seg(t % T, .3, 3.5) * 38 + .001);
+    for (let q = 0; q < 38; q++){ const x = 412 + (q % 19) * 29, y = 402 + Math.floor(q / 19) * 32, col = q < 2 ? "#b83a34" : q < 4 ? "#9a6212" : "#3f4cc0";
+      o += q < grow ? coin(x, y, 12.5, col) : `<circle cx="${x}" cy="${y}" r="12.5" fill="#fff" stroke="#ddd6ee" stroke-width="2"/>`; }
     return o;
   }
   /* ================= Activities ================= */
@@ -248,12 +388,12 @@
 
   const P1 = "Before: the big picture", P2 = "Energy and ATP", P3 = "After: putting it together";
   const STEPS = [
-    {part:P1, title:"Cellular respiration", scene:(t, c) => overviewScene(t, c.R),
-     text:`Cellular respiration is how cells break down glucose and other organic molecules to make ATP. It is catabolic, {{exergonic}}, and enzyme-controlled. It has three stages: {{glycolysis}}, the {{krebs}}, and the {{etc}}.`},
-    {part:P1, title:"Where does each stage happen?", scene:(t, c) => whereScene(t, c.R), gate:GATES.where,
+    {part:P1, title:"Cellular respiration", scene:(t, c) => overviewScene(t, c.R), live:true,
+     text:`Cellular respiration is how cells break down glucose and other organic molecules to make ATP. Every carbon in glucose leaves as CO₂, the oxygen ends up in water, and the energy is captured as ATP. It has three stages: {{glycolysis}}, the {{krebs}}, and the {{etc}}.`},
+    {part:P1, title:"Where does each stage happen?", scene:(t, c) => whereScene(t, c.R), live:true, gate:GATES.where,
      text:`In eukaryotes, glycolysis happens in the {{cytoplasm}}, the Krebs cycle happens in the {{matrix}}, and the electron transport chain is in the {{inner}}. Prokaryotes have no mitochondria! Glycolysis and the Krebs cycle both happen in the cytoplasm, and the electron transport chain is in the {{plasma}}.`},
-    {part:P1, title:"The roles of NAD⁺ and FAD", scene:(t, c) => nadScene(t, c.R),
-     text:`{{nadplus}} is the electron carrier of glycolysis. It picks up electrons and becomes NADH. With oxygen, NADH delivers those electrons to the electron transport chain to make lots more ATP. Without oxygen, fermentation hands them back so NAD⁺ can be reused. {{fad}} is the other carrier. It picks up TWO electrons to become FADH₂, and you'll see it in the Krebs cycle.`},
+    {part:P1, title:"The roles of NAD⁺ and FAD", scene:(t, c) => nadScene(t, c.R), live:true,
+     text:`{{nadplus}} is the electron carrier of glycolysis. It picks up two high-energy electrons and becomes NADH, so NADH now holds energy that came from glucose. With oxygen, NADH delivers those electrons to the electron transport chain to make lots more ATP. Without oxygen, fermentation dumps the electrons onto pyruvate, and the NAD⁺ cycles back to glycolysis to be reused. {{fad}} is the other carrier. It picks up TWO electrons to become FADH₂, and you'll see it in the Krebs cycle.`},
     {part:P2, title:"Phosphorylation and ATP", scene:(t, c) => atpScene(t, c.R), more:"atpdaily",
      text:`{{phosphorylation}} is the addition of a phosphate group to a molecule. ATP carries energy in its phosphate bonds: ATP → ADP + P + energy releases about 7.3 kcal/mol. That energy drives endergonic (energy-requiring) reactions. Phosphorylation "energizes" molecules for cellular processes.`},
     {part:P2, title:"Two ways to make ATP", scene:(t, c) => twoWaysScene(t, c.R, c.g, c.done), live:true, gate:GATES.ways,
