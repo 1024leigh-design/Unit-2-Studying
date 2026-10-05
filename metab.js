@@ -321,5 +321,23 @@
     window.__m = {goTo, check, moveOn, setMode, get idx(){ return idx; }, STEPS, gates, gstate, pass:() => { gates[idx] = true; renderGate(); resolvedNow(); }};
   }
 
-  window.Metab = {start, A, dragify, sortGate};
+  /* on-diagram dragging: anything marked data-drag can be dragged; tapping it picks it, then tapping a spot drops it there */
+  function svgDrag(api, st, o){
+    const svg = api.svg; svg.style.touchAction = "none";
+    const toSVG = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+    svg.onpointerdown = e => {
+      const d = e.target.closest && e.target.closest("[data-drag]");
+      if (!d){ if (st.pick){ const k = st.pick; st.pick = null; o.drop(k, toSVG(e)); } return; }
+      e.preventDefault(); const p = toSVG(e);
+      st.drag = {kind:d.dataset.drag, x:p.x, y:p.y, sx:p.x, sy:p.y, moved:false};
+      try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+    };
+    svg.onpointermove = e => { const d = st.drag; if (!d) return; const p = toSVG(e); d.x = p.x; d.y = p.y; if (Math.hypot(p.x - d.sx, p.y - d.sy) > 8) d.moved = true; };
+    svg.onpointerup = svg.onpointercancel = e => {
+      const d = st.drag; if (!d) return; st.drag = null;
+      if (!d.moved){ st.pick = st.pick === d.kind ? null : d.kind; if (st.pick && o.picked) o.picked(d.kind); return; }
+      st.pick = null; o.drop(d.kind, toSVG(e));
+    };
+  }
+  window.Metab = {start, A, dragify, sortGate, svgDrag};
 })();
