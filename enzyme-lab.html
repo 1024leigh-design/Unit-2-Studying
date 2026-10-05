@@ -10,14 +10,26 @@
 <link rel="stylesheet" href="metab.css">
 <style>
   .intro{color:var(--muted);margin:0 0 14px;font-size:.98rem;max-width:860px}
-  .pick h2{font-size:1rem;margin:10px 0 6px;color:var(--muted)}
+  .pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .pickgrid.small{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+  .ecard{position:relative;border:0;border-radius:18px;padding:14px 14px 12px;text-align:left;cursor:pointer;font:inherit;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 3px 10px rgba(29,36,51,.18);transition:transform .15s,box-shadow .15s;min-height:118px}
+  .ecard:hover,.ecard:focus-visible{transform:translateY(-3px) rotate(-.5deg);box-shadow:0 8px 18px rgba(29,36,51,.25)}
+  .ecard .em{font-size:1.9rem;line-height:1;display:block;margin-bottom:6px}
+  .ecard b{display:block;font-size:1.05rem;line-height:1.2}
+  .ecard span{display:block;font-size:.8rem;opacity:.92;margin-top:3px}
+  .ecard i{position:absolute;top:10px;right:10px;font-style:normal;font-size:.7rem;font-weight:700;background:rgba(255,255,255,.25);border-radius:999px;padding:2px 8px}
+  .pickgrid.small .ecard{min-height:0;padding:10px 12px}
+  .pickgrid.small .ecard .em{font-size:1.3rem;margin-bottom:3px}
+  .pickgrid.small .ecard b{font-size:.92rem}
+  .ecard[aria-current="true"]{outline:4px solid #f2b134;outline-offset:2px}
+  .morehead{font-size:1.1rem;margin:18px 0 8px}
   .pickrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:8px}
   .ebtn{border:2px solid var(--line);background:var(--card);border-radius:14px;padding:9px 12px;text-align:left;cursor:pointer;font:inherit;color:var(--ink)}
   .ebtn b{display:block;font-size:.95rem}
   .ebtn span{font-size:.78rem;color:var(--muted)}
   .ebtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent) inset}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
-  .info{margin:14px 0;display:grid;grid-template-columns:1.1fr 1.4fr;gap:12px}
+  .info{margin:14px 0 0;display:grid;grid-template-columns:1.1fr 1.4fr;gap:12px}
   .info h3{margin:0 0 4px;font-size:1.2rem}
   .info .rx{font-weight:700;color:#5b3fb0;background:#f3effd;border-radius:10px;padding:8px 10px;margin:8px 0;font-size:.95rem}
   .info .where{font-size:.85rem;color:var(--muted)}
@@ -63,9 +75,12 @@
 <body>
 <div class="wrap">
   <header><div><a class="backlink" href="index.html">All modules</a><h1>Enzyme and Metabolism Lab<span class="chap">Chapters 5 &amp; 8</span></h1></div></header>
-  <p class="intro">Pick a real enzyme, then change its world. Drag molecules into the reaction chamber (or drag them out), move the sliders, and watch what happens to the products, the activation energy, and the turnover number.</p>
-  <section class="pick" id="picker"></section>
-  <section class="info" id="info"></section>
+  <section id="landing">
+    <p class="intro">Pick a real enzyme from Chapter 5 or 8. Then drag molecules into its reaction chamber, push the sliders to extremes, and watch the products, the activation energy, and the turnover number change.</p>
+    <div class="pickgrid" id="pickTop"></div>
+  </section>
+  <section id="lab" hidden>
+  <h2 class="morehead" id="labTitle" style="margin-top:0"></h2>
   <div class="labgrid">
     <div class="card">
       <svg id="stage" viewBox="0 0 640 410" role="img" aria-label="Reaction chamber"></svg>
@@ -78,6 +93,10 @@
     <div class="card"><h3>Energy over the course of the reaction</h3><svg id="g1" viewBox="0 0 480 270" role="img" aria-label="Energy diagram"></svg><p class="cap" id="g1cap"></p></div>
     <div class="card"><h3>Turnover number vs. <select id="gvar" aria-label="Variable on the x-axis"></select></h3><svg id="g2" viewBox="0 0 480 270" role="img" aria-label="Turnover number graph"></svg><p class="cap" id="g2cap"></p></div>
   </div>
+    <section class="info" id="info"></section>
+    <h2 class="morehead">Try another enzyme</h2>
+    <div class="pickgrid small" id="pickBottom"></div>
+  </section>
   <div class="endlinks"><a class="btn secondary" href="enzymes.html">Review: Enzymes and metabolism</a><a class="btn secondary" href="index.html">All modules</a></div>
 </div>
 <script>
@@ -89,61 +108,61 @@
 
   /* ================= Real enzymes (values are approximate, for comparison) ================= */
   const ENZ = [
-    {id:"hk", ch:5, name:"Hexokinase", where:"Glycolysis, step 1", rx:"glucose + ATP → glucose-6-phosphate + ADP",
+    {id:"hk", em:"🍬", c1:"#e8744f", c2:"#c4532f", ch:5, name:"Hexokinase", where:"Glycolysis, step 1", rx:"glucose + ATP → glucose-6-phosphate + ADP",
       subs:["glucose", "ATP"], prods:["glucose-6-phosphate", "ADP"],
       cof:[{n:"Mg²⁺", s:"Mg", note:"grips ATP's phosphates"}],
       comp:[{n:"2-deoxyglucose", s:"2-DG", k:4, note:"a glucose look-alike that sits in the active site"}],
       non:[{n:"G6P (its own product)", s:"G6P", k:4, note:"binds an allosteric site: product (feedback) inhibition"}],
       kcat:200, Topt:37, Tmax:52, pH:7.4, salt:150, Eu:115, Ec:45, dG:-17, fact:"Hexokinase spends glycolysis's first ATP and traps glucose inside the cell."},
-    {id:"pdh", ch:5, name:"Pyruvate dehydrogenase", where:"Link step: pyruvate → acetyl-CoA", rx:"pyruvate + CoA + NAD⁺ → acetyl-CoA + CO₂ + NADH",
+    {id:"pdh", em:"🔗", c1:"#d99a2b", c2:"#a86b0e", ch:5, name:"Pyruvate dehydrogenase", where:"Link step: pyruvate → acetyl-CoA", rx:"pyruvate + CoA + NAD⁺ → acetyl-CoA + CO₂ + NADH",
       subs:["pyruvate", "CoA", "NAD⁺"], prods:["acetyl-CoA", "CO₂", "NADH"],
       cof:[{n:"TPP (from vitamin B1)", s:"TPP", note:"carries the 2-carbon piece"}, {n:"lipoic acid", s:"Lip", note:"swinging arm between active sites"}, {n:"FAD (vitamin B2)", s:"FAD", note:"passes electrons to NAD⁺"}],
       comp:[{n:"acetyl-CoA (product)", s:"AcCoA", k:5, note:"competes with CoA for its site"}],
       non:[{n:"arsenite (arsenic)", s:"As", k:2, note:"binds the lipoic-acid arm and jams the enzyme; why arsenic is a poison"}],
       kcat:50, Topt:37, Tmax:50, pH:7.5, salt:120, Eu:120, Ec:50, dG:-33, fact:"Pyruvate dehydrogenase needs five cofactors, three of them made from B vitamins."},
-    {id:"sdh", ch:5, name:"Succinate dehydrogenase", where:"Krebs cycle (also Complex II of the ETC)", rx:"succinate + FAD → fumarate + FADH₂",
+    {id:"sdh", em:"🔄", c1:"#2f9e63", c2:"#1b6b43", ch:5, name:"Succinate dehydrogenase", where:"Krebs cycle (also Complex II of the ETC)", rx:"succinate + FAD → fumarate + FADH₂",
       subs:["succinate"], prods:["fumarate", "FADH₂"],
       cof:[{n:"FAD (vitamin B2)", s:"FAD", note:"accepts 2 electrons → FADH₂"}, {n:"iron-sulfur clusters", s:"FeS", note:"pass electrons along"}],
       comp:[{n:"malonate", s:"Mal", k:3, note:"shaped like succinate: the classic competitive inhibitor"}],
       non:[{n:"carboxin (fungicide)", s:"Cbx", k:2.5, note:"binds the ubiquinone site, away from where succinate binds"}],
       kcat:100, Topt:37, Tmax:50, pH:7.4, salt:120, Eu:105, Ec:48, dG:0, fact:"It's the only Krebs cycle enzyme built into the inner membrane, so it's part of the ETC too."},
-    {id:"cox", ch:5, name:"Cytochrome c oxidase", where:"Electron transport chain (Complex IV)", rx:"4 cyt c (reduced) + O₂ + 4 H⁺ → 4 cyt c (oxidized) + 2 H₂O",
+    {id:"cox", em:"💨", c1:"#2f7fbf", c2:"#1d5690", ch:5, name:"Cytochrome c oxidase", where:"Electron transport chain (Complex IV)", rx:"4 cyt c (reduced) + O₂ + 4 H⁺ → 4 cyt c (oxidized) + 2 H₂O",
       subs:["O₂", "electrons from cytochrome c"], prods:["H₂O"],
       cof:[{n:"Cu²⁺ (copper)", s:"Cu", note:"holds electrons on their way to O₂"}, {n:"heme iron (Fe)", s:"Fe", note:"where O₂ binds"}],
       comp:[{n:"carbon monoxide (CO)", s:"CO", k:4, note:"competes with O₂ for the heme iron"}],
       non:[{n:"cyanide (CN⁻)", s:"CN⁻", k:1.5, note:"shuts the enzyme down no matter how much O₂ is around"}],
-      kcat:400, Topt:37, Tmax:50, pH:7.4, salt:150, Eu:130, Ec:40, dG:-100, fact:"This is where O₂ becomes the final electron acceptor. Block it and the whole ETC stops."},
-    {id:"ldh", ch:5, name:"Lactate dehydrogenase", where:"Fermentation (lactic acid)", rx:"pyruvate + NADH → lactate + NAD⁺",
+      kcat:400, Topt:37, Tmax:50, pH:7.4, salt:150, Eu:130, Ec:40, dG:-100, fact:"This is where O₂ becomes the final electron acceptor and is turned into water. Block it and the whole ETC stops. (Breaking down hydrogen peroxide, H₂O₂, is a different enzyme: catalase.)"},
+    {id:"ldh", em:"🏃", c1:"#d9443a", c2:"#9e2a24", ch:5, name:"Lactate dehydrogenase", where:"Fermentation (lactic acid)", rx:"pyruvate + NADH → lactate + NAD⁺",
       subs:["pyruvate", "NADH"], prods:["lactate", "NAD⁺"],
       cof:[{n:"NADH (coenzyme)", s:"NADH", note:"hands over its electrons and leaves as NAD⁺"}],
       comp:[{n:"oxamate", s:"Oxa", k:3, note:"a pyruvate look-alike"}],
       non:[{n:"Hg²⁺ (mercury)", s:"Hg", k:2, note:"heavy metal: binds elsewhere and warps the enzyme"}],
       kcat:250, Topt:37, Tmax:52, pH:7.2, salt:150, Eu:100, Ec:42, dG:-25, fact:"LDH regenerates NAD⁺ so glycolysis can keep going without oxygen."},
-    {id:"taq", ch:8, name:"Taq DNA polymerase", where:"DNA replication and PCR", rx:"DNA (n bases) + dNTP → DNA (n+1 bases) + PPᵢ",
+    {id:"taq", em:"♨️", c1:"#c4532f", c2:"#8a2621", ch:8, name:"Taq DNA polymerase", where:"DNA replication and PCR", rx:"DNA (n bases) + dNTP → DNA (n+1 bases) + PPᵢ",
       subs:["dNTPs", "template DNA + primer"], prods:["longer DNA strand", "pyrophosphate"],
       cof:[{n:"Mg²⁺", s:"Mg", note:"needed to join each nucleotide"}],
       comp:[{n:"ddNTPs (dideoxy)", s:"ddNTP", k:4, note:"nucleotide look-alikes that end the chain (Sanger sequencing)"}],
       non:[{n:"hot-start antibody", s:"Ab", k:1.5, note:"binds Taq away from the active site until PCR heating releases it"}],
       kcat:60, Topt:75, Tmax:97, pH:8.3, salt:50, Eu:125, Ec:55, dG:-15, fact:"Taq comes from Thermus aquaticus, a hot-spring bacterium, so it survives PCR's 95°C steps."},
-    {id:"rnap", ch:8, name:"RNA polymerase (E. coli)", where:"Transcription", rx:"RNA (n bases) + NTP → RNA (n+1 bases) + PPᵢ",
+    {id:"rnap", em:"📜", c1:"#5865d6", c2:"#3a44a6", ch:8, name:"RNA polymerase (E. coli)", where:"Transcription", rx:"RNA (n bases) + NTP → RNA (n+1 bases) + PPᵢ",
       subs:["NTPs (ATP, UTP, GTP, CTP)", "DNA template"], prods:["longer mRNA", "pyrophosphate"],
       cof:[{n:"Mg²⁺", s:"Mg", note:"in the active site, joins nucleotides"}, {n:"Zn²⁺", s:"Zn", note:"holds the enzyme's shape"}],
       comp:[{n:"cordycepin triphosphate", s:"Cor", k:4, note:"an ATP look-alike that ends the RNA chain"}],
       non:[{n:"rifampin (antibiotic)", s:"Rif", k:1.5, note:"binds the β subunit away from the active site; treats tuberculosis"}],
       kcat:50, Topt:37, Tmax:50, pH:7.8, salt:100, Eu:120, Ec:50, dG:-12, fact:"Rifampin blocks bacterial RNA polymerase but not ours, which is why it works as an antibiotic."},
-    {id:"rt", ch:8, name:"Reverse transcriptase (HIV)", where:"Retroviruses: RNA → DNA", rx:"RNA template + dNTPs → complementary DNA + PPᵢ",
+    {id:"rt", em:"🦠", c1:"#8e5bd0", c2:"#5b3fb0", ch:8, name:"Reverse transcriptase (HIV)", where:"Retroviruses: RNA → DNA", rx:"RNA template + dNTPs → complementary DNA + PPᵢ",
       subs:["dNTPs", "viral RNA template"], prods:["cDNA", "pyrophosphate"],
       cof:[{n:"Mg²⁺", s:"Mg", note:"in the active site"}],
       comp:[{n:"AZT-triphosphate", s:"AZT", k:3, note:"a thymidine look-alike (NRTI), the first HIV drug"}],
       non:[{n:"nevirapine (NNRTI)", s:"NVP", k:1.5, note:"binds a pocket near, but not in, the active site: textbook noncompetitive"}],
       kcat:20, Topt:37, Tmax:48, pH:7.8, salt:80, Eu:120, Ec:52, dG:-12, fact:"HIV treatment combines a competitive (NRTI) and a noncompetitive (NNRTI) inhibitor of this one enzyme."},
-    {id:"gyr", ch:8, name:"DNA gyrase", where:"DNA replication (relieves supercoiling)", rx:"overwound DNA + ATP → relaxed DNA + ADP + Pᵢ",
+    {id:"gyr", em:"🌀", c1:"#0f8f8f", c2:"#0a6262", ch:8, name:"DNA gyrase", where:"DNA replication (relieves supercoiling)", rx:"overwound DNA + ATP → relaxed DNA + ADP + Pᵢ",
       subs:["overwound DNA", "ATP"], prods:["relaxed DNA", "ADP + Pᵢ"],
       cof:[{n:"Mg²⁺", s:"Mg", note:"needed to cut and rejoin DNA"}],
       comp:[{n:"novobiocin (antibiotic)", s:"Nov", k:2, note:"competes with ATP for its binding site"}],
       non:[{n:"ciprofloxacin (antibiotic)", s:"Cip", k:2, note:"traps gyrase on cut DNA, away from the ATP site"}],
       kcat:2, Topt:37, Tmax:50, pH:7.5, salt:100, Eu:110, Ec:50, dG:-8, fact:"Gyrase is a bacterial enzyme, so drugs that block it (like ciprofloxacin) kill bacteria but spare us."},
-    {id:"bgal", ch:8, name:"β-galactosidase", where:"Made from the lac operon", rx:"lactose + H₂O → glucose + galactose",
+    {id:"bgal", em:"🥛", c1:"#6b8e23", c2:"#4a6418", ch:8, name:"β-galactosidase", where:"Made from the lac operon", rx:"lactose + H₂O → glucose + galactose",
       subs:["lactose (or X-gal, ONPG)"], prods:["glucose", "galactose"],
       cof:[{n:"Mg²⁺", s:"Mg", note:"helps hold the substrate"}],
       comp:[{n:"galactose (product)", s:"Gal", k:6, note:"the product competes for the active site"}, {n:"PETG", s:"PETG", k:2, note:"a lactose look-alike that can't be cut"}],
@@ -160,7 +179,7 @@
     {k:"salt", lab:"Salt concentration", min:0, max:1000, step:10, fmt:v => v + " mM", group:"Conditions"},
     {k:"P", lab:"Pressure", min:1, max:5000, step:10, fmt:v => v + " atm", group:"Conditions"},
     {k:"E", lab:"Enzymes", min:0, max:10, step:1, fmt:v => v, group:"Molecules in the chamber"},
-    {k:"S", lab:"Substrate", min:0, max:60, step:1, fmt:v => v, group:"Molecules in the chamber"},
+    {k:"S", lab:"Substrate", min:0, max:150, step:1, fmt:v => v, group:"Molecules in the chamber"},
     {k:"Cf", lab:() => "Cofactor: " + cof().n, min:0, max:20, step:1, fmt:v => v, group:"Molecules in the chamber"},
     {k:"Ic", lab:() => "Competitive inhibitor: " + comp().n, min:0, max:20, step:1, fmt:v => v, group:"Molecules in the chamber"},
     {k:"In", lab:() => "Noncompetitive inhibitor: " + non().n, min:0, max:20, step:1, fmt:v => v, group:"Molecules in the chamber"}];
@@ -185,13 +204,15 @@
     return {kT, sT, spH, sSalt, sP, F, H, N, occES, occEI, work, turn, total:turn * E, rel:turn / e.kcat};
   }
   const cur = () => model(st);
-  const effEa = m => lerp(st.e.Eu, st.e.Ec, st.E > 0 ? m.work : 0);
+  /* a working enzyme always lowers Ea by the same amount; inhibitors and denaturing just mean fewer enzymes are working */
+  const effEa = m => st.E > 0 && m.work > .001 && st.S > 0 ? st.e.Ec : st.e.Eu;
 
   /* ================= Picker + info ================= */
   function renderPicker(){
-    const grp = ch => ENZ.filter(e => e.ch === ch).map(e => `<button class="ebtn" data-id="${e.id}" aria-pressed="${e === st.e}"><b>${e.name}</b><span>${e.where}</span></button>`).join("");
-    $("picker").innerHTML = `<h2>Chapter 5: metabolism enzymes</h2><div class="pickrow">${grp(5)}</div><h2>Chapter 8: DNA and gene expression enzymes</h2><div class="pickrow">${grp(8)}</div>`;
-    $("picker").querySelectorAll(".ebtn").forEach(b => b.addEventListener("click", () => choose(ENZ.find(e => e.id === b.dataset.id))));
+    const card = e => `<button class="ecard" style="--c1:${e.c1};--c2:${e.c2}" data-id="${e.id}" ${started && e === st.e ? 'aria-current="true"' : ""}><i>Ch. ${e.ch}</i><span class="em" aria-hidden="true">${e.em}</span><b>${e.name}</b><span>${e.where}</span></button>`;
+    const all = ENZ.map(card).join("");
+    $("pickTop").innerHTML = all; $("pickBottom").innerHTML = all;
+    document.querySelectorAll(".ecard").forEach(b => b.addEventListener("click", () => { choose(ENZ.find(e => e.id === b.dataset.id)); $("lab").scrollIntoView({behavior:"smooth", block:"start"}); }));
   }
   function renderInfo(){
     const e = st.e;
@@ -228,9 +249,13 @@
   }
   $("gvar").addEventListener("change", e => setGvar(e.target.value));
   const best = () => ({T:st.e.Topt, pH:st.e.pH, salt:st.e.salt, P:1, E:4, S:20, Cf:6, Ic:0, In:0});
+  let started = false;
   function choose(e){
+    started = true; $("landing").hidden = true; $("lab").hidden = false;
+    try { history.replaceState(null, "", "#" + e.id); } catch (err) {}
     st.e = e; Object.assign(st, best()); st.made = 0; prods.length = 0;
     renderPicker(); renderInfo(); renderSliders();
+    $("labTitle").textContent = e.em + " " + e.name;
   }
   function setCount(k, v){
     const s = SL.find(x => x.k === k); st[k] = clamp(v, s.min, s.max);
@@ -243,7 +268,7 @@
   const rnd = (a, b) => a + Math.random() * (b - a);
   const mk = big => ({x:rnd(CH.x0 + 50, CH.x1 - 50), y:rnd(CH.y0 + 40, CH.y1 - 40), a:rnd(0, 6.28), big});
   const pool = {E:[], S:[], Cf:[], Ic:[], In:[]};
-  const MAX = {E:10, S:60, Cf:20, Ic:20, In:20};
+  const MAX = {E:10, S:150, Cf:20, Ic:20, In:20};
   Object.keys(pool).forEach(k => { for (let i = 0; i < MAX[k]; i++) pool[k].push(mk(k === "E")); });
   const prods = [];
   let emitAcc = 0;
@@ -325,7 +350,9 @@
     const dragged = (k, i) => drag && !drag.add && drag.moved && drag.k === k && drag.i === i;
     const pos = (k, i) => dragged(k, i) ? [drag.x, drag.y] : [pool[k][i].x, pool[k][i].y];
     const draw = {S:(x, y) => shield(x, y, .42, "#2f9e63", "#1b6b43"), Ic:(x, y) => shield(x, y, .42, "#8e5bd0", "#5b3fb0"), In:(x, y) => hexN(x, y, 8), Cf:(x, y) => cofDot(x, y, cof().s)};
-    ["Cf", "In", "Ic", "S"].forEach(k => { for (let i = 0; i < Math.max(0, free[k]); i++){ const [x, y] = pos(k, i); o += `<g data-p="${k}:${i}" style="cursor:grab"><circle cx="${f1(x)}" cy="${f1(y)}" r="15" fill="#fff" opacity="0"/>${draw[k](x, y)}</g>`; } });
+    const SHOW = {S:60, Cf:20, Ic:20, In:20};
+    if (free.S > SHOW.S) o += tx(CH.x1 - 14, CH.y0 + 20, `+${free.S - SHOW.S} more substrate`, 11, "#1b7f4e", "end");
+    ["Cf", "In", "Ic", "S"].forEach(k => { for (let i = 0; i < Math.min(SHOW[k], Math.max(0, free[k])); i++){ const [x, y] = pos(k, i); o += `<g data-p="${k}:${i}" style="cursor:grab"><circle cx="${f1(x)}" cy="${f1(y)}" r="15" fill="#fff" opacity="0"/>${draw[k](x, y)}</g>`; } });
     /* enzymes in their current states */
     states.forEach((s, i) => {
       const [x, y] = pos("E", i); let g = "";
@@ -385,12 +412,14 @@
     o += `<line x1="${f1(xm)}" y1="${f1(yR)}" x2="${f1(xm)}" y2="${f1(yOf(Ea) + 4)}" stroke="#1b7f4e" stroke-width="2"/>` + tx(xm, yOf(Ea) - 10, `with enzyme: Eₐ ≈ ${Math.round(Ea)}`, 11, "#1b7f4e");
     if (xe < X1 - 40) o += tx(xe + 6, yP - 8, "done ✓", 11, "#1b7f4e", "start");
     o += tx(X0 + 6, yR + 16, "reactants", 10, "#5a6376", "start") + tx(X1, yP + 16, "products", 10, "#5a6376", "end");
+    o += tx(X1, top + 6, e.dG < -2 ? `ΔG ≈ ${e.dG} kJ/mol: exergonic (releases energy)` : e.dG > 2 ? `ΔG ≈ +${e.dG} kJ/mol: endergonic (absorbs energy)` : "ΔG ≈ 0: near equilibrium", 10, e.dG < -2 ? "#b83a34" : e.dG > 2 ? "#1b7f4e" : "#5a6376", "end");
     /* a dot runs along the green path; faster reaction = faster dot */
     const per = 4, u = (simT % per) / per, k = u * (X1 - X0) / Math.max(1, xe - X0), S2 = segs(Ea, X0, xe);
     const [dx, dy] = k >= 1 ? [X0 + u * (X1 - X0), yP] : k < .5 ? bz(S2[0], k * 2) : bz(S2[1], (k - .5) * 2);
     o += `<circle cx="${f1(dx)}" cy="${f1(dy - 7)}" r="6" fill="#1b7f4e"/>`;
     $("g1").innerHTML = o;
-    $("g1cap").textContent = st.E === 0 ? "With no enzyme, only the high, slow, dashed path is available." : m.work < .15 ? "Most of the enzyme isn't working, so the reaction barely gets the enzyme's help: the green hump is almost as high as the dashed one." : "Green: with this enzyme. The working enzyme lowers the activation energy, so more reactions happen and they finish sooner (the curve gets narrower).";
+    const noCat = effEa(m) === e.Eu;
+    $("g1cap").textContent = st.E === 0 ? "With no enzyme, only the high, slow, dashed path is available." : noCat ? "No enzyme is working right now (denatured, missing its cofactor, fully inhibited, or no substrate), so only the high uncatalyzed path is left." : m.work < .5 ? "Each working enzyme still lowers Eₐ by the same amount, but fewer enzymes are working, so fewer reactions happen and the whole thing takes longer (the curve stretches out)." : "Green: with this enzyme. The working enzyme lowers the activation energy, so the reaction happens much faster (the curve gets narrower and finishes sooner).";
   }
 
   /* graph 2: turnover number while sweeping one variable, everything else held where it is */
@@ -404,13 +433,23 @@
     o += `<text x="16" y="${(top + Y0) / 2}" font-size="11" font-weight="700" fill="#343b4a" text-anchor="middle" transform="rotate(-90 16 ${(top + Y0) / 2})">turnover number (/s)</text>`;
     [s.min, (s.min + s.max) / 2, s.max].forEach(v => { o += tx(xOf(v), Y0 + 16, s.fmt(+(+v).toFixed(s.step < 1 ? 1 : 0)), 10, "#5a6376"); });
     o += tx((X0 + X1) / 2, Y0 + 34, (typeof s.lab === "function" ? s.lab() : s.lab), 12);
+    if ((st.Ic > 0 || st.In > 0) && s.k !== "Ic" && s.k !== "In"){
+      let d0 = ""; for (let i = 0; i <= 80; i++){ const v = s.min + (s.max - s.min) * i / 80, mm = model({...st, Ic:0, In:0, [s.k]:v}); d0 += (i ? " L" : "M") + f1(xOf(v)) + "," + f1(yOf(mm.turn)); }
+      o += `<path d="${d0}" fill="none" stroke="#9aa3b5" stroke-width="2.5" stroke-dasharray="6 5"/>` + tx(X1, top + 10, "dashed = no inhibitor", 10, "#8a93a3", "end");
+    }
     o += `<path d="${d}" fill="none" stroke="#3f4cc0" stroke-width="3.5"/>`;
     o += `<circle cx="${f1(xOf(st[s.k]))}" cy="${f1(yOf(m.turn))}" r="7" fill="#f2b134" stroke="#fff" stroke-width="2.5"/>` + tx(xOf(st[s.k]) + (xOf(st[s.k]) > 380 ? -10 : 10), yOf(m.turn) - 10, "you are here", 10, "#8a5a00", xOf(st[s.k]) > 380 ? "end" : "start");
     $("g2").innerHTML = o;
-    $("g2cap").textContent = G2NOTE[s.k];
+    let cap = G2NOTE[s.k];
+    if (s.k === "S" && st.Ic > 0 && st.In === 0) cap = "Competitive inhibitor: the curve is shifted right but climbs toward the SAME maximum. Pile on enough substrate and it outcompetes the inhibitor.";
+    else if (s.k === "S" && st.In > 0 && st.Ic === 0) cap = "Noncompetitive inhibitor: the whole curve is squashed down to a LOWER maximum. No amount of substrate brings it back.";
+    else if (s.k === "S" && st.In > 0 && st.Ic > 0) cap = "Both inhibitors: the competitive one shifts the curve right (more substrate needed); the noncompetitive one lowers the maximum.";
+    $("g2cap").textContent = cap;
   }
 
-  renderPicker(); renderInfo(); renderSliders();
+  renderPicker();
+  const fromHash = ENZ.find(e => "#" + e.id === location.hash);
+  if (fromHash) choose(fromHash); else { renderInfo(); renderSliders(); }
   requestAnimationFrame(frame);
 })();
 </script>
