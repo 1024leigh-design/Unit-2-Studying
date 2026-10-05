@@ -170,6 +170,7 @@
     mutations:{name:"Mutations", href:"mutations.html", desc:"Silent, missense, nonsense, frameshift", icon:"mut", col:"#e8744f", wide:true},
     editor:{name:"DNA Editor", href:"mutations.html#editor", desc:"Mutate a gene, watch the protein change", icon:"mut", col:"#e8744f"},
     splice:{name:"Splice Lab", href:"posttranscriptional-control.html#splice", desc:"Be the snRNP, cut out introns", icon:"post", col:"#8e5bd0"},
+    enzlab:{name:"Enzyme Lab", href:"enzyme-lab.html", desc:"Real enzymes, inhibitors, and every condition", icon:"enz", col:"#6b4bb8"},
     repgame:{name:"Replication Race", href:"dna-replication.html#game", desc:"Pair A with T and G with C against the clock", icon:"rep", col:"#0f766e", game:"bio112-rep-race"},
     txgame:{name:"Transcription Race", href:"transcription.html#game", desc:"Type the mRNA for a DNA template, fast", icon:"tx", col:"#3f4cc0", game:"bio112-elong-scores"},
     tlgame:{name:"Translation Race", href:"translation.html#game", desc:"Match tRNAs to codons and build the protein", icon:"tl", col:"#1b7f4e", game:"bio112-tl-race"},
@@ -546,7 +547,7 @@
   };
   (function(){
     const CH8 = ["replication","pretx","transcription","posttx","translation","mutations"];
-    const LABS_DIR = ["build","lab","splice","editor"];
+    const LABS_DIR = ["build","lab","splice","editor","enzlab"];
     const GAMES = ["repgame","txgame","tlgame","splicegame","editgame"];
     const GAMES_HTML = `<h2>Games</h2><p class="moddesc">Race the clock! Every round is a brand-new sequence, and your best times are saved on this browser.</p><div class="grid">${GAMES.map(k => tileHTML(k, {noWide:true})).join("")}</div>`;
     /* Chapter 5 modules appear here as each one is revised. Still to come: enzymes, glycolysis, krebs, ferment
@@ -578,6 +579,9 @@
       <div class="modpanel" data-panel="ch5" hidden>
         <div class="grid">${CH5.map(t).join("")}</div>
         <p class="moddesc">Glucose to ATP, start to finish, plus the lab tests that confirm it.</p>
+        <h2>Practice labs</h2>
+        <p class="moddesc">Pick a real enzyme from Chapter 5 or 8 and push every condition: temperature, pH, salt, cofactors, and inhibitors.</p>
+        <div class="grid">${["enzlab"].map(t).join("")}</div>
       </div>`;
     el.querySelectorAll(".modtab").forEach(b => b.addEventListener("click", () => {
       el.querySelectorAll(".modtab").forEach(x => x.setAttribute("aria-selected", String(x === b)));
