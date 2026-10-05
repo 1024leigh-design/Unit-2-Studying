@@ -54,109 +54,132 @@
     cofactors:{title:"Five vitamins, one enzyme complex", html:`<p>The α-ketoglutarate dehydrogenase complex (and its close cousin, pyruvate dehydrogenase, from the link reaction) needs five vitamin-derived cofactors: thiamine pyrophosphate (B1), FAD (B2), NAD⁺ (B3), coenzyme A (B5), and lipoic acid. It's one of the clearest examples in the body of how B-vitamin deficiencies can directly stall energy metabolism.</p>`},
     complex2:{title:"One enzyme, two pathways", html:`<p>Succinate dehydrogenase is the only Krebs cycle enzyme built directly into the inner mitochondrial membrane instead of floating free in the matrix. That's not a coincidence — it IS Complex II of the electron transport chain, handing FADH₂'s electrons straight into the chain with no middleman.</p>`},
     oaabranch:{title:"Oxaloacetate's other job", html:`<p>Oxaloacetate can be converted into the amino acid aspartate, and other Krebs cycle intermediates feed similar side reactions (α-ketoglutarate ↔ glutamate, for instance). This is one reason the Krebs cycle is sometimes called a metabolic hub, not just an energy pathway — it connects carbohydrate, fat, and amino acid metabolism.</p>`},
-    ketonebodies:{title:"Where do ketones fit in?", html:`<p>Ketone bodies aren't really an input to the Krebs cycle — they're more of an overflow valve. When oxaloacetate runs low (during fasting or a very low-carb diet) and acetyl-CoA keeps arriving from fatty acid breakdown, the excess acetyl-CoA gets converted into ketone bodies instead of entering the cycle. Other tissues can later convert ketones back into acetyl-CoA and use them for fuel.</p>`}
+    ketonebodies:{title:"Fat, ketones, and the keto diet", html:`<p><b>Beta-oxidation</b> chops a fatty acid into 2-carbon pieces, and each one becomes acetyl-CoA, the same molecule that pyruvate makes. One 16-carbon fatty acid yields 8 acetyl-CoA, which is why fat stores so much energy.</p><p><b>Ketone bodies</b> are an overflow valve. When oxaloacetate runs low (during fasting or a very low-carb diet) and acetyl-CoA keeps pouring in from fat breakdown, the liver turns the extra acetyl-CoA into ketone bodies instead of sending it into the cycle. The brain, heart and muscles can turn ketones back into acetyl-CoA and burn them.</p><p><b>The keto diet</b> uses exactly this switch. By eating very little carbohydrate, glycolysis supplies less pyruvate (and less oxaloacetate), so the body leans on fat and makes ketones. That state is called <i>ketosis</i>, and it's what ketone breath and urine test strips detect. Uncontrolled, very high ketone levels (as in untreated type 1 diabetes) make the blood too acidic: diabetic ketoacidosis.</p>`}
   };
 
   /* ================= Board layout: a circular cycle ================= */
-  const CX = 300, YC = 560, RAD = 190;
+  const CX = 305, YC = 600, RAD = 200;
   const NODES = [
-    {name:"Citrate · 6C", full:"Citrate (6C)"},
-    {name:"Isocitrate · 6C", full:"Isocitrate (6C)"},
-    {name:"α-KG · 5C", full:"α-Ketoglutarate (5C)"},
-    {name:"Succinyl-CoA · 4C", full:"Succinyl-CoA (4C)"},
-    {name:"Succinate · 4C", full:"Succinate (4C)"},
-    {name:"Fumarate · 4C", full:"Fumarate (4C)"},
-    {name:"Malate · 4C", full:"Malate (4C)"},
-    {name:"OAA · 4C", full:"Oxaloacetate (4C)"}
+    {basic:"Citrate", adv:"Citrate"},
+    {basic:"C₆H₈O₇", adv:"Isocitrate"},
+    {basic:"C₅H₆O₅", adv:"α-Ketoglutarate"},
+    {basic:"C₄–S-CoA", adv:"Succinyl-CoA"},
+    {basic:"C₄H₆O₄", adv:"Succinate"},
+    {basic:"C₄H₄O₄", adv:"Fumarate"},
+    {basic:"C₄H₆O₅", adv:"Malate"},
+    {basic:"Oxaloacetate", adv:"Oxaloacetate"}
   ];
   const ENZ = ["Citrate synthase", "Aconitase", "Isocitrate dehydrogenase", "α-KG dehydrogenase", "Succinyl-CoA synthetase", "Succinate dehydrogenase", "Fumarase", "Malate dehydrogenase"];
-  const nodePos = i => { const a = (-90 + i * 45) * Math.PI / 180; return [CX + RAD * Math.cos(a), YC + RAD * Math.sin(a)]; };
-  const NP = NODES.map((_, i) => nodePos(i));
+  const rad = d => d * Math.PI / 180;
+  const nodeAng = i => -90 + i * 45;
+  const polar = (deg, r) => [CX + r * Math.cos(rad(deg)), YC + r * Math.sin(rad(deg))];
+  const NP = NODES.map((_, i) => polar(nodeAng(i), RAD));
+  /* an arrow that follows the ring from one intermediate to the next, stopping short of each pill */
+  const gapAt = i => 7 + 10 * Math.abs(Math.sin(rad(nodeAng(i))));
   const arcArrow = (i0, i1, o) => {
-    /* endpoints offset to RAD+20 so arrows clear the pill labels */
-    const a0 = (-90 + i0 * 45) * Math.PI / 180, a1 = (-90 + i1 * 45) * Math.PI / 180;
-    const x0 = CX + (RAD + 20) * Math.cos(a0), y0 = YC + (RAD + 20) * Math.sin(a0);
-    const x1 = CX + (RAD + 20) * Math.cos(a1), y1 = YC + (RAD + 20) * Math.sin(a1);
-    const midA = (-90 + (i0 + .5) * 45) * Math.PI / 180;
-    const cx = CX + (RAD + 58) * Math.cos(midA), cy = YC + (RAD + 58) * Math.sin(midA);
-    const a = Math.atan2(y1 - cy, x1 - cx), h = 10;
-    return A.op(o === undefined ? 1 : o, `<path d="M${f1(x0)},${f1(y0)} Q${f1(cx)},${f1(cy)} ${f1(x1)},${f1(y1)}" fill="none" stroke="#8a93a3" stroke-width="3"/><path d="M${f1(x1)},${f1(y1)} L${f1(x1 - h * Math.cos(a - .45))},${f1(y1 - h * Math.sin(a - .45))} L${f1(x1 - h * Math.cos(a + .45))},${f1(y1 - h * Math.sin(a + .45))} Z" fill="#8a93a3"/>`);
+    const a0 = nodeAng(i0) + gapAt(i0), a1 = nodeAng(i0) + 45 - gapAt(i1);
+    const [x0, y0] = polar(a0, RAD), [x1, y1] = polar(a1, RAD), t = rad(a1), h = 10;
+    const dx = -Math.sin(t), dy = Math.cos(t), ax = Math.atan2(dy, dx);
+    return A.op(o === undefined ? 1 : o, `<path d="M${f1(x0)},${f1(y0)} A${RAD},${RAD} 0 0 1 ${f1(x1)},${f1(y1)}" fill="none" stroke="#8a93a3" stroke-width="3.5"/><path d="M${f1(x1 + dx * 3)},${f1(y1 + dy * 3)} L${f1(x1 - h * Math.cos(ax - .45))},${f1(y1 - h * Math.sin(ax - .45))} L${f1(x1 - h * Math.cos(ax + .45))},${f1(y1 - h * Math.sin(ax + .45))} Z" fill="#8a93a3"/>`);
   };
   /* where a token starts (or finishes) its trip, just outside the ring, along a node's own radial line */
-  const radialPt = (i, r) => { const [nx, ny] = NP[i], a = Math.atan2(ny - YC, nx - CX); return [CX + r * Math.cos(a), YC + r * Math.sin(a)]; };
+  const radialPt = (i, r) => polar(nodeAng(i), r);
   const tokStart = i => radialPt(i, RAD + 105);
-  const enzymePt = i0 => { const midA = (-90 + (i0 + .5) * 45) * Math.PI / 180; return [CX + (RAD + 62) * Math.cos(midA), YC + (RAD + 62) * Math.sin(midA)]; };
+
+  /* ---- accurate little skeletal molecules (carbon = gray, oxygen = red, sulfur = yellow) ---- */
+  const MOLS = {
+    pyr:{n:3, coo:[2], ket:[1]}, acetyl:{n:2, ket:[1], s:1},
+    cit:{n:5, coo:[0, 4], branch:2, ohIn:2}, iso:{n:5, coo:[0, 4], branch:2, oh:[3]},
+    akg:{n:5, coo:[0, 4], ket:[3]}, scoa:{n:4, coo:[0], ket:[3], s:3},
+    suc:{n:4, coo:[0, 3]}, fum:{n:4, coo:[0, 3], dbl:1}, mal:{n:4, coo:[0, 3], oh:[1]}, oaa:{n:4, coo:[0, 3], ket:[1]}
+  };
+  const NODEMOL = ["cit", "iso", "akg", "scoa", "suc", "fum", "mal", "oaa"];
+  function mol(key, x, y, sc, op){
+    const m = MOLS[key], n = m.n, C0 = Array.from({length:n}, (_, i) => [i * 24 - (n - 1) * 12, i % 2 ? -9 : 9]);
+    const out = i => i % 2 ? -1 : 1, bonds = [], atoms = [];
+    const bond = (a, b, dbl) => bonds.push([a, b, dbl]);
+    const O = (p, from, dbl) => { atoms.push([p[0], p[1], "O"]); bond(from, p, dbl); };
+    for (let i = 0; i < n - 1; i++) bond(C0[i], C0[i + 1], m.dbl === i);
+    (m.coo || []).forEach(i => { const [cx, cy] = C0[i], s = out(i), side = i === 0 ? -1 : 1; O([cx + side * 6, cy + s * 17], C0[i], true); O([cx + side * 19, cy - s * 3], C0[i]); });
+    (m.ket || []).forEach(i => { const [cx, cy] = C0[i]; O([cx, cy + out(i) * 17], C0[i], true); });
+    (m.oh || []).forEach(i => { const [cx, cy] = C0[i]; O([cx, cy + out(i) * 17], C0[i]); });
+    if (m.ohIn !== undefined){ const [cx, cy] = C0[m.ohIn]; O([cx, cy - out(m.ohIn) * 16], C0[m.ohIn]); }
+    if (m.branch !== undefined){ const [cx, cy] = C0[m.branch], s = out(m.branch), b = [cx, cy + s * 20]; atoms.push([b[0], b[1], "C"]); bond(C0[m.branch], b); O([b[0] - 13, b[1] + s * 11], b, true); O([b[0] + 13, b[1] + s * 11], b); }
+    let sTag = "";
+    if (m.s !== undefined){ const [cx, cy] = C0[m.s], sp = [cx + 19, cy + 5]; atoms.push([sp[0], sp[1], "S"]); bond(C0[m.s], sp); sTag = `<rect x="${f1(sp[0] + 8)}" y="${f1(sp[1] - 8)}" width="30" height="16" rx="4" fill="#fde7d3" stroke="#c4532f" stroke-width="1.2"/><text x="${f1(sp[0] + 23)}" y="${f1(sp[1] + 4)}" font-size="9" font-weight="700" fill="#8a2621" text-anchor="middle">CoA</text>`; }
+    C0.forEach(p => atoms.push([p[0], p[1], "C"]));
+    let o = bonds.map(([a, b, d]) => { if (!d) return `<line x1="${f1(a[0])}" y1="${f1(a[1])}" x2="${f1(b[0])}" y2="${f1(b[1])}" stroke="#8a93a3" stroke-width="2.6"/>`;
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, nx = -(b[1] - a[1]) / L * 2.2, ny = (b[0] - a[0]) / L * 2.2;
+      return [1, -1].map(k => `<line x1="${f1(a[0] + k * nx)}" y1="${f1(a[1] + k * ny)}" x2="${f1(b[0] + k * nx)}" y2="${f1(b[1] + k * ny)}" stroke="#8a93a3" stroke-width="2"/>`).join(""); }).join("");
+    o += atoms.map(([ax, ay, el]) => el === "C" ? `<circle cx="${f1(ax)}" cy="${f1(ay)}" r="6.5" fill="#4a5263"/>` : el === "O" ? `<circle cx="${f1(ax)}" cy="${f1(ay)}" r="5.5" fill="#d9443a"/>` : `<circle cx="${f1(ax)}" cy="${f1(ay)}" r="6.5" fill="#d8c13a" stroke="#8a7a10" stroke-width="1"/>`).join("") + sTag;
+    return A.op(op === undefined ? 1 : op, `<g transform="translate(${f1(x)},${f1(y)}) scale(${sc})">${o}</g>`);
+  }
+
+  /* ---- what goes in and comes out at each step, drawn OUTSIDE the ring ---- */
+  const COL = {"NAD⁺":"#2c6fd0", "NADH":"#1b7f4e", "FAD":"#b07a10", "FADH₂":"#8a5a00", "ADP + Pᵢ":"#6b4bb8", "ATP":"#5b3fb0", "CO₂":RED, "H₂O":"#2f7fbf", "acetyl-CoA":"#9a6212", "CoA":"#9a6212", "CoA-SH":"#9a6212"};
+  const anchorFor = deg => { const c = Math.cos(rad(deg)); return c > .3 ? "start" : c < -.3 ? "end" : "middle"; };
+  const rich = (x, y, parts, anchor) => `<text x="${f1(x)}" y="${f1(y)}" font-size="13" font-weight="700" text-anchor="${anchor}">${parts.map(q => `<tspan fill="${COL[q] || "#5a6376"}">${q}</tspan>`).join(`<tspan fill="#5a6376"> + </tspan>`)}</text>`;
+  function exch(i0, ins, outs, o){
+    const am = nodeAng(i0) + 22.5, a1 = am - 11, a2 = am + 11;
+    const [xi, yi] = polar(a1, RAD + 36), [xc, yc] = polar(am, RAD - 14), [xo, yo] = polar(a2, RAD + 36);
+    const t = Math.atan2(yo - (yc + yo) / 2, xo - (xc + xo) / 2), h = 9;
+    let s = `<path d="M${f1(xi)},${f1(yi)} Q${f1(xc)},${f1(yc)} ${f1(xo)},${f1(yo)}" fill="none" stroke="#5a6376" stroke-width="2.2"/><path d="M${f1(xo)},${f1(yo)} L${f1(xo - h * Math.cos(t - .45))},${f1(yo - h * Math.sin(t - .45))} L${f1(xo - h * Math.cos(t + .45))},${f1(yo - h * Math.sin(t + .45))} Z" fill="#5a6376"/>`;
+    const [lx, ly] = polar(a1 - 2, RAD + 52), [mx, my] = polar(a2 + 2, RAD + 52);
+    s += rich(lx, ly + 5, ins, anchorFor(a1 - 2)) + rich(mx, my + 5, outs, anchorFor(a2 + 2));
+    return A.op(o, s);
+  }
+  function inArrow(i0, lab, o){
+    const am = nodeAng(i0) + 22.5, [x0, y0] = polar(am, RAD + 46), [x1, y1] = polar(am, RAD + 8), [lx, ly] = polar(am, RAD + 62);
+    return A.op(o, A.arrow(x0, y0, x1, y1, COL[lab] || "#5a6376", 2.5) + lbl(lx, ly + 5, lab, COL[lab] || "#343b4a", 13, anchorFor(am)));
+  }
+  /* per step: [arc start node, draw(o)] — arc i0 runs from node i0 to node i0+1 */
+  const EXCH = {
+    0:o => exch(7, ["H₂O"], ["CoA"], o),
+    2:o => exch(1, ["NAD⁺"], ["NADH", "CO₂"], o),
+    3:o => exch(2, ["NAD⁺", "CoA"], ["NADH", "CO₂"], o),
+    4:o => exch(3, ["ADP + Pᵢ"], ["ATP", "CoA"], o),
+    5:o => exch(4, ["FAD"], ["FADH₂"], o),
+    6:o => inArrow(5, "H₂O", o),
+    7:o => exch(6, ["NAD⁺"], ["NADH"], o)
+  };
 
   function buildVariant(ADV){
-    const Y = {pyr:110, acetyl:230, tally:970, x2:1110};
-    Y.macro = ADV ? 1270 : 0;
-    Y.go = ADV ? 1540 : 1270;
-    const H = ADV ? 1730 : 1430;
-    /* sequential, non-colliding card-column positions for the 8 cycle steps (the circle's mirrored
-       geometry gives opposite nodes the same y, so cards must NOT be placed at the node's own y) */
-    const CARDY = [370, 440, 510, 580, 650, 720, 790, 860, 930, 1000];
-
-    /* Small carbon-chain sketch inside the ring for each molecule node */
-    const NCARB = [6, 6, 5, 4, 4, 4, 4, 4];
-    function molChain(nodeI, op) {
-      const nC = NCARB[nodeI];
-      const ang = (-90 + nodeI * 45) * Math.PI / 180;
-      const mx = CX + (RAD - 62) * Math.cos(ang), my = YC + (RAD - 62) * Math.sin(ang);
-      const perp = ang + Math.PI / 2;
-      const r = 4.5, gap = 11;
-      const pts = Array.from({length:nC}, (_, i) => [
-        mx + (i - (nC - 1) / 2) * gap * Math.cos(perp),
-        my + (i - (nC - 1) / 2) * gap * Math.sin(perp)
-      ]);
-      let s = "";
-      for (let i = 0; i < nC - 1; i++)
-        s += `<line x1="${f1(pts[i][0])}" y1="${f1(pts[i][1])}" x2="${f1(pts[i+1][0])}" y2="${f1(pts[i+1][1])}" stroke="#4a5263" stroke-width="2.5"/>`;
-      pts.forEach(p => {
-        s += `<circle cx="${f1(p[0])}" cy="${f1(p[1])}" r="${r}" fill="#4a5263"/>`;
-        s += `<text x="${f1(p[0])}" y="${f1(p[1]+3)}" font-size="6" font-weight="700" fill="#fff" text-anchor="middle">C</text>`;
-      });
-      return A.op(op === undefined ? 1 : op, s);
-    }
+    const Y = {pyr:110, acetyl:250};
+    Y.tally = ADV ? 1090 : 1000; Y.x2 = Y.tally + 150; Y.go = Y.x2 + 150;
+    const H = Y.go + 390;
+    /* one card position per cycle step, in a column beside the board */
+    const CARDY = [380, 450, 520, 590, 660, 730, 800, 870, Y.tally, Y.x2];
+    const molIn = i => polar(nodeAng(i), RAD - 74);
+    const molRot = i => { let r = nodeAng(i) + 90; while (r > 90) r -= 180; while (r < -90) r += 180; return r; };
 
     function draw(c){
       const {prog, idx, R} = c;
       const p = i => prog(i), e = i => ease(p(i));
       let o = "";
-      o += `<circle cx="${CX}" cy="${YC}" r="${RAD + 68}" fill="#fbf6ee"/>`;
-
-      /* Persistent CO₂ tally at ring center — appears after each decarboxylation */
-      const co2_1 = idx >= 4 ? ease(seg(p(4), .55, .85)) : 0;
-      const co2_2 = idx >= 5 ? ease(seg(p(5), .55, .85)) : 0;
-      if (co2_1 > 0) {
-        o += lbl(CX, YC - 44, "decarboxylation:", RED, 10);
-        o += A.op(co2_1, A.co2(co2_2 > .1 ? CX - 22 : CX, YC - 26) + lbl(co2_2 > .1 ? CX - 22 : CX, YC - 6, "CO₂ #1", RED, 8));
-        o += A.op(co2_2, A.co2(CX + 22, YC - 26) + lbl(CX + 22, YC - 6, "CO₂ #2", RED, 8));
-      }
-
+      o += `<circle cx="${CX}" cy="${YC}" r="${RAD + 26}" fill="#fbf6ee"/><circle cx="${CX}" cy="${YC}" r="${RAD}" fill="none" stroke="#ece4d6" stroke-width="2"/>`;
       o += lbl(CX, 40, `The ${R("matrix") === "?" ? "?" : "mitochondrial matrix"} (bacteria: the cytoplasm)`, "#5a6376", 13);
 
       /* step 0: pyruvate arrives */
       const g0 = e(0);
-      o += A.op(g0, A.carbons(CX, Y.pyr, 3, {r:9, gap:21}));
-      o += A.op(g0, lbl(CX, Y.pyr + 30, "Pyruvate (from glycolysis)", "#343b4a", 13));
+      o += mol("pyr", CX, Y.pyr, 1, g0) + A.op(g0, lbl(CX + 74, Y.pyr - 2, "Pyruvate (3C)", "#343b4a", 13, "start") + lbl(CX + 74, Y.pyr + 14, "from glycolysis", "#5a6376", 11, "start"));
+      if (ADV) o += A.op(g0, `<rect x="16" y="${Y.pyr - 24}" width="150" height="46" rx="12" fill="#eef0fd" stroke="#6b4bb8" stroke-width="1.5"/>` + lbl(91, Y.pyr - 4, "Amino acids", "#5b3fb0", 13) + lbl(91, Y.pyr + 13, "(e.g. alanine) − NH₂", "#5b3fb0", 10) + A.arrow(168, Y.pyr, CX - 52, Y.pyr, "#6b4bb8", 2.5));
 
-      /* step 1: the link reaction — pyruvate oxidation to acetyl-CoA */
+      /* step 1: the link reaction */
       const p1 = p(1), fly = ease(seg(p1, 0, .4)), grow = ease(seg(p1, .4, .75)), dep = ease(seg(p1, .75, 1));
       if (idx >= 1 && p1 > 0){
-        o += A.op(1 - grow, token("NAD", lerp(600, CX + 40, fly), Y.pyr));
-        const linkCO2fade = 1 - ease(seg(p1, .88, 1));
-        o += A.op(ease(seg(p1, .3, .6)) * linkCO2fade, A.co2(CX + 62, Y.pyr - 28) + lbl(CX + 62, Y.pyr - 46, "CO₂ lost!", RED, 11));
-        o += down2(CX, Y.pyr + 44, lerp(Y.pyr + 44, Y.acetyl - 26, grow), grow > .05 ? 1 : 0);
-        o += A.op(grow, A.carbons(CX, Y.acetyl, 2, {r:9, gap:21}));
-        o += A.op(grow, lbl(CX, Y.acetyl + 28, "Acetyl-CoA (2C)", "#343b4a", 13));
-        o += A.op(dep, token("NADH", lerp(CX + 60, CX + 220, dep), lerp(Y.acetyl, Y.acetyl + 40, dep)));
-        if (ADV) o += A.op(ease(seg(p1, .15, .5)), lbl(CX, Y.pyr - 26, "Pyruvate dehydrogenase", "#6b4bb8", 11));
+        o += A.op(1 - grow, token("NAD", lerp(560, CX + 70, fly), Y.pyr));
+        o += A.op(grow, A.arrow(CX, Y.pyr + 40, CX, Y.acetyl - 30, "#8a93a3", 3));
+        o += A.op(ease(seg(p1, .3, .7)), `<path d="M${CX + 46},${Y.pyr + 52} Q${CX - 6},${Y.pyr + 74} ${CX + 46},${Y.pyr + 96}" fill="none" stroke="#5a6376" stroke-width="2.2"/>` + A.arrow(CX + 34, Y.pyr + 92, CX + 48, Y.pyr + 97, "#5a6376", 2.2) + rich(CX + 52, Y.pyr + 56, ["NAD⁺", "CoA"], "start") + rich(CX + 52, Y.pyr + 101, ["NADH", "CO₂"], "start"));
+        o += mol("acetyl", CX - 10, Y.acetyl, 1, grow) + A.op(grow, lbl(CX, Y.acetyl + 34, "Acetyl-CoA (2C)", "#343b4a", 13));
+        if (ADV){
+          o += A.op(grow, lbl(CX - 10, Y.pyr + 78, "pyruvate dehydrogenase", "#6b4bb8", 11, "end"));
+          o += A.op(grow, `<rect x="16" y="${Y.acetyl - 26}" width="150" height="48" rx="12" fill="#fff6e0" stroke="#c98a0e" stroke-width="1.5"/>` + lbl(91, Y.acetyl - 6, "Fatty acids", "#8a5a00", 13) + lbl(91, Y.acetyl + 12, "β-oxidation (2C at a time)", "#8a5a00", 9.5) + A.arrow(168, Y.acetyl, CX - 66, Y.acetyl, "#c98a0e", 2.5));
+          o += A.op(grow, `<rect x="464" y="${Y.acetyl - 26}" width="150" height="48" rx="12" fill="#fff" stroke="#c98a0e" stroke-width="1.5" stroke-dasharray="5 4"/>` + lbl(539, Y.acetyl - 6, "Ketone bodies", "#8a5a00", 13) + lbl(539, Y.acetyl + 12, "when OAA runs low", "#8a5a00", 10) + A.arrow(CX + 62, Y.acetyl, 460, Y.acetyl, "#c98a0e", 2.5, "5 4"));
+        }
       }
-      function down2(x, y1, y2, oo){ return A.op(oo === undefined ? 1 : oo, A.arrow(x, y1, x, y2, "#8a93a3", 3)); }
 
-      /* steps 2-9: the eight reactions around the cycle. Each shows what's invested (arriving) AND
-         what's produced (departing): NAD+/FAD/ADP arrive, NADH/FADH2/ATP/CO2 leave. */
-      const cyc = (nodeI, stepI, kind, co2After, prodKind, prodLabel) => {
+      /* steps 2-9: the eight reactions around the cycle */
+      const cyc = (nodeI, stepI, kind, prodKind) => {
         const pi = p(stepI);
         if (idx < stepI) return;
         const prevI = (nodeI + 7) % 8;
@@ -164,76 +187,71 @@
         o += arcArrow(prevI, nodeI, grow2 > .03 ? 1 : .3);
         const [nx, ny] = NP[nodeI];
         if (kind && pi > 0){
-          const drift = ease(seg(pi, 0, .45));
-          const [sx, sy] = tokStart(nodeI);
+          const drift = ease(seg(pi, 0, .45)), [sx, sy] = tokStart(nodeI);
           o += A.op(1 - grow2, token(kind, lerp(sx, nx, drift), lerp(sy, ny, drift)));
         }
-        o += A.op(grow2, A.pill(nx, ny, NODES[nodeI].name, nodeI === 0 || nodeI === 7 ? GOLD : BLUE, 1, 12));
-        o += molChain(nodeI, grow2);
-        if (ADV){
-          const [ex, ey] = enzymePt(prevI);
-          o += A.op(grow2, lbl(clamp(ex, 95, 905), ey, ENZ[nodeI], "#6b4bb8", 11));
-        }
-        if (co2After){
-          const q = ease(seg(pi, .45, .72)), fade = 1 - ease(seg(pi, .76, 1));
-          const aa = Math.atan2(ny - YC, nx - CX);
-          o += A.op(q * fade, A.co2(nx + 30 * Math.cos(aa), ny + 30 * Math.sin(aa) - 8) + lbl(nx + 30 * Math.cos(aa), ny + 30 * Math.sin(aa) - 26, "CO₂ lost!", RED, 10));
-        }
-        if (prodKind && dep2 > 0){
-          const [tx, ty] = tokStart(nodeI);
-          const px = lerp(nx, tx, dep2), py = lerp(ny, ty, dep2);
-          o += A.op(dep2, token(prodKind, px, py));
-        }
+        if (prodKind && dep2 > 0 && dep2 < 1){ const [tx, ty] = tokStart(nodeI); o += A.op(1 - dep2, token(prodKind, lerp(nx, tx, dep2), lerp(ny, ty, dep2))); }
+        if (EXCH[nodeI]) o += EXCH[nodeI](dep2 > 0 ? dep2 : (kind ? 0 : grow2));
+        const [mx, my] = molIn(nodeI);
+        o += `<g transform="rotate(${f1(molRot(nodeI))} ${f1(mx)} ${f1(my)})">${mol(NODEMOL[nodeI], mx, my, .6, grow2)}</g>`;
+        o += A.op(grow2, A.pill(nx, ny, ADV ? NODES[nodeI].adv : NODES[nodeI].basic, nodeI === 0 || nodeI === 7 ? GOLD : BLUE, 1, 12));
+        if (ADV){ const [bx, by] = polar(nodeAng(prevI) + 22.5, RAD); o += A.op(grow2, `<circle cx="${f1(bx)}" cy="${f1(by)}" r="10" fill="#6b4bb8" stroke="#fff" stroke-width="2"/>` + lbl(bx, by + 4, nodeI === 0 ? 1 : nodeI + 1, "#fff", 11)); }
       };
-      cyc(0, 2, null, false);
-      cyc(1, 3, null, false);
-      cyc(2, 4, "NAD", true, "NADH", "+ NADH");
-      cyc(3, 5, "NAD", true, "NADH", "+ NADH");
-      cyc(4, 6, "ADP", false, "ATP", "+ ATP");
-      cyc(5, 7, "FAD", false, "FADH2", "+ FADH₂");
-      cyc(6, 8, "H2O", false, null, "");
-      cyc(7, 9, "NAD", false, "NADH", "+ NADH");
+      /* acetyl-CoA drops into the top of the cycle */
+      if (idx >= 2 && p(2) > 0){ const [lx, ly] = polar(nodeAng(7) + 22.5, RAD + 10); o += A.op(ease(seg(p(2), 0, .4)), A.arrow(CX - 30, Y.acetyl + 46, lx + 6, ly - 8, "#9a6212", 2.5, "6 5") + lbl(CX - 40, Y.acetyl + 78, "acetyl-CoA joins", "#9a6212", 11, "end")); }
+      cyc(0, 2, null, null);
+      cyc(1, 3, null, null);
+      cyc(2, 4, "NAD", "NADH");
+      cyc(3, 5, "NAD", "NADH");
+      cyc(4, 6, "ADP", "ATP");
+      cyc(5, 7, "FAD", "FADH2");
+      cyc(6, 8, "H2O", null);
+      cyc(7, 9, "NAD", "NADH");
+
+      /* the middle: what one turn does, once the loop is closed */
+      if (idx >= 9 && p(9) > .6){
+        const q = ease(seg(p(9), .6, 1));
+        o += A.op(q, lbl(CX, YC - 12, ADV ? "Citric acid cycle" : "Krebs cycle", "#343b4a", 17) + lbl(CX, YC + 10, "2 C in (acetyl) → 2 CO₂ out", RED, 12));
+      }
+      /* advanced: amino-acid side doors and the enzyme key */
+      if (ADV){
+        if (idx >= 4 && p(4) > .7){ const [ax, ay] = NP[2]; o += A.op(ease(seg(p(4), .7, 1)), lbl(ax + 64, ay + 13, "⇄ glutamate", "#6b4bb8", 12, "start")); }
+        if (idx >= 9 && p(9) > .7){
+          const q = ease(seg(p(9), .7, 1)), [ox, oy] = NP[7];
+          o += A.op(q, `<rect x="8" y="${f1(oy - 104)}" width="104" height="46" rx="12" fill="#eef0fd" stroke="#6b4bb8" stroke-width="1.5"/>` + lbl(60, oy - 84, "Aspartate", "#5b3fb0", 13) + lbl(60, oy - 67, "→ proteins", "#5b3fb0", 11) + A.arrow(ox - 34, oy - 14, 84, oy - 56, "#6b4bb8", 2.5));
+        }
+        const ky = YC + RAD + 110;
+        if (idx >= 9 && p(9) > .5){
+          const q = ease(seg(p(9), .5, 1));
+          o += A.op(q, `<rect x="20" y="${ky - 26}" width="590" height="${ENZ.length / 2 * 26 + 30}" rx="14" fill="#f6f2fd" stroke="#d8ccf2"/>` + lbl(36, ky - 6, "Enzymes (numbered on the ring)", "#5b3fb0", 12, "start"));
+          ENZ.forEach((n, i) => { const x = 36 + (i % 2) * 290, y = ky + 18 + Math.floor(i / 2) * 26; o += A.op(q, `<circle cx="${x + 9}" cy="${y - 4}" r="9" fill="#6b4bb8"/>` + lbl(x + 9, y, i + 1, "#fff", 10) + lbl(x + 26, y, n, "#343b4a", 12, "start")); });
+        }
+      }
 
       /* net tally for one turn */
       const p10 = p(10);
       if (idx >= 10 && p10 > 0){
-        const r = k => ease(seg(p10, k * .2, k * .2 + .3));
-        const by = Y.tally;
-        o += `<rect x="${CX - 250}" y="${by - 40}" width="500" height="${f1(lerp(40, 130, ease(seg(p10, 0, .2))))}" rx="18" fill="#fff" stroke="${GREEN}" stroke-width="2.5"/>`;
-        o += A.op(r(0), lbl(CX - 220, by, "One turn of the cycle makes:", "#343b4a", 14, "start"));
-        o += A.op(r(1), lbl(CX - 220, by + 30, "3 NADH · 1 FADH₂ · 1 ATP · 2 CO₂", GREEN, 15, "start"));
-        o += A.op(r(2), lbl(CX - 220, by + 58, "(plus 1 NADH + 1 CO₂ already made getting pyruvate here)", "#5a6376", 12, "start"));
+        const r = k => ease(seg(p10, k * .2, k * .2 + .3)), by = Y.tally;
+        o += `<rect x="${CX - 280}" y="${by - 40}" width="560" height="${f1(lerp(40, 130, ease(seg(p10, 0, .2))))}" rx="18" fill="#fff" stroke="${GREEN}" stroke-width="2.5"/>`;
+        o += A.op(r(0), lbl(CX - 250, by, "One turn of the cycle makes:", "#343b4a", 14, "start"));
+        o += A.op(r(1), lbl(CX - 250, by + 30, "3 NADH · 1 FADH₂ · 1 ATP · 2 CO₂", GREEN, 16, "start"));
+        o += A.op(r(2), lbl(CX - 250, by + 58, "(plus 1 NADH + 1 CO₂ from the link reaction)", "#5a6376", 12, "start"));
       }
-      /* ×2 per glucose */
       const p11 = p(11);
       if (idx >= 11 && p11 > 0){
         const r = ease(seg(p11, .1, .6));
-        o += A.op(r, `<rect x="${CX - 250}" y="${Y.x2 - 40}" width="500" height="120" rx="18" fill="#fff" stroke="${GOLD}" stroke-width="2.5"/>`);
-        o += A.op(r, lbl(CX - 220, Y.x2 - 10, "2 pyruvate per glucose → cycle runs twice:", "#343b4a", 14, "start"));
-        o += A.op(r, lbl(CX - 220, Y.x2 + 20, "8 NADH · 2 FADH₂ · 2 ATP · 6 CO₂ total", GOLD, 15, "start"));
-        o += A.op(r, lbl(CX - 220, Y.x2 + 48, "(link reaction + two turns of the cycle, per glucose)", "#5a6376", 12, "start"));
-      }
-      /* advanced only: other fuels joining the cycle */
-      if (ADV){
-        const p12 = p(12);
-        if (idx >= 12 && p12 > 0){
-          const a = ease(seg(p12, 0, .5)), b = ease(seg(p12, .3, .8));
-          o += A.op(a, `<rect x="${CX - 250}" y="${Y.macro - 36}" width="500" height="200" rx="18" fill="#f3effd" stroke="#8e5bd0" stroke-width="2"/>`);
-          o += A.op(a, lbl(CX, Y.macro - 8, "Other fuels join the cycle too", "#5b3fb0", 15));
-          o += A.op(a, lbl(CX - 220, Y.macro + 24, "Fatty acids → " + (R("betaox") === "?" ? "?" : "beta-oxidation") + " → acetyl-CoA", "#343b4a", 13, "start"));
-          o += A.op(a, lbl(CX - 220, Y.macro + 50, "(same entry point as glycolysis's pyruvate)", "#5a6376", 12, "start"));
-          o += A.op(b, lbl(CX - 220, Y.macro + 84, "Amino acids → different entry points depending on which one:", "#343b4a", 13, "start"));
-          o += A.op(b, lbl(CX - 220, Y.macro + 108, "pyruvate, acetyl-CoA, α-KG, succinyl-CoA, fumarate, or OAA", "#5a6376", 12, "start"));
-          o += A.op(b, lbl(CX - 220, Y.macro + 140, "Ketone bodies: usually made FROM extra acetyl-CoA, not fed into it", GOLD, 12, "start"));
-        }
+        o += A.op(r, `<rect x="${CX - 280}" y="${Y.x2 - 40}" width="560" height="120" rx="18" fill="#fff" stroke="${GOLD}" stroke-width="2.5"/>`);
+        o += A.op(r, lbl(CX - 250, Y.x2 - 10, "2 pyruvate per glucose → the cycle runs twice:", "#343b4a", 14, "start"));
+        o += A.op(r, lbl(CX - 250, Y.x2 + 20, "8 NADH · 2 FADH₂ · 2 ATP · 6 CO₂ total", GOLD, 16, "start"));
+        o += A.op(r, lbl(CX - 250, Y.x2 + 48, "(link reaction + two turns of the cycle, per glucose)", "#5a6376", 12, "start"));
       }
       /* where next */
-      const p13 = p(ADV ? 13 : 12);
-      if (idx >= (ADV ? 13 : 12) && p13 > 0){
-        const a = ease(seg(p13, 0, .6));
-        o += A.op(a, A.carrier(CX - 90, Y.go, "NAD", true) + A.carrier(CX + 20, Y.go, "FAD", true));
-        o += A.op(a, A.arrow(CX + 90, Y.go, CX + 190, Y.go, "#3f4cc0", 3));
-        o += A.op(a, lbl(CX + 200, Y.go + 5, "Electron transport chain →", "#2c3796", 14, "start"));
+      const p12 = p(12);
+      if (idx >= 12 && p12 > 0){
+        const a = ease(seg(p12, 0, .6));
+        o += A.op(a, A.carrier(CX - 200, Y.go, "NAD", true) + A.carrier(CX - 90, Y.go, "FAD", true));
+        o += A.op(a, A.arrow(CX - 20, Y.go, CX + 60, Y.go, "#3f4cc0", 3));
+        o += A.op(a, lbl(CX + 70, Y.go + 5, "Electron transport chain →", "#2c3796", 14, "start"));
       }
       return o;
     }
@@ -241,11 +259,11 @@
     const STEPS = [
       {focusY:Y.pyr, animMs:900,
        pop:{y:Y.pyr, x:CARDX, title:"Pyruvate's next stop",
-         text:`Pyruvate crosses into the {{matrix}} of the mitochondrion (in bacteria, it just stays in the cytoplasm). One more oxidation, and it's ready to join the Krebs cycle.`}},
+         text:`Pyruvate crosses into the {{matrix}} of the mitochondrion (in bacteria, it just stays in the cytoplasm). One more oxidation, and it's ready to join the Krebs cycle.${ADV ? ` Protein can feed in here too: after an amino acid like alanine has its amino group (−NH₂) removed, what's left is pyruvate (see the arrow on the left).` : ""}`}},
       {focusY:Y.acetyl, animMs:2200, tally:{nadh:1, co2:1},
        action:{type:"drag", token:"NAD", count:1, from:[[600, Y.pyr]], targets:[[CX, Y.pyr]], label:"Drag NAD⁺ onto pyruvate — this is the link reaction."},
-       pop:{y:Y.acetyl, x:CARDX, title:"The link reaction: oxidative decarboxylation", more:"b5",
-         text:`This step is called <b>oxidative decarboxylation</b> — two things at once. "Decarboxylation" means one carbon is removed as CO₂ (you can see it fly off above). "Oxidative" means electrons are stripped off and handed to NAD⁺ → NADH. The leftover 2-carbon piece attaches to coenzyme A, forming {{acetylcoa}} — the molecule that actually enters the cycle. Two pyruvate per glucose, so this happens {{twicekrebs}}.`}},
+       pop:{y:Y.acetyl, x:CARDX, title:"The link reaction: oxidative decarboxylation", more:ADV ? "ketonebodies" : "b5",
+         text:`This step is called <b>oxidative decarboxylation</b> — two things at once. "Decarboxylation" means one carbon is removed as CO₂ (you can see it fly off above). "Oxidative" means electrons are stripped off and handed to NAD⁺ → NADH. The leftover 2-carbon piece attaches to coenzyme A, forming {{acetylcoa}} — the molecule that actually enters the cycle. Two pyruvate per glucose, so this happens {{twicekrebs}}.${ADV ? ` <b>Fat enters right here too.</b> Fatty acids are chopped into 2-carbon pieces by {{betaox}}, and each piece becomes the same {{ketones}} that pyruvate just made. When there's more acetyl-CoA than oxaloacetate to take it, the liver turns the extra into ketone bodies (the dashed arrow).` : ""}`}},
       {focusY:NP[0][1], animMs:1700,
        action:{type:"click", at:[CX, Y.acetyl + 70], button:"Combine with oxaloacetate", label:"Click to start the cycle: join acetyl-CoA with oxaloacetate."},
        pop:{y:CARDY[0], x:CARDX, title:"Citrate synthase: the cycle begins", more:"citratebranch",
@@ -257,7 +275,7 @@
       {focusY:NP[2][1], animMs:2000, tally:{nadh:1, co2:1},
        action:{type:"drag", token:"NAD", count:1, from:[tokStart(2)], targets:[NP[2]], label:"Drag NAD⁺ onto isocitrate."},
        pop:{y:CARDY[2], x:CARDX, title:"Decarboxylation #1 — the rate-limiting step", more:"ratelimit",
-         text:`<b>Decarboxylation:</b> isocitrate (6C) loses one carbon as CO₂, dropping to 5 carbons (α-ketoglutarate). That CO₂ is exhaled when you breathe out. At the same time, NAD⁺ picks up electrons → NADH. This is the cycle's {{ratelimiting2}} step, meaning everything before it backs up when it slows. It speeds up when ADP is high (need energy) and slows when ATP or NADH is high (already have energy). <b>α-Ketoglutarate (α-KG)</b> is sold as a supplement for muscle recovery and longevity — your mitochondria make and use it constantly without any pill.`}},
+         text:`<b>Decarboxylation:</b> isocitrate (6C) loses one carbon as CO₂, dropping to 5 carbons (α-ketoglutarate). That CO₂ is exhaled when you breathe out. At the same time, NAD⁺ picks up electrons → NADH. This is the cycle's {{ratelimiting2}} step, meaning everything before it backs up when it slows. It speeds up when ADP is high (need energy) and slows when ATP or NADH is high (already have energy). <b>α-Ketoglutarate (α-KG)</b> is sold as a supplement for muscle recovery and longevity — your mitochondria make and use it constantly without any pill.${ADV ? ` It's also a doorway to protein metabolism: α-KG ⇄ the amino acid glutamate, which is how many amino groups get moved around the body.` : ""}`}},
       {focusY:NP[3][1], animMs:2000, tally:{nadh:1, co2:1},
        action:{type:"drag", token:"NAD", count:1, from:[tokStart(3)], targets:[NP[3]], label:"Drag NAD⁺ onto α-ketoglutarate."},
        pop:{y:CARDY[3], x:CARDX, title:"Decarboxylation #2 — five vitamins, one enzyme", more:"cofactors",
@@ -287,17 +305,13 @@
        pop:{y:CARDY[9], x:CARDX, title:"Remember: twice per glucose",
          text:`Every glucose makes 2 pyruvate, so the link reaction and the cycle both run {{twicekrebs2}}. Combine the link reaction with two turns of the cycle and one glucose yields 8 NADH, 2 FADH₂, 2 ATP, and 6 CO₂.`}}
     ];
-    if (ADV) STEPS.push({focusY:Y.macro, animMs:1800,
-       action:{type:"click", at:[CX, Y.macro - 60], button:"Show other fuels", label:"See how fat and protein feed into the cycle."},
-       pop:{y:Y.macro + 80, x:CARDX, title:"Fat and protein feed in too", more:"ketonebodies",
-         text:`Carbohydrate isn't the only fuel here. Fatty acids are broken into 2-carbon pieces by {{betaox}}, entering as the same {{ketones}} that pyruvate makes. Amino acids, after their amino group is removed, enter at several different points depending on which one — pyruvate, acetyl-CoA, α-KG, succinyl-CoA, fumarate, or oxaloacetate. That's why the Krebs cycle is often called a metabolic hub: carbs, fats, and protein all funnel through it.<br><br><a class="btn secondary sm" href="id-tests.html#indole">🧪 Indole test (amino acid breakdown) →</a> <a class="btn secondary sm" href="id-tests.html#h2s">🧪 H₂S test (amino acid breakdown) →</a>`}});
-    STEPS.push({focusY:Y.go, animMs:1600,
+    STEPS.push({focusY:Y.go - 40, animMs:1600,
        action:{type:"click", at:[CX, Y.go - 60], button:"Where do the electrons go?", label:"Follow the electron carriers."},
        pop:{y:Y.go, x:CARDX, title:"Krebs cycle summarized",
          text:`<b>Big idea: decarboxylation.</b> The Krebs cycle's main job is finishing what glycolysis started — stripping all remaining carbons off glucose as CO₂ (decarboxylation), and loading those electrons onto NADH and FADH₂ carriers. The ATP made here is a small bonus; the electron carriers are the real output. They carry high-energy electrons to the ETC next, which uses them to make the vast majority of the cell's ATP.<br><br><i>"The Krebs cycle = decarboxylation + electron carrier loading."</i>`}});
 
     return {title:`The Krebs Cycle: ${ADV ? "The Full Pathway" : "The Basics"}`, page:"krebs.html", H, narrowW:680, BL, MORE, steps:STEPS, draw, token,
-      intro:`Pyruvate arrives at the top; the cycle runs as a loop. Act on each step, and the cycle fills in — carbon count shown at each molecule, CO₂ releases highlighted. Cards pop up beside each active step and shrink to markers you can reopen.`,
+      intro:`Pyruvate arrives at the top; the cycle runs as a loop. Act on each step and the cycle fills in, with every molecule drawn atom by atom and everything that goes in or comes out (NAD⁺ → NADH, CO₂, H₂O, ATP) shown outside the ring.`,
       tally:[["co2", "CO₂ released", RED], ["nadh", "NADH", "#2f9e63"], ["fadh2", "FADH₂", "#c98a0e"], ["made", "ATP made", GREEN]],
       endTitle:"You built the Krebs cycle!", endText:"Per glucose: 8 NADH, 2 FADH₂, 2 ATP, 6 CO₂ (link reaction + two turns of the cycle). Tap any numbered marker to review a step.",
       next:[["Electron transport chain →", "etc.html"], ["All modules", "index.html"]], hideRestart:true};
