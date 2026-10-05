@@ -21,7 +21,7 @@
       <div class="pwboard" id="pwBoard"><svg id="pwSvg" viewBox="0 0 1000 ${H}" role="img" aria-label="${cfg.title} pathway board"></svg><div class="pwlayer" id="pwLayer"></div></div>
       <div class="pwend" id="pwEnd" hidden></div>
     </div>
-    <div class="overlay" id="moreOverlay" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle"><span class="ptag">Learn more: just for the curious, not on the exam</span><h2 id="moreTitle"></h2><div id="moreBody"></div><button class="btn primary close" id="moreClose">Back to the module</button></div></div>`;
+    <div class="overlay" id="moreOverlay" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle"><span class="ptag">Learn more</span><h2 id="moreTitle"></h2><div id="moreBody"></div><button class="btn primary close" id="moreClose">Back to the module</button></div></div>`;
     const $ = id => document.getElementById(id);
     const svg = $("pwSvg"), layer = $("pwLayer");
     /* on narrow screens cards become bottom sheets, so crop the board to the pathway column */
