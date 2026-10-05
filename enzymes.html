@@ -193,7 +193,7 @@
       return cub(lo, h, h, 370, 370); };
     const xr = 470, xg = 505, yr = 111, yg = peakY(230, xg);
     o += A.arrow(xr, 300, xr, yr + 4, "#b83a34", 3) + A.arrow(xg, 300, xg, yg + 4, "#1b7f4e", 3);
-    o += A.tx(xr - 10, 212, "Without enzyme", "t14 end", `style="fill:#b83a34"`) + A.tx(xg + 10, 292, "With enzyme", "t14", `style="fill:#1b7f4e"`);
+    o += A.tx(xr - 10, 212, "Without enzyme", "t14 end", `style="fill:#b83a34"`) + A.tx(xg + 10, 322, "With enzyme", "t14", `style="fill:#1b7f4e"`);
     o += A.tx(140, 328, "Reactants", "t14", ``) + A.tx(900, 400, "Products", "t14 end");
     /* balls: green (with enzyme) clears the barrier; red (without enzyme) always gets stuck */
     const pt = (h, p) => { const u = p, x = 130 + 770 * u; const y = u < .45 ? lerp(300, h, smooth(u / .45)) : lerp(h, 370, smooth((u - .45) / .55)); return [x, y - 14]; };

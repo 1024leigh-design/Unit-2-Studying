@@ -24,13 +24,6 @@
   const blob = (x, y, label, col, o) => A.op(o === undefined ? 1 : o, `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="78" ry="54" fill="${col}" stroke="#343b4a" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 6)}" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">${label}</text>`);
 
   /* small shared helpers for the new activation-energy / enzyme graphics */
-  const eaBracket = (x, yBase, yPeak, col, label) => {
-    let s = `<line x1="${f1(x - 16)}" y1="${f1(yBase)}" x2="${f1(x + 16)}" y2="${f1(yBase)}" stroke="${col}" stroke-width="2.5"/>`;
-    s += `<line x1="${f1(x)}" y1="${f1(yBase)}" x2="${f1(x)}" y2="${f1(yPeak)}" stroke="${col}" stroke-width="2.5" stroke-dasharray="5 4"/>`;
-    s += `<line x1="${f1(x - 16)}" y1="${f1(yPeak)}" x2="${f1(x + 16)}" y2="${f1(yPeak)}" stroke="${col}" stroke-width="2.5"/>`;
-    s += A.tx(x + 26, (yBase + yPeak) / 2 + 5, label, "t14", `style="fill:${col};font-weight:700"`);
-    return s;
-  };
   const svgDrag = Metab.svgDrag;
   const at = (st, k, x, y) => st && st.drag && st.drag.moved && st.drag.kind === k ? [st.drag.x, st.drag.y] : [x, y];
   const pickRing = (st, k, x, y, r) => st && st.pick === k ? `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="none" stroke="${C.gold}" stroke-width="4" stroke-dasharray="6 4"/>` : "";
@@ -88,23 +81,35 @@
     return o;
   }
   function enzymeEaScene(t, R){
-    const y1 = 320, y2 = 210, peakNo = 110, peakYes = 235;
-    let o = A.tx(500, 42, "Enzymes lower the activation energy needed", "t20 mid");
-    o += `<line x1="170" y1="70" x2="170" y2="380" stroke="#343b4a" stroke-width="2.5"/><line x1="170" y1="380" x2="860" y2="380" stroke="#343b4a" stroke-width="2.5"/>`;
-    o += A.tx(90, 225, "Energy", "t12 mid", `transform="rotate(-90 90 225)"`);
-    o += A.tx(515, 404, "Time (the reaction goes on) →", "t12 mid muted");
-    const dNo = `M180,${y1} C340,${y1} 360,${peakNo} 515,${peakNo} C660,${peakNo} 690,${y2} 850,${y2}`;
-    const dYes = `M180,${y1} C310,${y1} 335,${peakYes} 515,${peakYes} C670,${peakYes} 695,${y2} 850,${y2}`;
-    o += `<path d="${dNo}" fill="none" stroke="#b83a34" stroke-width="3.5" stroke-dasharray="8 6"/>`;
-    o += `<path d="${dYes}" fill="none" stroke="#1b7f4e" stroke-width="4.5"/>`;
-    o += `<circle cx="180" cy="${y1}" r="7" fill="#343b4a"/>` + A.tx(184, y1 + 26, "Reactants", "t12", "");
-    o += `<circle cx="850" cy="${y2}" r="7" fill="#343b4a"/>` + A.tx(850, y2 + 26, "Products", "t12 end");
-    o += eaBracket(490, y1, peakNo, "#b83a34", "Eₐ without enzyme");
-    o += eaBracket(590, y1, peakYes, "#1b7f4e", "Eₐ with enzyme");
-    o += A.enzyme(750, 336, {sc:.7, label:"Enzyme"});
-    o += A.arrow(700, 318, 565, 252, "#1b7f4e", 2.5);
-    o += A.tx(500, 432, "Enzymes speed up reactions by lowering Eₐ.", "t14 mid muted");
-    o += A.tx(500, 452, "They don't change the reactants, products, or the overall energy released or absorbed.", "t12 mid muted");
+    /* both curves share the same reactants and products; only the hump height differs */
+    const X0 = 170, X1 = 850, XP = 460, yR = 270, yP = 330, hNo = 100, hYes = 205;
+    const segs = h => [[[X0, yR], [X0 + 140, yR], [XP - 120, h], [XP, h]], [[XP, h], [XP + 120, h], [X1 - 170, yP], [X1, yP]]];
+    const cub = (P, u, j) => { const v = 1 - u; return v * v * v * P[0][j] + 3 * v * v * u * P[1][j] + 3 * v * u * u * P[2][j] + u * u * u * P[3][j]; };
+    const yAt = (h, x) => { const P = segs(h)[x <= XP ? 0 : 1]; let lo = 0, hi = 1; for (let k = 0; k < 30; k++){ const m = (lo + hi) / 2; if (cub(P, m, 0) < x) lo = m; else hi = m; } return cub(P, lo, 1); };
+    const path = h => { const [a, b] = segs(h); return `M${a[0][0]},${a[0][1]} C${a[1].join(",")} ${a[2].join(",")} ${a[3].join(",")} C${b[1].join(",")} ${b[2].join(",")} ${b[3].join(",")}`; };
+    const vArrow = (x, ya, yb, col) => { const h = 8; return `<line x1="${x}" y1="${f1(ya - 4)}" x2="${x}" y2="${f1(yb + 4)}" stroke="${col}" stroke-width="2.5"/><path d="M${x},${f1(yb)} l-6,${h} l12,0 Z M${x},${f1(ya)} l-6,${-h} l12,0 Z" fill="${col}"/>`; };
+    let o = A.tx(500, 40, "Enzymes lower the activation energy needed", "t20 mid");
+    o += `<line x1="150" y1="70" x2="150" y2="372" stroke="#343b4a" stroke-width="2.5"/><line x1="150" y1="372" x2="880" y2="372" stroke="#343b4a" stroke-width="2.5"/>`;
+    o += A.tx(110, 221, "Energy", "t12 mid", `transform="rotate(-90 110 221)"`) + A.tx(515, 394, "Progress of the reaction →", "t12 mid muted");
+    /* reactant energy level, carried across so both humps are measured from the same line */
+    o += `<line x1="${X0}" y1="${yR}" x2="${X1}" y2="${yR}" stroke="#b8bfcc" stroke-width="1.5" stroke-dasharray="4 5"/>`;
+    o += `<path d="${path(hNo)}" fill="none" stroke="#b83a34" stroke-width="3.5" stroke-dasharray="9 7"/>`;
+    o += `<path d="${path(hYes)}" fill="none" stroke="#1b7f4e" stroke-width="4.5"/>`;
+    o += `<circle cx="${X0}" cy="${yR}" r="7" fill="#343b4a"/>` + A.tx(X0 + 4, yR + 26, "Reactants", "t12", "");
+    o += `<circle cx="${X1}" cy="${yP}" r="7" fill="#343b4a"/>` + A.tx(X1, yP + 26, "Products", "t12 end");
+    /* Ea arrows land exactly on each curve */
+    const xNo = XP - 40, xYes = XP + 40;
+    o += vArrow(xNo, yR, yAt(hNo, xNo), "#b83a34") + A.tx(xNo - 10, (yR + yAt(hNo, xNo)) / 2 + 5, "Eₐ", "t16 end", `style="fill:#b83a34"`);
+    o += vArrow(xYes, yR, yAt(hYes, xYes), "#1b7f4e") + A.tx(xYes + 10, (yR + yAt(hYes, xYes)) / 2 + 5, "Eₐ", "t16", `style="fill:#1b7f4e"`);
+    /* overall energy change: same with or without the enzyme */
+    o += `<line x1="${X1 - 60}" y1="${yR}" x2="${X1 + 14}" y2="${yR}" stroke="#b8bfcc" stroke-width="1.5" stroke-dasharray="4 5"/>` + vArrow(X1 + 8, yR, yP, "#5b3fb0") + A.tx(X1 + 18, (yR + yP) / 2 + 5, "ΔG", "t14", `style="fill:#5b3fb0"`);
+    /* legend */
+    o += `<rect x="610" y="66" width="270" height="88" rx="12" fill="#fff" stroke="#d9dee7"/>`;
+    o += `<line x1="626" y1="88" x2="664" y2="88" stroke="#b83a34" stroke-width="3.5" stroke-dasharray="9 7"/>` + A.tx(674, 93, "without enzyme: high Eₐ", "t12", `style="fill:#b83a34"`);
+    o += `<line x1="626" y1="112" x2="664" y2="112" stroke="#1b7f4e" stroke-width="4.5"/>` + A.tx(674, 117, "with enzyme: lower Eₐ", "t12", `style="fill:#1b7f4e"`);
+    o += A.tx(626, 141, "ΔG: the same either way", "t12", `style="fill:#5b3fb0"`);
+    o += A.tx(500, 428, "Enzymes speed up reactions by lowering Eₐ (a smaller hill to climb).", "t14 mid muted");
+    o += A.tx(500, 450, "They don't change the reactants, the products, or ΔG (the overall energy released or absorbed).", "t12 mid muted");
     return o;
   }
   /* Inhibition inside respiration. A.enzyme's U-shaped active site has its top at (x, y - 46*sc); its allosteric slot is centered at local (79, 23). */
