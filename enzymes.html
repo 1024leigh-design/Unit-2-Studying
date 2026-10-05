@@ -27,24 +27,7 @@
     return s + `</g>`; };
   const sq = (x, y, s, col) => `<rect x="${f1(x - 22 * s)}" y="${f1(y - 22 * s)}" width="${f1(44 * s)}" height="${f1(44 * s)}" rx="5" fill="${col || C.orange}" stroke="#a8461f" stroke-width="2.5"/>`;
   const circ = (x, y, s) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(24 * s)}" fill="#4f7fd8" stroke="#2c3796" stroke-width="2.5"/>`;
-  /* on-diagram dragging: anything marked data-drag can be dragged; tapping it picks it, then tapping a spot drops it there */
-  function svgDrag(api, st, o){
-    const svg = api.svg; svg.style.touchAction = "none";
-    const toSVG = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
-    svg.onpointerdown = e => {
-      const d = e.target.closest && e.target.closest("[data-drag]");
-      if (!d){ if (st.pick){ const k = st.pick; st.pick = null; o.drop(k, toSVG(e)); } return; }
-      e.preventDefault(); const p = toSVG(e);
-      st.drag = {kind:d.dataset.drag, x:p.x, y:p.y, sx:p.x, sy:p.y, moved:false};
-      try { svg.setPointerCapture(e.pointerId); } catch (err) {}
-    };
-    svg.onpointermove = e => { const d = st.drag; if (!d) return; const p = toSVG(e); d.x = p.x; d.y = p.y; if (Math.hypot(p.x - d.sx, p.y - d.sy) > 8) d.moved = true; };
-    svg.onpointerup = svg.onpointercancel = e => {
-      const d = st.drag; if (!d) return; st.drag = null;
-      if (!d.moved){ st.pick = st.pick === d.kind ? null : d.kind; if (st.pick && o.picked) o.picked(d.kind); return; }
-      st.pick = null; o.drop(d.kind, toSVG(e));
-    };
-  }
+  const svgDrag = Metab.svgDrag;
   /* where a draggable item is drawn: under the pointer while dragged, otherwise at home */
   const at = (st, k, x, y) => st && st.drag && st.drag.moved && st.drag.kind === k ? [st.drag.x, st.drag.y] : [x, y];
   const pickRing = (st, k, x, y, r) => st && st.pick === k ? `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="none" stroke="${C.gold}" stroke-width="4" stroke-dasharray="6 4"/>` : "";
@@ -595,7 +578,7 @@
   ];
 
   Metab.start({title:"Enzymes and Metabolism", page:"enzymes.html", BL, MORE, STEPS,
-    nextLabel:"Next up: where does the energy come from?", next:[["Enzymes and Energy Production →","energy-chemistry.html"],["All modules","index.html"]]});
+    nextLabel:"Next up: where does the energy come from?", next:[["Chemistry of Energy Production →","energy-chemistry.html"],["All modules","index.html"]]});
 })();
 </script>
 <script src="studypath.js"></script>

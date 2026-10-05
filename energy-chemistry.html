@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Enzymes and Energy Production</title>
+<title>Chemistry of Energy Production</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
@@ -31,9 +31,10 @@
     s += A.tx(x + 26, (yBase + yPeak) / 2 + 5, label, "t14", `style="fill:${col};font-weight:700"`);
     return s;
   };
-  const hexPoints = (cx, cy, r) => Array.from({length:6}, (_, i) => { const a = Math.PI / 6 + i * Math.PI / 3; return `${f1(cx + r * Math.cos(a))},${f1(cy + r * Math.sin(a))}`; }).join(" ");
-  const enzTop = (x, y, sc) => ({x, y:y - 60 * sc});
-  const enzAllo = (x, y, sc) => ({x:x + 79 * sc, y:y + 23 * sc});
+  const svgDrag = Metab.svgDrag;
+  const at = (st, k, x, y) => st && st.drag && st.drag.moved && st.drag.kind === k ? [st.drag.x, st.drag.y] : [x, y];
+  const pickRing = (st, k, x, y, r) => st && st.pick === k ? `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="none" stroke="${C.gold}" stroke-width="4" stroke-dasharray="6 4"/>` : "";
+  const hit = (x, y, r) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="#fff" opacity="0"/>`;
 
   const BL = {
     oxidation:{show:"Oxidation", ans:["oxidation","oxidized","oxidize"], fuzzy:true},
@@ -46,58 +47,44 @@
     nadp:{show:"NADP⁺", ans:["nadp","nadpplus"]},
     endergonic:{show:"Endergonic", ans:["endergonic","endothermic"], fuzzy:true},
     exergonic:{show:"Exergonic", ans:["exergonic","exothermic"], fuzzy:true},
-    activation:{show:"activation energy", ans:["activationenergy","activation"], fuzzy:true},
     enzyme:{show:"Enzymes", ans:["enzyme","enzymes"], fuzzy:true},
     active:{show:"active site", ans:["activesite","active"], fuzzy:true},
     allosteric:{show:"allosteric site", ans:["allostericsite","allosteric"], fuzzy:true},
     competitive:{show:"Competitive", ans:["competitive"], fuzzy:true},
-    noncompetitive:{show:"Noncompetitive", ans:["noncompetitive","noncompetitive"], fuzzy:true}
+    noncompetitive:{show:"Noncompetitive", ans:["noncompetitive","noncomp"], fuzzy:true}
   };
   const MORE = {
+    poison:{title:"Poisons that jam respiration", html:`<p><b>Malonate</b> was one of the tools Hans Krebs used to work out the Krebs cycle in 1937. Blocking succinate dehydrogenase made succinate pile up, which helped show the order of the steps.</p><p><b>Cyanide</b> is deadly because it binds cytochrome c oxidase, the last protein of the electron transport chain. Electrons can't be handed to oxygen anymore, so the chain stops and ATP production crashes.</p><p><b>PFK</b> is a key control point of glycolysis. Besides ATP, citrate (from the Krebs cycle) also inhibits it, while AMP (a sign the cell is low on energy) activates it.</p>`},
     oil:{title:"Why electrons carry energy", html:`<p>Electrons held loosely in bonds with carbon and hydrogen (like in glucose or fats) are "high energy." When they move to an atom that pulls on them strongly, like oxygen, energy is released. Cells capture that energy in small steps instead of all at once, which is exactly what the electron transport chain does.</p><p>In biology, oxidation often looks like losing hydrogen atoms (a hydrogen = a proton + an electron), and reduction looks like gaining them. That's why NAD⁺ becoming NADH counts as reduction.</p>`},
     vit:{title:"Why do cells bother picking up electrons?", html:`<p><b>Energy lives in electrons.</b> The electrons in the C–H and C–C bonds of glucose and fats are held loosely, so they are "high energy." Oxygen pulls on electrons much harder. When electrons move from a place where they're held loosely to a place where they're held tightly, energy is released, a bit like a ball rolling downhill. Breaking down glucose is really a way of letting those electrons roll downhill.</p><p><b>Why carriers?</b> If glucose handed its electrons straight to oxygen, all that energy would come out at once as heat (that's what burning is). Instead, enzymes pull the electrons off a few at a time and load them onto NAD⁺ and FAD. Now NADH and FADH₂ are holding the high-energy electrons, so the energy is stored in them, ready to deliver.</p><p><b>Dropping them off at the electron transport chain.</b> NADH and FADH₂ carry their electrons to the electron transport chain in the cell membrane. The electrons are passed down a chain of proteins, each holding them a little more tightly, until they reach the final electron acceptor (oxygen, in aerobic respiration). At each step a bit of energy is released and used to pump H⁺ across the membrane. That H⁺ build-up then powers ATP synthase to make ATP. The empty NAD⁺ and FAD go back to pick up more electrons. No carriers, no delivery, and the whole process stops.</p><p><b>B vitamins and "energy."</b> NAD⁺ is built from niacin (vitamin B3), and FAD is built from riboflavin (vitamin B2). That's why B vitamins are often sold as "energy" vitamins. They don't contain energy themselves, but without them you can't build the carriers that move energy from your food to ATP. Severe niacin deficiency causes a disease called pellagra, partly because cells can't make enough NAD⁺.</p>`}
   };
 
   /* ================= Scenes ================= */
+  /* real metabolic reactions for each kind; endergonic = anabolic (green), exergonic = catabolic (red) */
+  const EG = {end:[["Protein synthesis","amino acids → protein"],["Photosynthesis","6 CO₂ + 6 H₂O + light → glucose + 6 O₂"],["Making ATP","ADP + Pᵢ → ATP"]],
+    ex:[["Cellular respiration","glucose + 6 O₂ → 6 CO₂ + 6 H₂O"],["Glycolysis","glucose → 2 pyruvate"],["ATP hydrolysis","ATP → ADP + Pᵢ"]]};
   function egScene(t, R){
-    /* Frozen-vs-animated is decided per step below: this version always draws the full curve */
-    let o = "";
-    const panel = (x0, title, col, y1, y2, note) => {
-      let s = A.tx(x0 + 210, 50, title, "t20 mid", `style="fill:${col}"`) + `<line x1="${x0 + 30}" y1="80" x2="${x0 + 30}" y2="380" stroke="#343b4a" stroke-width="2.5"/><line x1="${x0 + 30}" y1="380" x2="${x0 + 400}" y2="380" stroke="#343b4a" stroke-width="2.5"/>`;
-      const draw = smooth(seg((t % 7), .4, 4));
-      const d = `M${x0 + 40},${y1} C${x0 + 150},${y1} ${x0 + 160},130 ${x0 + 210},130 C${x0 + 260},130 ${x0 + 270},${y2} ${x0 + 380},${y2}`;
+    let o = `<line x1="500" y1="24" x2="500" y2="370" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
+    const draw = smooth(seg(t % 9, .3, 2.6)), lit = Math.floor((t % 9) / 1.5) % 3;
+    const panel = (x0, key, title, col, bg, sub, yA, yB) => {
+      let s = A.tx(x0 + 225, 40, title, "t20 mid", `style="fill:${col}"`) + A.tx(x0 + 225, 62, sub, "t12 mid muted");
+      s += `<line x1="${x0 + 30}" y1="78" x2="${x0 + 30}" y2="196" stroke="#343b4a" stroke-width="2"/><line x1="${x0 + 30}" y1="196" x2="${x0 + 430}" y2="196" stroke="#343b4a" stroke-width="2"/>` + A.tx(x0 + 18, 140, "Energy", "t11 mid", `transform="rotate(-90 ${x0 + 18} 140)"`);
+      const d = `M${x0 + 45},${yA} C${x0 + 150},${yA} ${x0 + 170},92 ${x0 + 230},92 C${x0 + 290},92 ${x0 + 310},${yB} ${x0 + 415},${yB}`;
       s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="${f3(1 - draw)}"/>`;
-      s += `<circle cx="${x0 + 40}" cy="${y1}" r="6" fill="${col}"/>` + A.tx(x0 + 44, y1 + 26, "Reactants", "t12", "");
-      s += A.op(smooth(seg(draw, .92, 1)), `<circle cx="${x0 + 380}" cy="${y2}" r="6" fill="${col}"/>` + A.tx(x0 + 380, y2 + 26, "Products", "t12 end"));
-      s += A.tx(x0 + 215, 404, "Time (the reaction goes on) →", "t12 mid muted");
-      s += A.tx(x0 + 210, 432, note, "t14 mid");
+      s += `<circle cx="${x0 + 45}" cy="${yA}" r="6" fill="${col}"/>` + A.tx(x0 + 52, yA - 12, "Reactants", "t11", "");
+      s += A.op(smooth(seg(draw, .9, 1)), `<circle cx="${x0 + 415}" cy="${yB}" r="6" fill="${col}"/>` + A.tx(x0 + 408, yB - 12, "Products", "t11 end"));
+      EG[key].forEach((r, i) => { const y = 212 + i * 52, on = i === lit;
+        s += `<rect x="${x0 + 12}" y="${y}" width="436" height="44" rx="12" fill="${on ? bg : "#fff"}" stroke="${col}" stroke-width="${on ? 3 : 1.5}"/>`;
+        s += A.tx(x0 + 28, y + 19, r[0], "t14", `style="fill:${col}"`) + A.tx(x0 + 28, y + 37, r[1], "t12", ""); });
       return s;
     };
-    o += panel(40, `${R("endergonic")}`, "#3f4cc0", 320, 200, "Absorbs energy: products have MORE");
-    o += panel(540, `${R("exergonic")}`, "#d9443a", 200, 320, "Releases energy: products have LESS");
-    o += `<line x1="500" y1="40" x2="500" y2="440" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
-    o += A.tx(240, 458, "Anabolic (building up)", "t14 mid", `style="fill:#1b7f4e"`) + A.tx(740, 458, "Catabolic (breaking down)", "t14 mid", `style="fill:#b83a34"`);
-    o += A.tx(58, 230, "Energy", "t12 mid", `transform="rotate(-90 58 230)"`) + A.tx(558, 230, "Energy", "t12 mid", `transform="rotate(-90 558 230)"`);
-    return o;
-  }
-  function eaScene(t, R){
-    /* Same two panels as before, but frozen (no drawing-in animation) with the activation energy marked */
-    let o = "";
-    const panel = (x0, title, col, y1, y2, note) => {
-      let s = A.tx(x0 + 210, 50, title, "t20 mid", `style="fill:${col}"`) + `<line x1="${x0 + 30}" y1="80" x2="${x0 + 30}" y2="380" stroke="#343b4a" stroke-width="2.5"/><line x1="${x0 + 30}" y1="380" x2="${x0 + 400}" y2="380" stroke="#343b4a" stroke-width="2.5"/>`;
-      const d = `M${x0 + 40},${y1} C${x0 + 150},${y1} ${x0 + 160},130 ${x0 + 210},130 C${x0 + 260},130 ${x0 + 270},${y2} ${x0 + 380},${y2}`;
-      s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="4"/>`;
-      s += `<circle cx="${x0 + 40}" cy="${y1}" r="6" fill="${col}"/>` + A.tx(x0 + 44, y1 + 26, "Reactants", "t12", "");
-      s += `<circle cx="${x0 + 380}" cy="${y2}" r="6" fill="${col}"/>` + A.tx(x0 + 380, y2 + 26, "Products", "t12 end");
-      s += eaBracket(x0 + 210, y1, 130, col, "Eₐ");
-      s += A.tx(x0 + 215, 404, "Time (the reaction goes on) →", "t12 mid muted");
-      s += A.tx(x0 + 210, 432, note, "t14 mid");
-      return s;
-    };
-    o += panel(40, "Endergonic", "#3f4cc0", 320, 200, "Absorbs energy overall: products have MORE");
-    o += panel(540, "Exergonic", "#d9443a", 200, 320, "Releases energy overall: products have LESS");
-    o += `<line x1="500" y1="40" x2="500" y2="440" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
-    o += A.tx(58, 230, "Energy", "t12 mid", `transform="rotate(-90 58 230)"`) + A.tx(558, 230, "Energy", "t12 mid", `transform="rotate(-90 558 230)"`);
+    o += panel(30, "end", R("endergonic"), "#1b7f4e", "#eaf8ef", "absorbs energy: products have MORE energy", 182, 128);
+    o += panel(520, "ex", R("exergonic"), "#b83a34", "#fff1ef", "releases energy: products have LESS energy", 128, 182);
+    /* tie-in: the same reactions, named by what they do to molecules */
+    o += `<rect x="30" y="378" width="450" height="40" rx="20" fill="#1b7f4e"/>` + A.tx(255, 404, "= ANABOLIC: building up", "t16 mid", `style="fill:#fff"`);
+    o += `<rect x="520" y="378" width="450" height="40" rx="20" fill="#b83a34"/>` + A.tx(745, 404, "= CATABOLIC: breaking down", "t16 mid", `style="fill:#fff"`);
+    o += A.arrow(700, 440, 300, 440, "#8e5bd0", 3) + `<rect x="430" y="428" width="140" height="26" rx="13" fill="#fff" stroke="#8e5bd0" stroke-width="2"/>` + A.tx(500, 446, "ATP carries it", "t12 mid", `style="fill:#5b3fb0"`);
+    o += A.tx(745, 462, "energy released here…", "t11 mid muted") + A.tx(255, 462, "…powers building here", "t11 mid muted");
     return o;
   }
   function enzymeEaScene(t, R){
@@ -114,53 +101,44 @@
     o += `<circle cx="850" cy="${y2}" r="7" fill="#343b4a"/>` + A.tx(850, y2 + 26, "Products", "t12 end");
     o += eaBracket(490, y1, peakNo, "#b83a34", "Eₐ without enzyme");
     o += eaBracket(590, y1, peakYes, "#1b7f4e", "Eₐ with enzyme");
-    o += A.enzyme(700, 320, {sc:.8, label:"Enzyme"});
-    o += A.arrow(660, 295, 545, 245, "#1b7f4e", 2.5);
+    o += A.enzyme(750, 336, {sc:.7, label:"Enzyme"});
+    o += A.arrow(700, 318, 565, 252, "#1b7f4e", 2.5);
     o += A.tx(500, 432, "Enzymes speed up reactions by lowering Eₐ.", "t14 mid muted");
     o += A.tx(500, 452, "They don't change the reactants, products, or the overall energy released or absorbed.", "t12 mid muted");
     return o;
   }
-  function sitesScene(t, R){
-    const EX = 430, EY = 250, ESC = 1.6;
-    const act = enzTop(EX, EY, ESC), allo = enzAllo(EX, EY, ESC);
-    let o = A.tx(500, 42, "Every enzyme has an active site; many also have an allosteric site", "t18 mid");
-    o += A.enzyme(EX, EY, {sc:ESC, allo:true, label:"Enzyme"});
-    o += A.tx(act.x, act.y - 90, "Active site", "t16 mid", `style="fill:#3f4cc0"`);
-    o += A.tx(act.x, act.y - 70, "substrate binds & reacts here", "t11 mid muted");
-    o += A.arrow(act.x, act.y - 55, act.x, act.y - 8, "#3f4cc0", 3);
-    o += A.tx(allo.x + 190, allo.y - 10, "Allosteric site", "t16 mid", `style="fill:#9a6212"`);
-    o += A.tx(allo.x + 190, allo.y + 10, "a regulator binds here", "t11 mid muted");
-    o += A.arrow(allo.x + 175, allo.y, allo.x + 24, allo.y, "#9a6212", 3);
-    o += A.tx(500, 414, "A molecule that fits the active site is the substrate.", "t14 mid muted");
-    o += A.tx(500, 434, "A molecule that binds the allosteric site changes the enzyme's shape instead.", "t12 mid muted");
-    return o;
-  }
-  const ENZI = {x:500, y:250, sc:1.7};
-  const hitSite = p => {
-    const act = enzTop(ENZI.x, ENZI.y, ENZI.sc), allo = enzAllo(ENZI.x, ENZI.y, ENZI.sc);
-    if (Math.hypot(p.x - act.x, p.y - act.y) < 55) return "active";
-    if (Math.hypot(p.x - allo.x, p.y - allo.y) < 46) return "allo";
-    return null;
-  };
-  const INH_START = {x:220, y:400};
-  function inhibitionScene(t, R, g, done){
-    const st = g || {}, drag = st.drag && st.drag.moved ? st.drag : null;
-    const mode = st.mode;
-    const act = enzTop(ENZI.x, ENZI.y, ENZI.sc), allo = enzAllo(ENZI.x, ENZI.y, ENZI.sc);
-    let o = A.tx(500, 24, "Drag the inhibitor onto the active site or the allosteric site", "t18 mid");
-    const open = mode ? 0 : 1;
-    o += A.enzyme(ENZI.x, ENZI.y, {sc:ENZI.sc, allo:true, open, label:"Enzyme"});
-    if (!mode) o += A.tx(act.x, act.y - 56, "Substrate fits here", "t12 mid muted");
-    let ix = INH_START.x, iy = INH_START.y;
-    if (mode === "competitive"){ ix = act.x; iy = act.y; }
-    else if (mode === "noncompetitive"){ ix = allo.x; iy = allo.y; }
-    if (drag){ ix = drag.x; iy = drag.y; }
-    o += `<g data-drag="inh" style="cursor:${mode ? "default" : "grab"}"><polygon points="${hexPoints(ix, iy, 24)}" fill="#d9443a" stroke="#7a1f1f" stroke-width="2.5"/>` + A.tx(ix, iy + 5, "I", "t14 mid", `style="fill:#fff"`) + `</g>`;
-    o += A.tx(act.x, act.y - 78, "Active site", "t13 mid", `style="fill:#3f4cc0"`);
-    o += A.tx(allo.x + 16, allo.y - 26, "Allosteric site", "t13 mid", `style="fill:#9a6212"`);
-    if (mode === "competitive") o += `<rect x="260" y="380" width="480" height="66" rx="14" fill="#fbe8e7"/>` + A.tx(500, 405, "Competitive inhibition", "t16 mid", `style="fill:#b83a34"`) + A.tx(500, 430, "The inhibitor blocks the active site directly, competing with the substrate.", "t13 mid", `style="fill:#b83a34"`);
-    else if (mode === "noncompetitive") o += `<rect x="230" y="380" width="540" height="66" rx="14" fill="#fff6d6"/>` + A.tx(500, 405, "Noncompetitive inhibition", "t16 mid", `style="fill:#9a6212"`) + A.tx(500, 430, "Binding the allosteric site changes the enzyme's shape, so the active site stops working.", "t13 mid", `style="fill:#9a6212"`);
-    else o += A.tx(500, 430, "Try dropping it on each site to see both kinds of inhibition.", "t14 mid muted");
+  /* Inhibition inside respiration. A.enzyme's U-shaped active site has its top at (x, y - 46*sc); its allosteric slot is centered at local (79, 23). */
+  const RI = {sc:1.4, L:[250, 300], R:[750, 300], home:{mal:[425, 150], atp:[575, 150]}};
+  RI.act = x => [x, RI.L[1] - 46 * RI.sc];
+  RI.allo = [RI.R[0] + 79 * RI.sc, RI.R[1] + 23 * RI.sc];
+  /* a molecule whose rounded bottom matches the U-shaped active site; (x, y) is where it meets the pocket's rim */
+  const uMol = (x, y, sc, col, stroke, op, dent) => `<g transform="translate(${f1(x)},${f1(y)}) scale(${sc})"${op === undefined ? "" : ` opacity="${f3(op)}"`}><path d="M-18,-26 ${dent ? "L-6,-26 L0,-18 L6,-26" : ""} L18,-26 L18,0 C18,30 -18,30 -18,0 Z" fill="${col}" stroke="${stroke}" stroke-width="2.5" stroke-linejoin="round"/></g>`;
+  const atpTag = (x, y) => `<rect x="${f1(x - 17)}" y="${f1(y - 17)}" width="34" height="34" rx="8" fill="#8e5bd0" stroke="#fff" stroke-width="2.5"/>` + A.tx(x, y + 4, "ATP", "t11 mid", `style="fill:#fff"`);
+  function respInhibScene(t, R, g, done){
+    const st = g || {}, pl = done ? {mal:1, atp:1} : (st.placed || {});
+    const b = done ? smooth(seg(t % 8, .8, 2)) : 1, bm = pl.mal ? b : 0, ba = pl.atp ? b : 0;
+    const drag = st.drag && st.drag.moved ? st.drag.kind : null, sc = RI.sc;
+    let o = `<line x1="500" y1="20" x2="500" y2="390" stroke="#d9dee7" stroke-width="2" stroke-dasharray="6 6"/>`;
+    /* left: Krebs cycle, succinate dehydrogenase */
+    o += A.tx(250, 34, "Krebs cycle", "t20 mid", `style="fill:#b83a34"`) + A.tx(250, 56, "Enzyme: succinate dehydrogenase (SDH)", "t12 mid") + A.tx(250, 74, "succinate → fumarate", "t12 mid muted");
+    o += A.enzyme(RI.L[0], RI.L[1], {sc, label:"SDH"});
+    o += uMol(95, 165, 1.1, "#2f9e63", "#1b6b43") + uMol(95, 250, 1.1, "#2f9e63", "#1b6b43") + A.tx(95, 106, "succinate", "t12 mid", `style="fill:#1b7f4e"`) + A.tx(95, 122, "(substrate)", "t11 mid muted");
+    /* right: glycolysis, phosphofructokinase */
+    o += A.tx(750, 34, "Glycolysis", "t20 mid", `style="fill:#1f6fb2"`) + A.tx(750, 56, "Enzyme: phosphofructokinase (PFK)", "t12 mid") + A.tx(750, 74, "fructose 6-phosphate → fructose 1,6-bisphosphate", "t11 mid muted");
+    o += A.enzyme(RI.R[0], RI.R[1], {sc, allo:true, open:lerp(1, .25, ba), col:ba > .5 ? "#8f98c8" : C.enz, label:"PFK"});
+    const fy = RI.act(750)[1] - 70 * ba;
+    o += uMol(750, fy, sc, "#e8a33a", "#a8701c", 1 - .4 * ba) + A.tx(750, fy - 46, ba > .5 ? "Substrate can't fit!" : "fructose 6-P", "t12 mid", ba > .5 ? `style="fill:#b83a34"` : `style="fill:#a8701c"`);
+    /* the two inhibitors, dragged from the middle */
+    const item = (k, draw, dock, lab) => {
+      if (pl[k]){ const [hx, hy] = RI.home[k]; return draw(lerp(hx, dock[0], b), lerp(hy, dock[1], b)); }
+      const [x, y] = at(st, k, RI.home[k][0], RI.home[k][1]);
+      return `<g data-drag="${k}" style="cursor:grab">${hit(x, y, 42)}${draw(x, y)}</g>` + pickRing(st, k, x, y, 38) + (k === drag ? "" : A.tx(RI.home[k][0], RI.home[k][1] + 48, lab, "t12 mid", `style="fill:#5b3fb0"`));
+    };
+    const parts = [["mal", (x, y) => uMol(x, y, sc, "#8e5bd0", "#5b3fb0", 1, true), RI.act(250), "malonate"], ["atp", atpTag, RI.allo, "ATP (plenty)"]].sort((a, c) => (a[0] === drag) - (c[0] === drag));
+    parts.forEach(p => { o += item(...p); });
+    if (pl.mal) o += A.tx(250, 410, `${R("competitive")} inhibition`, "t16 mid", `style="fill:#b83a34"`) + A.tx(250, 432, "Malonate looks like succinate and takes the active site.", "t12 mid") + A.tx(250, 452, "More succinate can win the site back.", "t12 mid", `style="fill:#1b7f4e"`);
+    if (pl.atp) o += A.tx(750, 410, `${R("noncompetitive")} (allosteric) inhibition`, "t16 mid", `style="fill:#1f6fb2"`) + A.tx(750, 432, "ATP binds PFK's allosteric site and changes its shape.", "t12 mid") + A.tx(750, 452, "Lots of ATP → glycolysis slows (feedback!)", "t12 mid", `style="fill:#b83a34"`);
+    if (!pl.mal && !pl.atp) o += A.tx(500, 430, "Drag each inhibitor onto the spot on the enzyme where it binds", "t14 mid muted");
     return o;
   }
   /* Step: electrons flow carbon (glucose) -> NAD+ -> oxygen, on a loop from the moment the step opens */
@@ -274,43 +252,31 @@
 
   /* ================= Activities ================= */
   const GATES = {
-    eg:Metab.sortGate({title:"Your turn: endergonic or exergonic?", done:"Sorted! Breaking down releases energy; building up absorbs it.",
-      bins:[["end","Endergonic (absorbs energy)"],["ex","Exergonic (releases energy)"]],
-      cards:[["a","Glucose → CO₂ + H₂O","ex","Breaking glucose down releases energy."],["b","Amino acids → protein","end","Building a protein takes energy."],["c","ATP → ADP + P","ex","Breaking off a phosphate releases energy."],["d","ADP + P → ATP","end","Making ATP stores energy, so it absorbs energy."],["e","Photosynthesis","end","Photosynthesis builds glucose using light energy."],["f","Catabolic reactions","ex","Catabolism = breaking down = releasing energy."]]}),
+    eg:Metab.sortGate({title:"Your turn: endergonic or exergonic?", done:"Sorted! Anabolic (building up) reactions are endergonic; catabolic (breaking down) reactions are exergonic.",
+      bins:[["end","Endergonic (anabolic)"],["ex","Exergonic (catabolic)"]],
+      cards:[["a","Glycogen synthesis (glucose → glycogen)","end","Linking glucose into glycogen builds a bigger molecule: anabolic, so it absorbs energy."],["b","Krebs cycle","ex","The Krebs cycle breaks fuel down to CO₂: catabolic, so it releases energy."],["c","Fat breakdown","ex","Breaking fats apart is catabolic: it releases energy."],["d","DNA replication","end","Building a new DNA strand is anabolic: it absorbs energy."],["e","Digesting starch into glucose","ex","Breaking starch into glucose is catabolic: it releases energy."],["f","Building membrane lipids","end","Making lipids is anabolic: it absorbs energy."]]}),
     enzymeFacts:Metab.sortGate({title:"Your turn: true or not true about enzymes?", done:"Enzymes speed reactions up by lowering Eₐ, without being consumed or changing the reaction's overall energy change.",
       bins:[["true","True about enzymes"],["false","NOT true about enzymes"]],
       cards:[["a","Speeds up the reaction","true","That's exactly what a catalyst does."],["b","Lowers the activation energy","true","Enzymes provide an easier path to the transition state."],["c","Gets used up in the reaction","false","Enzymes come out unchanged and can be reused again and again."],["d","Changes whether a reaction releases or absorbs energy overall","false","Enzymes only change the speed, not the overall energy change."]]}),
-    sites:Metab.sortGate({title:"Your turn: active site or allosteric site?", done:"The active site is where the substrate binds and the reaction happens. The allosteric site is a separate regulatory spot.",
-      bins:[["active","Active site"],["allo","Allosteric site"]],
-      cards:[["a","Where the substrate binds and the reaction happens","active","This is the pocket shaped to fit the substrate."],["b","A separate spot where a regulator binds","allo","Allosteric means \"other site\" — away from the active site."],["c","Directly shapes the substrate into the transition state","active","The active site is doing the chemistry."],["d","Binding here can turn the enzyme on or off without touching the substrate","allo","It works by changing the enzyme's overall shape."]]}),
-    inhibit:{title:"Your turn: try both kinds of inhibition", done:"You tried both! Competitive inhibitors block the active site; noncompetitive inhibitors bind elsewhere and change the enzyme's shape.",
-      init:() => ({mode:null, seen:{competitive:false, noncompetitive:false}, drag:null}),
-      html:() => `<div style="font-size:.95rem">Drag the red inhibitor (I) on the diagram onto the active site, then onto the allosteric site.</div>`,
+    respInhib:{title:"Your turn: inhibit two respiration enzymes", done:"Malonate competes for SDH's active site (competitive); ATP binds PFK's allosteric site (noncompetitive).",
+      init:() => ({placed:{}}),
+      html:() => `<div style="font-size:.95rem">Drag <b>malonate</b> and <b>ATP</b> on the diagram onto the spot where each one binds (or tap one, then tap the spot).</div>`,
       wire:(g, st, api) => {
-        const svg = api.svg; svg.style.touchAction = "none";
-        const toSVG = e => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
-        function place(type){
-          st.mode = type; st.seen[type] = true; st.pickInh = false; api.redraw();
-          if (st.seen.competitive && st.seen.noncompetitive){ api.msg("Nice work. Competitive inhibitors block the active site; noncompetitive inhibitors bind the allosteric site and change the enzyme's shape.", "good"); setTimeout(api.pass, 1300); }
-          else api.msg(type === "competitive" ? "Competitive inhibition: it blocks the active site directly. Now try the allosteric site." : "Noncompetitive inhibition: it changes the enzyme's shape from the allosteric site. Now try the active site.", "good");
-        }
-        svg.onpointerdown = e => {
-          const d = e.target.closest && e.target.closest("[data-drag]");
-          if (!d){ if (st.pickInh){ const hit = hitSite(toSVG(e)); if (hit === "active") place("competitive"); else if (hit === "allo") place("noncompetitive"); } return; }
-          e.preventDefault(); const p = toSVG(e);
-          st.drag = {x:p.x, y:p.y, sx:p.x, sy:p.y, moved:false};
-          try { svg.setPointerCapture(e.pointerId); } catch (err) {}
-        };
-        svg.onpointermove = e => { const d = st.drag; if (!d) return; const p = toSVG(e); d.x = p.x; d.y = p.y; if (Math.hypot(p.x - d.sx, p.y - d.sy) > 8) d.moved = true; };
-        svg.onpointerup = svg.onpointercancel = e => {
-          const d = st.drag; if (!d) return; st.drag = null;
-          if (!d.moved){ st.pickInh = true; api.msg("Now tap the active site or the allosteric site.", ""); return; }
-          const hit = hitSite(toSVG(e));
-          if (hit === "active") place("competitive");
-          else if (hit === "allo") place("noncompetitive");
-          else api.msg("Drop the inhibitor right on the active site or the allosteric site.", "bad");
-        };
-        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag the red inhibitor onto a site on the enzyme (or tap it, then tap a site).", "");
+        const near = (p, q, r) => Math.hypot(p.x - q[0], p.y - q[1]) < (r || 55);
+        svgDrag(api, st, {picked:() => api.msg("Now tap the spot where it binds.", ""),
+          drop:(k, p) => {
+            if (st.placed[k]) return;
+            const onL = near(p, RI.L, 130), onR = near(p, RI.R, 130);
+            if (k === "mal"){
+              if (near(p, RI.act(250))){ st.placed.mal = 1; api.msg("Competitive inhibition: malonate is shaped like succinate, so it sits in SDH's active site and blocks it.", "good"); }
+              else { api.msg(onR ? "Malonate is shaped like succinate, SDH's substrate. Look at the Krebs cycle enzyme." : onL ? "Close! Malonate looks just like succinate. Where does succinate bind?" : "Drop malonate right onto an enzyme.", onL || onR ? "bad" : ""); return; }
+            } else {
+              if (near(p, RI.allo, 45)){ st.placed.atp = 1; api.msg("Allosteric inhibition: ATP binds PFK away from the active site, changes its shape, and the substrate no longer fits.", "good"); }
+              else { api.msg(near(p, RI.act(750)) ? "ATP isn't PFK's substrate here. It's a regulator that binds a separate spot." : onL ? "ATP regulates PFK, the glycolysis enzyme on the right." : "Drop ATP right onto a spot on the PFK enzyme.", onL || near(p, RI.act(750)) ? "bad" : ""); return; }
+            }
+            if (st.placed.mal && st.placed.atp) setTimeout(api.pass, 1500);
+          }});
+        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag each inhibitor onto the enzyme it blocks.", "");
       }},
     redox:{title:"Your turn: work right on the diagram above", done:"The donor lost electrons (oxidized) and the acceptor gained them (reduced).",
       init:() => ({moved:false, tags:{}, drag:null, pick:null}),
@@ -378,16 +344,12 @@
   const P1 = "Enzymes and reactions", P2 = "Oxidation and reduction";
   const STEPS = [
     {part:P1, title:"Endergonic vs. exergonic", scene:(t, c) => egScene(t, c.R), live:true, gate:GATES.eg,
-     text:`{{endergonic}} reactions absorb more energy than they release (endo = within), so the products have more energy than the reactants. {{exergonic}} reactions release more energy than they absorb (exo = out), so the products have less energy. Catabolic reactions are exergonic. Anabolic reactions are endergonic.`},
-    {part:P1, title:"Activation energy", scene:(t, c) => eaScene(t, c.R),
-     text:`Before reactants can become products, they must pass through a high-energy, unstable arrangement called the transition state. The extra energy needed to reach it is called {{activation}} (Eₐ) — marked on the graphs above as the climb from the reactants up to the peak. Every reaction needs some activation energy to get started, even one that releases energy overall (exergonic reactions still have to get over the hump first).`},
+     text:`{{endergonic}} reactions absorb more energy than they release (endo = within), so the products have more energy than the reactants. {{exergonic}} reactions release more energy than they absorb (exo = out), so the products have less energy. Building-up (anabolic) reactions like protein synthesis are endergonic. Breaking-down (catabolic) reactions like cellular respiration are exergonic. Cells link the two: energy released by catabolism is stored in ATP, and ATP powers anabolism.`},
     {part:P1, title:"Enzymes lower activation energy", scene:(t, c) => enzymeEaScene(t, c.R), gate:GATES.enzymeFacts,
      text:`{{enzyme}} are biological catalysts: proteins that speed up reactions without being used up themselves. They work by lowering the activation energy needed, often by holding the substrate in a position that makes the transition state easier to reach. Lowering Eₐ doesn't change whether a reaction is endergonic or exergonic, and it doesn't change the reactants or products. It just makes the reaction happen faster.`},
-    {part:P1, title:"Active site vs. allosteric site", scene:(t, c) => sitesScene(t, c.R), gate:GATES.sites,
-     text:`Enzymes have an {{active}}, a pocket shaped to fit the substrate, where the reaction actually happens. Many enzymes also have an {{allosteric}}, a separate spot where a regulatory molecule can bind and change the enzyme's shape, turning the enzyme on or off.`},
-    {part:P1, title:"Competitive vs. noncompetitive inhibition", scene:(t, c) => inhibitionScene(t, c.R, c.g, c.done), live:true, gate:GATES.inhibit,
-     text:`Inhibitors block enzymes in two ways. {{competitive}} inhibitors resemble the substrate and bind the active site directly, competing with it for the same spot. {{noncompetitive}} inhibitors bind the allosteric site instead, changing the enzyme's shape so the active site no longer works, even though the inhibitor never touches it.`,
-     after:`Competitive = blocks the active site. Noncompetitive = changes the enzyme's shape from elsewhere.`},
+    {part:P1, title:"Inhibition in cellular respiration", scene:(t, c) => respInhibScene(t, c.R, c.g, c.done), live:true, gate:GATES.respInhib, more:"poison",
+     text:`You already know the two kinds of inhibition. Here they are inside respiration. In the Krebs cycle, the enzyme succinate dehydrogenase turns its substrate, succinate, into fumarate. Malonate has almost the same shape as succinate, so it binds the {{active}} and blocks it: {{competitive}} inhibition. Adding more succinate can outcompete it. In glycolysis, the enzyme phosphofructokinase (PFK) also has an {{allosteric}}. When the cell has plenty of ATP, ATP binds there, changes PFK's shape, and glycolysis slows down: {{noncompetitive}} (allosteric) inhibition. Because ATP is the end product of respiration, this is also feedback inhibition.`,
+     after:`Competitive = look-alike in the active site. Noncompetitive = regulator at the allosteric site.`},
     {part:P2, title:"Oxidation and reduction", scene:(t, c) => redoxScene(t, c.R, c.g, c.done), live:true, gate:GATES.redox, more:"oil",
      text:`Cells get their energy from chemical reactions. In a reaction, two molecules meet and their atoms rearrange: covalent bonds (pairs of shared electrons) break, and new ones form. Often, electrons move from one molecule, the electron donor, to the other, the electron acceptor. {{oxidation}} is the LOSS of electrons, and it releases energy. {{reduction}} is the GAIN of electrons, and it requires energy input. The two always happen together, so these are called {{redox}} reactions. Remember OIL RIG: Oxidation Is Loss, Reduction Is Gain.`,
      after:`OIL RIG! Oxidation Is Loss, Reduction Is Gain.`},
@@ -399,7 +361,7 @@
      after:`Picking up electrons = the carrier is reduced.`}
   ];
 
-  Metab.start({title:"Enzymes and Energy Production", page:"energy-chemistry.html", BL, MORE, STEPS,
+  Metab.start({title:"Chemistry of Energy Production", page:"energy-chemistry.html", BL, MORE, STEPS,
     nextLabel:"Next up: step 1 of cellular respiration", next:[["Respiration: the big picture →","respiration-overview.html"],["Glycolysis →","glycolysis.html"],["All modules","index.html"]]});
 })();
 </script>
