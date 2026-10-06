@@ -547,12 +547,13 @@
   };
   (function(){
     const CH8 = ["replication","pretx","transcription","posttx","translation","mutations"];
-    const LABS_DIR = ["build","lab","splice","editor","enzlab"];
+    const LABS_DIR = ["build","lab","splice","editor"];
     const GAMES = ["repgame","txgame","tlgame","splicegame","editgame"];
     const GAMES_HTML = `<h2>Games</h2><p class="moddesc">Race the clock! Every round is a brand-new sequence, and your best times are saved on this browser.</p><div class="grid">${GAMES.map(k => tileHTML(k, {noWide:true})).join("")}</div>`;
     /* Chapter 5 modules appear here as each one is revised. Still to come: enzymes, glycolysis, krebs, ferment
        (restore their stops in studypath.js when they go live). */
-    const CH5 = ["enzymes","energy","respov","glycolysis","krebs","etcmod","ferment","idtests"];
+    const CH5 = ["enzymes","energy","respov","glycolysis","krebs","etcmod","ferment"];
+    const CH5_LABS = ["enzlab","idtests"];
     const CH5_ENABLED = true;
     const t = k => tileHTML(k, {noDesc:true, noWide:true});
     const el = document.getElementById("modDir");
@@ -578,10 +579,10 @@
       </div>
       <div class="modpanel" data-panel="ch5" hidden>
         <div class="grid">${CH5.map(t).join("")}</div>
-        <p class="moddesc">Glucose to ATP, start to finish, plus the lab tests that confirm it.</p>
+        <p class="moddesc">Glucose to ATP, start to finish.</p>
         <h2>Practice labs</h2>
-        <p class="moddesc">Pick a real enzyme from Chapter 5 or 8 and push every condition: temperature, pH, salt, cofactors, and inhibitors.</p>
-        <div class="grid">${["enzlab"].map(t).join("")}</div>
+        <p class="moddesc">Push a real enzyme to its limits, then run the biochemical tests microbiologists use to identify bacteria.</p>
+        <div class="grid">${CH5_LABS.map(t).join("")}</div>
       </div>`;
     el.querySelectorAll(".modtab").forEach(b => b.addEventListener("click", () => {
       el.querySelectorAll(".modtab").forEach(x => x.setAttribute("aria-selected", String(x === b)));
