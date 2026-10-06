@@ -147,7 +147,7 @@
      quiz:[q("What does the VP test detect?", ["Acetoin, made by the butanediol pathway", "Mixed acids", "Indole", "Hydrogen sulfide"], 0, "Acetoin is the clue that an organism uses the 2,3-butanediol pathway."),
        q("Is there a pH indicator in the VP test?", ["No: the color comes from acetoin reacting with the reagents", "Yes, phenol red", "Yes, methyl red", "Yes, bromothymol blue"], 0, "The pink-red is a chemical reaction product, not a pH change."),
        q("After incubation, how do you finish the test?", ["Add 18 drops of VP A (α-naphthol), then 18 drops of VP B (KOH), shake, and wait", "Add 4 drops of methyl red", "Add Kovac's reagent", "Read it directly"], 0, "Two reagents, A then B, then shake and give it time to develop."),
-       q("A strain is MR positive. Its VP result is most likely…", ["Negative", "Positive", "Black", "Bubbly"], 0, "The two pathways compete for pyruvate, so most enterics are positive for one and negative for the other.")]},
+       q("Which other test is run in the same MR-VP broth?", ["Methyl red (MR)", "Indole", "Citrate", "Nitrate reduction"], 0, "MR and VP share one broth: split the culture into two tubes, add methyl red to one and the VP reagents to the other.")]},
 
     {key:"oxidase", tab:"Oxidase", title:"Oxidase Test", medium:"strip", tools:["loop"], incubate:false, base:{fill:"#fbfaf4"},
      question:"Does this bacterium have cytochrome c oxidase?",
@@ -192,7 +192,7 @@
        q("After incubation, how do you finish the test?", ["Add 3 drops each of Nitrate A and B; if no color, add zinc dust", "Add 4 drops of methyl red", "Flood with iodine", "Read it directly"], 0, "A + B first; zinc only when there's no color."),
        q("No color after A + B, and it turns red after zinc. The result is…", ["Negative: the nitrate was never reduced", "Positive: reduced to nitrite", "Positive: reduced to N₂ gas", "The test failed"], 0, "Zinc reduced the leftover nitrate itself, so the bacteria never touched it.")]},
 
-    {key:"macconkey", tab:"MacConkey", title:"MacConkey Agar", medium:"plate", tools:["loop"], incubate:true, base:{fill:"#e7a3a8"},
+    {key:"macconkey", tab:"MacConkey", title:"MacConkey Agar", medium:"plate", tools:["loop"], incubate:true, base:{fill:"#e39ab4"},
      question:"Is this bacterium gram-negative, and does it ferment lactose?",
      setup:"Selective (bile salts + crystal violet stop gram-positives) and differential (lactose + neutral red).",
      orgs:[
@@ -204,8 +204,8 @@
      outcome:o => !o.growth
        ? {vis:{colonies:null}, cls:"neg", tag:"No growth", text:`Nothing grows: <i>${o.short}</i> is gram-positive, and the bile salts and crystal violet stop it.`}
        : o.lac
-       ? {vis:{colonies:{fill:"#d9446a", halo:"#c5405f"}}, cls:"pos", tag:"Grows, lactose +", text:`<b>Pink-red colonies.</b> <i>${o.short}</i> is gram-negative (it grew) and ferments lactose; the acid turns neutral red pink.`}
-       : {vis:{colonies:{fill:"#f4eee0", stroke:"#c9c2a8"}}, cls:"neg", tag:"Grows, lactose −", text:`<b>Colorless colonies.</b> <i>${o.short}</i> is gram-negative (it grew) but can't ferment lactose.`},
+       ? {vis:{colonies:{fill:"#ff2e97", halo:"#ff6fb8"}}, cls:"pos", tag:"Grows, lactose +", text:`<b>Bright pink colonies.</b> <i>${o.short}</i> is gram-negative (it grew) and ferments lactose; the acid turns neutral red pink.`}
+       : {vis:{colonies:{fill:"#f6df6a", halo:"#f3e39a"}}, cls:"neg", tag:"Grows, lactose −", text:`<b>Pale yellow colonies.</b> <i>${o.short}</i> is gram-negative (it grew) but can't ferment lactose, so no acid and no pink; it breaks down peptones instead, and the medium around it goes yellowish.`},
      why:"One plate, two questions: does it grow (selective) and what color is it (differential)?",
      quiz:[q("What makes MacConkey selective?", ["Bile salts and crystal violet inhibit gram-positives", "High salt (7.5% NaCl)", "Lactose", "Iodine"], 0, "Gram-positives are stopped; gram-negatives grow."),
        q("What is the pH indicator?", ["Neutral red", "Phenol red", "Methyl red", "Bromothymol blue"], 0, "Neutral red turns pink-red when lactose fermentation makes acid."),
@@ -269,23 +269,24 @@
        q("Why does a positive turn blue?", ["Using citrate makes alkaline byproducts that raise the pH", "Acid from fermentation", "Oxygen bubbles", "Iron sulfide"], 0, "Alkaline = blue for bromothymol blue."),
        q("How do you inoculate it?", ["Streak the slant surface (a light inoculum), then incubate; nothing is added", "Swirl in broth and add methyl red", "Flood with iodine", "Add zinc"], 0, "A light streak on the slant, then just read the color.")]},
 
-    {key:"catalase", tab:"Catalase", title:"Catalase Test", medium:"slide", tools:["loop"], incubate:false, base:{fill:"#eef3f6"},
+    {key:"catalase", tab:"Catalase", title:"Catalase Test", medium:"slant", tools:["loop"], incubate:true, base:{slant:"#ecdcab", butt:"#ecdcab"},
      question:"Does this bacterium make catalase to break down hydrogen peroxide?",
-     setup:"Smear some culture on a clean glass slide, then add a drop of 3% hydrogen peroxide. No incubation.",
+     setup:"Streak a nutrient agar slant and incubate. Then drip a few drops of 3% hydrogen peroxide right onto the growth.",
      orgs:[
        {name:"Staphylococcus aureus", short:"S. aureus", cap:"#e0a020", pos:true},
        {name:"Streptococcus pyogenes", short:"S. pyogenes", cap:"#d9443a", pos:false},
        {name:"Escherichia coli", short:"E. coli", cap:"#3f7bd1", pos:true}
      ],
-     reagents:[{name:"3% H₂O₂", drops:2, liquid:"#eef6fb", bottle:"#3b4250"}],
+     reagents:[{name:"3% H₂O₂", drops:3, liquid:"#eef6fb", bottle:"#3b4250"}],
      outcome:o => o.pos
-       ? {vis:{bubbles:true}, cls:"pos", tag:"Catalase positive", text:`<b>Instant bubbling.</b> <i>${o.short}</i>'s catalase splits 2 H₂O₂ → 2 H₂O + O₂, and the bubbles are oxygen gas.`}
-       : {vis:{bubbles:false}, cls:"neg", tag:"Catalase negative", text:`<b>No bubbles.</b> <i>${o.short}</i> has no catalase to break the peroxide down. This is the classic way to tell Streptococcus from Staphylococcus.`},
+       ? {vis:{slant:"#ecdcab", butt:"#ecdcab", growth:true, bubbles:true}, cls:"pos", tag:"Catalase positive", text:`<b>Instant bubbling</b> on the slant. <i>${o.short}</i>'s catalase splits 2 H₂O₂ → 2 H₂O + O₂, and the bubbles are oxygen gas.`}
+       : {vis:{slant:"#ecdcab", butt:"#ecdcab", growth:true, bubbles:false}, cls:"neg", tag:"Catalase negative", text:`<b>No bubbles.</b> <i>${o.short}</i> has no catalase to break the peroxide down. This is the classic way to tell Streptococcus from Staphylococcus.`},
      why:"Aerobic metabolism makes small amounts of toxic peroxide. Catalase is one of the enzymes that detoxifies it.",
      link:["Review the electron transport chain →", "etc.html"],
      quiz:[q("What does the catalase test detect?", ["The enzyme catalase breaking down H₂O₂", "Acid from fermentation", "Cytochrome c oxidase", "Amylase"], 0, "Catalase: 2 H₂O₂ → 2 H₂O + O₂."),
        q("Is there a pH indicator?", ["No: you watch for O₂ bubbles", "Yes, phenol red", "Yes, methyl red", "Yes, bromothymol blue"], 0, "The readout is gas bubbles, not color."),
-       q("How do you run it?", ["Smear culture on a slide and add a drop of 3% H₂O₂; read immediately", "Incubate 48 h, then add methyl red", "Add Kovac's reagent", "Flood with iodine"], 0, "Fast and simple: peroxide onto the cells."),
+       q("How do you run it?", ["Grow it on a nutrient agar slant, then drip 3% H₂O₂ onto the growth and watch for bubbles", "Incubate 48 h in broth, then add methyl red", "Add Kovac's reagent", "Flood a plate with iodine"], 0, "Peroxide goes right onto the cells on the slant; bubbles show up immediately."),
+       q("What are the bubbles?", ["Oxygen gas released as catalase breaks down H₂O₂", "CO₂ from fermentation", "Hydrogen gas", "Air trapped in the agar"], 0, "2 H₂O₂ → 2 H₂O + O₂: the O₂ is what fizzes."),
        q("Which pair does catalase best tell apart?", ["Staphylococcus (+) vs. Streptococcus (−)", "E. coli vs. Klebsiella", "Pseudomonas vs. E. coli", "Proteus vs. Salmonella"], 0, "Both are gram-positive cocci; catalase separates them.")]},
 
     {key:"starch", tab:"Starch", title:"Starch Hydrolysis Test", medium:"plate", tools:["loop"], incubate:true, base:{fill:"#efe2bf"},
@@ -323,34 +324,31 @@
        q("Which reagent, and does it work as a pH indicator?", ["Kovac's reagent; no, it reacts with indole to make red", "Methyl red; yes", "Phenol red; yes", "Iodine; no"], 0, "Kovac's detects indole chemically."),
        q("How do you finish the test?", ["Add about 10 drops of Kovac's on top and don't shake; read the ring", "Shake with KOH and wait 30 min", "Add zinc", "Flood with iodine"], 0, "The reagent floats as a layer; a red ring is positive.")]},
 
-    {key:"h2s", tab:"Kligler's (H₂S)", title:"Kligler's Iron Agar (KIA): sugars + H₂S", medium:"slant", stab:true, tools:["needle"], incubate:true, base:{slant:C_RED, butt:C_RED},
-     question:"Which sugars does it ferment (glucose? lactose?), does it make gas, and does it make H₂S?",
-     setup:"A KIA slant: glucose (a little), lactose (lots), phenol red, and iron salts. Stab the butt with a needle, then streak the slant. Read at 18–24 hours.",
+    {key:"h2s", tab:"Kligler's (H₂S)", title:"Kligler's Iron Agar Deep (H₂S)", medium:"slant", deep:true, tools:["needle"], incubate:true, base:{slant:C_RED, butt:C_RED},
+     question:"Does this bacterium make hydrogen sulfide (H₂S)?",
+     setup:"A Kligler's iron agar deep: sugars, phenol red, and iron salts. Stab straight down into the deep with a needle. Read at 18–24 hours.",
      orgs:[
-       {name:"Escherichia coli", short:"E. coli", cap:"#3f7bd1", kia:"A/A", gas:true, h2s:false},
-       {name:"Proteus mirabilis", short:"P. mirabilis", cap:"#9a6212", kia:"K/A", gas:true, h2s:true},
-       {name:"Salmonella enterica", short:"Salmonella", cap:"#c4532f", kia:"K/A", gas:true, h2s:true},
-       {name:"Shigella flexneri", short:"S. flexneri", cap:"#2f9e63", kia:"K/A", gas:false, h2s:false}
+       {name:"Escherichia coli", short:"E. coli", cap:"#3f7bd1", h2s:false},
+       {name:"Proteus mirabilis", short:"P. mirabilis", cap:"#9a6212", h2s:true},
+       {name:"Salmonella enterica", short:"Salmonella", cap:"#c4532f", h2s:true},
+       {name:"Shigella flexneri", short:"S. flexneri", cap:"#2f9e63", h2s:false}
      ],
      reagents:[],
-     outcome:o => {
-       const AA = o.kia === "A/A";
-       const vis = {slant:AA ? C_YEL : C_RED, butt:C_YEL, gas:o.gas, black:o.h2s, growth:true};
-       const sugars = AA ? `<b>Yellow slant and yellow butt (A/A)</b>: it fermented glucose AND lactose, making enough acid everywhere to turn phenol red yellow.` : `<b>Red slant, yellow butt (K/A)</b>: it fermented the small amount of glucose (acid in the butt), but not lactose, so the slant went back to red once the glucose ran out.`;
-       return {vis, cls:o.h2s ? "pos" : AA ? "pos" : "", tag:`${o.kia}${o.gas ? ", gas" : ""}${o.h2s ? ", H₂S +" : ", H₂S −"}`, text:`${sugars}${o.gas ? " Cracks and bubbles in the agar show gas." : " No cracks: no gas."} ${o.h2s ? "A <b>black precipitate</b> in the butt means H₂S was made and reacted with the iron (iron sulfide)." : "No black precipitate, so no H₂S."}`};
-     },
-     why:"KIA packs three tests into one tube: glucose vs. lactose fermentation (phenol red), gas (cracks), and H₂S (black iron sulfide). E. coli comes out yellow/yellow, not red, because it ferments both sugars.",
+     outcome:o => o.h2s
+       ? {vis:{slant:C_YEL, butt:C_YEL, black:true, growth:true}, cls:"pos", tag:"H₂S positive", text:`A <b>black precipitate</b> fills the deep. <i>${o.short}</i> made H₂S (from sulfur-containing amino acids like cysteine), and it reacted with the iron salts to form black iron sulfide. The black often hides the yellow from sugar fermentation underneath.`}
+       : {vis:{slant:C_YEL, butt:C_YEL, black:false, growth:true}, cls:"neg", tag:"H₂S negative", text:`<b>No black.</b> The agar turned yellow because <i>${o.short}</i> fermented the sugar (acid turns phenol red yellow), but it made no H₂S, so no iron sulfide formed.`},
+     why:"A Kligler's deep is read for H₂S: black iron sulfide = positive. Phenol red also shows sugar fermentation (yellow), but the black precipitate is the result you're reading for.",
      link:["Review how amino acids feed the Krebs cycle →", "krebs.html"],
-     quiz:[q("What does KIA test?", ["Glucose and lactose fermentation, gas, and H₂S production", "Only H₂S", "Catalase", "Citrate use"], 0, "Three readouts in one tube."),
-       q("What is the pH indicator?", ["Phenol red", "Methyl red", "Bromothymol blue", "Neutral red"], 0, "Yellow = acid, red = alkaline/neutral."),
-       q("How do you inoculate it?", ["Stab the butt with a needle, then streak the slant; read at 18–24 h", "Swirl a loop in broth", "Streak a plate", "Smear on a slide"], 0, "Stab + streak with a needle, and read on time."),
-       q("Red slant over a yellow butt (K/A) means…", ["Glucose fermented, lactose not", "Both sugars fermented", "No fermentation", "H₂S produced"], 0, "Only the little glucose was fermented; the slant reverts to red."),
+     quiz:[q("What are you reading a Kligler's deep for?", ["H₂S production (black iron sulfide)", "Catalase", "Citrate use", "Indole"], 0, "Black precipitate = H₂S positive."),
+       q("What is the pH indicator?", ["Phenol red", "Methyl red", "Bromothymol blue", "Neutral red"], 0, "Yellow = acid from fermentation, red = no acid."),
+       q("How do you inoculate it?", ["Stab straight down into the deep with a needle; read at 18–24 h", "Swirl a loop in broth", "Streak a plate", "Smear on a slide"], 0, "A needle stab carries the cells deep into the agar."),
+       q("The deep is yellow with no black. What does that mean?", ["It fermented the sugar but made no H₂S", "It made H₂S", "It didn't grow", "It is catalase positive"], 0, "Yellow = acid from fermentation; no black = H₂S negative."),
        q("What makes the black color?", ["H₂S reacting with iron to make iron sulfide", "Too much acid", "Dead bacteria", "Gas bubbles"], 0, "Black = FeS precipitate = H₂S positive.")]}
   ];
 
   const MNAME = {durham:s => `Phenol red ${s} broth`, mr:() => "MR-VP broth", vp:() => "MR-VP broth", oxidase:() => "Oxidase test strip", nitrate:() => "Nitrate broth",
-    macconkey:() => "MacConkey agar", emb:() => "EMB agar", msa:() => "Mannitol salt agar", citrate:() => "Simmons citrate slant", catalase:() => "Glass slide",
-    starch:() => "Starch agar plate", indole:() => "Tryptone broth", h2s:() => "Kligler's iron agar slant"};
+    macconkey:() => "MacConkey agar", emb:() => "EMB agar", msa:() => "Mannitol salt agar", citrate:() => "Simmons citrate slant", catalase:() => "Nutrient agar slant",
+    starch:() => "Starch agar plate", indole:() => "Tryptone broth", h2s:() => "Kligler's iron agar deep"};
   const HOURS = {h2s:"18–24 hours", mr:"48 hours", vp:"48 hours"};
   const CULTURE = "#efe3c0";
   const f1 = n => Math.round(n * 10) / 10;
@@ -427,12 +425,19 @@
     return {x0:L.med.x - 50, x1:L.med.x + 50, y0:L.med.top - 30, y1:L.med.top + L.med.h};
   }
   function streakPts(){
-    const {x, y, r} = L.plate, pts = [];
+    /* a hand-drawn serpentine: gently bowed passes joined by rounded turns, sampled densely */
+    const {x, y, r} = L.plate, pts = [], rows = [];
     for (let k = 0; k < 5; k++){
-      const yy = y - r * .6 + k * r * .3, half = Math.sqrt(Math.max(r * r * .72 - (yy - y) * (yy - y), 0));
-      const a = [x - half + 6, yy], b = [x + half - 6, yy + r * .08];
-      if (k % 2) pts.push(b, a); else pts.push(a, b);
+      const yy = y - r * .58 + k * r * .29, half = Math.sqrt(Math.max(r * r * .66 - (yy - y) * (yy - y), 0));
+      const a = [x - half + 10, yy], b = [x + half - 10, yy + r * .06];
+      rows.push(k % 2 ? [b, a] : [a, b]);
     }
+    const bez = (p0, p1, p2, p3, n, skip) => { for (let i = skip ? 1 : 0; i <= n; i++){ const u = i / n, v = 1 - u; pts.push([v * v * v * p0[0] + 3 * v * v * u * p1[0] + 3 * v * u * u * p2[0] + u * u * u * p3[0], v * v * v * p0[1] + 3 * v * v * u * p1[1] + 3 * v * u * u * p2[1] + u * u * u * p3[1]]); } };
+    rows.forEach(([a, b2], k) => {
+      const bow = (k % 2 ? 1 : -1) * r * .05, m1 = [lerp(a[0], b2[0], .33), lerp(a[1], b2[1], .33) + bow], m2 = [lerp(a[0], b2[0], .67), lerp(a[1], b2[1], .67) + bow];
+      bez(a, m1, m2, b2, 16, k > 0);
+      if (k < rows.length - 1){ const nx = rows[k + 1][0], d = Math.sign(b2[0] - a[0]) * r * .22; bez(b2, [b2[0] + d, b2[1]], [nx[0] + d, nx[1]], nx, 10, true); }
+    });
     return pts;
   }
   const polyAt = (pts, k) => {
@@ -444,7 +449,7 @@
   const ptsStr = p => p.map(q => `${f1(q[0])},${f1(q[1])}`).join(" ");
   function slantGeom(){
     const cx = L.med.x, w = 76, top = L.med.top, b = top + L.med.h, l = cx - w / 2 + 4, r = cx + w / 2 - 4;
-    return {cx, w, top, b, l, r, yHigh:top + 92, yLow:top + 168};
+    return T().deep ? {cx, w, top, b, l, r, yHigh:top + 80, yLow:top + 80} : {cx, w, top, b, l, r, yHigh:top + 92, yLow:top + 168};
   }
   /* liquid top for broths */
   const liqTop = () => L.med.top + 70;
@@ -476,8 +481,11 @@
       s += `<clipPath id="mc"><path d="${tubePath(g.cx, g.top, g.w, L.med.h, 3)}"/></clipPath><g clip-path="url(#mc)">`;
       s += `<path d="M${g.l - 4},${g.yHigh} L${g.r + 4},${g.yLow} L${g.r + 4},${g.b + 4} L${g.l - 4},${g.b + 4} Z" fill="url(#sg)"/>`;
       s += `<path d="M${g.l - 4},${g.yHigh} L${g.r + 4},${g.yLow} L${g.r + 4},${g.b + 4} L${g.l - 4},${g.b + 4} Z" fill="url(#liqShade)"/>`;
-      if (vis.black) s += `<path d="M${g.l - 4},${g.b - 70} C${g.cx - 20},${g.yLow + 40} ${g.cx + 12},${g.yLow + 50} ${g.r + 4},${g.b - 86} L${g.r + 4},${g.b + 4} L${g.l - 4},${g.b + 4} Z" fill="#221d1a" opacity=".92"/><path d="M${g.cx - 2},${g.yLow + 22} L${g.cx + 3},${g.b - 70}" stroke="#221d1a" stroke-width="7" stroke-linecap="round"/>`;
+      if (vis.black){ const y0 = g.yLow + 22;
+        s += `<path d="M${g.cx - 2},${y0} C${g.cx - 6},${y0 + 40} ${g.cx - 16},${y0 + 70} ${g.l - 4},${g.b - 70} L${g.l - 4},${g.b + 4} L${g.r + 4},${g.b + 4} L${g.r + 4},${g.b - 82} C${g.cx + 14},${y0 + 66} ${g.cx + 6},${y0 + 40} ${g.cx + 2},${y0} Z" fill="#231e1b" opacity=".93" filter="url(#soft2)"/>`; }
       if (vis.gas) s += `<path d="M${g.l},${g.b - 50} l14,-6 l10,8 l16,-10 M${g.cx - 6},${g.b - 104} l9,10 l-5,9 l11,7 M${g.cx + 8},${g.b - 30} l12,-4 l6,7" fill="none" stroke="#fdfcf8" stroke-width="3" stroke-linecap="round"/><rect x="${g.l - 4}" y="${g.b - 16}" width="${g.w}" height="14" fill="#fdfcf8" opacity=".9"/>`;
+      if (vis.bubbles) s += Array.from({length:26}, (_, k) => { const q = rnd(k + 5), bx = lerp(g.l + 8, g.r - 8, q) + (rnd(k) - .5) * 8, by = lerp(g.yHigh + 4, g.yLow, q) - 2 - rnd(k + 2) * 18, br = 3.5 + rnd(k + 9) * 5;
+        return `<circle cx="${f1(bx)}" cy="${f1(by)}" r="${f1(br)}" fill="#fff" fill-opacity=".6" stroke="#6fa8cc" stroke-width="1.4"><animate attributeName="r" values="${f1(br * .6)};${f1(br * 1.2)};${f1(br * .6)}" dur="${f1(.7 + rnd(k + 3) * .8)}s" repeatCount="indefinite"/></circle>`; }).join("");
       if (opts.stab) s += `<line x1="${g.cx}" y1="${g.yLow + 10}" x2="${g.cx}" y2="${g.b - 24}" stroke="${vis.growth ? "#f6efd8" : "#fff7df"}" stroke-width="${vis.growth ? 3.5 : 2}" opacity=".9"/>`;
       if (opts.streak){
         let z = `M${g.l + 6},${g.yHigh + 6}`; const n = 8;
@@ -485,13 +493,13 @@
         s += `<path d="${z}" fill="none" stroke="${vis.growth ? "#f8f1dc" : "#fff7df"}" stroke-width="${vis.growth ? 6 : 2}" stroke-linejoin="round" stroke-linecap="round" opacity="${vis.growth ? .95 : .8}"/>`;
       }
       s += `</g>` + glass(g.cx, g.top, g.w, L.med.h);
-      s += txt(g.cx + 52, g.yHigh + 30, "slant", {fs:11 * L.fs, a:"start", col:"#5a6376"}) + txt(g.cx + 52, g.b - 50, "butt", {fs:11 * L.fs, a:"start", col:"#5a6376"});
+      if (!t.deep) s += txt(g.cx + 52, g.yHigh + 30, "slant", {fs:11 * L.fs, a:"start", col:"#5a6376"}) + txt(g.cx + 52, g.b - 50, "butt", {fs:11 * L.fs, a:"start", col:"#5a6376"});
     } else if (t.medium === "plate"){
       const {x, y, r} = L.plate;
       s += `<circle cx="${x}" cy="${y + 6}" r="${r + 12}" fill="#d9dee7" opacity=".6"/><circle cx="${x}" cy="${y}" r="${r + 10}" fill="#f2f5f9" stroke="#b9c2cf" stroke-width="3"/>`;
-      s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${vis.iodine ? "#2b2340" : vis.agar}"/>`;
+      s += `<circle cx="${x}" cy="${y}" r="${r}" fill="${vis.iodine ? "#2b2340" : vis.agar}"/><circle cx="${x}" cy="${y}" r="${r}" fill="url(#agarShade)"/>`;
       if (vis.iodine && vis.halo && opts.streakK) s += `<polyline points="${ptsStr(polyAt(streakPts(), 1))}" fill="none" stroke="${vis.agar}" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>`;
-      if (vis.coloniesHalo) s += `<polyline points="${ptsStr(polyAt(streakPts(), 1))}" fill="none" stroke="${vis.coloniesHalo}" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/>`;
+      if (vis.coloniesHalo) s += `<polyline points="${ptsStr(polyAt(streakPts(), 1))}" fill="none" stroke="${vis.coloniesHalo}" stroke-width="38" stroke-linecap="round" stroke-linejoin="round" opacity=".7" filter="url(#soft)"/>`;
       if (opts.streakK && !vis.colonies) s += `<polyline points="${ptsStr(polyAt(streakPts(), opts.streakK))}" fill="none" stroke="#fffbea" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>`;
       if (vis.colonies) s += colonies(vis.colonies);
       s += `<path d="M${x - r * .62},${y - r * .7} A${r * .95},${r * .95} 0 0 1 ${x + r * .3},${y - r * .9}" fill="none" stroke="#fff" stroke-width="5" opacity=".55" stroke-linecap="round"/>`;
@@ -511,12 +519,13 @@
     }
     return s;
   }
+  const shade = (hex, k) => { const n = parseInt(hex.slice(1), 16), ch = s => clamp(Math.round(((n >> s) & 255) * (1 + k)), 0, 255); return "#" + [16, 8, 0].map(s => ch(s).toString(16).padStart(2, "0")).join(""); };
   function colonies(c){
     const pts = streakPts(), lens = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1])), tot = lens.reduce((a, b) => a + b, 0);
     let s = "", d = 0;
     while (d < tot){
       const k = d / tot, p = polyAt(pts, k).pop(), r0 = (c.r || 8) * lerp(.55, 1.05, k), jx = (rnd(d) - .5) * 8, jy = (rnd(d + 3) - .5) * 8;
-      s += `<circle cx="${f1(p[0] + jx)}" cy="${f1(p[1] + jy)}" r="${f1(r0)}" fill="${c.fill}"${c.stroke ? ` stroke="${c.stroke}" stroke-width="1.5"` : ""}/>`;
+      s += `<circle cx="${f1(p[0] + jx)}" cy="${f1(p[1] + jy + 1.2)}" r="${f1(r0)}" fill="#000" opacity=".12"/><circle cx="${f1(p[0] + jx)}" cy="${f1(p[1] + jy)}" r="${f1(r0)}" fill="${c.fill}" stroke="${c.stroke || shade(c.fill, -.22)}" stroke-width="1.3"/>`;
       if (c.sheen) s += `<path d="M${f1(p[0] + jx - r0 * .55)},${f1(p[1] + jy - r0 * .1)} A${f1(r0 * .6)},${f1(r0 * .6)} 0 0 1 ${f1(p[0] + jx + r0 * .3)},${f1(p[1] + jy - r0 * .55)}" fill="none" stroke="#63e08f" stroke-width="2.2"/>`;
       else s += `<circle cx="${f1(p[0] + jx - r0 * .3)}" cy="${f1(p[1] + jy - r0 * .3)}" r="${f1(r0 * .28)}" fill="#fff" opacity=".45"/>`;
       d += lerp(13, 34, k);
@@ -582,7 +591,7 @@
     const t = T(), svg = $("benchSvg");
     svg.setAttribute("viewBox", `0 0 ${L.W} ${L.H}`);
     const held = drag ? drag.item : null, a = anim, now = performance.now(), k = a ? clamp((now - a.t0) / a.dur, 0, 1) : 0;
-    let s = `<defs><linearGradient id="liqShade" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".1"/></linearGradient></defs>`;
+    let s = `<defs><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter><filter id="soft2" x="-50%" y="-20%" width="200%" height="140%"><feGaussianBlur stdDeviation="2.5"/></filter><radialGradient id="agarShade" cx=".42" cy=".38" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></radialGradient><linearGradient id="liqShade" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".1"/></linearGradient></defs>`;
     /* bench surface + zones */
     s += `<rect x="0" y="0" width="${L.W}" height="${L.H}" rx="18" fill="#f7f8fb"/>`;
     const rk0 = L.rack(0), rkN = L.rack(t.orgs.length - 1);
@@ -597,7 +606,7 @@
     let opts = {hot:hotMed, stab:false, streak:false, streakK:0, smear:false};
     if (S.inoc || (a && a.kind === "inoc")){
       const kk = a && a.kind === "inoc" ? k : 1;
-      if (t.medium === "slant"){ opts.stab = t.stab && kk > .3; opts.streak = kk > (t.stab ? .55 : .1); }
+      if (t.medium === "slant"){ opts.stab = t.stab && kk > .3; opts.streak = !t.deep && kk > (t.stab ? .55 : .1); }
       if (t.medium === "plate") opts.streakK = a && a.kind === "inoc" ? clamp(k / .9, 0, 1) : 1;
       if (t.medium === "strip" || t.medium === "slide") opts.smear = kk > .3;
     }
@@ -693,7 +702,7 @@
   }
   function wrongTool(item){
     const t = T();
-    if (t.stab) return "Use the needle: Kligler's needs a stab straight down into the butt, then a streak up the slant.";
+    if (t.deep) return "Use the needle: a Kligler's deep is stabbed straight down into the agar.";
     if (t.medium === "broth") return "For broth, use the loop: it carries more cells, and you swirl it in the liquid.";
     if (t.medium === "plate") return "Use the loop to streak a plate: a needle would gouge the agar.";
     return "Use the loop to smear the cells.";
@@ -713,7 +722,9 @@
       path = k => k < .25 ? [cx, lerp(top, yl + 70, ease(k / .25))] : k < .8 ? (q => [cx + 14 * Math.sin(q * Math.PI * 6), yl + 70 + 12 * Math.cos(q * Math.PI * 6) - 12])((k - .25) / .55) : [cx, lerp(yl + 70, top, ease((k - .8) / .2))]; }
     else if (t.medium === "slant"){ const g = slantGeom(), top = g.top - 30;
       const zz = q => { const n = 8, x = lerp(g.r - 8, g.l + 8, q), y = lerp(g.yLow + 2, g.yHigh + 4, q) + (Math.floor(q * n) % 2 ? 8 : 0); return [x, y]; };
-      path = t.stab
+      path = t.deep
+        ? k => k < .45 ? [cx, lerp(top, g.b - 24, ease(k / .45))] : [cx, lerp(g.b - 24, top, ease((k - .45) / .55))]
+        : t.stab
         ? k => k < .3 ? [cx, lerp(top, g.b - 24, ease(k / .3))] : k < .45 ? [cx, lerp(g.b - 24, g.yLow + 4, ease((k - .3) / .15))] : k < .9 ? zz((k - .45) / .45) : [lerp(g.l + 8, cx, (k - .9) / .1), lerp(g.yHigh, top, (k - .9) / .1)]
         : k => k < .15 ? [lerp(cx, g.r - 8, k / .15), lerp(top, g.yLow, ease(k / .15))] : k < .9 ? zz((k - .15) / .75) : [lerp(g.l + 8, cx, (k - .9) / .1), lerp(g.yHigh, top, (k - .9) / .1)]; }
     else if (t.medium === "plate"){ const pts = streakPts(); path = k => k < .9 ? polyAt(pts, k / .9).pop() : (p => [p[0], p[1] - 60 * (k - .9) / .1])(pts[pts.length - 1]); }
@@ -770,7 +781,7 @@
 
   /* ---------------- page ---------------- */
   function stepList(){
-    const t = T(), out = [["Pick up bacteria", !!S.loaded], [t.medium === "plate" ? "Streak the plate" : t.medium === "slant" ? (t.stab ? "Stab + streak" : "Streak the slant") : t.medium === "broth" ? "Inoculate the broth" : "Smear the cells", S.inoc]];
+    const t = T(), out = [["Pick up bacteria", !!S.loaded], [t.medium === "plate" ? "Streak the plate" : t.medium === "slant" ? (t.deep ? "Stab the deep" : t.stab ? "Stab + streak" : "Streak the slant") : t.medium === "broth" ? "Inoculate the broth" : "Smear the cells", S.inoc]];
     if (t.incubate) out.push(["Incubate", S.incubated]);
     if (t.reagents.length) out.push([t.reagents.map(r => r.name).join(" → "), S.rIdx >= t.reagents.length]);
     if (t.zinc) out.push(["Zinc (if needed)", S.zinc || (S.done && !needZinc())]);
