@@ -70,6 +70,45 @@
   .qfb.good{background:var(--good-soft);color:#14593a}
   .qfb.bad{background:var(--bad-soft);color:#7a2e28}
   .qscore{font-weight:700;color:var(--more)}
+  .labhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+  .quizhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .quizhead h3{margin:0}
+  .tmodal{position:fixed;inset:0;background:rgba(20,24,36,.55);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto}
+  .tmodal[hidden]{display:none}
+  .tcard{background:#fff;border-radius:22px;max-width:920px;width:100%;padding:22px 24px 18px;box-shadow:0 20px 50px rgba(0,0,0,.3);animation:tpop .25s ease-out}
+  @keyframes tpop{from{transform:translateY(14px);opacity:0}}
+  .thead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+  .thead h2{margin:2px 0 0;font-size:1.35rem}
+  .tkick{font-size:.78rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9a6212}
+  .tclose{border:none;background:#eef1f5;border-radius:50%;width:38px;height:38px;font-size:1.4rem;cursor:pointer;color:var(--ink);flex:none}
+  .tasks{background:linear-gradient(135deg,#fff4de,#fdeceb);border-radius:16px;padding:12px 16px;margin-bottom:12px}
+  .tasks p{margin:4px 0 0;font-size:1.08rem;line-height:1.45}
+  .tlabel{display:block;font-size:.74rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .tsec{margin:14px 0}
+  .tsec h3{font-size:.95rem;margin:0 0 8px;color:var(--accent)}
+  .tsec p{margin:0;line-height:1.55;font-size:.95rem}
+  .tflowwrap{background:#f7f8fb;border-radius:14px;padding:8px;overflow-x:auto}
+  .tflow{display:block;width:100%;min-width:720px;height:auto}
+  .teqs{display:flex;flex-direction:column;gap:6px}
+  .teq{background:#f3effd;border-left:4px solid var(--more);border-radius:10px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline}
+  .tq{font-weight:700;font-size:1rem;color:#2a1f4a;font-family:"Atkinson Hyperlegible",ui-monospace,monospace}
+  .tn{font-size:.82rem;color:var(--muted);font-style:italic}
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:720px){.tgrid{grid-template-columns:1fr}.tcard{padding:16px}}
+  .tind{display:block;width:100%;max-width:440px;height:auto}
+  .tnoind{background:#f7f8fb;border-radius:12px;padding:10px 12px}
+  .tio{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .tio>div:not(.tarrow){flex:1;min-width:150px}
+  .tarrow{font-size:1.6rem;color:var(--muted);font-weight:700}
+  .tchip{display:inline-block;background:#eef1f5;border-radius:999px;padding:4px 11px;margin:3px 4px 0 0;font-size:.86rem;font-weight:700}
+  .textra{margin-top:8px!important;background:#fff8e6;border-radius:10px;padding:8px 12px;color:#6b4a00}
+  .treads{display:flex;flex-wrap:wrap;gap:12px}
+  .tread{display:flex;flex-direction:column;align-items:center;background:#f7f8fb;border-radius:14px;padding:8px 10px;min-width:104px;text-align:center}
+  .tread b{font-size:.9rem;margin-top:2px}
+  .tread span{font-size:.8rem;color:var(--muted)}
+  .tmini{width:84px;height:auto}
+  .tlinks{display:flex;flex-wrap:wrap;gap:8px}
+  .tfoot{display:flex;justify-content:flex-end;margin-top:8px}
 </style>
 </head>
 <body>
@@ -820,7 +859,7 @@
 
   function quizHTML(t){
     if (!t.quiz || !t.quiz.length) return "";
-    return `<section class="quiz"><h3>Test yourself</h3>` + t.quiz.map((qq, i) => {
+    return `<section class="quiz"><div class="quizhead"><h3>Test yourself</h3><button class="btn secondary sm" id="theoryBtn2">📖 Review the theory first</button></div>` + t.quiz.map((qq, i) => {
       const order = qq.opts.map((_, k) => k).sort((a, b) => rnd(i * 7 + a + t.key.length) - rnd(i * 7 + b + t.key.length));
       return `<div class="qcard" data-q="${i}"><p class="qq">${i + 1}. ${qq.q}</p><div class="qopts">${order.map(k => `<button class="qopt" data-k="${k}">${qq.opts[k]}</button>`).join("")}</div><div class="qfb" hidden></div></div>`;
     }).join("") + `<p class="qscore" id="qScore"></p></section>`;
@@ -843,7 +882,7 @@
     reset(); L = null;
     $("labTabs").innerHTML = TESTS.map(x => `<button class="labtab ${x.key === active ? "on" : ""}" data-tab="${x.key}">${x.tab}</button>`).join("");
     $("labArea").innerHTML = `
-      <div class="labhead"><h2>${t.title}</h2></div>
+      <div class="labhead"><h2>${t.title}</h2><button class="btn hint sm" id="theoryBtn">📖 Understand the test</button></div>
       <p class="labq"><b>Question:</b> ${t.question}</p>
       <p class="labq" style="margin-top:-10px">${t.setup}</p>
       ${t.safety ? `<div class="labsafety">⚠️ ${t.safety}</div>` : ""}
@@ -858,6 +897,8 @@
       <div id="quizBox">${quizHTML(t)}</div>`;
     layout(); bindBench(); bindQuiz(t);
     $("incBtn").addEventListener("click", incubate);
+    $("theoryBtn").addEventListener("click", openTheory);
+    if ($("theoryBtn2")) $("theoryBtn2").addEventListener("click", openTheory);
     $("againBtn").addEventListener("click", () => { reset(); draw(); updateUI(); });
     $("labArea").querySelectorAll("[data-sugar]").forEach(b => b.addEventListener("click", () => { sugar = b.dataset.sugar; $("labArea").querySelectorAll("[data-sugar]").forEach(x => x.classList.toggle("on", x === b)); reset(); draw(); updateUI(); }));
     draw(); updateUI();
@@ -876,6 +917,270 @@
   if (TESTS.some(t => t.key === hash)) active = hash;
   render();
   window.__idt = {S:() => S, T, L:() => L, dropAt, startInoc, incubate, setDrag:d => { drag = d; }, draw, updateUI};
+
+  /* ================= "Understand the test": the theory behind each test ================= */
+  const IND = {
+    phenol:{name:"Phenol red", axis:"pH", range:[5, 10], stops:[[5, "#f2d23c"], [6.5, "#f2c43c"], [7.1, "#e8603a"], [8.2, "#d9443a"], [8.7, "#e0457a"], [10, "#cf2f86"]],
+      marks:[[6.8, "6.8"], [8.4, "8.4"]], zones:[[5, 6.8, "yellow: acid"], [6.8, 8.4, "red: neutral"], [8.4, 10, "pink: alkaline"]]},
+    methyl:{name:"Methyl red", axis:"pH", range:[3, 8], stops:[[3, "#d9443a"], [4.4, "#de4a38"], [5.3, "#f08a2e"], [6.2, "#f2d23c"], [8, "#f2d23c"]],
+      marks:[[4.4, "4.4"], [6.2, "6.2"]], zones:[[3, 4.4, "red: lots of acid"], [4.4, 6.2, "orange"], [6.2, 8, "yellow: less acid"]]},
+    btb:{name:"Bromothymol blue", axis:"pH", range:[5, 9], stops:[[5, "#e8d23c"], [6.0, "#d6cf3c"], [6.8, "#4f9a4a"], [7.6, "#2f6fbf"], [9, "#2f5fbf"]],
+      marks:[[6.0, "6.0"], [7.6, "7.6"]], zones:[[5, 6.0, "yellow: acid"], [6.0, 7.6, "green: neutral"], [7.6, 9, "blue: alkaline"]]},
+    neutral:{name:"Neutral red", axis:"pH", range:[5, 9], stops:[[5, "#ff2e97"], [6.8, "#f0608a"], [8.0, "#f0c45a"], [9, "#f6df6a"]],
+      marks:[[6.8, "6.8"], [8.0, "8.0"]], zones:[[5, 6.8, "pink-red: acid"], [6.8, 8.0, ""], [8.0, 9, "yellow: alkaline"]]},
+    emb:{name:"Eosin Y + methylene blue", axis:"how much acid →", range:[0, 3], stops:[[0, "#efe7d6"], [1, "#c98aa0"], [2, "#4b2a4a"], [3, "#1f2f28"]],
+      marks:[], zones:[[0, 1, "colorless: none"], [1, 2, "pink: some"], [2, 3, "dark + green sheen: lots"]]}
+  };
+  const LECT = {glycolysis:["Glycolysis", "glycolysis.html"], ferment:["Fermentation & anaerobic respiration", "fermentation.html"], krebs:["Krebs cycle", "krebs.html"],
+    etc:["Electron transport chain", "etc.html"], enzymes:["Enzymes", "enzymes.html"], energy:["Chemistry of energy production", "energy-chemistry.html"],
+    lac:["The lac operon (Ch. 8)", "pretranscriptional-control.html#ind"], overview:["Respiration: the big picture", "respiration-overview.html"]};
+  const N = (t, c, sub) => ({t, c, sub});
+  const SUG = "#c98a0e", PYR = "#c4532f", ACID = "#d9443a", GAS = "#5a6376", ENZC = "#5865d6", OKC = "#1b7f4e", NC = "#3f4cc0";
+
+  const THEORY = {
+    durham:{
+      asks:"Can this organism ferment <b>this one sugar</b>, and does its fermentation pathway release <b>gas</b>?",
+      flow:[{label:"Fermenting the sugar", items:[N("Sugar", SUG, "e.g. glucose"), "glycolysis", N("Pyruvate", PYR, "3C"), "fermentation", N("Organic acids", ACID, "lactic, acetic, formic")]},
+        {label:"Where the gas comes from", items:[N("Formic acid", ACID), "formic hydrogenlyase", N("CO₂ + H₂", GAS, "gas → bubble")]},
+        {label:"If the sugar is NOT fermented", items:[N("Peptones", "#8a5a00", "amino acids"), "deamination", N("NH₃", NC, "alkaline → pink")]}],
+      eq:[["C₆H₁₂O₆ → 2 pyruvate + 2 ATP + 2 NADH", "glycolysis"], ["pyruvate + NADH → lactic acid + NAD⁺", "fermentation regenerates NAD⁺"], ["HCOOH → CO₂ + H₂", "formic hydrogenlyase: the gas"]],
+      ind:"phenol",
+      used:["the sugar (glucose, lactose, sucrose…)"], made:["organic acids (→ yellow)", "CO₂ + H₂ gas (→ bubble)"],
+      why:"Fermentation acids drop the pH below 6.8, so phenol red turns <b>yellow</b>. Gas floats up and gets trapped in the upside-down Durham tube as a <b>bubble</b>. Color and bubble are two separate readouts: an organism can make acid without gas. If it can't use the sugar, it eats the peptones instead, releasing ammonia, and the broth stays red or turns <b>pink</b>.",
+      reads:[{k:"tube", fill:"#f2d23c", durham:true, gas:true, tag:"A/G", lab:"acid + gas"}, {k:"tube", fill:"#f2d23c", durham:true, tag:"A", lab:"acid, no gas"}, {k:"tube", fill:"#d9443a", durham:true, tag:"−", lab:"no fermentation"}],
+      lecture:["glycolysis", "ferment"],
+      extra:"Why ferment at all? Without oxygen, cells must turn NADH back into NAD⁺ or glycolysis stops. Making acids is how they do it."},
+    mr:{
+      asks:"Does this organism use <b>mixed-acid fermentation</b>, making enough stable acid to drop the pH below 4.4?",
+      flow:[{label:"Mixed-acid fermentation (MR +)", items:[N("Glucose", SUG), "glycolysis", N("Pyruvate", PYR), "mixed-acid pathway", N("Lactic, acetic, succinic, formic acids", ACID, "stable, lots of acid")]},
+        {label:"The competing route (MR −, VP +)", items:[N("Pyruvate", PYR), "butanediol pathway", N("Acetoin → 2,3-butanediol", "#6b4bb8", "neutral, little acid")]}],
+      eq:[["glucose → lactate + acetate + succinate + formate + ethanol + CO₂ + H₂", "mixed-acid fermentation"], ["pH < 4.4 → methyl red is red", "the readout"]],
+      ind:"methyl",
+      used:["glucose (in MR-VP broth)"], made:["a pile of stable mixed acids (pH < 4.4)"],
+      why:"Methyl red is added <b>after</b> 48 hours of growth. Only a lot of stable acid holds the pH below 4.4, where methyl red is <b>red</b>. Butanediol fermenters make neutral products instead, so the pH stays above 6.2 and methyl red is <b>yellow</b>.",
+      reads:[{k:"tube", fill:"#d9443a", tag:"MR +", lab:"red"}, {k:"tube", fill:"#f2d23c", tag:"MR −", lab:"yellow"}],
+      lecture:["ferment", "glycolysis"],
+      extra:"Same broth as VP: split one culture into two tubes. Most enterics are positive for one and negative for the other."},
+    vp:{
+      asks:"Does this organism use the <b>2,3-butanediol pathway</b>, which makes <b>acetoin</b>?",
+      flow:[{label:"The butanediol pathway", items:[N("2 Pyruvate", PYR), "α-acetolactate synthase", N("α-Acetolactate", "#9a6212"), "decarboxylase", N("Acetoin", "#6b4bb8", "what VP detects"), "reductase", N("2,3-Butanediol", "#5a6376")]},
+        {label:"How the reagents reveal it", items:[N("Acetoin", "#6b4bb8"), "KOH + O₂ (shake)", N("Diacetyl", "#c4532f"), "+ guanidine, α-naphthol", N("Pink-red complex", "#d0455d", "positive")]}],
+      eq:[["2 pyruvate → acetoin + 2 CO₂", "butanediol pathway"], ["acetoin + O₂ → diacetyl", "KOH + shaking oxidizes it"], ["diacetyl + guanidine (from peptone) → red complex", "α-naphthol intensifies the color"]],
+      ind:null, noInd:"No pH indicator. The pink-red is a <b>chemical reaction</b> with acetoin, not a pH change.",
+      used:["glucose (in MR-VP broth)"], made:["acetoin (→ pink-red with reagents)"],
+      why:"VP A (α-naphthol) then VP B (KOH) are added. Shaking adds oxygen, which oxidizes acetoin to diacetyl; diacetyl reacts with guanidine groups from the peptone to form a <b>pink-red</b> color. It takes 15–30 minutes, so reading too early can give a false negative.",
+      reads:[{k:"tube", fill:"#d0455d", tag:"VP +", lab:"pink-red"}, {k:"tube", fill:"#b98a52", tag:"VP −", lab:"copper"}],
+      lecture:["ferment", "glycolysis"],
+      extra:"Making neutral acetoin instead of acids keeps the pH from getting low enough to hurt the cell."},
+    oxidase:{
+      asks:"Does this organism have <b>cytochrome c oxidase</b> (Complex IV), the enzyme that hands electrons to O₂?",
+      flow:[{label:"The end of the electron transport chain", items:[N("NADH", OKC), "Complex I", N("Q", "#9a6212"), "Complex III", N("Cytochrome c", "#c4532f"), "cyt c oxidase (IV)", N("O₂ → H₂O", NC, "final acceptor")]},
+        {label:"What the reagent does", items:[N("Reagent (colorless)", "#8b93a3", "TMPD, reduced"), "gives e⁻ to cyt c", N("Cytochrome c", "#c4532f"), "oxidase pulls e⁻ on", N("Reagent (purple)", "#4b2a8a", "oxidized = positive")]}],
+      eq:[["O₂ + 4 H⁺ + 4 e⁻ → 2 H₂O", "cytochrome c oxidase"], ["reduced reagent (colorless) → oxidized reagent (purple) + e⁻", "the color change"]],
+      ind:null, noInd:"No pH indicator. The reagent is a <b>redox</b> dye: colorless when reduced, purple when oxidized.",
+      used:["the oxidase reagent (an electron donor)"], made:["oxidized, purple reagent"],
+      why:"The reagent stands in for the ETC's normal electron supply. If cytochrome c oxidase is there, it keeps pulling electrons off the reagent through cytochrome c, and the oxidized reagent turns <b>dark purple</b> within 20–30 seconds.",
+      reads:[{k:"strip", spot:"#4b2a8a", tag:"+", lab:"purple"}, {k:"strip", spot:"#efe7cf", tag:"−", lab:"no change"}],
+      lecture:["etc", "overview"],
+      extra:"Enterics like E. coli are oxidase negative; Pseudomonas is positive. It's one of the fastest ways to split gram-negative rods."},
+    nitrate:{
+      asks:"Can this organism do <b>anaerobic respiration</b> using nitrate (NO₃⁻) instead of O₂ as the final electron acceptor?",
+      flow:[{label:"Nitrate as the final electron acceptor", items:[N("NO₃⁻", NC, "nitrate"), "nitrate reductase", N("NO₂⁻", ACID, "nitrite"), "denitrification", N("NO, N₂O → N₂", GAS, "gas")]},
+        {label:"Reading it", items:[N("NO₂⁻", ACID), "+ Nitrate A + B", N("Red dye", "#d9443a", "positive")]},
+        {label:"No color? Add zinc", items:[N("Leftover NO₃⁻", NC), "zinc reduces it", N("NO₂⁻ → red", ACID, "= negative")]}],
+      eq:[["NO₃⁻ + 2 e⁻ + 2 H⁺ → NO₂⁻ + H₂O", "nitrate reductase"], ["2 NO₃⁻ + 10 e⁻ + 12 H⁺ → N₂ + 6 H₂O", "complete denitrification"], ["NO₂⁻ + sulfanilic acid (A) + α-naphthylamine (B) → red azo dye", "the color reaction"]],
+      ind:null, noInd:"No pH indicator. Reagents A + B react specifically with <b>nitrite</b> to make a red dye.",
+      used:["nitrate (NO₃⁻), as the electron acceptor"], made:["nitrite (NO₂⁻) or N₂ gas"],
+      why:"Red after A + B means nitrite is present: <b>positive</b>. No color is ambiguous: either nitrate was never touched, or it was reduced all the way past nitrite. Zinc settles it by reducing any leftover nitrate. <b>Red after zinc = negative</b> (nitrate was still there). <b>Still no color = positive</b> (reduced to N₂).",
+      reads:[{k:"tube", fill:"#d9443a", tag:"+", lab:"red after A+B"}, {k:"tube", fill:"#f3ecd2", tag:"+", lab:"no color, even after zinc"}, {k:"tube", fill:"#d9443a", tag:"−", lab:"red only after zinc"}],
+      lecture:["ferment", "etc"],
+      extra:"Anaerobic respiration still uses an ETC, just with a different final acceptor, so it makes more ATP than fermentation."},
+    macconkey:{
+      asks:"Is this organism <b>gram-negative</b> (it grows), and does it <b>ferment lactose</b> (pink)?",
+      flow:[{label:"Lactose fermentation (pink)", items:[N("Lactose", SUG), "β-galactosidase (lacZ)", N("Glucose + galactose", SUG), "fermentation", N("Acid", ACID, "pH drops → pink")]},
+        {label:"Non-fermenters (yellow)", items:[N("Peptones", "#8a5a00"), "deamination", N("NH₃", NC, "pH rises → yellow")]}],
+      eq:[["lactose + H₂O → glucose + galactose", "β-galactosidase"], ["glucose → acids", "fermentation"], ["acid + bile salts → pink precipitate around colonies", ""]],
+      ind:"neutral",
+      used:["lactose (or peptones)"], made:["acid (→ pink) or ammonia (→ yellow)"],
+      why:"<b>Selective:</b> bile salts and crystal violet stop gram-positive bacteria. <b>Differential:</b> lactose fermenters make acid, so neutral red turns their colonies <b>bright pink</b>. Non-fermenters break down peptones, release ammonia, and look <b>pale yellow</b>.",
+      reads:[{k:"plate", agar:"#e39ab4", col:"#ff2e97", halo:"#ff6fb8", tag:"Lac +", lab:"pink"}, {k:"plate", agar:"#e39ab4", col:"#f6df6a", halo:"#f3e39a", tag:"Lac −", lab:"yellow"}, {k:"plate", agar:"#e39ab4", tag:"No growth", lab:"gram +"}],
+      lecture:["lac", "ferment"],
+      extra:"β-galactosidase is the lacZ gene product from the lac operon you learned in Chapter 8: a lactose fermenter has to switch that operon on."},
+    emb:{
+      asks:"Is this a <b>gram-negative coliform</b>, and how <b>strongly</b> does it ferment lactose?",
+      flow:[{label:"Strong, fast lactose fermentation", items:[N("Lactose", SUG), "β-galactosidase", N("Glucose + galactose", SUG), "rapid fermentation", N("Lots of acid", ACID), "dyes precipitate", N("Green metallic sheen", "#1f6f48", "E. coli")]}],
+      eq:[["lactose + H₂O → glucose + galactose", "β-galactosidase"], ["lots of acid + eosin Y + methylene blue → dark precipitate (green sheen)", ""]],
+      ind:"emb",
+      used:["lactose"], made:["acid (how much sets the color)"],
+      why:"The dyes do double duty: they <b>inhibit gram-positives</b>, and they <b>change color with acid</b>. A little acid gives pink colonies; a lot makes the dyes precipitate as dark colonies with a <b>green metallic sheen</b> (classic E. coli).",
+      reads:[{k:"plate", agar:"#6c4a7e", col:"#1f2f28", sheen:true, tag:"Strong", lab:"green sheen"}, {k:"plate", agar:"#6c4a7e", col:"#c98aa0", tag:"Weak", lab:"pink"}, {k:"plate", agar:"#6c4a7e", col:"#efe7d6", tag:"Lac −", lab:"colorless"}],
+      lecture:["lac", "ferment"]},
+    msa:{
+      asks:"Is this organism <b>salt-tolerant</b> (it grows), and does it <b>ferment mannitol</b> (yellow)?",
+      flow:[{label:"Mannitol fermentation", items:[N("Mannitol", SUG, "a sugar alcohol"), "mannitol-1-P dehydrogenase", N("Fructose-6-P", SUG), "glycolysis", N("Pyruvate", PYR), "fermentation", N("Acid", ACID, "→ yellow")]}],
+      eq:[["mannitol → fructose-6-phosphate → glycolysis", "enters glycolysis"], ["pyruvate → acids", "fermentation"]],
+      ind:"phenol",
+      used:["mannitol"], made:["acid (→ yellow halo)"],
+      why:"<b>Selective:</b> 7.5% NaCl stops most bacteria except salt-tolerant ones like Staphylococcus. <b>Differential:</b> mannitol fermentation makes acid, turning phenol red <b>yellow</b> around the colonies. S. aureus is yellow; S. epidermidis grows but leaves the agar red.",
+      reads:[{k:"plate", agar:"#ef9a8c", col:"#f2d23c", halo:"#f2d23c", tag:"Man +", lab:"yellow"}, {k:"plate", agar:"#ef9a8c", col:"#f6e8e0", tag:"Man −", lab:"red agar"}, {k:"plate", agar:"#ef9a8c", tag:"No growth", lab:"salt-sensitive"}],
+      lecture:["glycolysis", "ferment"]},
+    citrate:{
+      asks:"Can this organism use <b>citrate as its only carbon source</b>?",
+      flow:[{label:"Bringing citrate in and using it", items:[N("Citrate (outside)", "#9a6212"), "citrate permease", N("Citrate (inside)", "#9a6212"), "citrate lyase", N("Oxaloacetate + acetate", "#c4532f"), "decarboxylase", N("Pyruvate + CO₂", PYR)]},
+        {label:"Why it turns blue", items:[N("CO₂ + Na⁺", GAS), "", N("Na₂CO₃", NC, "alkaline"), "", N("pH > 7.6 → blue", "#2f5fbf")]}],
+      eq:[["citrate → oxaloacetate + acetate", "citrate lyase"], ["oxaloacetate → pyruvate + CO₂", ""], ["NH₄⁺ (the only N source) used → NH₃", "also raises the pH"]],
+      ind:"btb",
+      used:["citrate (only carbon source)", "ammonium salts (only nitrogen source)"], made:["alkaline products (→ blue)"],
+      why:"Simmons citrate agar has no sugar, only citrate. An organism with <b>citrate permease</b> can pull it in and use it, and the alkaline byproducts push the pH above 7.6, turning bromothymol blue <b>Prussian blue</b>. No permease = no food = no growth, so the slant stays <b>green</b>.",
+      reads:[{k:"slant", fill:"#2f5fbf", tag:"+", lab:"blue"}, {k:"slant", fill:"#4f9a4a", tag:"−", lab:"green"}],
+      lecture:["krebs"],
+      extra:"Citrate is the first molecule of the Krebs cycle. This test asks whether a bacterium can grab it from outside the cell."},
+    catalase:{
+      asks:"Does this organism make <b>catalase</b> to destroy toxic hydrogen peroxide?",
+      flow:[{label:"Where peroxide comes from", items:[N("O₂", NC), "aerobic metabolism", N("Superoxide O₂⁻", ACID, "toxic"), "superoxide dismutase", N("H₂O₂", "#c4532f", "toxic")]},
+        {label:"What catalase does", items:[N("2 H₂O₂", "#c4532f"), "catalase", N("2 H₂O + O₂", OKC, "O₂ = bubbles")]}],
+      eq:[["2 H₂O₂ → 2 H₂O + O₂", "catalase"], ["2 O₂⁻ + 2 H⁺ → H₂O₂ + O₂", "superoxide dismutase"]],
+      ind:null, noInd:"No pH indicator. The readout is <b>O₂ gas bubbles</b>.",
+      used:["hydrogen peroxide (H₂O₂)"], made:["water + oxygen gas (bubbles)"],
+      why:"Drip 3% H₂O₂ onto growth on a nutrient agar slant. Catalase splits it instantly, and the O₂ released <b>fizzes as bubbles</b>. No catalase, no bubbles.",
+      reads:[{k:"slant", fill:"#ecdcab", bubbles:true, tag:"+", lab:"bubbles"}, {k:"slant", fill:"#ecdcab", tag:"−", lab:"no bubbles"}],
+      lecture:["etc", "enzymes"],
+      extra:"Aerobes and facultative anaerobes need catalase because using O₂ creates peroxide. Staphylococcus (+) vs. Streptococcus (−) is the classic split."},
+    starch:{
+      asks:"Does this organism <b>secrete amylase</b> to break down starch outside the cell?",
+      flow:[{label:"Digesting starch outside the cell", items:[N("Starch", SUG, "too big to enter"), "amylase (secreted)", N("Maltose + glucose", SUG), "transported in", N("Glycolysis", PYR, "fuel")]},
+        {label:"Reading it with iodine", items:[N("Iodine + intact starch", "#2b2340"), "", N("Blue-black", "#2b2340")]},
+        {label:"", items:[N("Iodine + digested starch", "#efe2bf"), "", N("Clear zone", "#c9b98f", "positive")]}],
+      eq:[["starch + H₂O → maltose + glucose", "amylase (hydrolysis)"], ["I₂ + amylose helix → blue-black complex", "iodine only stains intact starch"]],
+      ind:null, noInd:"No pH indicator. <b>Iodine</b> stains starch blue-black; digested starch can't be stained.",
+      used:["starch"], made:["maltose and glucose (a clear zone)"],
+      why:"After incubation, flood the plate with Gram's iodine. Everywhere starch is still intact turns <b>blue-black</b>. A <b>clear zone</b> around the growth means amylase diffused out and digested the starch there.",
+      reads:[{k:"plate", agar:"#efe2bf", col:"#f4ecd6", iodine:true, clear:true, tag:"+", lab:"clear zone"}, {k:"plate", agar:"#efe2bf", col:"#f4ecd6", iodine:true, tag:"−", lab:"dark to the edge"}],
+      lecture:["enzymes", "glycolysis"],
+      extra:"Amylase is a hydrolase, a catabolic enzyme: it uses water to break one big polymer into small sugars."},
+    indole:{
+      asks:"Does this organism have <b>tryptophanase</b>, which splits tryptophan into indole?",
+      flow:[{label:"Breaking down tryptophan", items:[N("Tryptophan", "#6b4bb8", "an amino acid"), "tryptophanase", N("Indole", ACID, "detected"), "", N("+ Pyruvate + NH₃", PYR, "fuel for Krebs")]},
+        {label:"Reading it", items:[N("Indole", ACID), "+ Kovac's reagent", N("Red ring", "#c0392b", "positive")]}],
+      eq:[["tryptophan + H₂O → indole + pyruvate + NH₃", "tryptophanase"], ["indole + p-dimethylaminobenzaldehyde → red dye", "Kovac's reagent"]],
+      ind:null, noInd:"No pH indicator. Kovac's reagent reacts <b>chemically</b> with indole to make red.",
+      used:["tryptophan (in tryptone broth)"], made:["indole (→ red ring)", "pyruvate + ammonia"],
+      why:"Kovac's reagent doesn't mix with water, so it floats as a layer on top. Indole moves up into that layer and reacts, forming a <b>red ring</b>. No indole, and the layer stays <b>yellow</b>. Don't shake it.",
+      reads:[{k:"tube", fill:"#f3e6bd", ring:"#c0392b", tag:"+", lab:"red ring"}, {k:"tube", fill:"#f3e6bd", ring:"#f2d23c", tag:"−", lab:"yellow ring"}],
+      lecture:["krebs", "enzymes"],
+      extra:"This is amino acid catabolism: the pyruvate left over can enter the Krebs cycle."},
+    h2s:{
+      asks:"Does this organism make <b>hydrogen sulfide (H₂S)</b>?",
+      flow:[{label:"Two ways to make H₂S", items:[N("Cysteine", "#6b4bb8", "sulfur amino acid"), "cysteine desulfhydrase", N("H₂S + pyruvate + NH₃", "#5a6376")]},
+        {label:"", items:[N("Thiosulfate S₂O₃²⁻", "#9a6212"), "thiosulfate reductase", N("H₂S", "#5a6376", "anaerobic respiration")]},
+        {label:"Why it turns black", items:[N("H₂S", "#5a6376"), "+ iron (Fe²⁺)", N("FeS", "#231e1b", "black precipitate")]}],
+      eq:[["S₂O₃²⁻ + 2 e⁻ → H₂S + SO₃²⁻", "thiosulfate reductase"], ["H₂S + Fe²⁺ → FeS (black) + 2 H⁺", "the readout"], ["sugar → acid → phenol red turns yellow", "fermentation (background color)"]],
+      ind:"phenol",
+      used:["sulfur amino acids / thiosulfate", "iron salts"], made:["H₂S → black iron sulfide"],
+      why:"H₂S is colorless, so the agar contains <b>iron salts</b>. H₂S reacts with iron to form <b>black iron sulfide</b>, which spreads from the stab. Phenol red also turns the deep <b>yellow</b> if sugar was fermented, but the black is what you read.",
+      reads:[{k:"deep", fill:"#f2d23c", black:true, tag:"H₂S +", lab:"black"}, {k:"deep", fill:"#f2d23c", tag:"H₂S −", lab:"yellow only"}],
+      lecture:["ferment", "krebs"],
+      extra:"Using thiosulfate as an electron acceptor is another kind of anaerobic respiration."}
+  };
+
+  /* ---------- theory graphics ---------- */
+  const esc2 = s => String(s);
+  function flowSVG(rows){
+    const nodeW = n => Math.max(n.t.length, (n.sub || "").length * .82) * 7.6 + 28, arrW = l => Math.max(70, (l || "").length * 6.3 + 24);
+    const rowH = 92, top = 10;
+    const widths = rows.map(r => r.items.reduce((w, it) => w + (typeof it === "string" ? arrW(it) : nodeW(it)), 0));
+    const W = Math.max(860, ...widths) + 20, H = top + rows.length * rowH;
+    let s = `<svg viewBox="0 0 ${f1(W)} ${H}" class="tflow" role="img" aria-label="Pathway diagram">`;
+    rows.forEach((r, ri) => {
+      const y = top + ri * rowH + 50; let x = 10;
+      if (r.label) s += `<text x="10" y="${y - 34}" font-size="12" font-weight="700" fill="#5a6376">${r.label}</text>`;
+      r.items.forEach(it => {
+        if (typeof it === "string"){
+          const w = arrW(it);
+          s += `<line x1="${f1(x + 6)}" y1="${y}" x2="${f1(x + w - 12)}" y2="${y}" stroke="#8a93a3" stroke-width="2.5"/><path d="M${f1(x + w - 6)},${y} l-10,-6 v12 Z" fill="#8a93a3"/>`;
+          if (it) s += `<text x="${f1(x + w / 2)}" y="${y - 8}" font-size="11" font-weight="700" fill="${ENZC}" text-anchor="middle" font-style="italic">${it}</text>`;
+          x += w;
+        } else {
+          const w = nodeW(it);
+          s += `<rect x="${f1(x)}" y="${y - 19}" width="${f1(w)}" height="38" rx="19" fill="${it.c}" opacity=".14"/><rect x="${f1(x)}" y="${y - 19}" width="${f1(w)}" height="38" rx="19" fill="none" stroke="${it.c}" stroke-width="2"/>`;
+          s += `<text x="${f1(x + w / 2)}" y="${y + 5}" font-size="13.5" font-weight="700" fill="${shade(it.c, -.25)}" text-anchor="middle">${it.t}</text>`;
+          if (it.sub) s += `<text x="${f1(x + w / 2)}" y="${y + 34}" font-size="11" fill="#5a6376" text-anchor="middle">${it.sub}</text>`;
+          x += w;
+        }
+      });
+    });
+    return s + `</svg>`;
+  }
+  function indSVG(key){
+    const I = IND[key], [lo, hi] = I.range, W = 420, x0 = 20, x1 = W - 20, X = v => x0 + (v - lo) / (hi - lo) * (x1 - x0);
+    let s = `<svg viewBox="0 0 ${W} 112" class="tind" role="img" aria-label="${I.name} color scale"><defs><linearGradient id="ig_${key}">`;
+    s += I.stops.map(([v, c]) => `<stop offset="${f1((v - lo) / (hi - lo) * 100)}%" stop-color="${c}"/>`).join("") + `</linearGradient></defs>`;
+    s += `<rect x="${x0}" y="22" width="${x1 - x0}" height="30" rx="15" fill="url(#ig_${key})" stroke="#d9dee7"/>`;
+    I.zones.forEach(([a, b, lab]) => { if (lab) s += `<text x="${f1((X(a) + X(b)) / 2)}" y="14" font-size="11" font-weight="700" fill="#343b4a" text-anchor="middle">${lab}</text>`; });
+    I.marks.forEach(([v, lab]) => { s += `<line x1="${f1(X(v))}" y1="18" x2="${f1(X(v))}" y2="58" stroke="#343b4a" stroke-width="1.5" stroke-dasharray="3 3"/><text x="${f1(X(v))}" y="72" font-size="11" font-weight="700" fill="#343b4a" text-anchor="middle">${lab}</text>`; });
+    if (I.axis === "pH"){ for (let v = Math.ceil(lo); v <= hi; v++) s += `<text x="${f1(X(v))}" y="90" font-size="10" fill="#8b93a3" text-anchor="middle">${v}</text>`;
+      if (lo <= 7 && hi >= 7) s += `<path d="M${f1(X(7))},56 l-5,8 h10 Z" fill="#5a6376"/>`; }
+    s += `<text x="${W / 2}" y="106" font-size="11" fill="#5a6376" text-anchor="middle">${I.axis === "pH" ? "pH (7 = neutral)" : I.axis}</text>`;
+    return s + `</svg>`;
+  }
+  function miniSVG(o){
+    let s = `<svg viewBox="0 0 90 104" class="tmini">`;
+    if (o.k === "plate"){
+      s += `<circle cx="45" cy="50" r="42" fill="#f2f5f9" stroke="#b9c2cf" stroke-width="2"/><circle cx="45" cy="50" r="37" fill="${o.iodine ? "#2b2340" : o.agar}"/>`;
+      const pts = [[22, 34], [34, 30], [46, 33], [58, 30], [68, 36], [60, 48], [48, 50], [36, 48], [24, 52], [30, 64], [44, 66], [58, 64]];
+      if (o.clear) s += `<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${o.agar}" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>`;
+      if (o.halo) s += `<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${o.halo}" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".6" filter="url(#tsoft)"/>`;
+      if (o.col) pts.forEach(([x, y]) => { s += `<circle cx="${x}" cy="${y}" r="4.2" fill="${o.col}" stroke="${shade(o.col, -.25)}" stroke-width="1"/>` + (o.sheen ? `<path d="M${x - 3},${y} a3,3 0 0 1 4,-3" fill="none" stroke="#63e08f" stroke-width="1.6"/>` : ""); });
+    } else if (o.k === "strip"){
+      s += `<rect x="6" y="22" width="78" height="56" rx="6" fill="#fbfaf2" stroke="#d9cfa6" stroke-width="2"/><circle cx="45" cy="50" r="18" fill="${o.spot}"/>`;
+    } else {
+      const cx = 45, top = 6, w = 32, h = 92, l = cx - w / 2, r = cx + w / 2, b = top + h, inner = `M${l + 2},${top} L${l + 2},${b - 16} A14,14 0 0 0 ${r - 2},${b - 16} L${r - 2},${top} Z`;
+      const cid = "tc" + Math.random().toString(36).slice(2, 7);
+      s += `<clipPath id="${cid}"><path d="${inner}"/></clipPath><g clip-path="url(#${cid})">`;
+      if (o.k === "slant") s += `<path d="M${l},${top + 34} L${r},${top + 62} L${r},${b} L${l},${b} Z" fill="${o.fill}"/>`;
+      else s += `<rect x="${l}" y="${top + (o.k === "deep" ? 26 : 24)}" width="${w}" height="${h}" fill="${o.fill}"/>`;
+      if (o.ring) s += `<rect x="${l}" y="${top + 18}" width="${w}" height="9" fill="${o.ring}"/>`;
+      if (o.durham){ s += `<path d="M${cx - 6},${b - 6} L${cx - 6},${b - 50} A6,6 0 0 1 ${cx + 6},${b - 50} L${cx + 6},${b - 6}" fill="${o.fill}" stroke="#6d7686" stroke-width="1.6"/>`; if (o.gas) s += `<rect x="${cx - 4.5}" y="${b - 55}" width="9" height="16" rx="4" fill="#fbfcfe"/>`; }
+      if (o.black) s += `<path d="M${cx - 1},${top + 34} C${cx - 4},${top + 52} ${l},${b - 34} ${l},${b - 30} L${l},${b} L${r},${b} L${r},${b - 36} C${r - 2},${b - 40} ${cx + 4},${top + 52} ${cx + 1},${top + 34} Z" fill="#231e1b" filter="url(#tsoft2)"/>`;
+      if (o.bubbles) s += [[l + 6, top + 36], [l + 13, top + 40], [l + 20, top + 46], [l + 9, top + 46], [l + 25, top + 52], [l + 16, top + 52]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${2.5 + (i % 3)}" fill="#fff" fill-opacity=".6" stroke="#6fa8cc" stroke-width="1.1"/>`).join("");
+      s += `</g><path d="M${l},${top} L${l},${b - w / 2} A${w / 2},${w / 2} 0 0 0 ${r},${b - w / 2} L${r},${top}" fill="none" stroke="#8b93a3" stroke-width="2.4"/>`;
+    }
+    return s + `</svg>`;
+  }
+  function theoryHTML(t){
+    const th = THEORY[t.key]; if (!th) return "";
+    const chips = arr => arr.map(x => `<span class="tchip">${x}</span>`).join("");
+    return `<div class="thead"><div><div class="tkick">Understand the test</div><h2 id="tTitle">${t.title}</h2></div><button class="tclose" id="tClose" aria-label="Close">×</button></div>
+      <div class="tasks"><span class="tlabel">The question it answers</span><p>${th.asks}</p></div>
+      <div class="tsec"><h3>What's happening inside (and outside) the cell</h3><div class="tflowwrap">${flowSVG(th.flow)}</div></div>
+      <div class="tsec"><h3>The key reactions</h3><div class="teqs">${th.eq.map(([e, n]) => `<div class="teq"><span class="tq">${e}</span>${n ? `<span class="tn">${n}</span>` : ""}</div>`).join("")}</div></div>
+      <div class="tgrid">
+        <div class="tsec"><h3>${th.ind ? `${IND[th.ind].axis === "pH" ? "pH indicator" : "Indicator dyes"}: ${IND[th.ind].name}` : "Indicator"}</h3>${th.ind ? indSVG(th.ind) : `<p class="tnoind">${th.noInd}</p>`}</div>
+        <div class="tsec"><h3>What's measured</h3><div class="tio"><div><span class="tlabel">The bacteria use</span>${chips(th.used)}</div><div class="tarrow">→</div><div><span class="tlabel">You detect</span>${chips(th.made)}</div></div></div>
+      </div>
+      <div class="tsec"><h3>Why it changes</h3><p>${th.why}</p>${th.extra ? `<p class="textra">💡 ${th.extra}</p>` : ""}</div>
+      <div class="tsec"><h3>How to read it</h3><div class="treads">${th.reads.map(r => `<div class="tread">${miniSVG(r)}<b>${r.tag}</b><span>${r.lab}</span></div>`).join("")}</div></div>
+      <div class="tsec"><h3>Where this connects to lecture</h3><div class="tlinks">${th.lecture.map(k => `<a class="btn secondary sm" href="${LECT[k][1]}">${LECT[k][0]} →</a>`).join("")}</div></div>
+      <div class="tfoot"><button class="btn primary" id="tBack">Back to the bench</button></div>`;
+  }
+  function openTheory(){
+    const t = T(), m = $("tModal");
+    m.querySelector(".tcard").innerHTML = theoryHTML(t);
+    m.hidden = false; document.body.style.overflow = "hidden";
+    m.querySelector(".tcard").scrollTop = 0;
+    const close = () => { m.hidden = true; document.body.style.overflow = ""; const b = $("theoryBtn"); if (b) b.focus({preventScroll:true}); };
+    $("tClose").onclick = close; $("tBack").onclick = close;
+    m.onclick = e => { if (e.target === m) close(); };
+    m.onkeydown = e => { if (e.key === "Escape") close(); };
+    $("tClose").focus();
+  }
+  (function(){
+    const m = document.createElement("div");
+    m.className = "tmodal"; m.id = "tModal"; m.hidden = true;
+    m.setAttribute("role", "dialog"); m.setAttribute("aria-modal", "true"); m.setAttribute("aria-labelledby", "tTitle");
+    m.innerHTML = `<svg width="0" height="0" style="position:absolute"><defs><filter id="tsoft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.5"/></filter><filter id="tsoft2" x="-50%" y="-20%" width="200%" height="140%"><feGaussianBlur stdDeviation="1.2"/></filter></defs></svg><div class="tcard"></div>`;
+    document.body.appendChild(m);
+  })();
 })();
 </script>
 <script src="studypath.js"></script>
