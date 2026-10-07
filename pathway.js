@@ -53,7 +53,8 @@
       if (!st.action){ phase = "anim"; t0 = performance.now(); }
       else phase = "act";
       renderBar(); renderMarkers();
-      scrollToY(st.focusY || (st.pop && st.pop.y) || 0, first);
+      const a = st.action, ys = !a ? [] : a.type === "click" ? [a.at[1]] : a.from.slice(0, a.count).concat(a.targets).map(q => q[1]);
+      scrollToY(st.focusY || (st.pop && st.pop.y) || 0, first, ys);
     }
     function finishAction(){
       phase = "anim"; t0 = performance.now();
@@ -72,9 +73,16 @@
     }
 
     /* ---------- scrolling ---------- */
-    function scrollToY(y, instant){
+    function scrollToY(y, instant, keep){
       const r = svg.getBoundingClientRect(), k = r.height / H;
-      const target = window.scrollY + r.top + y * k - window.innerHeight * .38;
+      let target = window.scrollY + r.top + y * k - window.innerHeight * .38;
+      /* whatever the student has to act on must not hide under the sticky prompt bar (or below the screen) */
+      if (keep && keep.length){
+        const bar = $("pwBar").getBoundingClientRect().height + 24, abs = v => window.scrollY + r.top + v * k;
+        const lo = abs(Math.min(...keep)) - 46 * k, hi = abs(Math.max(...keep)) + 46 * k;
+        if (hi - target > window.innerHeight - 16) target = hi - window.innerHeight + 16;
+        if (lo - target < bar) target = lo - bar;
+      }
       window.scrollTo({top:Math.max(0, target), behavior:(instant || reduced) ? "auto" : "smooth"});
     }
 
@@ -235,7 +243,7 @@
       const a = S().action, pu = .5 + .5 * Math.sin(t * 5);
       let o = "";
       if (a.type === "click"){
-        const w = a.label.length * 8.6 + 60, [x, y] = a.at;
+        const w = (a.button || a.label).length * 9.4 + 48, [x, y] = a.at;
         o += `<g data-pw="0" style="cursor:pointer"><rect x="${f1(x - w / 2 - 6 * pu)}" y="${f1(y - 24 - 3 * pu)}" width="${f1(w + 12 * pu)}" height="${f1(48 + 6 * pu)}" rx="26" fill="#f2b134" opacity=".3"/><rect x="${f1(x - w / 2)}" y="${y - 22}" width="${f1(w)}" height="44" rx="22" fill="#3f4cc0"/><text x="${x}" y="${y + 6}" font-size="17" font-weight="800" fill="#fff" text-anchor="middle">${a.button || a.label}</text></g>`;
         return o;
       }
