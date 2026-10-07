@@ -22,7 +22,12 @@
   const down = (x, y1, y2, o) => A.op(o === undefined ? 1 : o, A.arrow(x, y1, x, y2, "#8a93a3", 3));
   /* a byproduct that curls off the pathway arrow, e.g. NAD+ -> NADH, or ADP -> ATP */
   const curl = (x, y, side, o) => { const d = side ? 1 : -1; return A.op(o, `<path d="M${x},${y - 26} q${d * 40},0 ${d * 62},18" fill="none" stroke="#b8bfcc" stroke-width="2.5" stroke-dasharray="5 5"/>`); };
-  const mgTag = (x, y, o) => A.op(o === undefined ? 1 : o, `<circle cx="${f1(x)}" cy="${f1(y)}" r="15" fill="#efe6fb" stroke="#8e5bd0" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="10" font-weight="700" fill="#5b3fb0" text-anchor="middle">Mg²⁺</text>`);
+  /* the cofactor badge hangs off the enzyme pill it belongs to, tethered so it never reads as a loose dot.
+     ax is the pill's right edge; the badge sits just past it on the same line. */
+  const mgTag = (ax, y, o) => { const x = ax + 36;
+    return A.op(o === undefined ? 1 : o, `<line x1="${f1(ax + 3)}" y1="${f1(y)}" x2="${f1(x - 16)}" y2="${f1(y)}" stroke="#8e5bd0" stroke-width="2" stroke-dasharray="3 3"/>`
+      + `<circle cx="${f1(x)}" cy="${f1(y)}" r="16" fill="#efe6fb" stroke="#8e5bd0" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="10" font-weight="700" fill="#5b3fb0" text-anchor="middle">Mg²⁺</text>`
+      + lbl(x, y + 30, "cofactor", "#7a5fc0", 10)); };
   const tok = (x, y1, y2) => [[x, y1], [x, y2]];
 
   /* tokens the students drag — shared by both views */
@@ -229,12 +234,15 @@
       o += A.phos(c6[0] - 24, c6[1], 10); if (P1) o += A.phos(c1[0] + 24, c1[1], 10);
       return o; };
     /* G6P: a 6-membered ring (5 C + O) with C6 hanging off the top, where the phosphate sits */
-    const glcRing = (x, y) => {
+    const glcRing = (x, y, P) => {
       const V = Array.from({length:6}, (_, k) => { const a = (-30 + k * 60) * Math.PI / 180; return [x + 22 * Math.cos(a), y + 22 * Math.sin(a)]; });
-      const c6 = [V[5][0] - 26, V[5][1] - 14];
-      let o = V.map((v, k) => bond(v, V[(k + 1) % 6])).join("") + bond(V[5], c6) + bond(c6, [c6[0] - 24, c6[1]]);
+      const c6 = [V[5][0] - 26, V[5][1] - 14], tip = [c6[0] - 24, c6[1]];
+      let o = V.map((v, k) => bond(v, V[(k + 1) % 6])).join("") + bond(V[5], c6) + bond(c6, tip);
       o += V.map((v, k) => bead(v[0], v[1], k ? "C" : "O", k ? null : C.O)).join("") + bead(c6[0], c6[1], "C");
-      return o + A.phos(c6[0] - 24, c6[1], 10); };
+      /* glucose carries a plain -OH here; hexokinase swaps it for the phosphate */
+      return o + (P === false
+        ? `<circle cx="${f1(tip[0])}" cy="${f1(tip[1])}" r="10" fill="#fff" stroke="${C.O}" stroke-width="2.5"/><text x="${f1(tip[0])}" y="${f1(tip[1] + 3.5)}" font-size="9" font-weight="700" fill="${C.O}" text-anchor="middle">OH</text>`
+        : A.phos(tip[0], tip[1], 10)); };
     const SHAPE = {g6p:(x, y) => glcRing(x, y), f6p:(x, y) => fruRing(x, y, false), fbp:(x, y) => fruRing(x, y, true)};
     const MID = [(Y.g3p + Y.bpg) / 2, (Y.bpg + Y.pg3) / 2, (Y.pg3 + Y.pg2) / 2, (Y.pg2 + Y.pep) / 2, (Y.pep + Y.pyr) / 2];
 
@@ -251,7 +259,7 @@
 
       /* step 0: glucose */
       const g0 = e(0);
-      o += A.op(g0, `<g transform="translate(${CX},${Y.glu}) scale(${f1(.6 + .4 * g0)}) translate(${-CX},${-Y.glu})">${A.glucoseRing(CX, Y.glu, {r:10})}</g>`);
+      o += A.op(g0, `<g transform="translate(${CX},${Y.glu}) scale(${f1(.6 + .4 * g0)}) translate(${-CX},${-Y.glu})">${glcRing(CX, Y.glu, false)}</g>`);
       o += A.op(g0, lbl(CX, Y.glu + 46, "Glucose (6 carbons)", "#343b4a", 14));
 
       /* helper for the single-lane, pre-split steps (hexokinase, isomerase, PFK-1) */
@@ -266,7 +274,7 @@
           o += enzPill(CX + 14, (yFrom + yTo) / 2 + 4, enz, grow, enzCol);
           o += A.op(grow, lbl(CX, yTo + 46, label, "#343b4a", 13));
           o += A.op(grow, lbl(CX, yTo + 64, tag, tagCol || "#5a6376", 11));
-          if (mg) o += mgTag(CX + 210, yTo, grow);
+          if (mg) o += mgTag(CX + 14 + pillW(enz), (yFrom + yTo) / 2 + 4, grow);
         }
       };
       single(1, Y.glu, Y.g6p, "g6p", "ATP", "Glucose-6-phosphate (G6P)", "spends the first ATP · still a ring", null, true, "hexokinase");
@@ -274,7 +282,7 @@
       if (idx >= 2){ const b = ease(seg(p(2), 0, .5));
         o += A.op(b, `<rect x="14" y="${Y.g6p - 74}" width="180" height="48" rx="12" fill="#fff6e0" stroke="#c98a0e" stroke-width="2"/>` + lbl(104, Y.g6p - 54, "Glycogen", "#8a5a00", 13) + lbl(104, Y.g6p - 36, "(sugar storage)", "#8a5a00", 11));
         o += A.op(b, `<rect x="14" y="${Y.g6p + 6}" width="180" height="62" rx="12" fill="#eef7f1" stroke="#2f9e63" stroke-width="2"/>` + lbl(104, Y.g6p + 26, "Pentose phosphate", GREEN, 13) + lbl(104, Y.g6p + 42, "pathway", GREEN, 13) + lbl(104, Y.g6p + 59, "→ NADPH + ribose (DNA/RNA)", "#5a6376", 10));
-        o += A.op(b, A.arrow(CX - 72, Y.g6p - 18, 200, Y.g6p - 50, "#c98a0e", 3) + A.arrow(200, Y.g6p - 34, CX - 72, Y.g6p - 4, "#c98a0e", 2, "4 4") + A.arrow(CX - 72, Y.g6p + 14, 200, Y.g6p + 36, GREEN, 3));
+        o += A.op(b, A.arrow(CX - 38, Y.g6p - 18, 200, Y.g6p - 50, "#c98a0e", 3) + A.arrow(200, Y.g6p - 34, CX - 38, Y.g6p - 4, "#c98a0e", 2, "4 4") + A.arrow(CX - 38, Y.g6p + 14, 200, Y.g6p + 36, GREEN, 3));
         o += A.op(b, lbl(104, Y.g6p - 84, "G6P can leave here:", "#5a6376", 11)); }
       single(2, Y.g6p, Y.f6p, "f6p", null, "Fructose-6-phosphate (F6P)", "a reshuffle, no energy spent", null, false, "phosphoglucose isomerase");
       single(3, Y.f6p, Y.fbp, "fbp", "ATP", "Fructose-1,6-bisphosphate (F1,6BP)", "the pathway's rate-limiting step", RED, true, "PFK-1", RED);
@@ -343,7 +351,7 @@
           if (opts.enz) o += enzPill(CX, ym + 4, opts.enz, ease(seg(pi, .1, .5)), opts.enzCol, true);
           o += A.op(ease(seg(pi, .6, 1)), lbl(CX, yB + 36, label, kind ? GREEN : "#343b4a", 14));
           o += A.op(ease(seg(pi, .7, 1)), lbl(CX, yB + 54, tag, tagCol || "#5a6376", 11));
-          if (opts.mg) o += mgTag(CX + 210, yB, ease(seg(pi, .7, 1)));
+          if (opts.mg) o += mgTag(CX + pillW(opts.enz) / 2, ym + 4, ease(seg(pi, .7, 1)));
         }
       };
       pay(7, "NAD", Y.g3p, Y.bpg, [0, "end"], "1,3-bisphosphoglycerate · +2 NADH", "NAD⁺ picks up high-energy electrons → NADH", null, {enz:"GAPDH"});

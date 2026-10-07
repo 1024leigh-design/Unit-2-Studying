@@ -1126,26 +1126,32 @@
   }
   function indSVG(key){
     const I = IND[key], [lo, hi] = I.range, W = 420, x0 = 20, x1 = W - 20, X = v => x0 + (v - lo) / (hi - lo) * (x1 - x0);
-    let s = `<svg viewBox="0 0 ${W} 112" class="tind" role="img" aria-label="${I.name} color scale"><defs><linearGradient id="ig_${key}">`;
+    /* only a pH scale needs the numbered axis row, so a dye scale ends right under its marks */
+    const HT = I.axis === "pH" ? 112 : 90;
+    let s = `<svg viewBox="0 0 ${W} ${HT}" class="tind" role="img" aria-label="${I.name} color scale"><defs><linearGradient id="ig_${key}">`;
     s += I.stops.map(([v, c]) => `<stop offset="${f1((v - lo) / (hi - lo) * 100)}%" stop-color="${c}"/>`).join("") + `</linearGradient></defs>`;
     s += `<rect x="${x0}" y="22" width="${x1 - x0}" height="30" rx="15" fill="url(#ig_${key})" stroke="#d9dee7"/>`;
     I.zones.forEach(([a, b, lab]) => { if (lab) s += `<text x="${f1((X(a) + X(b)) / 2)}" y="14" font-size="11" font-weight="700" fill="#343b4a" text-anchor="middle">${lab}</text>`; });
     I.marks.forEach(([v, lab]) => { s += `<line x1="${f1(X(v))}" y1="18" x2="${f1(X(v))}" y2="58" stroke="#343b4a" stroke-width="1.5" stroke-dasharray="3 3"/><text x="${f1(X(v))}" y="72" font-size="11" font-weight="700" fill="#343b4a" text-anchor="middle">${lab}</text>`; });
     if (I.axis === "pH"){ for (let v = Math.ceil(lo); v <= hi; v++) s += `<text x="${f1(X(v))}" y="90" font-size="10" fill="#8b93a3" text-anchor="middle">${v}</text>`;
       if (lo <= 7 && hi >= 7) s += `<path d="M${f1(X(7))},56 l-5,8 h10 Z" fill="#5a6376"/>`; }
-    s += `<text x="${W / 2}" y="106" font-size="11" fill="#5a6376" text-anchor="middle">${I.axis === "pH" ? "pH (7 = neutral)" : I.axis}</text>`;
+    s += `<text x="${W / 2}" y="${HT - 6}" font-size="11" fill="#5a6376" text-anchor="middle">${I.axis === "pH" ? "pH (7 = neutral)" : I.axis}</text>`;
     return s + `</svg>`;
   }
   function miniSVG(o){
     let s = `<svg viewBox="0 0 90 104" class="tmini">`;
     if (o.k === "plate"){
+      const pid = "tp" + Math.random().toString(36).slice(2, 7);
       s += `<circle cx="45" cy="50" r="42" fill="#f2f5f9" stroke="#b9c2cf" stroke-width="2"/><circle cx="45" cy="50" r="37" fill="${o.iodine ? "#2b2340" : o.agar}"/>`;
+      /* keep streaks, halos and colonies inside the agar, never spilling over the rim */
+      s += `<clipPath id="${pid}"><circle cx="45" cy="50" r="37"/></clipPath><g clip-path="url(#${pid})">`;
       const single = o.single, pts = single ? [[30, 24], [44, 50], [58, 76]] : [[22, 34], [34, 30], [46, 33], [58, 30], [68, 36], [60, 48], [48, 50], [36, 48], [24, 52], [30, 64], [44, 66], [58, 64]];
       const poly = w => `points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="${w}"`;
-      if (o.clear) s += `<polyline ${poly(single ? 16 : 14)} stroke="${o.agar}"/>`;
+      if (o.clear) s += `<polyline ${poly(single ? 22 : 14)} stroke="${o.agar}"/>`;
       if (o.halo) s += `<polyline ${poly(16)} stroke="${o.halo}" opacity=".6" filter="url(#tsoft)"/>`;
-      if (o.col){ if (single) s += `<polyline ${poly(6)} stroke="${o.col}"/>`;
+      if (o.col){ if (single) s += `<polyline ${poly(8)} stroke="${shade(o.col, -.3)}"/><polyline ${poly(6)} stroke="${o.col}"/>`;
         else pts.forEach(([x, y]) => { s += `<circle cx="${x}" cy="${y}" r="4.2" fill="${o.col}" stroke="${shade(o.col, -.25)}" stroke-width="1"/>` + (o.sheen ? `<path d="M${x - 3},${y} a3,3 0 0 1 4,-3" fill="none" stroke="#63e08f" stroke-width="1.6"/>` : ""); }); }
+      s += `</g>`;
     } else if (o.k === "strip"){
       s += `<rect x="6" y="22" width="78" height="56" rx="6" fill="#fbfaf2" stroke="#d9cfa6" stroke-width="2"/><circle cx="45" cy="50" r="18" fill="${o.spot}"/>`;
     } else {
@@ -1169,20 +1175,21 @@
     const arrow = (x1, y1, x2, y2) => { const ang = Math.atan2(y2 - y1, x2 - x1); return `<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2 - 7 * Math.cos(ang))}" y2="${f1(y2 - 7 * Math.sin(ang))}" stroke="#8a93a3" stroke-width="2.5"/>${ahead(x2, y2, ang)}`; };
     const tag = (cx, y, txt, col) => `<text x="${f1(cx)}" y="${f1(y)}" font-size="12.5" font-weight="800" fill="${col}" text-anchor="middle">${txt}</text>`;
     const note = (cx, y, txt) => `<text x="${f1(cx)}" y="${f1(y)}" font-size="11" fill="#5a6376" text-anchor="middle">${txt}</text>`;
+    /* branch labels sit on top of their arrows, so each gets a chip in the panel colour to sit in */
+    const blabel = (cx, y, txt, col) => { const w = txt.length * 6.3 + 16;
+      return `<rect x="${f1(cx - w / 2)}" y="${f1(y - 12)}" width="${f1(w)}" height="17" rx="8" fill="#f7f8fb"/><text x="${f1(cx)}" y="${f1(y)}" font-size="11" font-weight="700" fill="${col}" text-anchor="middle">${txt}</text>`; };
     let s = `<svg viewBox="0 0 ${W} 400" class="tflow" style="min-width:600px" role="img" aria-label="Nitrate decision tree">`;
     s += tube(300, 44, "#efe3c0") + note(300, 80, "grew in nitrate broth");
     s += `<text x="300" y="104" font-size="12" font-weight="700" fill="#343b4a" text-anchor="middle">① add Nitrate A + B</text>`;
     s += arrow(255, 118, 165, 150) + arrow(345, 118, 435, 150);
-    s += `<text x="195" y="138" font-size="11" font-weight="700" fill="#b83a34" text-anchor="middle">RED</text>`;
-    s += `<text x="410" y="138" font-size="11" font-weight="700" fill="#5a6376" text-anchor="middle">no color</text>`;
+    s += blabel(207, 138, "RED", "#b83a34") + blabel(397, 138, "no color", "#5a6376");
     /* left: red = positive */
     s += tube(150, 182, "#d9443a") + tag(150, 228, "POSITIVE", "#1b7f4e") + note(150, 246, "nitrite is present");
     /* right: clear → add zinc */
     s += tube(450, 182, "#f3ecd2");
     s += `<text x="450" y="230" font-size="12" font-weight="700" fill="#343b4a" text-anchor="middle">② add zinc dust</text>`;
     s += arrow(410, 244, 345, 282) + arrow(490, 244, 560, 282);
-    s += `<text x="368" y="266" font-size="11" font-weight="700" fill="#b83a34" text-anchor="middle">turns RED</text>`;
-    s += `<text x="548" y="266" font-size="11" font-weight="700" fill="#5a6376" text-anchor="middle">stays clear</text>`;
+    s += blabel(372, 266, "turns RED", "#b83a34") + blabel(528, 266, "stays clear", "#5a6376");
     s += tube(330, 314, "#d9443a") + tag(330, 360, "NEGATIVE", "#b83a34") + note(330, 378, "nitrate never reduced");
     s += tube(560, 314, "#f3ecd2") + tag(560, 360, "POSITIVE", "#1b7f4e") + note(560, 378, "reduced to N₂ gas");
     return s + `</svg>`;
