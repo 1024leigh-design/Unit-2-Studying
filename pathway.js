@@ -125,6 +125,7 @@
           <button class="btn primary sm" id="pwGot" ${needs ? "hidden" : ""}>${live ? (i >= STEPS.length - 1 ? "Finish ✓" : "Got it ✓") : "Close"}</button>
           ${st.pop.more && MORE[st.pop.more] ? `<button class="more-btn" data-more="${st.pop.more}">Learn more</button>` : ""}</div>`;
       layer.appendChild(c);
+      renderMarkers();
       const got = c.querySelector("#pwGot"), fb = c.querySelector("#pwFb");
       got.addEventListener("click", closeCard);
       const x = c.querySelector(".pwx"); if (x) x.addEventListener("click", closeCard);
@@ -147,12 +148,24 @@
     function renderMarkers(){
       layer.querySelectorAll(".pwmark").forEach(m => m.remove());
       const bw = $("pwBoard").clientWidth, sh = svg.getBoundingClientRect().height;
+      /* a card covers part of the marker column, so drop the markers it would sit on top of */
+      const card = layer.querySelector(".pwcard");
+      let box = null;
+      /* measured from layout, not getBoundingClientRect: the card plays a pop animation and its
+         live rect is mid-transform at the moment this runs */
+      if (card && !card.classList.contains("sheet")){
+        const l = parseFloat(card.style.left) || 0, t = parseFloat(card.style.top) || 0, h = card.offsetHeight;
+        box = {l:l - 22, r:l + card.offsetWidth + 22, t:t - h / 2 - 22, b:t + h / 2 + 22}; }
       STEPS.forEach((st, i) => {
         if (!st.pop || i > idx || (i === idx && phase !== "done" && !(phase === "pop" && openPop !== i))) return;
+        /* the open card sits at the same x as its marker, so the marker would be half-buried under it */
+        if (i === openPop) return;
         const b = document.createElement("button");
         b.className = "pwmark"; b.type = "button"; b.textContent = i + 1; b.title = st.pop.title;
         b.setAttribute("aria-label", `Reopen card ${i + 1}: ${st.pop.title}`);
-        b.style.left = (Math.min(st.pop.x !== undefined ? st.pop.x : 650, VW() - 18) / VW() * bw) + "px"; b.style.top = (st.pop.y / H * sh) + "px";
+        const mx = Math.min(st.pop.x !== undefined ? st.pop.x : 650, VW() - 18) / VW() * bw, my = st.pop.y / H * sh;
+        if (box && mx > box.l && mx < box.r && my > box.t && my < box.b) return;
+        b.style.left = mx + "px"; b.style.top = my + "px";
         b.addEventListener("click", () => openCard(i, false));
         layer.appendChild(b);
       });

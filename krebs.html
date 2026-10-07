@@ -216,7 +216,9 @@
       }
       /* advanced: amino-acid side doors and the enzyme key */
       if (ADV){
-        if (idx >= 4 && p(4) > .7){ const [ax, ay] = NP[2]; o += A.op(ease(seg(p(4), .7, 1)), lbl(ax + 64, ay + 13, "⇄ glutamate", "#6b4bb8", 12, "start")); }
+        /* α-KG's amino-acid side door, drawn as a chip so it reads as a label and never collides with the ring */
+        if (idx >= 4 && p(4) > .7){ const [ax, ay] = NP[2], cx = ax + 36, cy = ay + 40;
+          o += A.op(ease(seg(p(4), .7, 1)), `<line x1="${f1(ax + 14)}" y1="${f1(ay + 14)}" x2="${f1(cx - 40)}" y2="${f1(cy - 9)}" stroke="#6b4bb8" stroke-width="1.5" stroke-dasharray="3 3"/><rect x="${f1(cx - 48)}" y="${f1(cy - 15)}" width="96" height="26" rx="13" fill="#f2eefc" stroke="#6b4bb8" stroke-width="1.5"/>` + lbl(cx, cy + 3, "⇄ glutamate", "#5b3fb0", 12)); }
         if (idx >= 9 && p(9) > .7){
           const q = ease(seg(p(9), .7, 1)), [ox, oy] = NP[7];
           o += A.op(q, `<rect x="8" y="${f1(oy - 104)}" width="104" height="46" rx="12" fill="#eef0fd" stroke="#6b4bb8" stroke-width="1.5"/>` + lbl(60, oy - 84, "Aspartate", "#5b3fb0", 13) + lbl(60, oy - 67, "→ proteins", "#5b3fb0", 11) + A.arrow(ox - 34, oy - 14, 84, oy - 56, "#6b4bb8", 2.5));
