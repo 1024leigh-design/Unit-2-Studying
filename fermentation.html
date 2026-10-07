@@ -9,13 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="metab.css">
 <style>
-.typelink{position:absolute;top:96%;transform:translate(-50%,-100%);box-shadow:0 2px 6px rgba(29,36,51,.18)}
-.yt{white-space:nowrap;position:absolute;left:88%;top:7.4%;transform:translate(-50%,-50%);font-size:1.05rem;padding:10px 22px;animation:ytp 1.8s ease-in-out infinite}
-@keyframes ytp{0%,100%{box-shadow:0 0 0 0 rgba(63,76,192,.4)}50%{box-shadow:0 0 0 9px rgba(63,76,192,0)}}
-.zcell{position:absolute;border:3px dashed #8a93a3;border-radius:10px;background:rgba(255,255,255,.88);cursor:pointer}
-.zcell.over{border-style:solid;border-color:var(--accent);background:var(--accent-soft)}
-@media (max-width:640px){.typelink{display:none}.yt{font-size:.68rem;padding:2px 9px;top:5.2%;left:87%;animation:none}}
-@media (prefers-reduced-motion:reduce){.yt{animation:none}}
+.typelink{position:absolute;top:83%;transform:translate(-50%,-100%);box-shadow:0 2px 6px rgba(29,36,51,.18)}
+@media (max-width:640px){.typelink{display:none}}
 </style>
 </head>
 <body>
@@ -25,7 +20,6 @@
 <script>
 (function(){
   const A = Metab.A, {f1, f3, lerp, clamp, smooth, seg, C} = A;
-  const box = (x, y, w, h, s, col, sub) => `<rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="14" fill="#fff" stroke="${col}" stroke-width="2.5"/>` + A.tx(x, y + (sub ? -2 : 6), s, "t14 mid") + (sub ? A.tx(x, y + 18, sub, "t11 mid muted") : "");
   const BL = {
     notoxygen:{show:"not oxygen", ans:["notoxygen","noto2","nototwo","nooxygen","anythingbutoxygen","notoxygeno2"], fuzzy:true},
     nitrate:{show:"Nitrate", ans:["nitrate","no3"], fuzzy:true},
@@ -49,6 +43,8 @@
   };
 
   /* ================= Scenes ================= */
+  /* Every activity happens on the diagram: chips start on the graphic and drop onto parts of it.
+     The box under the diagram only holds the instructions and feedback. */
   const BA = window.BioArt;
   const ECOL = ["#7c8be8", "#eab04d", "#5fbd9c", "#e78a80"];
   const WALL = `<defs><pattern id="fWall" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#c6dcb5"/><path d="M0,5 H10 M5,0 V10" stroke="#93b57d" stroke-width="1.5"/></pattern></defs>`;
@@ -58,128 +54,207 @@
     return WALL + BA.outline(BA.grow(pk, 11), "url(#fWall)", "#5f8a4f", 2) + BA.bilayer(pk, {fill:"#f1f7ec", head:"#c9a15a", tail:"#f4e8cc", gap:4, r:2.3, step:7.5}, key)
       + BA.tangle(cx - rx * .52, cy + ry * .18, rx * .3, ry * .4, seed + 3, {col:"#0f766e", n:10, loops:3, op:.5});
   }
-  const chip = (x, y, s, full, col) => `<rect x="${f1(x - 30)}" y="${f1(y - 13)}" width="60" height="26" rx="13" fill="${full ? col : "#fff"}" stroke="${col}" stroke-width="2.5"/><text x="${f1(x)}" y="${f1(y + 5)}" font-size="13" font-weight="700" fill="${full ? "#fff" : col}" text-anchor="middle">${s}</text>`;
-  const RED = "#e0463c", YEL = "#f5c518";
+  const RED = "#e0463c", YEL = "#f5c518", NADG = "#1b7f4e";
+  const now = () => performance.now() / 1000;
+  /* drag bookkeeping shared by every activity */
+  const dragging = (st, k) => !!(st && st.drag && st.drag.moved && st.drag.kind === k);
+  const at = (st, k, x, y) => dragging(st, k) ? [st.drag.x, st.drag.y] : [x, y];
+  const holding = st => !!(st && ((st.drag && st.drag.moved) || (st.pick !== undefined && st.pick !== null)));
+  const overZ = (st, z) => !!(st && st.drag && st.drag.moved && (z.hit ? z.hit(st.drag) : Math.abs(st.drag.x - z.x) <= z.w / 2 && Math.abs(st.drag.y - z.y) <= z.h / 2));
+  const zState = (st, z) => overZ(st, z) ? "over" : holding(st) ? "ready" : "";
+  /* a chip the student can pick up, drawn last so it floats over everything */
+  const tokChip = (st, id, label, x, y) => { const [px, py] = at(st, id, x, y); return `<g data-drag="${id}" style="cursor:grab">${A.chip(px, py, label, st.pick === id ? "pick" : "")}</g>`; };
+  const tokens = (st, list) => list.slice().sort((a, b) => dragging(st, a.id) - dragging(st, b.id)).map(it => it.draw ? it.draw(st) : tokChip(st, it.id, it.label, it.x, it.y)).join("");
+  const play = (g, done) => !!g && !done;
 
-  /* Page 1: the same bacterium with oxygen and without it, electrons running down the chain in the membrane */
-  function pipesScene(t, R){
-    const T = 7, ph = (t % T) / T;
+  /* ---------- Step 1: same cell, two environments. The student supplies the final acceptor. ---------- */
+  const ACC_SOCK = [[806, 168], [878, 168]];
+  const ACC_ITEMS = [{id:"o2", label:"O₂", x:556, y:140}, {id:"no3", label:"NO₃⁻", x:626, y:140}, {id:"so4", label:"SO₄²⁻", x:696, y:140}, {id:"glu", label:"Glucose", x:580, y:190}];
+  const accDraw = (k, x, y) => k === "no3" ? A.no3(x, y) : k === "so4" ? A.so4(x, y) : k === "o2" ? A.o2(x, y, 13) : `<rect x="${f1(x - 44)}" y="${f1(y - 16)}" width="88" height="32" rx="16" fill="#fff" stroke="#5a6376" stroke-width="2.5"/>` + A.tx(x, y + 5, "Glucose", "t14 mid");
+  function pipesScene(t, R, g, done){
+    const T = 7, ph = (t % T) / T, live = play(g, done);
     let o = A.tx(500, 36, "Same cell, same pathway. What waits at the end of the chain?", "t20 mid");
     const one = (cx, aerobic, seed) => {
-      const col = aerobic ? "#1b7f4e" : "#9a6212", cy = 285, top = cy - 92, ex = cx + 90;
+      const col = aerobic ? "#1b7f4e" : "#9a6212", cy = 316, ry = 72, top = cy - ry, ex = cx + 90;
       let s = `<rect x="${cx - 235}" y="62" width="470" height="378" rx="26" fill="${aerobic ? "#f2f8ff" : "#fdf7ec"}" stroke="${aerobic ? "#cfe0f5" : "#f0dcb0"}" stroke-width="2"/>`;
       s += A.tx(cx, 94, aerobic ? "Aerobic respiration" : "Anaerobic respiration", "t20 mid", `style="fill:${col}"`);
-      s += cell(cx, cy, 200, 92, seed, aerobic ? "fAe" : "fAn");
-      s += A.tx(cx + 50, cy + 18, "Glycolysis + Krebs cycle", "t14 mid muted") + A.tx(cx + 50, cy + 40, "load up NADH and FADH₂", "t12 mid muted");
-      [-90, -30, 30, 90].forEach((dx, i) => s += `<rect x="${cx + dx - 14}" y="${top - 20}" width="28" height="40" rx="10" fill="${ECOL[i]}" stroke="#fff" stroke-width="2"/>` + A.tx(cx + dx, top + 5, ["I", "II", "III", "IV"][i], "t12 mid wht"));
+      s += cell(cx, cy, 200, ry, seed, aerobic ? "fAe2" : "fAn2");
+      s += A.tx(cx + 72, cy + 10, "Glycolysis + Krebs cycle", "t14 mid muted") + A.tx(cx + 72, cy + 30, "load up NADH and FADH₂", "t14 mid muted");
+      [-90, -30, 30, 90].forEach((dx, i) => s += `<rect x="${cx + dx - 15}" y="${top - 22}" width="30" height="44" rx="10" fill="${ECOL[i]}" stroke="#fff" stroke-width="2"/>` + A.tx(cx + dx, top + 5, ["I", "II", "III", "IV"][i], "t14 mid wht"));
+      /* which acceptors sit at the end of the chain right now */
+      const accs = aerobic ? [[ex + 36, 168, "o2"]] : live ? ACC_SOCK.map((q, k) => g.sock[k] ? [q[0], q[1], g.sock[k].id, g.sock[k].t] : null).filter(Boolean) : [[ACC_SOCK[0][0], 168, "no3", -9], [ACC_SOCK[1][0], 168, "so4", -9]];
       /* electrons run along the membrane, then hop to whatever sits at the end */
-      const accs = aerobic ? [[ex, 140, "o2"]] : [[ex - 36, 140, "no3"], [ex + 44, 140, "so4"]];
       let hit = -1;
       for (let j = 0; j < 3; j++){
         const q = (ph + j / 3) % 1;
-        if (q < .62){ s += A.eDot(lerp(cx - 90, ex, q / .62), top + 26, 8); }
-        else if (q < .8){ const u = smooth((q - .62) / .18), a = accs[(Math.floor(t / T) + j) % accs.length]; s += A.eDot(lerp(ex, a[0], u), lerp(top + 26, a[1] + 16, u), 8); if (u > .85) hit = accs.indexOf(a); }
+        if (q < .62) s += A.eDot(lerp(cx - 90, ex, q / .62), top + 28, 8);
+        else if (accs.length && q < .8){ const u = smooth((q - .62) / .18), a = accs[(Math.floor(t / T) + j) % accs.length]; s += A.eDot(lerp(ex, a[0], u), lerp(top + 28, a[1] + 18, u), 8); if (u > .85) hit = accs.indexOf(a); }
       }
+      if (!aerobic && live) ACC_SOCK.forEach((q, k) => { if (!g.sock[k]) s += `<circle cx="${q[0]}" cy="${q[1]}" r="27" fill="${overZ(g, {x:q[0], y:q[1], w:60, h:60}) ? "#dfe3fb" : holding(g) ? "#eef0fd" : "#fff"}" stroke="${holding(g) ? "#3f4cc0" : "#8a93a3"}" stroke-width="2.5" stroke-dasharray="6 4"/>` + A.tx(q[0], q[1] + 6, "?", "t16 mid muted"); });
+      if (!aerobic) s += A.tx(842, 130, "end of the chain", "t12 mid muted");
       accs.forEach((a, k) => {
-        const bob = 3 * Math.sin(t * 2 + k * 2);
-        if (hit === k) s += `<circle cx="${a[0]}" cy="${f1(a[1] + bob)}" r="26" fill="#f2b134" opacity=".4"/>`;
-        if (a[2] === "o2") s += A.o2(a[0], a[1] + bob);
-        else s += a[2] === "no3" ? A.no3(a[0], a[1] + bob) : A.so4(a[0], a[1] + bob);
+        const bob = 3 * Math.sin(t * 2 + k * 2), age = a[3] === undefined || a[3] < 0 ? 9 : now() - a[3];
+        if (hit === k) s += `<circle cx="${a[0]}" cy="${f1(a[1] + bob)}" r="28" fill="#f2b134" opacity=".4"/>`;
+        /* a fresh acceptor flashes, then turns into its reduced product */
+        const red = age > 1.4, fl = clamp(1 - Math.abs(age - 1.2) / .3, 0, 1);
+        if (fl > 0) s += `<circle cx="${a[0]}" cy="${f1(a[1] + bob)}" r="${f1(20 + 16 * fl)}" fill="#f2b134" opacity="${f1(.5 * fl)}"/>`;
+        if (a[2] === "o2") s += A.o2(a[0], a[1] + bob, 13);
+        else if (a[2] === "no3") s += red && live ? A.no2(a[0], a[1] + bob) : A.no3(a[0], a[1] + bob);
+        else s += red && live ? A.h2s(a[0], a[1] + bob) : A.so4(a[0], a[1] + bob);
       });
       if (aerobic){
-        for (let i = 0; i < 4; i++){ const x = cx - 200 + ((t * 26 + i * 100) % 330), y = 126 + 8 * Math.sin(t * 1.5 + i * 2); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="9" fill="#dbe7fb" stroke="#8fb2e6" stroke-width="1.5"/>` + A.tx(x, y + 3.5, "O₂", "t11 mid", `style="fill:#1f4a9c;font-size:10px"`); }
+        for (let i = 0; i < 3; i++){ const x = cx - 190 + ((t * 22 + i * 87) % 260), y = 150 + 8 * Math.sin(t * 1.5 + i * 2); s += A.op(.75, A.o2(x, y, 11)); }
         s += A.tx(cx, 418, "Final acceptor: O₂ → H₂O", "t16 mid", `style="fill:${col}"`);
       } else {
-        s += A.op(.45, A.o2(cx - 170, 140)) + `<path d="M${cx - 196},124 L${cx - 144},156 M${cx - 144},124 L${cx - 196},156" stroke="#d9443a" stroke-width="4" stroke-linecap="round"/>` + A.tx(cx - 170, 178, "no O₂", "t12 mid", `style="fill:#b83a34"`);
-        s += A.tx(cx, 418, `Final acceptor: ${R("notoxygen") === "?" ? "?" : "NOT oxygen"}`, "t16 mid", `style="fill:${col}"`);
+        const got = live ? g.sock.filter(Boolean).map(q => q.id) : ["no3", "so4"];
+        const line = got.length ? got.map(k => k === "no3" ? "NO₃⁻ → NO₂⁻ or N₂" : "SO₄²⁻ → H₂S").join("   ·   ") : `Final acceptor: ${R("notoxygen") === "?" ? "?" : "NOT oxygen"}`;
+        s += A.tx(cx, 418, line, "t16 mid", `style="fill:${col}"`);
       }
       return s;
     };
     o += one(260, true, 7) + one(740, false, 12);
-    o += A.tx(500, 462, `NO₃⁻ → NO₂⁻ or N₂,  SO₄²⁻ → H₂S.  Less ATP than aerobic, but more than fermentation.`, "t12 mid muted");
+    if (live){
+      o += tokens(g, ACC_ITEMS.filter(it => !g.sock.some(q => q && q.id === it.id)).map(it => ({...it, draw:st => {
+        const [x, y] = at(st, it.id, it.x, it.y), sel = st.pick === it.id;
+        return `<g data-drag="${it.id}" style="cursor:grab"><circle cx="${f1(x)}" cy="${f1(y)}" r="30" fill="#fff" opacity=".01"/>${sel ? `<circle cx="${f1(x)}" cy="${f1(y)}" r="28" fill="none" stroke="${C.gold}" stroke-width="4" stroke-dasharray="6 4"/>` : ""}${accDraw(it.id, x, y)}${it.id === "o2" ? `<path d="M${f1(x - 16)},${f1(y - 14)} L${f1(x + 16)},${f1(y + 14)} M${f1(x + 16)},${f1(y - 14)} L${f1(x - 16)},${f1(y + 14)}" stroke="#b83a34" stroke-width="3.5" stroke-linecap="round"/>` : ""}</g>`; }})));
+    } else o += A.op(.45, A.o2(580, 150, 12)) + `<path d="M558,136 L602,164 M602,136 L558,164" stroke="#d9443a" stroke-width="4" stroke-linecap="round"/>` + A.tx(580, 190, "no O₂", "t14 mid", `style="fill:#b83a34"`);
+    o += A.tx(500, 462, `Less ATP than aerobic respiration, but more than fermentation.`, "t14 mid muted");
     return o;
   }
 
-  function anaerobeScene(t, R){
-    let o = A.tx(500, 36, "Anaerobic respiration: inputs and outputs", "t20 mid");
-    o += cell(500, 235, 215, 100, 21, "fIo");
-    o += A.tx(540, 224, "Bacterium", "t16 mid") + A.tx(540, 248, "(no O₂ around)", "t12 mid muted");
-    const ins = [["Glucose", 140, 160], ["NO₃⁻ or SO₄²⁻", 140, 300]], outs = [["CO₂", 860, 130], ["ATP (moderate)", 860, 235], ["NO₂⁻ / N₂ or H₂S", 860, 340]];
-    ins.forEach(i => { o += box(i[1], i[2], 200, 48, i[0], "#3f4cc0") + A.arrow(242, i[2], 282, lerp(i[2], 235, .3), "#3f4cc0", 3); });
-    outs.forEach(u => { o += A.arrow(720, lerp(u[2], 235, .3), 752, u[2], "#1b7f4e", 3) + box(u[1], u[2], 210, 48, u[0], "#1b7f4e"); });
-    o += A.tx(140, 112, "Starting materials", "t14 mid", `style="fill:#3f4cc0"`) + A.tx(860, 82, "End products", "t14 mid", `style="fill:#1b7f4e"`);
-    const p = (t % 5) / 5;
-    for (let k = 0; k < 3; k++){ const q = (p + k / 3) % 1; o += A.eDot(lerp(380, 620, q), 160 + 6 * Math.sin(q * Math.PI * 2), 9); }
-    o += A.tx(500, 408, "The final electron acceptor gets REDUCED (it gains the electrons)", "t14 mid") + A.tx(500, 438, "Nitrate → nitrite or N₂ gas. Sulfate → hydrogen sulfide (rotten eggs!)", "t14 mid muted");
+  /* ---------- Step 2: aerobic vs. anaerobic, as a Venn diagram ---------- */
+  const VENN = {L:[360, 255], R:[640, 255], rx:270, ry:175};
+  const inEll = (c, p) => ((p.x - c[0]) / VENN.rx) ** 2 + ((p.y - c[1]) / VENN.ry) ** 2 <= 1;
+  const vennBin = p => { const l = inEll(VENN.L, p), r = inEll(VENN.R, p); return l && r ? "both" : l ? "aer" : r ? "an" : null; };
+  const SORT = [["a", "Glycolysis + Krebs + ETC", "both"], ["g", "Uses ATP synthase", "both"], ["h", "Glucose in, CO₂ out", "both"],
+    ["b", "Final acceptor: O₂", "aer", "Only aerobic respiration hands electrons to O₂."], ["d", "Makes 32–38 ATP", "aer", "That's the big aerobic payoff. Anaerobic respiration makes less."], ["f", "Makes water (H₂O)", "aer", "O₂ + electrons + H⁺ → H₂O. That only happens with oxygen."],
+    ["c", "Acceptor: NO₃⁻ or SO₄²⁻", "an", "Nitrate and sulfate stand in for oxygen in anaerobic respiration."], ["e", "Can make H₂S", "an", "Sulfate gets reduced to hydrogen sulfide."], ["l", "Less ATP than aerobic", "an", "A weaker final acceptor releases less energy, so less ATP."]];
+  const SLOT = {aer:[255, [185, 230, 275]], both:[500, [212, 257, 302]], an:[745, [185, 230, 275]]};
+  const TRAY2 = () => A.chipRows(SORT.map(c => [c[0], c[1]]), 500, 458, 960, 42);
+  function vennScene(t, R, g, done){
+    const live = play(g, done), placed = live ? g.placed : Object.fromEntries(SORT.map(c => [c[0], c[2]]));
+    let o = A.tx(500, 34, "Aerobic vs. anaerobic respiration", "t20 mid");
+    const hl = k => live && g.drag && g.drag.moved && vennBin(g.drag) === k;
+    o += `<ellipse cx="${VENN.L[0]}" cy="${VENN.L[1]}" rx="${VENN.rx}" ry="${VENN.ry}" fill="#e3effd" fill-opacity=".85" stroke="#8fb2e6" stroke-width="${hl("aer") ? 4 : 2.5}"/>`;
+    o += `<ellipse cx="${VENN.R[0]}" cy="${VENN.R[1]}" rx="${VENN.rx}" ry="${VENN.ry}" fill="#fbecd2" fill-opacity=".65" stroke="#e2c27d" stroke-width="${hl("an") ? 4 : 2.5}"/>`;
+    if (hl("both")) o += `<path d="M500,${f1(VENN.L[1] - 155)} Q620,255 500,${f1(VENN.L[1] + 155)} Q380,255 500,${f1(VENN.L[1] - 155)}Z" fill="#3f4cc0" opacity=".12"/>`;
+    o += A.tx(280, 140, "Aerobic only", "t16 mid", `style="fill:#1b7f4e"`) + A.tx(500, 140, "Both", "t16 mid", `style="fill:#3f4cc0"`) + A.tx(720, 140, "Anaerobic only", "t16 mid", `style="fill:#9a6212"`);
+    /* a little mechanism in each side: what happens at the end of the chain */
+    o += A.o2(190, 352, 12) + A.arrow(214, 352, 246, 352, "#1b7f4e", 2.5) + A.h2o(268, 349) + A.tx(229, 386, "O₂ → H₂O", "t14 mid", `style="fill:#1b7f4e"`);
+    o += A.no3(690, 352) + A.arrow(712, 352, 744, 352, "#9a6212", 2.5) + A.no2(764, 352) + A.tx(727, 386, "NO₃⁻ → NO₂⁻", "t14 mid", `style="fill:#9a6212"`);
+    /* placed cards stack in their region */
+    ["aer", "both", "an"].forEach(k => { const L = SORT.filter(c => placed[c[0]] === k); L.forEach((c, i) => { o += A.chip(SLOT[k][0], SLOT[k][1][i], c[1], "ok"); }); });
+    if (live){
+      const P = TRAY2(), un = SORT.filter(c => !placed[c[0]]);
+      o += tokens(g, un.map(c => ({id:c[0], label:c[1], x:P[c[0]][0], y:P[c[0]][1]})));
+    }
     return o;
   }
 
-  /* Fermentation: NAD+ goes into glycolysis, comes out as NADH, and fermentation turns it back into NAD+ */
+  /* ---------- Step 3: fermentation recycles NAD⁺ ---------- */
+  const NB = 250, GLY = {x:275, y:NB, w:176, h:82}, FER = {x:665, y:NB, w:176, h:82};
+  const pair = (x, y, full) => A.carrier(x + 8, y, "NAD", full) + `<circle cx="${f1(x - 30)}" cy="${f1(y)}" r="13" fill="#fff" stroke="${NADG}" stroke-width="2"/>` + A.tx(x - 30, y + 4.5, "×2", "t12 mid", `style="fill:${NADG}"`);
+  const bez = (u, p0, p1, p2, p3) => { const v = 1 - u; return v * v * v * p0 + 3 * v * v * u * p1 + 3 * v * u * u * p2 + u * u * u * p3; };
+  const rowX = (n, i) => 500 - (n - 1) * 46 + i * 92;
   function nadScene(t, R, g, done){
-    const live = g && g.nad !== undefined && !done, B = 250;
+    const live = play(g, done);
     let o = A.tx(500, 34, "Fermentation's job: recycle NAD⁺", "t20 mid");
     const stuck = live && g.nad === 0 && g.nadh > 0;
-    o += box(80, B, 130, 56, "Glucose", "#5a6376") + A.arrow(146, B, 186, B, "#5a6376", 3);
-    o += (stuck ? `<rect x="182" y="${B - 45}" width="186" height="90" rx="18" fill="none" stroke="#b83a34" stroke-width="3" stroke-dasharray="6 5"/>` : "") + box(275, B, 170, 78, "Glycolysis", "#b83a34", stuck ? "STUCK: no NAD⁺ left!" : live ? `ATP made: ${g.runs * 2}` : "2 ATP (the only ATP!)") + A.arrow(362, B, 406, B, "#5a6376", 3);
-    o += box(470, B, 120, 56, "Pyruvate", "#5a6376") + A.arrow(532, B, 576, B, "#5a6376", 3);
-    o += box(665, B, 170, 78, "Fermentation", "#9a6212", live ? `NAD⁺ regenerated: ${g.back * 2}` : "pyruvate takes the electrons") + A.arrow(752, B, 796, B, "#9a6212", 3);
-    o += box(885, B, 170, 56, "Lactate or ethanol", "#9a6212", "+ CO₂ (ethanol only)");
-    /* the two loops: NADH carries electrons over, NAD+ comes back */
-    o += `<path d="M275,${B + 41} C275,${B + 140} 665,${B + 140} 665,${B + 43}" fill="none" stroke="#1b7f4e" stroke-width="3.5"/>` + A.arrow(665, B + 58, 665, B + 41, "#1b7f4e", 3.5);
-    o += `<path d="M665,${B - 41} C665,${B - 138} 275,${B - 138} 275,${B - 43}" fill="none" stroke="#2c6fd0" stroke-width="3.5" stroke-dasharray="8 6"/>` + A.arrow(275, B - 58, 275, B - 41, "#2c6fd0", 3.5);
-    o += A.tx(470, B + 94, "NADH", "t16 mid", `style="fill:#1b7f4e"`) + A.tx(470, B - 78, "NAD⁺ comes back", "t16 mid", `style="fill:#2c6fd0"`);
+    /* glucose → glycolysis → pyruvate → fermentation → product */
+    o += A.glucoseRing(78, NB - 8, {r:7}) + A.tx(78, NB + 44, "Glucose", "t14 mid") + A.arrow(116, NB, GLY.x - GLY.w / 2 - 6, NB, "#5a6376", 3);
+    const box = (Z, title, sub, col, zs) => (zs ? A.zone(Z.x, Z.y, Z.w + 18, Z.h + 18, zs, 20) : "") + `<rect x="${Z.x - Z.w / 2}" y="${Z.y - Z.h / 2}" width="${Z.w}" height="${Z.h}" rx="16" fill="#fff" stroke="${col}" stroke-width="3"/>` + A.tx(Z.x, Z.y - 6, title, "t16 mid", `style="fill:${col}"`) + A.tx(Z.x, Z.y + 20, sub, "t14 mid muted");
+    const zs = Z => live && holding(g) ? zState(g, Z) : "";
+    const flash = (k) => live && g.fx && g.fx.k === k ? clamp(1 - (now() - g.fx.t) / 1.2, 0, 1) : 0;
+    if (flash("gly") > 0) o += `<rect x="${GLY.x - 100}" y="${NB - 52}" width="200" height="104" rx="22" fill="#f2b134" opacity="${f1(.45 * flash("gly"))}"/>`;
+    if (flash("fer") > 0) o += `<rect x="${FER.x - 100}" y="${NB - 52}" width="200" height="104" rx="22" fill="#f2b134" opacity="${f1(.45 * flash("fer"))}"/>`;
+    o += (stuck ? `<rect x="${GLY.x - 98}" y="${NB - 50}" width="196" height="100" rx="20" fill="none" stroke="#b83a34" stroke-width="3" stroke-dasharray="6 5"/>` : "")
+      + box(GLY, "Glycolysis", stuck ? "STUCK: no NAD⁺!" : live ? `ATP made: ${g.runs * 2}` : "makes 2 ATP", "#b83a34", zs(GLY));
+    o += A.arrow(GLY.x + GLY.w / 2 + 4, NB, 418, NB, "#5a6376", 3) + A.carbons(470, NB - 8, 3, {r:9, gap:21}) + A.tx(470, NB + 30, "Pyruvate", "t14 mid") + A.arrow(522, NB, FER.x - FER.w / 2 - 6, NB, "#5a6376", 3);
+    o += box(FER, "Fermentation", live ? `NAD⁺ recycled: ${g.back * 2}` : "pyruvate takes the e⁻", "#9a6212", zs(FER));
+    o += A.arrow(FER.x + FER.w / 2 + 4, NB, 838, NB, "#9a6212", 3) + A.carbons(895, NB - 8, 3, {r:9, gap:21, col:"#9a6212"}) + A.tx(895, NB + 30, "Lactate", "t14 mid", `style="fill:#9a6212"`) + A.tx(895, NB + 50, "(or ethanol + CO₂)", "t12 mid muted");
+    /* the two loops: NADH carries electrons over, NAD⁺ comes back */
+    o += `<path d="M${GLY.x},${NB + 43} C${GLY.x},${NB + 140} ${FER.x},${NB + 140} ${FER.x},${NB + 45}" fill="none" stroke="${NADG}" stroke-width="3.5"/>` + A.arrow(FER.x, NB + 60, FER.x, NB + 43, NADG, 3.5);
+    o += `<path d="M${FER.x},${NB - 43} C${FER.x},${NB - 138} ${GLY.x},${NB - 138} ${GLY.x},${NB - 45}" fill="none" stroke="${NADG}" stroke-width="3.5" stroke-dasharray="8 6"/>` + A.arrow(GLY.x, NB - 60, GLY.x, NB - 43, NADG, 3.5);
+    o += A.tx(470, NB + 96, "NADH carries e⁻ over", "t14 mid", `style="fill:${NADG}"`) + A.tx(470, NB - 82, "NAD⁺ comes back", "t14 mid", `style="fill:${NADG}"`);
     if (live){
-      o += A.tx(470, B + 138, "NADH waiting", "t12 mid muted");
-      for (let i = 0; i < g.nadh; i++) o += chip(470 - (g.nadh - 1) * 36 + i * 72, B + 164, "2 NADH", true, "#1b7f4e");
-      o += A.tx(470, 62, "NAD⁺ ready", "t12 mid muted");
-      for (let i = 0; i < g.nad; i++) o += chip(470 - (g.nad - 1) * 36 + i * 72, 88, "2 NAD⁺", false, "#2c6fd0");
+      o += A.tx(250, 88, "NAD⁺ ready", "t14 end muted") + A.tx(250, 424, "NADH waiting", "t14 end muted");
+      /* a pair that was just used flies along its loop */
+      if (g.fx && now() - g.fx.t < 1.2){
+        const u = smooth((now() - g.fx.t) / 1.2);
+        if (g.fx.k === "gly") o += pair(bez(u, GLY.x, GLY.x, FER.x, FER.x), bez(u, NB + 43, NB + 140, NB + 140, NB + 45) + 4, true) + A.op(1 - u, A.tx(GLY.x, NB - 60 - 30 * u, "+2 ATP", "t16 mid", `style="fill:${C.atpText}"`));
+        else o += pair(bez(u, FER.x, FER.x, GLY.x, GLY.x), bez(u, NB - 43, NB - 138, NB - 138, NB - 45) - 4, false);
+      }
+      const items = [];
+      for (let i = 0; i < g.nad; i++) items.push({id:"nad" + i, label:"2 NAD⁺", x:rowX(g.nad, i), y:84, draw:st => { const [x, y] = at(st, "nad" + i, rowX(g.nad, i), 84); return `<g data-drag="nad${i}" style="cursor:grab"><rect x="${f1(x - 40)}" y="${f1(y - 26)}" width="80" height="52" fill="#fff" opacity=".01"/>${st.pick === "nad" + i ? `<rect x="${f1(x - 42)}" y="${f1(y - 26)}" width="84" height="52" rx="18" fill="none" stroke="${C.gold}" stroke-width="4" stroke-dasharray="6 4"/>` : ""}${pair(x, y, false)}</g>`; }});
+      for (let i = 0; i < g.nadh; i++) items.push({id:"nadh" + i, label:"2 NADH", x:rowX(g.nadh, i), y:420, draw:st => { const [x, y] = at(st, "nadh" + i, rowX(g.nadh, i), 420); return `<g data-drag="nadh${i}" style="cursor:grab"><rect x="${f1(x - 40)}" y="${f1(y - 26)}" width="80" height="52" fill="#fff" opacity=".01"/>${st.pick === "nadh" + i ? `<rect x="${f1(x - 42)}" y="${f1(y - 26)}" width="84" height="52" rx="18" fill="none" stroke="${C.gold}" stroke-width="4" stroke-dasharray="6 4"/>` : ""}${pair(x, y, true)}</g>`; }});
+      o += tokens(g, items);
     } else {
       const q = (t % 6) / 6, a = q < .5 ? q * 2 : 1, b = q >= .5 ? (q - .5) * 2 : 0;
-      const bez = (u, p0, p1, p2, p3) => { const v = 1 - u; return v * v * v * p0 + 3 * v * v * u * p1 + 3 * v * u * u * p2 + u * u * u * p3; };
-      if (q < .5) o += A.carrier(bez(a, 275, 275, 665, 665), bez(a, B + 41, B + 140, B + 140, B + 43) - 4, "NAD", true, {e:false});
-      else o += A.carrier(bez(b, 665, 665, 275, 275), bez(b, B - 41, B - 138, B - 138, B - 43) + 4, "NAD", false);
-      o += A.tx(500, 452, `${R("nadplus")} recycled back to glycolysis. Without it, glycolysis stops!`, "t14 mid", `style="fill:#1b7f4e"`);
+      if (q < .5) o += A.carrier(bez(a, GLY.x, GLY.x, FER.x, FER.x), bez(a, NB + 43, NB + 140, NB + 140, NB + 45) - 4, "NAD", true);
+      else o += A.carrier(bez(b, FER.x, FER.x, GLY.x, GLY.x), bez(b, NB - 43, NB - 138, NB - 138, NB - 45) + 4, "NAD", false);
+      o += A.tx(500, 440, `${R("nadplus")} goes back to glycolysis. Without it, glycolysis stops!`, "t16 mid", `style="fill:${NADG}"`);
     }
-    if (!live) o += A.tx(870, 330, "No O₂, no electron transport chain", "t12 mid muted");
     return o;
   }
 
-  /* Types of fermentation: two big ones, four more, and where the MR and VP tests fit in */
-  function typesScene(t, R){
-    let o = A.tx(500, 34, "Pyruvate can be fermented into many products", "t20 mid") + box(500, 78, 170, 40, "Pyruvate", "#5a6376");
-    const on = Math.floor(t / 1.6) % 6;
-    const BIG = [[260, "#b83a34", "Lactic acid fermentation", "Streptococcus, Lactobacillus, Bacillus", R("lactic") === "?" ? "?" : "Lactic acid", "yogurt, cheese, tired muscles"], [740, "#9a6212", "Alcohol fermentation", "Saccharomyces (yeast)", "Ethanol + CO₂", "beer, wine, bread"]];
-    const SM = [["Propionibacterium", ["Propionic acid, acetic acid,", "CO₂, H₂"], "", "#5a6376"], ["Clostridium", ["Butyric acid, butanol, acetone,", "isopropyl alcohol, CO₂"], "", "#5a6376"], ["E. coli, Salmonella", ["Mixed-acid fermentation:", "ethanol, lactic, succinic,", "acetic acid, CO₂, H₂"], "MR", "#5b3fb0"], ["Enterobacter", ["Butanediol fermentation:", "ethanol, lactic, formic acid,", "butanediol, acetoin, CO₂, H₂"], "VP", "#5b3fb0"]];
-    /* one line down from pyruvate, a bus along the gap, and short drops to the small cards */
+  /* ---------- Step 4: types of fermentation. Products drop onto the microbes that make them ---------- */
+  const MATCH = [["lac", "Lactic acid", [260, 215, 220, 30]], ["eth", "Ethanol + CO₂", [740, 215, 220, 30]], ["prop", "Propionic acid + CO₂", [137, 348, 214, 52]], ["but", "Butanol + acetone", [382, 348, 214, 52]]];
+  const TRAY4 = () => A.chipRows([["eth", "Ethanol + CO₂"], ["prop", "Propionic acid + CO₂"], ["lac", "Lactic acid"], ["but", "Butanol + acetone"]], 500, 470, 960, 42);
+  function typesScene(t, R, g, done){
+    const live = play(g, done), ok = k => !live || g.ok[k];
+    let o = A.tx(500, 34, "Pyruvate can be fermented into many products", "t20 mid") + `<rect x="415" y="58" width="170" height="40" rx="14" fill="#fff" stroke="#5a6376" stroke-width="2.5"/>` + A.tx(500, 84, "Pyruvate", "t14 mid");
+    const on = live ? -1 : Math.floor(t / 1.6) % 6;
+    const BIG = [[260, "#b83a34", "Lactic acid fermentation", "Streptococcus, Lactobacillus, Bacillus", "lac", R("lactic") === "?" ? "?" : "Lactic acid", "yogurt, cheese, tired muscles"], [740, "#9a6212", "Alcohol fermentation", "Saccharomyces (yeast)", "eth", "Ethanol + CO₂", "beer, wine, bread"]];
+    const SM = [["Propionibacterium", "prop", ["Propionic acid, acetic acid,", "CO₂, H₂"], "", "#5a6376"], ["Clostridium", "but", ["Butyric acid, butanol, acetone,", "isopropyl alcohol, CO₂"], "", "#5a6376"], ["E. coli, Salmonella", "", ["Mixed-acid fermentation:", "ethanol, lactic, succinic,", "acetic acid, CO₂, H₂"], "MR", "#5b3fb0"], ["Enterobacter", "", ["Butanediol fermentation:", "ethanol, lactic, formic acid,", "butanediol, acetoin, CO₂, H₂"], "VP", "#5b3fb0"]];
+    const slot = k => { const m = MATCH.find(q => q[0] === k), [x, y, w, h] = m[2]; return A.zone(x, y, w, h, zState(g, {x, y, w, h})) + A.tx(x, y + 5, "drop the product here", "t12 mid muted"); };
     o += `<path d="M500,98 L500,268 M137,268 L872,268" stroke="#c9cfdb" stroke-width="2.5" fill="none"/>`;
     BIG.forEach((b, i) => {
       o += A.arrow(500 + (i ? 30 : -30), 98, b[0] + (i ? -90 : 90), 132, on === i ? "#e8744f" : "#c9cfdb", on === i ? 3.5 : 2.5);
       o += `<rect x="${b[0] - 220}" y="134" width="440" height="118" rx="18" fill="${on === i ? "#fff6d6" : "#fdf6ee"}" stroke="${b[1]}" stroke-width="3"/>`;
       o += `<rect x="${b[0] - 220}" y="134" width="440" height="34" rx="18" fill="${b[1]}"/><rect x="${b[0] - 220}" y="152" width="440" height="16" fill="${b[1]}"/>` + A.tx(b[0], 158, b[2], "t16 mid wht");
       o += A.tx(b[0], 192, b[3], "t14 mid", `style="font-style:italic"`);
-      o += A.tx(b[0], 224, b[4], "t20 mid", `style="fill:${b[1]}"`) + A.tx(b[0], 244, b[5], "t12 mid muted");
+      o += ok(b[4]) ? A.tx(b[0], 226, b[5], "t20 mid", `style="fill:${b[1]}"`) : slot(b[4]);
+      o += A.tx(b[0], 246, b[6], "t12 mid muted");
     });
     SM.forEach((b, i) => {
-      const x = 137 + i * 245, tests = !!b[2];
+      const x = 137 + i * 245, tests = !!b[3];
       o += A.arrow(x, 268, x, 283, on === i + 2 ? "#e8744f" : "#c9cfdb", on === i + 2 ? 3 : 2.5);
-      o += `<rect x="${x - 112}" y="286" width="225" height="${tests ? 128 : 100}" rx="16" fill="${on === i + 2 ? "#fff6d6" : tests ? "#f6f2fd" : "#fff"}" stroke="${tests ? "#8e6fd8" : "#d9dee7"}" stroke-width="${tests ? 2.5 : 1.8}" ${tests ? `stroke-dasharray="7 5"` : ""}/>`;
+      o += `<rect x="${x - 112}" y="286" width="225" height="${tests ? 150 : 100}" rx="16" fill="${on === i + 2 ? "#fff6d6" : tests ? "#f6f2fd" : "#fff"}" stroke="${tests ? "#8e6fd8" : "#d9dee7"}" stroke-width="${tests ? 2.5 : 1.8}" ${tests ? `stroke-dasharray="7 5"` : ""}/>`;
       o += A.tx(x, 312, b[0], "t14 mid", `style="font-style:italic"`);
-      b[1].forEach((ln, k) => o += A.tx(x, 336 + k * 18, ln, "t12 mid", `style="fill:${b[3]}"`));
+      if (!b[1] || ok(b[1])) b[2].forEach((ln, k) => o += A.tx(x, 336 + k * 18, ln, "t12 mid", `style="fill:${b[4]}"`));
+      else o += slot(b[1]);
     });
+    if (live){ const P = TRAY4(); o += tokens(g, MATCH.filter(m => !g.ok[m[0]]).map(m => ({id:m[0], label:m[1], x:P[m[0]][0], y:P[m[0]][1]}))); }
     return o;
   }
 
-  function foodScene(t, R){
-    const F = [["🧀", "Cheese, yogurt", "Lactic acid", "Lactobacillus, Streptococcus"], ["🥬", "Sauerkraut, pickles, kimchi", "Lactic acid", "Lactobacillus plantarum"], ["🍺", "Beer, wine", "Ethanol", "Saccharomyces (yeast)"], ["🍞", "Bread", "CO₂ makes it rise", "Saccharomyces (yeast)"], ["🧪", "Vinegar", "Acetic acid", "Acetobacter (from ethanol)"], ["🧀", "Swiss cheese", "Propionic acid + CO₂", "Propionibacterium"]];
-    let o = A.tx(500, 36, "Fermentation feeds us (and fuels industry)", "t20 mid");
-    const on = Math.floor(t / 1.5) % 6;
-    F.forEach((f, i) => { const x = 175 + (i % 3) * 325, y = 90 + Math.floor(i / 3) * 180;
-      o += `<rect x="${x - 150}" y="${y}" width="300" height="160" rx="18" fill="${i === on ? "#fff6d6" : "#fff"}" stroke="${i === on ? C.gold : "#d9dee7"}" stroke-width="${i === on ? 3 : 1.5}"/>`;
-      o += `<text x="${x}" y="${y + 52}" font-size="36" text-anchor="middle">${f[0]}</text>` + A.tx(x, y + 86, f[1], "t16 mid") + A.tx(x, y + 112, f[2], "t14 mid", `style="fill:#9a6212"`) + A.tx(x, y + 138, f[3], "t12 mid muted", `style="font-style:italic"`); });
-    o += A.tx(500, 460, "Also: acetone and butanol (Clostridium) and citric acid (Aspergillus) for industry", "t12 mid muted");
+  /* ---------- Step 5: foods. Each food drops onto the branch of fermentation that makes it ---------- */
+  const LANES = [{k:"lac", y:128, col:"#b83a34", t:"Lactic acid fermentation", p:"Lactic acid", m:"Lactobacillus, Streptococcus"},
+    {k:"alc", y:262, col:"#9a6212", t:"Alcohol fermentation", p:"Ethanol + CO₂", m:"Saccharomyces (yeast)"},
+    {k:"oth", y:396, col:"#5b3fb0", t:"Other fermentations", p:"Propionic acid + CO₂", m:"Propionibacterium"}];
+  const FOODS = [["a", "🥛 Yogurt", "lac"], ["b", "🥬 Sauerkraut", "lac"], ["c", "🍺 Beer", "alc"], ["d", "🍞 Bread rising", "alc", "Yeast's CO₂ is what makes bread rise."], ["e", "🧀 Swiss cheese holes", "oth", "That's propionic acid fermentation (Propionibacterium): its CO₂ makes the holes."], ["f", "🌶️ Kimchi", "lac"], ["g", "🍷 Wine", "alc"]];
+  const SHELF = k => ({x:715, y:LANES.find(l => l.k === k).y, w:520, h:96});
+  const TRAY5 = () => A.chipRows(FOODS.map(f => [f[0], f[1]]), 500, 484, 960, 42);
+  function foodScene(t, R, g, done){
+    const live = play(g, done), placed = live ? g.placed : Object.fromEntries(FOODS.map(f => [f[0], f[2]]));
+    let o = A.tx(500, 34, "Fermentation feeds us", "t20 mid");
+    o += A.carbons(64, 262, 3, {r:9, gap:21}) + A.tx(64, 294, "Pyruvate", "t14 mid");
+    LANES.forEach(l => {
+      o += A.arrow(98, 262, 166, l.y, l.col, 3);
+      o += `<rect x="172" y="${l.y - 46}" width="250" height="92" rx="16" fill="#fff" stroke="${l.col}" stroke-width="2.5"/>` + `<rect x="172" y="${l.y - 46}" width="250" height="30" rx="16" fill="${l.col}"/><rect x="172" y="${l.y - 26}" width="250" height="10" fill="${l.col}"/>`;
+      o += A.tx(297, l.y - 25, l.t, "t14 mid wht") + A.tx(297, l.y + 8, l.p, "t16 mid", `style="fill:${l.col}"`) + A.tx(297, l.y + 30, l.m, "t12 mid muted", `style="font-style:italic"`);
+      const S = SHELF(l.k);
+      o += A.arrow(426, l.y, S.x - S.w / 2 - 4, l.y, l.col, 2.5) + A.zone(S.x, S.y, S.w, S.h, live ? zState(g, S) : "", 16);
+      const here = FOODS.filter(f => placed[f[0]] === l.k), P = A.chipRows(here.map(f => [f[0], f[1]]), S.x, S.y - (here.length > 3 ? 20 : 0), S.w - 20, 40);
+      if (!here.length) o += A.tx(S.x, S.y + 5, live ? "drop foods made this way here" : "", "t14 mid muted");
+      here.forEach(f => o += A.chip(P[f[0]][0], P[f[0]][1], f[1], "ok"));
+    });
+    if (live){ const P = TRAY5(); o += tokens(g, FOODS.filter(f => !placed[f[0]]).map(f => ({id:f[0], label:f[1], x:P[f[0]][0], y:P[f[0]][1]}))); }
+    else o += A.tx(500, 486, "Industry uses fermentation too: vinegar (Acetobacter), acetone and butanol (Clostridium), citric acid (Aspergillus).", "t14 mid muted");
     return o;
   }
 
+  /* ---------- Step 6: the phenol red sugar fermentation test ---------- */
   /* Durham tube: broth color = acid (pH), the little upside-down tube catches gas */
   function tube(x, y, col, gas, t){
     const top = y - 120, bot = y + 104, w = 40, lvl = y - 70;
@@ -196,156 +271,170 @@
     s += `<rect x="${x - w - 6}" y="${top - 12}" width="${2 * w + 12}" height="14" rx="6" fill="#c9cfdb" stroke="#8b93a3" stroke-width="2"/>`;
     return s;
   }
+  const TX = [200, 410, 620], TY = 262;
+  const RES = [["ag", "Acid + gas", "#e0a800"], ["a", "Acid only", "#e0a800"], ["n", "No fermentation", "#b83a34"]];
+  const TUBEZ = i => ({x:TX[i], y:TY - 8, w:120, h:250});
+  const TRAY6 = () => A.chipRows([["n", "No fermentation"], ["ag", "Acid + gas"], ["a", "Acid only"]], 410, 456, 640, 42);
   function testScene(t, R, g, done){
-    const X = [200, 410, 620], Y0 = 270;
+    const live = play(g, done);
     let o = A.tx(500, 34, `The ${R("phenol") === "?" ? "?" : "phenol red"} sugar fermentation test`, "t20 mid");
-    o += tube(X[0], Y0, YEL, 1, t) + tube(X[1], Y0, YEL, 0, t) + tube(X[2], Y0, RED, 0, t);
-    const res = [["ag", "Acid + gas", "#e0a800"], ["a", "Acid only", "#e0a800"], ["n", "No fermentation", "#b83a34"]];
-    X.forEach((x, i) => {
-      o += `<rect x="${x - 38}" y="${Y0 + 58}" width="76" height="26" rx="13" fill="#fff" stroke="#8b93a3" stroke-width="2"/>` + A.tx(x, Y0 + 76, `Tube ${i + 1}`, "t14 mid");
-      if (done || (g && g.ok && g.ok[res[i][0]])) o += `<rect x="${x - 66}" y="${Y0 + 92}" width="132" height="28" rx="14" fill="${res[i][2]}"/>` + A.tx(x, Y0 + 111, res[i][1], "t14 mid wht");
+    TX.forEach((x, i) => { if (live && holding(g)) o += A.zone(TUBEZ(i).x, TUBEZ(i).y, TUBEZ(i).w, TUBEZ(i).h, zState(g, TUBEZ(i)), 22); });
+    o += tube(TX[0], TY, YEL, 1, t) + tube(TX[1], TY, YEL, 0, t) + tube(TX[2], TY, RED, 0, t);
+    TX.forEach((x, i) => {
+      o += A.tx(x, TY - 142, `Tube ${i + 1}`, "t16 mid");
+      if (!live || g.ok[RES[i][0]]) o += `<rect x="${x - 74}" y="${TY + 112}" width="148" height="32" rx="16" fill="${RES[i][2]}"/>` + A.tx(x, TY + 133, RES[i][1], "t14 mid wht");
     });
     /* labels sit on the graphic, pointing at the parts */
-    o += A.tx(150, 150, "Durham tube", "t12 end") + A.tx(150, 166, "(catches gas)", "t11 end muted") + A.arrow(156, 172, 184, 224, "#5a6376", 2);
-    o += A.tx(146, 262, "Broth + sugar +", "t11 end muted") + A.tx(146, 276, "phenol red", "t11 end muted") + A.arrow(150, 276, 166, 296, "#5a6376", 2);
+    o += A.tx(140, 160, "Durham tube", "t14 end") + A.tx(140, 178, "(catches gas)", "t12 end muted") + A.arrow(146, 184, 182, 222, "#5a6376", 2);
+    o += A.tx(136, 276, "Broth + sugar", "t12 end muted") + A.tx(136, 292, "+ phenol red", "t12 end muted") + A.arrow(140, 292, 162, 312, "#5a6376", 2);
     /* how to read it */
-    const sm = `style="font-size:12px"`;
     o += `<rect x="716" y="64" width="274" height="372" rx="18" fill="#fff" stroke="#d9dee7" stroke-width="2"/>` + A.tx(853, 94, "How to read it", "t16 mid");
-    o += `<rect x="734" y="112" width="34" height="34" rx="8" fill="${YEL}" stroke="#a8860f" stroke-width="2"/>` + A.tx(780, 126, "YELLOW = acid", "t14", `style="fill:#8a6c00"`) + A.tx(780, 144, "like lactic acid, which", "t12 muted", sm) + A.tx(780, 160, "lowers the pH", "t12 muted", sm);
-    o += `<circle cx="751" cy="224" r="17" fill="#fff" stroke="#8b93a3" stroke-width="2.5"/><circle cx="745" cy="218" r="5" fill="#dbe7fb"/>` + A.tx(780, 214, "BUBBLE = gas", "t14", `style="fill:#1f4a9c"`) + A.tx(780, 232, "CO₂, like in alcohol", "t12 muted", sm) + A.tx(780, 248, "fermentation (ethanol + CO₂)", "t12 muted", sm);
-    o += `<rect x="734" y="288" width="34" height="34" rx="8" fill="${RED}" stroke="#a82a22" stroke-width="2"/>` + A.tx(780, 302, "RED = no acid", "t14", `style="fill:#b83a34"`) + A.tx(780, 320, "sugar not fermented", "t12 muted", sm);
-    o += A.tx(853, 372, "Color and bubble are", "t12 mid") + A.tx(853, 390, "two separate readouts:", "t12 mid") + A.tx(853, 414, "acid? gas? neither? both?", "t13 mid", `style="fill:#5b3fb0"`);
+    o += `<rect x="734" y="112" width="34" height="34" rx="8" fill="${YEL}" stroke="#a8860f" stroke-width="2"/>` + A.tx(780, 126, "YELLOW = acid", "t14", `style="fill:#8a6c00"`) + A.tx(780, 144, "like lactic acid, which", "t12 muted") + A.tx(780, 160, "lowers the pH", "t12 muted");
+    o += `<circle cx="751" cy="224" r="17" fill="#fff" stroke="#8b93a3" stroke-width="2.5"/><circle cx="745" cy="218" r="5" fill="#dbe7fb"/>` + A.tx(780, 214, "BUBBLE = gas", "t14", `style="fill:#1f4a9c"`) + A.tx(780, 232, "CO₂, like in alcohol", "t12 muted") + A.tx(780, 248, "fermentation (ethanol + CO₂)", "t12 muted");
+    o += `<rect x="734" y="288" width="34" height="34" rx="8" fill="${RED}" stroke="#a82a22" stroke-width="2"/>` + A.tx(780, 302, "RED = no acid", "t14", `style="fill:#b83a34"`) + A.tx(780, 320, "sugar not fermented", "t12 muted");
+    o += A.tx(853, 372, "Color and bubble are", "t12 mid") + A.tx(853, 390, "two separate readouts:", "t12 mid") + A.tx(853, 414, "acid? gas? neither? both?", "t14 mid", `style="fill:#5b3fb0"`);
+    if (live){ const P = TRAY6(); o += tokens(g, RES.filter(r => !g.ok[r[0]]).map(r => ({id:r[0], label:r[1], x:P[r[0]][0], y:P[r[0]][1]}))); }
     return o;
   }
 
+  /* ---------- Step 7: the three options, as a table the student fills in ---------- */
   const FIN_ROWS = [["Needs O₂?", "Yes", "No", "No"], ["Final e⁻ acceptor", "O₂", "NO₃⁻, SO₄²⁻, etc.", "Organic molecule (pyruvate)"], ["Electron transport chain?", "Yes", "Yes", "No"], ["ATP per glucose", "32–38", "Moderate", "2"], ["End products", "CO₂ + H₂O", "CO₂ + NO₂⁻/N₂/H₂S", "Lactate, ethanol + CO₂"]];
-  /* word bank for the review table: one chip per cell, scrambled */
+  /* one chip per cell, scrambled */
   const FIN_BANK = (() => { const all = []; FIN_ROWS.forEach((r, j) => r.slice(1).forEach((c, i) => all.push({id:j + "_" + (i + 1), text:c}))); const ord = [7, 12, 2, 9, 0, 14, 5, 10, 3, 13, 6, 1, 11, 4, 8]; return ord.map(k => all[k]); })();
   const FIN_X = [140, 380, 620, 860], FIN_Y = j => 140 + j * 64;
+  const CELLZ = (j, i) => ({id:j + "_" + i, x:FIN_X[i], y:FIN_Y(j), w:228, h:50});
+  const TRAY7 = () => A.chipRows(FIN_BANK.map(c => [c.id, c.text]), 500, 486, 960, 44);
   function compareScene(t, R, g, done){
     const H = ["", "Aerobic respiration", "Anaerobic respiration", "Fermentation"], cols = ["#343b4a", "#1b7f4e", "#9a6212", "#b83a34"];
-    const play = g && g.play && !done;
+    const live = play(g, done);
     let o = A.tx(500, 36, "Three ways to break down glucose", "t20 mid");
     H.forEach((h, i) => { if (i) o += `<rect x="${FIN_X[i] - 115}" y="62" width="230" height="40" rx="12" fill="${cols[i]}"/>` + A.tx(FIN_X[i], 88, h, "t14 mid wht"); });
     FIN_ROWS.forEach((r, j) => {
-      const y = FIN_Y(j), on = !play && Math.floor(t / 1.6) % 5 === j;
+      const y = FIN_Y(j), on = !live && Math.floor(t / 1.6) % 5 === j;
       o += `<rect x="20" y="${y - 28}" width="960" height="54" rx="10" fill="${on ? "#fff6d6" : j % 2 ? "#f7f8fb" : "#fff"}"/>`;
       r.forEach((c, i) => {
-        if (!i || !play) o += A.tx(FIN_X[i], y + 5, c, "t14 mid", i ? `style="fill:${cols[i]}"` : "");
+        if (!i || !live) o += A.tx(FIN_X[i], y + 5, c, "t14 mid", i ? `style="fill:${cols[i]}"` : "");
         else if (g.cells[j + "_" + i]) o += A.tx(FIN_X[i], y + 5, g.cells[j + "_" + i], "t14 mid", `style="fill:${cols[i]}"`);
+        else { const z = CELLZ(j, i); o += A.zone(z.x, z.y, z.w, z.h - 8, zState(g, z), 10); }
       });
     });
+    if (live){
+      o += A.tx(500, 446, "Drag each answer into its empty box", "t14 mid muted");
+      const P = TRAY7(); o += tokens(g, FIN_BANK.filter(c => !g.used[c.id]).map(c => ({id:c.id, label:c.text, x:P[c.id][0], y:P[c.id][1]})));
+    } else o += A.tx(500, 470, "Bacteria switch between these depending on what their environment offers.", "t14 mid muted");
     return o;
   }
 
-  /* ================= Activities ================= */
+  /* ================= Activities: all on the diagram ================= */
+  /* placeGate builds a gate whose only HTML is the feedback line; the scene draws the chips and drop spots */
+  const placeGate = spec => ({title:spec.title, done:spec.done, init:spec.init,
+    html:() => "",
+    wire:(g, st, api) => {
+      const put = (k, z) => spec.put(st, k, z, api);
+      Metab.placeOn(api, st, {items:() => spec.items(st), zones:() => spec.zones(st), put, miss:spec.miss, pickMsg:spec.pickMsg});
+      if (!g.querySelector("#gateMsg").textContent) api.msg(spec.tip, "");
+    }});
+  const finish = (api, msg, ms) => { api.msg(msg, "good"); setTimeout(api.pass, ms || 1000); };
+
   const GATES = {
-    acceptor:{title:"Your turn: no oxygen here! Give the chain a final electron acceptor", done:"Nitrate became nitrite/N₂ and sulfate became H₂S. Anaerobic respiration!",
-      init:() => ({done:{}}),
-      html:st => `<div class="row"><span class="tok" style="opacity:.45;text-decoration:line-through;cursor:not-allowed" data-a="o2">O₂ (none here)</span>${!st.done.no3 ? `<span class="tok" data-a="no3">NO₃⁻ (nitrate)</span>` : ""}${!st.done.so4 ? `<span class="tok" data-a="so4">SO₄²⁻ (sulfate)</span>` : ""}<span class="tok" data-a="glu">Glucose</span></div>
-        <div class="zone" data-zone="end"><span class="zl">End of the electron transport chain</span><div class="zin">${st.done.no3 ? `<span class="tok placed">NO₃⁻ → NO₂⁻ / N₂</span>` : ""}${st.done.so4 ? `<span class="tok placed">SO₄²⁻ → H₂S</span>` : ""}</div></div>`,
-      wire:(g, st, api) => { g.querySelectorAll("[data-a]").forEach(el => api.dragify(el, {tap:() => go(el.dataset.a), drop:() => go(el.dataset.a)}));
-        function go(a){ if (a === "o2"){ api.msg("There's no oxygen in this environment! Find another acceptor.", "bad"); return false; } if (a === "glu"){ api.msg("Glucose is the starting material (the electron DONOR), not the final acceptor.", "bad"); return false; }
-          st.done[a] = 1; api.redraw(); if (st.done.no3 && st.done.so4){ api.msg("Both work! The chain and chemiosmosis still run, just with a different final acceptor.", "good"); setTimeout(api.pass, 1100); } else api.msg(a === "no3" ? "Nitrate accepted the electrons and was reduced to nitrite (NO₂⁻) or N₂ gas. Try the other one!" : "Sulfate accepted the electrons and was reduced to H₂S. Try the other one!", "good"); return true; }
-        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag a molecule that can accept electrons at the end of the chain.", ""); }},
-    sort3:Metab.sortGate({title:"Your turn: aerobic, anaerobic, or both?", done:"Sorted! They share the same pathway; the final electron acceptor and ATP yield differ.",
-      bins:[["aer","Aerobic only"],["an","Anaerobic only"],["both","Both"]],
-      cards:[["a","Uses glycolysis, Krebs, and an ETC","both"],["b","Final acceptor is O₂","aer"],["c","Final acceptor is nitrate or sulfate","an"],["d","Makes 32–38 ATP","aer","Aerobic respiration makes the most ATP."],["e","Can make H₂S","an","Sulfate gets reduced to hydrogen sulfide."],["f","Makes water at the end","aer","O₂ + electrons + H⁺ → H₂O."],["g","Uses chemiosmosis (ATP synthase)","both"]]}),
-    free:{title:"Your turn: keep glycolysis running", done:"You recycled every NAD⁺. That's the whole point of fermentation!",
-      init:() => ({nad:4, nadh:0, back:0, runs:0}),
-      html:st => `<div class="chips"><span class="chip ${st.nad ? "on" : "off"}">NAD⁺ ready: ${st.nad * 2}</span><span class="chip">NADH waiting: ${st.nadh * 2}</span><span class="chip on">ATP made: ${st.runs * 2}</span></div>
-        <div class="row" style="min-height:44px">${Array.from({length:st.nad}, () => `<span class="tok" data-k="nad" style="border-color:#2c6fd0;color:#2c6fd0">2 NAD⁺</span>`).join("")}${Array.from({length:st.nadh}, () => `<span class="tok" data-k="nadh" style="border-color:#1b7f4e;background:#1b7f4e;color:#fff">2 NADH</span>`).join("")}</div>
-        <div class="zones"><div class="zone" data-zone="gly"><span class="zl">Glycolysis: NAD⁺ picks up electrons (becomes NADH) and 2 ATP are made</span></div><div class="zone" data-zone="fer"><span class="zl">Fermentation: NADH hands its electrons to pyruvate (becomes NAD⁺ again)</span></div></div>`,
-      wire:(g, st, api) => {
-        const toGly = () => { if (!st.nad) return false; st.nad--; st.nadh++; st.runs++; api.redraw();
-          api.msg(st.nad ? "2 NAD⁺ picked up electrons and became 2 NADH, and glycolysis made 2 ATP. Drag in another group of NAD⁺!" : "All the NAD⁺ is used up. Glycolysis is STUCK until NAD⁺ comes back. Drag the NADH to fermentation!", st.nad ? "good" : "bad"); return true; };
-        const toFer = () => { if (!st.nadh) return false; st.nadh--; st.nad++; st.back++; api.redraw();
-          if (st.back >= 4){ api.msg("Every NADH was turned back into NAD⁺. Glycolysis can keep running. That's what fermentation is for!", "good"); setTimeout(api.pass, 1300); }
-          else api.msg("NADH gave its electrons to pyruvate (making lactate or ethanol), so 2 NAD⁺ are free again. " + (st.nadh ? "Keep going!" : "Glycolysis can run again!"), "good"); return true; };
-        g.querySelectorAll("[data-k]").forEach(el => {
-          const k = el.dataset.k;
-          api.dragify(el, {
-            tap:() => k === "nad" ? toGly() : toFer(),
-            drop:z => { if (k === "nad"){ if (z.dataset.zone === "gly") return toGly(); api.msg("NAD⁺ is the empty carrier. It needs to pick up electrons in glycolysis first.", "bad"); return false; }
-              if (z.dataset.zone === "fer") return toFer(); api.msg("NADH has already been made. Take it to fermentation to hand off its electrons.", "bad"); return false; }});
-        });
-        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag each group of 2 NAD⁺ into glycolysis. Watch what happens when you run out!", "");
-      }},
-    match:{title:"Your turn: match each microbe to its fermentation products", done:"Matched! Yeast makes ethanol + CO₂; Lactobacillus makes lactic acid.",
+    acceptor:placeGate({title:"Your turn: no oxygen here! Give the chain a final electron acceptor", done:"Nitrate became nitrite or N₂, and sulfate became H₂S. Anaerobic respiration!",
+      init:() => ({sock:[null, null]}),
+      tip:"Drag a molecule from the environment into a dashed circle at the end of the chain (or tap it, then tap a circle).",
+      miss:"Drop it into one of the dashed circles at the end of the chain.",
+      items:st => ACC_ITEMS.filter(it => !st.sock.some(q => q && q.id === it.id)).map(it => ({id:it.id, label:it.label, x:it.x, y:it.y})),
+      zones:st => ACC_SOCK.map((q, k) => st.sock[k] ? null : {id:k, label:`end of the chain, spot ${k + 1}`, x:q[0], y:q[1], w:62, h:62}).filter(Boolean),
+      put:(st, k, z, api) => {
+        if (k === "o2"){ api.msg("There's no oxygen in this environment! Find another acceptor.", "bad"); return; }
+        if (k === "glu"){ api.msg("Glucose is the starting material (the electron DONOR), not the final acceptor.", "bad"); return; }
+        if (st.sock[z]) return;
+        st.sock[z] = {id:k, t:now()};
+        if (st.sock[0] && st.sock[1]) finish(api, "Both work! The chain and chemiosmosis still run, just with a different final acceptor.", 1800);
+        else api.msg(k === "no3" ? "Nitrate accepted the electrons and was reduced to nitrite (NO₂⁻). Now try the other one!" : "Sulfate accepted the electrons and was reduced to H₂S. Now try the other one!", "good");
+      }}),
+    sort3:placeGate({title:"Your turn: aerobic, anaerobic, or both?", done:"Sorted! They share the same pathway; the final electron acceptor and the ATP payoff differ.",
+      init:() => ({placed:{}}),
+      tip:"Drag each card into the part of the diagram where it belongs: aerobic only, anaerobic only, or the overlap for both.",
+      miss:"Drop the card inside one of the two ovals (or in the overlap).",
+      items:st => { const P = TRAY2(); return SORT.filter(c => !st.placed[c[0]]).map(c => ({id:c[0], label:c[1], x:P[c[0]][0], y:P[c[0]][1]})); },
+      zones:() => [{id:"aer", label:"aerobic only", x:250, y:240, w:240, h:200, hit:p => vennBin(p) === "aer"}, {id:"both", label:"both", x:500, y:255, w:200, h:220, hit:p => vennBin(p) === "both"}, {id:"an", label:"anaerobic only", x:750, y:240, w:240, h:200, hit:p => vennBin(p) === "an"}],
+      put:(st, k, z, api) => { const c = SORT.find(q => q[0] === k); if (!c || st.placed[k]) return;
+        if (c[2] !== z){ api.msg(c[3] || (c[2] === "both" ? "Both kinds of respiration do this. Try the overlap." : "Not quite. Think about it again!"), "bad"); return; }
+        st.placed[k] = z; const left = SORT.filter(q => !st.placed[q[0]]).length;
+        if (!left) finish(api, "All sorted!"); else api.msg(`Yes! ${left} to go.`, "good"); }}),
+    free:placeGate({title:"Your turn: keep glycolysis running", done:"You recycled every NAD⁺. That's the whole point of fermentation!",
+      init:() => ({nad:4, nadh:0, back:0, runs:0, fx:null}),
+      tip:"Drag a pair of NAD⁺ into glycolysis. Watch what happens when you run out!",
+      miss:"Drop it onto the Glycolysis box or the Fermentation box.",
+      items:st => [...Array.from({length:st.nad}, (_, i) => ({id:"nad" + i, label:"2 NAD⁺", x:rowX(st.nad, i), y:84})), ...Array.from({length:st.nadh}, (_, i) => ({id:"nadh" + i, label:"2 NADH", x:rowX(st.nadh, i), y:420}))],
+      zones:() => [{id:"gly", label:"Glycolysis", x:GLY.x, y:GLY.y, w:GLY.w + 18, h:GLY.h + 18}, {id:"fer", label:"Fermentation", x:FER.x, y:FER.y, w:FER.w + 18, h:FER.h + 18}],
+      put:(st, k, z, api) => {
+        const isNad = /^nad\d/.test(k);
+        if (isNad && z !== "gly"){ api.msg("NAD⁺ is the empty carrier. It picks up electrons in glycolysis first.", "bad"); return; }
+        if (!isNad && z !== "fer"){ api.msg("NADH is already full of electrons. Take it to fermentation to hand them off.", "bad"); return; }
+        if (isNad){ if (!st.nad) return; st.nad--; st.nadh++; st.runs++; st.fx = {k:"gly", t:now()};
+          api.msg(st.nad ? "Glycolysis ran: 2 NAD⁺ picked up electrons (now 2 NADH) and 2 ATP were made. Use another pair!" : "All the NAD⁺ is used up. Glycolysis is STUCK until NAD⁺ comes back. Drag NADH to fermentation!", st.nad ? "good" : "bad"); }
+        else { if (!st.nadh) return; st.nadh--; st.nad++; st.back++; st.fx = {k:"fer", t:now()};
+          if (st.back >= 4) finish(api, "Every NADH was turned back into NAD⁺, so glycolysis can keep running. That's what fermentation is for!", 1500);
+          else api.msg("NADH gave its electrons to pyruvate (making lactate), so 2 NAD⁺ are free again. " + (st.nadh ? "Keep going!" : "Glycolysis can run again!"), "good"); }
+      }}),
+    match:placeGate({title:"Your turn: match each product to the microbe that makes it", done:"Matched! Yeast makes ethanol + CO₂; Lactobacillus makes lactic acid.",
       init:() => ({ok:{}}),
-      html:st => { const P = [["eth","Ethanol + CO₂"],["lac","Lactic acid"],["prop","Propionic acid + CO₂"],["but","Butanol + acetone"]], O = [["eth","Saccharomyces (yeast)"],["lac","Lactobacillus"],["prop","Propionibacterium"],["but","Clostridium"]];
-        return `<div class="row">${P.filter(p => !st.ok[p[0]]).map(p => `<span class="tok" data-p="${p[0]}">${p[1]}</span>`).join("")}</div><div class="zones">${O.map(x => `<div class="zone ${st.ok[x[0]] ? "ok" : ""}" data-zone="${x[0]}"><span class="zl" style="font-style:italic">${x[1]}</span>${st.ok[x[0]] ? `<span class="tok placed">${P.find(p => p[0] === x[0])[1]}</span>` : ""}</div>`).join("")}</div>`; },
-      wire:(g, st, api) => { g.querySelectorAll("[data-p]").forEach(el => api.dragify(el, {tap:() => { st.pick = el.dataset.p; api.msg("Now tap the microbe.", ""); }, drop:z => put(el.dataset.p, z.dataset.zone)}));
-        g.querySelectorAll("[data-zone]").forEach(z => z.addEventListener("click", () => { if (st.pick){ put(st.pick, z.dataset.zone); st.pick = null; } }));
-        function put(p, z){ if (p !== z){ api.msg("Not that one. Check the diagram above!", "bad"); return false; } st.ok[p] = 1; api.redraw(); if (Object.keys(st.ok).length === 4){ api.msg("All matched!", "good"); setTimeout(api.pass, 1000); } else api.msg("Yes!", "good"); return true; }
-        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag each product onto the microbe that makes it.", ""); }},
-    food:Metab.sortGate({title:"Your turn: which kind of fermentation?", done:"Sorted! Lactic acid sours foods; alcohol fermentation makes drinks and makes bread rise.",
-      bins:[["lac","Lactic acid fermentation"],["alc","Alcohol fermentation"],["oth","Other fermentations"]],
-      cards:[["a","Yogurt","lac"],["b","Sauerkraut","lac"],["c","Beer","alc"],["d","Bread rising","alc","Yeast's CO₂ makes bread rise."],["e","Swiss cheese holes","oth","That's propionic acid fermentation (Propionibacterium)."],["f","Kimchi","lac"],["g","Wine","alc"]]}),
-    tubes:{title:"Your turn: read the tubes", done:"Yellow = acid from fermentation. A bubble = gas. Red = no fermentation.",
+      tip:"Drag each product into the empty spot on the microbe that makes it.",
+      items:st => { const P = TRAY4(); return MATCH.filter(m => !st.ok[m[0]]).map(m => ({id:m[0], label:m[1], x:P[m[0]][0], y:P[m[0]][1]})); },
+      zones:st => MATCH.filter(m => !st.ok[m[0]]).map(m => ({id:m[0], label:m[0] === "lac" ? "Lactic acid fermentation" : m[0] === "eth" ? "Alcohol fermentation" : m[0] === "prop" ? "Propionibacterium" : "Clostridium", x:m[2][0], y:m[2][1], w:m[2][2], h:m[2][3]})),
+      put:(st, k, z, api) => { if (k !== z){ api.msg("Not that one. Read the microbe names on each card!", "bad"); return; }
+        st.ok[k] = 1; if (Object.keys(st.ok).length === 4) finish(api, "All matched!"); else api.msg("Yes!", "good"); }}),
+    food:placeGate({title:"Your turn: which kind of fermentation?", done:"Sorted! Lactic acid sours foods; alcohol fermentation makes drinks and makes bread rise.",
+      init:() => ({placed:{}}),
+      tip:"Drag each food onto the branch of fermentation that makes it.",
+      miss:"Drop the food onto one of the three dashed shelves.",
+      items:st => { const P = TRAY5(); return FOODS.filter(f => !st.placed[f[0]]).map(f => ({id:f[0], label:f[1], x:P[f[0]][0], y:P[f[0]][1]})); },
+      zones:() => LANES.map(l => ({id:l.k, label:l.t, ...SHELF(l.k)})),
+      put:(st, k, z, api) => { const f = FOODS.find(q => q[0] === k); if (!f || st.placed[k]) return;
+        if (f[2] !== z){ api.msg(f[3] || "Not quite. Is it sour (lactic acid), boozy or bubbly (alcohol), or something else?", "bad"); return; }
+        st.placed[k] = z; const left = FOODS.filter(q => !st.placed[q[0]]).length;
+        if (!left) finish(api, "All sorted!"); else api.msg(f[3] ? "Yes! " + f[3] : `Yes! ${left} to go.`, "good"); }}),
+    tubes:placeGate({title:"Your turn: read the tubes", done:"Yellow = acid from fermentation. A bubble = gas. Red = no fermentation.",
       init:() => ({ok:{}}),
-      html:st => { const L = [["ag","Fermented: acid AND gas"],["a","Fermented: acid only"],["n","Did not ferment this sugar"]], T = [["ag","Tube 1: yellow + bubble"],["a","Tube 2: yellow, no bubble"],["n","Tube 3: still red"]];
-        return `<div class="row">${L.filter(l => !st.ok[l[0]]).map(l => `<span class="tok" data-l="${l[0]}">${l[1]}</span>`).join("")}</div><div class="zones">${T.map(x => `<div class="zone ${st.ok[x[0]] ? "ok" : ""}" data-zone="${x[0]}"><span class="zl">${x[1]}</span>${st.ok[x[0]] ? `<span class="tok placed">${L.find(l => l[0] === x[0])[1]}</span>` : ""}</div>`).join("")}</div>`; },
-      wire:(g, st, api) => { g.querySelectorAll("[data-l]").forEach(el => api.dragify(el, {tap:() => { st.pick = el.dataset.l; api.msg("Now tap the tube.", ""); }, drop:z => put(el.dataset.l, z.dataset.zone)}));
-        g.querySelectorAll("[data-zone]").forEach(z => z.addEventListener("click", () => { if (st.pick){ put(st.pick, z.dataset.zone); st.pick = null; } }));
-        function put(l, z){ if (l !== z){ api.msg("Remember: yellow means acid (low pH), and a bubble in the Durham tube means gas.", "bad"); return false; } st.ok[l] = 1; api.redraw(); if (Object.keys(st.ok).length === 3){ api.msg("You can read a fermentation test!", "good"); setTimeout(api.pass, 1000); } return true; }
-        if (!g.querySelector("#gateMsg").textContent) api.msg("Drag each result onto the matching tube.", ""); }},
-    final:{title:"Your turn: fill in the table", done:"You've got it: aerobic, anaerobic, and fermentation!", keep:true,
-      init:() => ({play:false, cells:{}, used:{}, pick:null}),
-      html:st => { if (!st.play) return `<div class="lbl">Press <b>Your turn</b> on the table above. The answers disappear and you drag them back in.</div>`;
-        const left = FIN_BANK.filter(c => !st.used[c.id]);
-        return `<div class="lbl">Word bank: drag each answer onto the right empty box in the table above (or tap an answer, then tap a box).</div><div class="row">${left.length ? left.map(c => `<span class="tok" data-chip="${c.id}">${c.text}</span>`).join("") : `<span class="lbl">All filled in!</span>`}</div>`; },
-      wire:(g, st, api) => {
-        const lay = document.getElementById("stageLay"), done = g.classList.contains("done");
-        lay.querySelectorAll(".zcell").forEach(z => z.remove());
-        const btn = lay.querySelector(".yt");
-        if (btn){ btn.hidden = done; btn.textContent = st.play ? "Start over" : "Your turn"; btn.onclick = () => { st.play = true; st.cells = {}; st.used = {}; st.pick = null; api.redraw(); api.msg("Fill in the table: drag each answer to its box.", ""); }; }
-        if (!st.play || done) return;
-        for (let j = 0; j < FIN_ROWS.length; j++) for (let i = 1; i <= 3; i++){
-          const key = j + "_" + i; if (st.cells[key]) continue;
-          const z = document.createElement("div"); z.className = "zcell"; z.dataset.zone = key;
-          z.style.cssText = `left:${(FIN_X[i] - 115) / 10}%;top:${(FIN_Y(j) - 28) / 4.7}%;width:23%;height:${54 / 4.7}%`;
-          z.addEventListener("click", () => { if (st.pick !== null) put(st.pick, key); });
-          lay.appendChild(z);
-        }
-        function put(id, key){
-          const c = FIN_BANK.find(q => q.id === id); st.pick = null;
-          if (!c || st.used[id]) return false;
-          const j = +key.split("_")[0], i = +key.split("_")[1];
-          if (FIN_ROWS[j][i] !== c.text){ api.msg("Not that one. Think about the row: " + FIN_ROWS[j][0], "bad"); api.redraw(); return false; }
-          st.cells[key] = c.text; st.used[id] = 1; api.redraw();
-          if (Object.keys(st.cells).length === 15){ api.msg("Table complete!", "good"); setTimeout(api.pass, 900); } else api.msg("Yes!", "good");
-          return true;
-        }
-        g.querySelectorAll("[data-chip]").forEach(el => {
-          const id = el.dataset.chip;
-          api.dragify(el, {targets:() => [...lay.querySelectorAll(".zcell")], drop:z => put(id, z.dataset.zone), tap:() => { st.pick = id; g.querySelectorAll("[data-chip]").forEach(q => q.style.outline = q === el ? "3px solid #f2b134" : ""); api.msg("Now tap the empty box it belongs in.", ""); }});
-        });
-        if (!g.querySelector("#gateMsg").textContent) api.msg("Fill in the table: drag each answer to its box.", "");
-      }}
+      tip:"Drag each result onto the tube that shows it.",
+      miss:"Drop the result right onto one of the three tubes.",
+      items:st => { const P = TRAY6(); return RES.filter(r => !st.ok[r[0]]).map(r => ({id:r[0], label:r[1], x:P[r[0]][0], y:P[r[0]][1]})); },
+      zones:() => TX.map((x, i) => ({id:RES[i][0], label:`Tube ${i + 1}`, ...TUBEZ(i)})),
+      put:(st, k, z, api) => { if (k !== z){ api.msg("Remember: yellow means acid (low pH), and a bubble in the Durham tube means gas.", "bad"); return; }
+        st.ok[k] = 1; if (Object.keys(st.ok).length === 3) finish(api, "You can read a fermentation test!"); else api.msg("Yes!", "good"); }}),
+    final:placeGate({title:"Your turn: fill in the table", done:"You've got it: aerobic, anaerobic, and fermentation!",
+      init:() => ({cells:{}, used:{}}),
+      tip:"Drag each answer from under the table into its empty box (or tap an answer, then tap a box).",
+      miss:"Drop the answer into one of the empty boxes in the table.",
+      items:st => { const P = TRAY7(); return FIN_BANK.filter(c => !st.used[c.id]).map(c => ({id:c.id, label:c.text, x:P[c.id][0], y:P[c.id][1]})); },
+      zones:st => { const z = []; for (let j = 0; j < FIN_ROWS.length; j++) for (let i = 1; i <= 3; i++) if (!st.cells[j + "_" + i]) z.push({...CELLZ(j, i), label:`${FIN_ROWS[j][0]}, ${["", "aerobic", "anaerobic", "fermentation"][i]}`}); return z; },
+      put:(st, id, key, api) => { const c = FIN_BANK.find(q => q.id === id); if (!c || st.used[id]) return;
+        const j = +key.split("_")[0], i = +key.split("_")[1];
+        if (FIN_ROWS[j][i] !== c.text){ api.msg("Not that one. Think about the row: " + FIN_ROWS[j][0], "bad"); return; }
+        st.cells[key] = c.text; st.used[id] = 1;
+        if (Object.keys(st.cells).length === 15) finish(api, "Table complete!", 900); else api.msg("Yes!", "good"); }})
   };
 
   const P1 = "Anaerobic respiration", P2 = "Fermentation", P3 = "Wrap-up";
   const STEPS = [
-    {part:P1, title:"When oxygen ghosts you", scene:(t, c) => pipesScene(t, c.R), gate:GATES.acceptor, more:"denit",
+    {part:P1, title:"When oxygen ghosts you", scene:(t, c) => pipesScene(t, c.R, c.g, c.done), gate:GATES.acceptor, more:"denit", live:true,
      text:`Many bacteria can still respire without oxygen! In anaerobic respiration, the final electron acceptor is {{notoxygen}}. The cell still uses glycolysis, the Krebs cycle, the {{etc}}, and chemiosmosis. Instead of O₂, it uses other inorganic molecules: {{nitrate}} (NO₃⁻) is reduced to nitrite (NO₂⁻) or N₂ gas, and {{sulfate}} (SO₄²⁻) is reduced to hydrogen sulfide (H₂S).`},
-    {part:P1, title:"How is it different from aerobic?", scene:(t, c) => anaerobeScene(t, c.R), gate:GATES.sort3, more:"why",
+    {part:P1, title:"How is it different from aerobic?", scene:(t, c) => vennScene(t, c.R, c.g, c.done), gate:GATES.sort3, more:"why", live:true, vh:520,
      text:`Anaerobic respiration starts with the same material, glucose (or another organic molecule), and it still releases CO₂. The big difference is the final electron acceptor, so the end products are things like nitrite, N₂, or H₂S instead of water. It makes {{less}} ATP than aerobic respiration, but more than fermentation.`},
-    {part:P2, title:"Fermentation: recycling NAD⁺", scene:(t, c) => nadScene(t, c.R, c.g, c.done), gate:GATES.free, more:"lactic",
+    {part:P2, title:"Fermentation: recycling NAD⁺", scene:(t, c) => nadScene(t, c.R, c.g, c.done), gate:GATES.free, more:"lactic", live:true,
      text:`Fermentation happens when there's no {{oxygen}} available (anaerobic conditions), and no O₂ is needed. It makes only {{two}} ATP per glucose, all from glycolysis. Its main purpose is to regenerate {{nadplus}}: NADH hands its electrons to pyruvate (or something made from it), so NAD⁺ is free to keep glycolysis running. Without fermentation, glycolysis would stop!`,
      after:`Fermentation = glycolysis + a way to recycle NAD⁺.`},
-    {part:P2, title:"Types of fermentation", scene:(t, c) => typesScene(t, c.R), gate:GATES.match, more:"swiss", live:true,
+    {part:P2, title:"Types of fermentation", scene:(t, c) => typesScene(t, c.R, c.g, c.done), gate:GATES.match, more:"swiss", live:true, vh:520,
      links:[["Methyl red (MR) test →", "id-tests.html#mr"], ["Voges-Proskauer (VP) test →", "id-tests.html#vp"]],
-     stageHTML:`<a class="btn secondary sm typelink" style="left:61.1%" href="id-tests.html#mr">Methyl red (MR) test →</a><a class="btn secondary sm typelink" style="left:85.6%" href="id-tests.html#vp">VP test →</a>`,
+     stageHTML:`<a class="btn secondary sm typelink" style="left:62.7%" href="id-tests.html#mr">Methyl red (MR) test →</a><a class="btn secondary sm typelink" style="left:87.2%" href="id-tests.html#vp">VP test →</a>`,
      text:`{{alcohol}} fermentation produces ethanol + CO₂ (yeast like Saccharomyces, used in brewing and baking). Lactic acid fermentation produces {{lactic}}, also called lactate (Streptococcus, Lactobacillus; also your tired muscles and yogurt). Other bacteria make other organic acids and alcohols, like propionic acid or butanol. Two of them are the basis of lab tests: E. coli and Salmonella use mixed-acid fermentation (the methyl red test), while Enterobacter makes butanediol (the Voges-Proskauer test).`},
-    {part:P2, title:"Fermented foods and industry", scene:(t, c) => foodScene(t, c.R), gate:GATES.food,
+    {part:P2, title:"Fermented foods and industry", scene:(t, c) => foodScene(t, c.R, c.g, c.done), gate:GATES.food, live:true, vh:520,
      table:{cap:"Some industrial uses for different fermentations (Table 5.4)", head:["End product","Use","Starting material","Microorganism"], rows:[["Ethanol","Beer, wine, fuel","Starch, sugar, agricultural wastes","<i>Saccharomyces cerevisiae</i> (yeast)"],["Acetic acid","Vinegar","Ethanol","<i>Acetobacter</i>"],["Lactic acid","Cheese, yogurt, rye bread, sauerkraut, summer sausage","Milk, grain, cabbage, meat","<i>Lactobacillus, Streptococcus, Pediococcus</i>"],["Propionic acid + CO₂","Swiss cheese","Lactic acid","<i>Propionibacterium</i>"],["Acetone and butanol","Pharmaceutical, industrial uses","Molasses","<i>Clostridium acetobutylicum</i>"],["Citric acid","Flavoring","Molasses","<i>Aspergillus</i> (fungus)"]]},
      text:`Humans have used fermentation for thousands of years! Lactic acid bacteria sour yogurt, cheese, sauerkraut, pickles, and kimchi. Yeast's ethanol makes beer and wine, and its CO₂ makes bread rise. Industry uses fermentation to make vinegar, solvents, and flavorings too.`},
-    {part:P2, title:"The sugar fermentation test", scene:(t, c) => testScene(t, c.R, c.g, c.done), gate:GATES.tubes, more:"test", live:true,
+    {part:P2, title:"The sugar fermentation test", scene:(t, c) => testScene(t, c.R, c.g, c.done), gate:GATES.tubes, more:"test", live:true, vh:490,
      text:`The {{phenol}} sugar fermentation test tells you whether a bacterium can use a certain carbohydrate. Put the sugar, the bacteria, and a pH indicator in a tube. If fermentation happens, {{acid}} is made (H⁺), the pH drops, and the color changes from red to yellow. A bubble trapped in the small inner tube means gas (like CO₂) was produced too. So the color is about acid, like the lactic acid from lactic acid fermentation, and the bubble is about gas, like the CO₂ from alcohol fermentation.`,
      after:`Yellow = acid (like lactic acid). Bubble = gas (like the CO₂ in alcohol fermentation).`},
-    {part:P3, title:"Aerobic vs. anaerobic vs. fermentation", scene:(t, c) => compareScene(t, c.R, c.g, c.done), gate:GATES.final, live:true,
-     stageHTML:`<button class="btn primary yt" type="button">Your turn</button>`,
+    {part:P3, title:"Aerobic vs. anaerobic vs. fermentation", scene:(t, c) => compareScene(t, c.R, c.g, c.done), gate:GATES.final, live:true, vh:560,
      table:{cap:"Carbohydrate catabolism: the three options", head:["","Aerobic respiration","Anaerobic respiration","Fermentation"], rows:[["O₂ needed?","Yes","No","No"],["Final electron acceptor","O₂","Inorganic molecule other than O₂ (nitrate, sulfate)","Organic molecule (pyruvate or a derivative)"],["Electron transport chain?","Yes","Yes","No"],["ATP per glucose","32–38","Moderate (less than aerobic)","2"],["End products","CO₂, H₂O","CO₂, NO₂⁻ / N₂, H₂S","Lactic acid, ethanol + CO₂, others"]]},
      text:`Let's compare! Aerobic respiration uses O₂ as the final electron acceptor and makes the most ATP. Anaerobic respiration uses a different inorganic acceptor and makes less. Fermentation skips the electron transport chain entirely: just 2 ATP, with the goal of recycling NAD⁺. Bacteria are experts at switching between these depending on their environment!`,
      after:`Chapter 5 respiration: complete!`}
