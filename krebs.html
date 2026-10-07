@@ -45,8 +45,13 @@
     nadh3:{show:"3", ans:["3","three"]},
     twicekrebs2:{show:"twice", ans:["twice","two","2"], fuzzy:true},
     betaox:{show:"beta-oxidation", ans:["betaoxidation","beta"], fuzzy:true},
-    ketones:{show:"acetyl-CoA", ans:["acetylcoa","acetylcoenzymea"], fuzzy:true}
+    ketones:{show:"acetyl-CoA", ans:["acetylcoa","acetylcoenzymea"], fuzzy:true},
+    decarb:{show:"decarboxylation", ans:["decarboxylation","decarboxylate"], fuzzy:true},
+    glutamate:{show:"glutamate", ans:["glutamate","glutamicacid"], fuzzy:true}
   };
+  /* the same answers asked in several places need separate ids, or the first right answer would fill them all in */
+  const TERMS = {co2:{show:"CO₂", ans:["co2","carbondioxide"], fuzzy:true}, nadh:{show:"NADH", ans:["nadh"]}, fadh2:{show:"FADH₂", ans:["fadh2","fadh"]}, atp:{show:"ATP", ans:["atp"]}, pyruvate:{show:"pyruvate", ans:["pyruvate","pyruvicacid"], fuzzy:true}};
+  for (const k in TERMS) for (let i = 1; i <= 4; i++) BL[k + "_" + i] = TERMS[k];
   const MORE = {
     b5:{title:"Vitamin B5 and coenzyme A", html:`<p>Coenzyme A (CoA) is built from pantothenic acid, vitamin B5. It acts like a molecular handle, carrying 2-carbon (and other) fragments between enzymes — you'll see it attached and removed again and again through this pathway.</p>`},
     citratebranch:{title:"Citrate's second career: making fat", html:`<p>When energy is abundant, citrate builds up faster than the cycle can use it. It leaks out of the mitochondrion into the cytoplasm, where it's broken back down into acetyl-CoA — the starting material for building fatty acids. It's a concrete link between "too much fuel" and fat storage.</p><p>Citrate is also a feedback inhibitor of PFK-1 back in glycolysis — one molecule, two separate brakes on two separate pathways.</p>`},
@@ -89,7 +94,7 @@
 
   /* ---- accurate little skeletal molecules (carbon = gray, oxygen = red, sulfur = yellow) ---- */
   const MOLS = {
-    pyr:{n:3, coo:[2], ket:[1]}, acetyl:{n:2, ket:[1], s:1},
+    pyr:{n:3, coo:[2], ket:[1]}, acet2:{n:2, ket:[1]}, acetyl:{n:2, ket:[1], s:1},
     cit:{n:5, coo:[0, 4], branch:2, ohIn:2}, iso:{n:5, coo:[0, 4], branch:2, oh:[3]},
     akg:{n:5, coo:[0, 4], ket:[3]}, scoa:{n:4, coo:[0], ket:[3], s:3},
     suc:{n:4, coo:[0, 3]}, fum:{n:4, coo:[0, 3], dbl:1}, mal:{n:4, coo:[0, 3], oh:[1]}, oaa:{n:4, coo:[0, 3], ket:[1]}
@@ -145,11 +150,11 @@
   };
 
   function buildVariant(ADV){
-    const Y = {pyr:110, acetyl:250};
+    const Y = {pyr:110, frag:180, acetyl:250};
     Y.tally = ADV ? 1090 : 1000; Y.x2 = Y.tally + 150; Y.go = Y.x2 + 150;
     const H = Y.go + 150;
-    /* one card position per cycle step, in a column beside the board */
-    const CARDY = [380, 450, 520, 590, 660, 730, 800, 870, Y.tally, Y.x2];
+    /* one card position per step, in a column beside the board */
+    const CARDY = [150, 230, 310, 380, 450, 520, 590, 660, 730, 800, 870, 940, Y.tally, Y.x2];
     const molIn = i => polar(nodeAng(i), RAD - 74);
     const molRot = i => { let r = nodeAng(i) + 90; while (r > 90) r -= 180; while (r < -90) r += 180; return r; };
 
@@ -165,12 +170,22 @@
       o += mol("pyr", CX, Y.pyr, 1, g0) + A.op(g0, lbl(CX + 74, Y.pyr - 2, "Pyruvate (3C)", "#343b4a", 13, "start") + lbl(CX + 74, Y.pyr + 14, "from glycolysis", "#5a6376", 11, "start"));
       if (ADV) o += A.op(g0, `<rect x="16" y="${Y.pyr - 24}" width="150" height="46" rx="12" fill="#eef0fd" stroke="#6b4bb8" stroke-width="1.5"/>` + lbl(91, Y.pyr - 4, "Amino acids", "#5b3fb0", 13) + lbl(91, Y.pyr + 13, "(e.g. alanine) − NH₂", "#5b3fb0", 10) + A.arrow(168, Y.pyr, CX - 52, Y.pyr, "#6b4bb8", 2.5));
 
-      /* step 1: the link reaction */
-      const p1 = p(1), fly = ease(seg(p1, 0, .4)), grow = ease(seg(p1, .4, .75)), dep = ease(seg(p1, .75, 1));
+      /* step 1: decarboxylation. Pyruvate loses a carbon as CO2 and a 2-carbon piece is left */
+      const FRAG = Y.frag;
+      const p1 = p(1), co = ease(seg(p1, 0, .7)), f1p = ease(seg(p1, .35, 1));
       if (idx >= 1 && p1 > 0){
-        o += A.op(1 - grow, token("NAD", lerp(560, CX + 70, fly), Y.pyr));
-        o += A.op(grow, A.arrow(CX, Y.pyr + 40, CX, Y.acetyl - 30, "#8a93a3", 3));
-        o += A.op(ease(seg(p1, .3, .7)), `<path d="M${CX + 46},${Y.pyr + 52} Q${CX - 6},${Y.pyr + 74} ${CX + 46},${Y.pyr + 96}" fill="none" stroke="#5a6376" stroke-width="2.2"/>` + A.arrow(CX + 34, Y.pyr + 92, CX + 48, Y.pyr + 97, "#5a6376", 2.2) + rich(CX + 52, Y.pyr + 56, ["NAD⁺", "CoA"], "start") + rich(CX + 52, Y.pyr + 101, ["NADH", "CO₂"], "start"));
+        o += A.co2(lerp(CX + 36, CX + 150, co), lerp(Y.pyr, Y.pyr - 34, co));
+        o += A.op(co, lbl(CX + 150, Y.pyr - 54, "CO₂ out", RED, 12));
+        o += A.op(f1p, A.arrow(CX, Y.pyr + 40, CX, FRAG - 30, "#8a93a3", 3));
+        o += mol("acet2", CX - 10, FRAG, 1, f1p) + A.op(f1p, lbl(CX + 40, FRAG + 5, "2-carbon piece", "#343b4a", 12, "start"));
+      }
+      /* step 2: oxidation. Electrons go to NAD+, coenzyme A attaches, acetyl-CoA forms */
+      const p2 = p(2), fly = ease(seg(p2, 0, .4)), grow = ease(seg(p2, .4, .75));
+      if (idx >= 2 && p2 > 0){
+        o += A.op(1 - grow, token("NAD", lerp(560, CX + 70, fly), FRAG));
+        o += A.op(grow, token("NADH", lerp(CX + 70, 575, grow), FRAG - 4 * Math.sin(grow * Math.PI)));
+        o += A.op(grow, A.arrow(CX, FRAG + 34, CX, Y.acetyl - 30, "#8a93a3", 3));
+        o += A.op(ease(seg(p2, .3, .7)), rich(CX + 56, FRAG + 22, ["NAD⁺", "CoA"], "start") + rich(CX + 56, FRAG + 40, ["NADH"], "start"));
         o += mol("acetyl", CX - 10, Y.acetyl, 1, grow) + A.op(grow, lbl(CX, Y.acetyl + 34, "Acetyl-CoA (2C)", "#343b4a", 13));
         if (ADV){
           o += A.op(grow, lbl(CX - 10, Y.pyr + 78, "pyruvate dehydrogenase", "#6b4bb8", 11, "end"));
@@ -192,56 +207,65 @@
           o += A.op(1 - grow2, token(kind, lerp(sx, nx, drift), lerp(sy, ny, drift)));
         }
         if (prodKind && dep2 > 0 && dep2 < 1){ const [tx, ty] = tokStart(nodeI); o += A.op(1 - dep2, token(prodKind, lerp(nx, tx, dep2), lerp(ny, ty, dep2))); }
-        if (EXCH[nodeI]) o += EXCH[nodeI](dep2 > 0 ? dep2 : (kind ? 0 : grow2));
+        if (EXCH[nodeI] && !(idx === 6 && (nodeI === 2 || nodeI === 3))) o += EXCH[nodeI](dep2 > 0 ? dep2 : (kind ? 0 : grow2));
         const [mx, my] = molIn(nodeI);
         o += `<g transform="rotate(${f1(molRot(nodeI))} ${f1(mx)} ${f1(my)})">${mol(NODEMOL[nodeI], mx, my, .6, grow2)}</g>`;
         o += A.op(grow2, A.pill(nx, ny, ADV ? NODES[nodeI].adv : NODES[nodeI].basic, nodeI === 0 || nodeI === 7 ? GOLD : BLUE, 1, 12));
         if (ADV){ const [bx, by] = polar(nodeAng(prevI) + 22.5, RAD); o += A.op(grow2, `<circle cx="${f1(bx)}" cy="${f1(by)}" r="10" fill="#6b4bb8" stroke="#fff" stroke-width="2"/>` + lbl(bx, by + 4, nodeI === 0 ? 1 : nodeI + 1, "#fff", 11)); }
       };
       /* acetyl-CoA drops into the top of the cycle */
-      if (idx >= 2 && p(2) > 0){ const [lx, ly] = polar(nodeAng(7) + 22.5, RAD + 10); o += A.op(ease(seg(p(2), 0, .4)), A.arrow(CX - 30, Y.acetyl + 46, lx + 6, ly - 8, "#9a6212", 2.5, "6 5") + lbl(CX + 34, Y.acetyl + 96, "acetyl-CoA joins", "#9a6212", 11, "start")); }
-      cyc(0, 2, null, null);
-      cyc(1, 3, null, null);
-      cyc(2, 4, "NAD", "NADH");
-      cyc(3, 5, "NAD", "NADH");
-      cyc(4, 6, "ADP", "ATP");
-      cyc(5, 7, "FAD", "FADH2");
-      cyc(6, 8, "H2O", null);
-      cyc(7, 9, "NAD", "NADH");
+      if (idx >= 3 && p(3) > 0){ const [lx, ly] = polar(nodeAng(7) + 22.5, RAD + 10); o += A.op(ease(seg(p(3), 0, .4)), A.arrow(CX - 30, Y.acetyl + 46, lx + 6, ly - 8, "#9a6212", 2.5, "6 5") + lbl(CX + 34, Y.acetyl + 96, "acetyl-CoA joins", "#9a6212", 11, "start")); }
+      cyc(0, 3, null, null);
+      cyc(1, 4, null, null);
+      cyc(2, 5, "NAD", "NADH");
+      cyc(3, 7, "NAD", "NADH");
+      cyc(4, 8, "ADP", "ATP");
+      cyc(5, 9, "FAD", "FADH2");
+      cyc(6, 10, "H2O", null);
+      cyc(7, 11, "NAD", "NADH");
+
+      /* step 6: protein joins the cycle. Glutamate loses its amino group and becomes alpha-ketoglutarate.
+         It gets its own little diagram above the ring, where there is room, with a leader to the alpha-KG node. */
+      const p6 = p(6);
+      if (idx >= 6 && p6 > 0){
+        const [ax, ay] = NP[2], a1 = ease(seg(p6, 0, .35)), a2 = ease(seg(p6, .3, .7)), a3 = ease(seg(p6, .65, 1)), PX = 520, PY = 336;
+        o += A.op(a1, `<rect x="${PX - 92}" y="${PY - 46}" width="184" height="92" rx="16" fill="#f7f4fd" stroke="#6b4bb8" stroke-width="1.8" stroke-dasharray="${idx === 6 ? "0" : "5 4"}"/>` + lbl(PX, PY - 26, "Protein door", "#5b3fb0", 12) + lbl(PX, PY + 38, "from digested protein", "#5b3fb0", 10.5));
+        o += A.op(a1, `<rect x="${PX - 84}" y="${PY - 12}" width="86" height="28" rx="14" fill="#fff" stroke="#6b4bb8" stroke-width="2"/>` + lbl(PX - 41, PY + 7, "Glutamate", "#5b3fb0", 12));
+        o += A.op(a2, A.arrow(PX + 6, PY + 2, PX + 34, PY + 2, "#6b4bb8", 2.5) + lbl(PX + 20, PY + 22, "−NH₂", "#8a5a00", 11));
+        o += A.op(a3, `<rect x="${PX + 38}" y="${PY - 12}" width="46" height="28" rx="14" fill="#3f4cc0"/>` + lbl(PX + 61, PY + 7, "α-KG", "#fff", 12));
+        if (idx === 6) o += A.op(a3, `<path d="M${PX + 78},${PY + 18} C${PX + 100},${PY + 130} ${ax + 90},${ay - 120} ${ax + 62},${ay - 8}" fill="none" stroke="#6b4bb8" stroke-width="2.5" stroke-dasharray="6 5"/>` + A.arrow(ax + 62, ay - 14, ax + 58, ay - 4, "#6b4bb8", 2.5));
+      }
 
       /* the middle: what one turn does, once the loop is closed */
-      if (idx >= 9 && p(9) > .6){
-        const q = ease(seg(p(9), .6, 1));
+      if (idx >= 11 && p(11) > .6){
+        const q = ease(seg(p(11), .6, 1));
         o += A.op(q, lbl(CX, YC - 12, ADV ? "Citric acid cycle" : "Krebs cycle", "#343b4a", 17) + lbl(CX, YC + 10, "2 C in (acetyl) → 2 CO₂ out", RED, 12));
       }
       /* advanced: amino-acid side doors and the enzyme key */
       if (ADV){
-        /* α-KG's amino-acid side door, drawn as a chip so it reads as a label and never collides with the ring */
-        if (idx >= 4 && p(4) > .7){ const [ax, ay] = NP[2], cx = ax + 36, cy = ay + 40;
-          o += A.op(ease(seg(p(4), .7, 1)), `<line x1="${f1(ax + 14)}" y1="${f1(ay + 14)}" x2="${f1(cx - 40)}" y2="${f1(cy - 9)}" stroke="#6b4bb8" stroke-width="1.5" stroke-dasharray="3 3"/><rect x="${f1(cx - 48)}" y="${f1(cy - 15)}" width="96" height="26" rx="13" fill="#f2eefc" stroke="#6b4bb8" stroke-width="1.5"/>` + lbl(cx, cy + 3, "⇄ glutamate", "#5b3fb0", 12)); }
-        if (idx >= 9 && p(9) > .7){
-          const q = ease(seg(p(9), .7, 1)), [ox, oy] = NP[7];
+        if (idx >= 11 && p(11) > .7){
+          const q = ease(seg(p(11), .7, 1)), [ox, oy] = NP[7];
           o += A.op(q, `<rect x="8" y="${f1(oy - 104)}" width="104" height="46" rx="12" fill="#eef0fd" stroke="#6b4bb8" stroke-width="1.5"/>` + lbl(60, oy - 84, "Aspartate", "#5b3fb0", 13) + lbl(60, oy - 67, "→ proteins", "#5b3fb0", 11) + A.arrow(ox - 34, oy - 14, 84, oy - 56, "#6b4bb8", 2.5));
         }
         const ky = YC + RAD + 110;
-        if (idx >= 9 && p(9) > .5){
-          const q = ease(seg(p(9), .5, 1));
+        if (idx >= 11 && p(11) > .5){
+          const q = ease(seg(p(11), .5, 1));
           o += A.op(q, `<rect x="20" y="${ky - 26}" width="590" height="${ENZ.length / 2 * 26 + 30}" rx="14" fill="#f6f2fd" stroke="#d8ccf2"/>` + lbl(36, ky - 6, "Enzymes (numbered on the ring)", "#5b3fb0", 12, "start"));
           ENZ.forEach((n, i) => { const x = 36 + (i % 2) * 290, y = ky + 18 + Math.floor(i / 2) * 26; o += A.op(q, `<circle cx="${x + 9}" cy="${y - 4}" r="9" fill="#6b4bb8"/>` + lbl(x + 9, y, i + 1, "#fff", 10) + lbl(x + 26, y, n, "#343b4a", 12, "start")); });
         }
       }
 
       /* net tally for one turn */
-      const p10 = p(10);
-      if (idx >= 10 && p10 > 0){
+      const p10 = p(12);
+      if (idx >= 12 && p10 > 0){
         const r = k => ease(seg(p10, k * .2, k * .2 + .3)), by = Y.tally;
         o += `<rect x="${CX - 280}" y="${by - 40}" width="560" height="${f1(lerp(40, 130, ease(seg(p10, 0, .2))))}" rx="18" fill="#fff" stroke="${GREEN}" stroke-width="2.5"/>`;
         o += A.op(r(0), lbl(CX - 250, by, "One turn of the cycle makes:", "#343b4a", 14, "start"));
         o += A.op(r(1), lbl(CX - 250, by + 30, "3 NADH · 1 FADH₂ · 1 ATP · 2 CO₂", GREEN, 16, "start"));
         o += A.op(r(2), lbl(CX - 250, by + 58, "(plus 1 NADH + 1 CO₂ from the link reaction)", "#5a6376", 12, "start"));
       }
-      const p11 = p(11);
-      if (idx >= 11 && p11 > 0){
+      const p11 = p(13);
+      if (idx >= 13 && p11 > 0){
         const r = ease(seg(p11, .1, .6));
         o += A.op(r, `<rect x="${CX - 280}" y="${Y.x2 - 40}" width="560" height="120" rx="18" fill="#fff" stroke="${GOLD}" stroke-width="2.5"/>`);
         o += A.op(r, lbl(CX - 250, Y.x2 - 10, "2 pyruvate per glucose → the cycle runs twice:", "#343b4a", 14, "start"));
@@ -249,8 +273,8 @@
         o += A.op(r, lbl(CX - 250, Y.x2 + 48, "(link reaction + two turns of the cycle, per glucose)", "#5a6376", 12, "start"));
       }
       /* where next */
-      const p12 = p(12);
-      if (idx >= 12 && p12 > 0){
+      const p12 = p(14);
+      if (idx >= 14 && p12 > 0){
         const a = ease(seg(p12, 0, .6));
         o += A.op(a, A.carrier(CX - 200, Y.go, "NAD", true) + A.carrier(CX - 90, Y.go, "FAD", true));
         o += A.op(a, A.arrow(CX - 20, Y.go, CX + 60, Y.go, "#3f4cc0", 3));
@@ -261,57 +285,65 @@
 
     const STEPS = [
       {focusY:Y.pyr, animMs:900,
-       pop:{y:Y.pyr, x:CARDX, title:"Pyruvate's next stop",
-         text:`Pyruvate crosses into the {{matrix}} of the mitochondrion (in bacteria, it just stays in the cytoplasm). One more oxidation, and it's ready to join the Krebs cycle.${ADV ? ` Protein can feed in here too: after an amino acid like alanine has its amino group (−NH₂) removed, what's left is pyruvate (see the arrow on the left).` : ""}`}},
-      {focusY:Y.acetyl, animMs:2200, tally:{nadh:1, co2:1},
-       action:{type:"drag", token:"NAD", count:1, from:[[600, Y.pyr]], targets:[[CX, Y.pyr]], label:"Drag NAD⁺ onto pyruvate — this is the link reaction."},
-       pop:{y:Y.acetyl, x:CARDX, title:"The link reaction: oxidative decarboxylation", more:ADV ? "ketonebodies" : "b5",
-         text:`This step is called <b>oxidative decarboxylation</b> — two things at once. "Decarboxylation" means one carbon is removed as CO₂ (you can see it fly off above). "Oxidative" means electrons are stripped off and handed to NAD⁺ → NADH. The leftover 2-carbon piece attaches to coenzyme A, forming {{acetylcoa}} — the molecule that actually enters the cycle. Two pyruvate per glucose, so this happens {{twicekrebs}}.${ADV ? ` <b>Fat enters right here too.</b> Fatty acids are chopped into 2-carbon pieces by {{betaox}}, and each piece becomes the same {{ketones}} that pyruvate just made. When there's more acetyl-CoA than oxaloacetate to take it, the liver turns the extra into ketone bodies (the dashed arrow).` : ""}`}},
+       pop:{y:CARDY[0], x:CARDX, title:"Pyruvate's next stop",
+         text:`The cycle starts with {{pyruvate_1}} from glycolysis. It crosses into the {{matrix}} of the mitochondrion (in bacteria, it just stays in the cytoplasm). Two quick steps, called the link reaction, get it ready to join the Krebs cycle.${ADV ? ` Protein can feed in here too: after an amino acid like alanine has its amino group (−NH₂) removed, what's left is pyruvate (see the arrow on the left).` : ""}`}},
+      {focusY:Y.frag, animMs:1700, tally:{co2:1},
+       action:{type:"click", at:[CX, Y.frag - 15], button:"Remove the CO₂", label:"Click to remove CO₂."},
+       pop:{y:CARDY[1], x:CARDX, title:"Link reaction, part 1: decarboxylation",
+         text:`First, pyruvate (3 carbons) loses one carbon as {{co2_1}}. Removing a carbon as CO₂ is called {{decarb}}. You can see the CO₂ float off above: it's the same CO₂ you breathe out. What's left is a 2-carbon piece.`}},
+      {focusY:Y.acetyl, animMs:2200, tally:{nadh:1},
+       action:{type:"drag", token:"NAD", count:1, from:[[600, Y.frag]], targets:[[CX, Y.frag]], label:"Drag NAD⁺ onto the 2-carbon piece."},
+       pop:{y:CARDY[2], x:CARDX, title:"Link reaction, part 2: oxidation", more:ADV ? "ketonebodies" : "b5",
+         text:`Next, the 2-carbon piece is oxidized: its electrons are handed to NAD⁺, making {{nadh_1}}. Coenzyme A then attaches to it, forming {{acetylcoa}}, the molecule that actually enters the cycle. Together these two steps are called oxidative decarboxylation. Two pyruvate per glucose, so the link reaction happens {{twicekrebs}}.${ADV ? ` <b>Fat enters right here too.</b> Fatty acids are chopped into 2-carbon pieces by {{betaox}}, and each piece becomes the same {{ketones}} that pyruvate just made. When there's more acetyl-CoA than oxaloacetate to take it, the liver turns the extra into ketone bodies (the dashed arrow).` : ""}`}},
       {focusY:NP[0][1], animMs:1700,
        action:{type:"click", at:[CX, Y.acetyl + 70], button:"Combine with oxaloacetate", label:"Click to start the cycle: join acetyl-CoA with oxaloacetate."},
-       pop:{y:CARDY[0], x:CARDX, title:"Citrate synthase: the cycle begins", more:"citratebranch",
-         text:`A 2-carbon acetyl-CoA joins the 4-carbon oxaloacetate to make 6-carbon citrate — no energy change, just a merger that kicks things off. <b>Citrate is citric acid</b> — literally the sour compound in lemons, limes, and citrus sodas. When a food label says "citric acid," that molecule is your cells' starting material for this cycle. When ATP is plentiful, citrate builds up and signals glycolysis to slow down — the cycle acting as its own brake. This is a {{feedback}} control point.<br><br><a class="btn secondary sm" href="id-tests.html#citrate">🧪 Try the Citrate Utilization test →</a>`}},
+       pop:{y:CARDY[3], x:CARDX, title:"Citrate synthase: the cycle begins", more:"citratebranch",
+         text:`A 2-carbon acetyl-CoA joins the 4-carbon oxaloacetate to make 6-carbon citrate: no energy change, just a merger that kicks things off. <b>Citrate is citric acid</b>, literally the sour compound in lemons, limes, and citrus sodas. When a food label says "citric acid," that molecule is your cells' starting material for this cycle. When ATP is plentiful, citrate builds up and signals glycolysis to slow down, the cycle acting as its own brake. This is a {{feedback}} control point.<br><br><a class="btn secondary sm" href="id-tests.html#citrate">🧪 Try the Citrate Utilization test →</a>`}},
       {focusY:NP[1][1], animMs:1500,
        action:{type:"click", at:[(NP[0][0] + NP[1][0]) / 2, (NP[0][1] + NP[1][1]) / 2 - 16], button:"Rearrange", label:"Click to reposition citrate."},
-       pop:{y:CARDY[1], x:CARDX, title:"Aconitase: repositioning, not spending",
-         text:`Still 6 carbons, same formula — just moved so the next enzyme can grab hold. Same idea as the reshuffle steps back in glycolysis.`}},
+       pop:{y:CARDY[4], x:CARDX, title:"Aconitase: repositioning, not spending",
+         text:`Still 6 carbons, same formula, just moved so the next enzyme can grab hold. Same idea as the reshuffle steps back in glycolysis.`}},
       {focusY:NP[2][1], animMs:2000, tally:{nadh:1, co2:1},
        action:{type:"drag", token:"NAD", count:1, from:[tokStart(2)], targets:[NP[2]], label:"Drag NAD⁺ onto isocitrate."},
-       pop:{y:CARDY[2], x:CARDX, title:"Decarboxylation #1 — the rate-limiting step", more:"ratelimit",
-         text:`<b>Decarboxylation:</b> isocitrate (6C) loses one carbon as CO₂, dropping to 5 carbons (α-ketoglutarate). That CO₂ is exhaled when you breathe out. At the same time, NAD⁺ picks up electrons → NADH. This is the cycle's {{ratelimiting2}} step, meaning everything before it backs up when it slows. It speeds up when ADP is high (need energy) and slows when ATP or NADH is high (already have energy).${ADV ? ` <b>α-Ketoglutarate is also a doorway for protein.</b> It swaps back and forth with the amino acid glutamate (α-KG ⇄ glutamate), so amino acids from digested protein can be turned into α-KG and burned for energy here — and, run in reverse, the cycle can pull off α-KG to build glutamate and other amino acids. See the Learn More for α-KG as a supplement.` : ""}`}},
+       pop:{y:CARDY[5], x:CARDX, title:"Decarboxylation #1: the rate-limiting step", more:"ratelimit",
+         text:`<b>Decarboxylation:</b> isocitrate (6C) loses one carbon as {{co2_2}}, dropping to 5 carbons (α-ketoglutarate). That CO₂ is exhaled when you breathe out. At the same time, NAD⁺ picks up electrons → {{nadh_2}}. This is the cycle's {{ratelimiting2}} step, meaning everything before it backs up when it slows. It speeds up when ADP is high (need energy) and slows when ATP or NADH is high (already have energy).`}},
+      {focusY:NP[2][1], animMs:1900,
+       action:{type:"click", at:[500, 300], button:"Bring in protein", label:"Click: bring in protein."},
+       pop:{y:CARDY[6], x:CARDX, title:"Protein joins in: glutamate ⇄ α-KG", more:"oaabranch",
+         text:`The cycle isn't only for carbohydrates. Amino acids from digested protein can feed in here too: {{glutamate}} loses its amino group (−NH₂) and becomes α-ketoglutarate, which drops right into the cycle to be burned for energy. Run in reverse, the cell can pull α-KG back out to build glutamate and other amino acids. Glutamate is the cell's main nitrogen carrier, so this is a busy doorway.`}},
       {focusY:NP[3][1], animMs:2000, tally:{nadh:1, co2:1},
        action:{type:"drag", token:"NAD", count:1, from:[tokStart(3)], targets:[NP[3]], label:"Drag NAD⁺ onto α-ketoglutarate."},
-       pop:{y:CARDY[3], x:CARDX, title:"Decarboxylation #2 — five vitamins, one enzyme", more:"cofactors",
-         text:`<b>Second decarboxylation:</b> α-KG (5C) loses another carbon as CO₂, dropping to 4 carbons (succinyl-CoA). At this point, <b>both carbons from the original acetyl-CoA are gone as CO₂</b> — the rest of the cycle is just harvesting the electrons left behind. This enzyme complex needs FIVE vitamin-derived helpers: thiamine (B1), riboflavin (B2), niacin (B3), pantothenic acid (B5), and lipoic acid — a clear reason why B-vitamin deficiencies stall energy metabolism.`}},
+       pop:{y:CARDY[7], x:CARDX, title:"Decarboxylation #2: five vitamins, one enzyme", more:"cofactors",
+         text:`<b>Second decarboxylation:</b> α-KG (5C) loses another carbon as {{co2_3}}, dropping to 4 carbons (succinyl-CoA). At this point, <b>both carbons from the original acetyl-CoA are gone as CO₂</b>. The rest of the cycle is just harvesting the electrons left behind. This enzyme complex needs FIVE vitamin-derived helpers: thiamine (B1), riboflavin (B2), niacin (B3), pantothenic acid (B5), and lipoic acid, a clear reason why B-vitamin deficiencies stall energy metabolism.`}},
       {focusY:NP[4][1], animMs:2000, tally:{made:1},
        action:{type:"drag", token:"ADP", count:1, from:[tokStart(4)], targets:[NP[4]], label:"Drag ADP onto succinyl-CoA."},
-       pop:{y:CARDY[4], x:CARDX, title:"The cycle's only direct payoff", more:"gtp",
-         text:`A phosphate moves straight from the substrate to a nucleotide, making ATP — {{substrate2}} phosphorylation, the same direct hand-off you saw in glycolysis. It's the only step in the whole cycle that makes a usable fuel molecule directly; every other step just loads electron carriers for later. (In your cells this step actually makes GTP first — see the Learn More.)`}},
+       pop:{y:CARDY[8], x:CARDX, title:"The cycle's only direct payoff", more:"gtp",
+         text:`A phosphate moves straight from the substrate to a nucleotide, making {{atp_1}}: {{substrate2}} phosphorylation, the same direct hand-off you saw in glycolysis. It's the only step in the whole cycle that makes a usable fuel molecule directly; every other step just loads electron carriers for later. (In your cells this step actually makes GTP first. See the Learn More.)`}},
       {focusY:NP[5][1], animMs:2000, tally:{fadh2:1},
        action:{type:"drag", token:"FAD", count:1, from:[tokStart(5)], targets:[NP[5]], label:"Drag FAD onto succinate."},
-       pop:{y:CARDY[5], x:CARDX, title:"A cycle enzyme that's also part of the ETC", more:"complex2",
-         text:`FAD, not NAD⁺, collects these electrons and becomes FADH₂ — a slightly smaller energy drop, so FADH₂ delivers its electrons later in the chain than NADH does. This enzyme is built right into the inner mitochondrial membrane, and it's also Complex II of the electron transport chain.`}},
+       pop:{y:CARDY[9], x:CARDX, title:"A cycle enzyme that's also part of the ETC", more:"complex2",
+         text:`FAD, not NAD⁺, collects these electrons and becomes {{fadh2_1}}, a slightly smaller energy drop, so FADH₂ delivers its electrons later in the chain than NADH does. This enzyme is built right into the inner mitochondrial membrane, and it's also Complex II of the electron transport chain.`}},
       {focusY:NP[6][1], animMs:1900,
        action:{type:"drag", token:"H2O", count:1, from:[radialPt(6, RAD + 75)], targets:[[(NP[5][0] + NP[6][0]) / 2, (NP[5][1] + NP[6][1]) / 2]], label:"Drag H₂O onto fumarate."},
-       pop:{y:CARDY[6], x:CARDX, title:"Water in — fumarate → malate",
-         text:`Water is added across fumarate's double bond, converting it to malate. The oxygen atoms from water become part of malate's -OH group. No energy change — just repositioning atoms so the final oxidation can happen. Drag the water molecule labeled "H₂O in" onto the reaction.`}},
+       pop:{y:CARDY[10], x:CARDX, title:"Water in: fumarate → malate",
+         text:`Water is added across fumarate's double bond, converting it to malate. The oxygen atoms from water become part of malate's -OH group. No energy change, just repositioning atoms so the final oxidation can happen. Drag the water molecule labeled "H₂O in" onto the reaction.`}},
       {focusY:NP[7][1], animMs:2000, tally:{nadh:1},
        action:{type:"drag", token:"NAD", count:1, from:[tokStart(7)], targets:[NP[7]], label:"Drag NAD⁺ onto malate."},
-       pop:{y:CARDY[7], x:CARDX, title:"Back where it started", more:"oaabranch",
-         text:`{{oaa}} is regenerated — the cycle is a cycle because this last step rebuilds exactly what step one consumed. One more NADH is made along the way. <b>Malate is malic acid</b> — the compound that gives green apples and sour candy their tart flavor. If you ate an apple today, your cells are actively breaking this molecule down right here. Oxaloacetate can also become the amino acid aspartate, linking this energy pathway to building proteins.`}},
+       pop:{y:CARDY[11], x:CARDX, title:"Back where it started", more:"oaabranch",
+         text:`{{oaa}} is regenerated: the cycle is a cycle because this last step rebuilds exactly what step one consumed. One more NADH is made along the way. <b>Malate is malic acid</b>, the compound that gives green apples and sour candy their tart flavor. If you ate an apple today, your cells are actively breaking this molecule down right here. Oxaloacetate can also become the amino acid aspartate, linking this energy pathway to building proteins.`}},
       {focusY:Y.tally, animMs:2000,
        action:{type:"click", at:[CX, Y.tally - 70], button:"Add it up", label:"Tally one turn of the cycle."},
-       pop:{y:CARDY[8], x:CARDX, title:"One acetyl-CoA, one turn",
-         text:`One turn makes {{nadh3}} NADH, 1 FADH₂, and 1 ATP directly, while releasing 2 CO₂ (decarboxylation). The ATP payoff is small — but the loaded NADH and FADH₂ carriers are the real point. They carry electrons to the ETC, where most of the cell's ATP is finally made.`}},
+       pop:{y:CARDY[12], x:CARDX, title:"One acetyl-CoA, one turn",
+         text:`One turn makes {{nadh3}} {{nadh_3}}, 1 {{fadh2_2}}, and 1 {{atp_2}} directly, while releasing 2 {{co2_4}} (decarboxylation). The ATP payoff is small, but the loaded NADH and FADH₂ carriers are the real point. They carry electrons to the ETC, where most of the cell's ATP is finally made.`}},
       {focusY:Y.x2, animMs:1800,
        action:{type:"click", at:[CX, Y.x2 - 70], button:"Multiply by 2", label:"Remember: 2 pyruvate per glucose."},
-       pop:{y:CARDY[9], x:CARDX, title:"Remember: twice per glucose",
+       pop:{y:CARDY[13], x:CARDX, title:"Remember: twice per glucose",
          text:`Every glucose makes 2 pyruvate, so the link reaction and the cycle both run {{twicekrebs2}}. Combine the link reaction with two turns of the cycle and one glucose yields 8 NADH, 2 FADH₂, 2 ATP, and 6 CO₂.`}}
     ];
     STEPS.push({focusY:Y.go - 40, animMs:1600,
        action:{type:"click", at:[CX, Y.go - 60], button:"Where do the electrons go?", label:"Follow the electron carriers."},
        pop:{y:Y.go, x:CARDX, title:"Krebs cycle summarized",
-         text:`<b>Big idea: decarboxylation.</b> The Krebs cycle's main job is finishing what glycolysis started — stripping all remaining carbons off glucose as CO₂ (decarboxylation), and loading those electrons onto NADH and FADH₂ carriers. The ATP made here is a small bonus; the electron carriers are the real output. They carry high-energy electrons to the ETC next, which uses them to make the vast majority of the cell's ATP.<br><br><i>"The Krebs cycle = decarboxylation + electron carrier loading."</i>`}});
+         text:`<b>Big idea: decarboxylation.</b> The Krebs cycle's main job is finishing what glycolysis started: stripping all remaining carbons off glucose as CO₂ (decarboxylation), and loading those electrons onto NADH and FADH₂ carriers. The ATP made here is a small bonus; the electron carriers are the real output. They carry high-energy electrons to the ETC next, which uses them to make the vast majority of the cell's ATP.<br><br><i>"The Krebs cycle = decarboxylation + electron carrier loading."</i>`}});
 
     return {title:`The Krebs Cycle: ${ADV ? "The Full Pathway" : "The Basics"}`, page:"krebs.html", H, narrowW:680, BL, MORE, steps:STEPS, draw, token,
       intro:`Pyruvate arrives at the top; the cycle runs as a loop. Act on each step and the cycle fills in, with every molecule drawn atom by atom and everything that goes in or comes out (NAD⁺ → NADH, CO₂, H₂O, ATP) shown outside the ring.`,
