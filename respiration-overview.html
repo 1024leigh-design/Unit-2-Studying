@@ -315,7 +315,7 @@
   }
   /* the big picture: three bold stage columns, then a 38-coin bar showing where the ATP comes from */
   const coin = (x, y, r, col) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="${C.atp}" stroke="${col || "#fff"}" stroke-width="2.5"/><text x="${f1(x)}" y="${f1(y + r * .35)}" font-size="${f1(r * .8)}" font-weight="700" fill="#fff" text-anchor="middle">ATP</text>`;
-  const nadhChip = (x, y, s) => `<rect x="${f1(x - 26)}" y="${f1(y - 13)}" width="52" height="26" rx="13" fill="${s === "FADH₂" ? C.fad : C.nad}"/><text x="${f1(x)}" y="${f1(y + 5)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">${s}</text>` + A.eDot(x + 24, y - 12, 6);
+  const nadhChip = (x, y, s) => A.carrier(x, y, s === "FADH₂" ? "FAD" : "NAD", true);
   function bigScene(t, R){
     const T = 9, k = Math.floor((t % T) / 3);
     let o = A.tx(500, 36, "One glucose, start to finish (aerobic respiration)", "t20 mid");

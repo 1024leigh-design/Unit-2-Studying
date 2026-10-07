@@ -84,7 +84,7 @@
         const bob = 3 * Math.sin(t * 2 + k * 2);
         if (hit === k) s += `<circle cx="${a[0]}" cy="${f1(a[1] + bob)}" r="26" fill="#f2b134" opacity=".4"/>`;
         if (a[2] === "o2") s += A.o2(a[0], a[1] + bob);
-        else s += `<circle cx="${a[0]}" cy="${f1(a[1] + bob)}" r="19" fill="${a[2] === "no3" ? "#8e5bd0" : "#d8a21d"}" stroke="#fff" stroke-width="2"/>` + A.tx(a[0], a[1] + bob + 4, a[2] === "no3" ? "NO₃⁻" : "SO₄²⁻", "t11 mid wht");
+        else s += a[2] === "no3" ? A.no3(a[0], a[1] + bob) : A.so4(a[0], a[1] + bob);
       });
       if (aerobic){
         for (let i = 0; i < 4; i++){ const x = cx - 200 + ((t * 26 + i * 100) % 330), y = 126 + 8 * Math.sin(t * 1.5 + i * 2); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="9" fill="#dbe7fb" stroke="#8fb2e6" stroke-width="1.5"/>` + A.tx(x, y + 3.5, "O₂", "t11 mid", `style="fill:#1f4a9c;font-size:10px"`); }

@@ -122,7 +122,7 @@
   }
 
   /* ---- what goes in and comes out at each step, drawn OUTSIDE the ring ---- */
-  const COL = {"NAD⁺":"#2c6fd0", "NADH":"#1b7f4e", "FAD":"#b07a10", "FADH₂":"#8a5a00", "ADP + Pᵢ":"#6b4bb8", "ATP":"#5b3fb0", "CO₂":RED, "H₂O":"#2f7fbf", "acetyl-CoA":"#9a6212", "CoA":"#9a6212", "CoA-SH":"#9a6212"};
+  const COL = {"NAD⁺":"#1b7f4e", "NADH":"#1b7f4e", "FAD":"#8a5a00", "FADH₂":"#8a5a00", "ADP + Pᵢ":"#5b3fb0", "ATP":"#5b3fb0", "CO₂":RED, "H₂O":"#2f7fbf", "acetyl-CoA":"#9a6212", "CoA":"#9a6212", "CoA-SH":"#9a6212"};
   const anchorFor = deg => { const c = Math.cos(rad(deg)); return c > .3 ? "start" : c < -.3 ? "end" : "middle"; };
   const rich = (x, y, parts, anchor) => `<text x="${f1(x)}" y="${f1(y)}" font-size="13" font-weight="700" text-anchor="${anchor}">${parts.map(q => `<tspan fill="${COL[q] || "#5a6376"}">${q}</tspan>`).join(`<tspan fill="#5a6376"> + </tspan>`)}</text>`;
   function exch(i0, ins, outs, o){

@@ -9,7 +9,7 @@
   const f1 = v => (+v).toFixed(1), f3 = v => (+v).toFixed(3);
 
   /* ================= Drawing kit ================= */
-  const C = {carbon:"#4a5263", P:"#e8744f", O:"#d9443a", N:"#3b7dd8", e:"#f2b134", H:"#3b7dd8", atp:"#8e5bd0", nad:"#2f9e63", fad:"#c98a0e", enz:"#6c7ae0", teal:"#0f766e", green:"#2f9e63", blue:"#3f4cc0", red:"#d9443a", purple:"#8e5bd0", gold:"#f2b134", orange:"#e8744f"};
+  const C = {carbon:"#4a5263", P:"#e8744f", O:"#d9443a", N:"#3b7dd8", e:"#f2b134", H:"#3b7dd8", atp:"#8e5bd0", atpText:"#5b3fb0", nad:"#2f9e63", nadText:"#1b7f4e", fadText:"#8a5a00", water:"#2f7fbf", fad:"#c98a0e", enz:"#6c7ae0", teal:"#0f766e", green:"#2f9e63", blue:"#3f4cc0", red:"#d9443a", purple:"#8e5bd0", gold:"#f2b134", orange:"#e8744f"};
   const A = {
     clamp, lerp, smooth, seg, f1, f3, C,
     op: (o, s) => o >= .999 ? s : o <= .001 ? "" : `<g opacity="${f3(o)}">${s}</g>`,
@@ -26,9 +26,11 @@
       return s; },
     phos: (x, y, rr) => { rr = rr || 11; return `<circle cx="${f1(x)}" cy="${f1(y)}" r="${rr}" fill="${C.P}" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4.5)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">P</text>`; },
     /* ATP / ADP: adenosine block + phosphates */
-    atp(x, y, n, o){ o = o || {}; const sc = o.sc || 1; let s = `<g transform="translate(${f1(x)},${f1(y)}) scale(${sc})"><rect x="-34" y="-14" width="36" height="28" rx="8" fill="${C.atp}"/><text x="-16" y="5" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">A</text>`;
-      for (let i = 0; i < n; i++) s += `${i ? "" : ""}<line x1="${2 + i * 22}" y1="0" x2="${14 + i * 22}" y2="0" stroke="#b25a36" stroke-width="3"/>` + A.phos(14 + i * 22, 0, 10);
-      if (o.label !== false) s += `<text x="${f1((n * 22 - 22) / 2)}" y="${o.below ? 34 : -22}" font-size="13" font-weight="700" fill="#343b4a" text-anchor="middle">${n === 3 ? "ATP" : n === 2 ? "ADP" : "AMP"}</text>`;
+    /* ATP / ADP: the adenosine block (A) with its chain of phosphates. Text sizes are divided by the scale,
+       so a scaled-down token still has readable labels. */
+    atp(x, y, n, o){ o = o || {}; const sc = o.sc || 1, fs = v => f1(v / sc); let s = `<g transform="translate(${f1(x)},${f1(y)}) scale(${sc})"><rect x="-34" y="-14" width="36" height="28" rx="8" fill="${C.atp}"/><text x="-16" y="${f1(5 * Math.min(1, 1 / sc))}" font-size="${fs(Math.min(13, 13 * sc + 2))}" font-weight="700" fill="#fff" text-anchor="middle">A</text>`;
+      for (let i = 0; i < n; i++) s += `<line x1="${2 + i * 22}" y1="0" x2="${14 + i * 22}" y2="0" stroke="#b25a36" stroke-width="3"/>` + A.phos(14 + i * 22, 0, 10);
+      if (o.label !== false) s += `<text x="${f1((n * 22 - 22) / 2)}" y="${o.below ? f1(16 + 15 / sc) : f1(-15 - 5 / sc)}" font-size="${fs(13)}" font-weight="700" fill="${C.atpText}" text-anchor="middle">${n === 3 ? "ATP" : n === 2 ? "ADP" : "AMP"}</text>`;
       return s + `</g>`; },
     /* electron carriers */
     carrier(x, y, name, full, o){ o = o || {}; const col = name.indexOf("FAD") === 0 ? C.fad : name.indexOf("NADP") === 0 ? "#0f766e" : C.nad;
@@ -38,9 +40,15 @@
       if (full && o.e !== false) s += A.eDot(x + w / 2 - 2, y - 13, 6) + A.eDot(x + w / 2 + 9, y - 6, 6);
       return s; },
     eDot: (x, y, r) => { r = r || 9; return `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="${C.e}" stroke="#a8760f" stroke-width="1.5"/>` + (r > 7 ? `<text x="${f1(x)}" y="${f1(y + 4)}" font-size="${r > 8 ? 11 : 9}" font-weight="700" fill="#3b2a00" text-anchor="middle">e⁻</text>` : ""); },
-    hion: (x, y, r) => { r = r || 11; return `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="#dbe7fb" stroke="${C.H}" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="11" font-weight="700" fill="#1f4a9c" text-anchor="middle">H⁺</text>`; },
+    hion: (x, y, r) => { r = r || 13; return `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="#dbe7fb" stroke="${C.H}" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + r * .34)}" font-size="${r >= 12 ? 12 : 10}" font-weight="700" fill="#1f4a9c" text-anchor="middle">H⁺</text>`; },
     co2: (x, y, o) => A.op(o === undefined ? 1 : o, `<circle cx="${f1(x - 17)}" cy="${f1(y)}" r="8" fill="${C.O}"/><circle cx="${f1(x + 17)}" cy="${f1(y)}" r="8" fill="${C.O}"/><line x1="${f1(x - 10)}" y1="${f1(y)}" x2="${f1(x + 10)}" y2="${f1(y)}" stroke="#343b4a" stroke-width="3"/><circle cx="${f1(x)}" cy="${f1(y)}" r="10" fill="${C.carbon}"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">C</text>`),
-    o2: (x, y) => `<circle cx="${f1(x - 8)}" cy="${f1(y)}" r="10" fill="${C.O}"/><circle cx="${f1(x + 8)}" cy="${f1(y)}" r="10" fill="${C.O}"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">O₂</text>`,
+    o2: (x, y, r) => { r = r || 12; const d = r * .78; return `<circle cx="${f1(x - d)}" cy="${f1(y)}" r="${r}" fill="${C.O}" stroke="#fff" stroke-width="2"/><circle cx="${f1(x + d)}" cy="${f1(y)}" r="${r}" fill="${C.O}" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + r * .36)}" font-size="${r >= 11 ? 12 : 10}" font-weight="700" fill="#fff" text-anchor="middle">O₂</text>`; },
+    /* inorganic final electron acceptors and what they become (anaerobic respiration) */
+    ion: (x, y, lab, fill, txt, r) => { r = r || 18; return `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="${fill}" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="${r >= 17 ? 12 : 11}" font-weight="700" fill="${txt || "#fff"}" text-anchor="middle">${lab}</text>`; },
+    no3: (x, y, r) => A.ion(x, y, "NO₃⁻", "#8e5bd0", "#fff", r || 19),
+    no2: (x, y, r) => A.ion(x, y, "NO₂⁻", "#d9c7f3", "#3b1f66", r || 17),
+    so4: (x, y, r) => A.ion(x, y, "SO₄²⁻", "#c98a0e", "#fff", r || 19),
+    h2s: (x, y, r) => A.ion(x, y, "H₂S", "#f1e3a6", "#6b5200", r || 17),
     h2o: (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="10" fill="${C.O}"/><circle cx="${f1(x - 11)}" cy="${f1(y + 7)}" r="6" fill="#9fc2f0"/><circle cx="${f1(x + 11)}" cy="${f1(y + 7)}" r="6" fill="#9fc2f0"/>`,
     /* enzyme: blob with a notch (active site) of a given shape */
     enzyme(x, y, o){ o = o || {}; const col = o.col || C.enz, sc = o.sc || 1, open = o.open === undefined ? 1 : o.open;
