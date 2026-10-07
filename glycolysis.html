@@ -53,19 +53,21 @@
     ratelimiting:{show:"rate-limiting", ans:["ratelimiting","rate-limiting","pacesetting"], fuzzy:true},
     glycerol:{show:"glycerol backbone", ans:["glycerol","glycerolbackbone","fat","fats","triglycerides"], fuzzy:true},
     feedforward:{show:"feed-forward", ans:["feedforward","feed-forward"], fuzzy:true},
-    fructokinase:{show:"fructokinase", ans:["fructokinase"], fuzzy:true}
+    fructokinase:{show:"fructokinase", ans:["fructokinase"], fuzzy:true},
+    glycogen:{show:"glycogen", ans:["glycogen","glucosestorage","animalstarch","glycogenstorage"], fuzzy:true}
   };
   const MORE = {
     ten:{title:"The ten steps of glycolysis", html:`<p>The big picture: glucose goes in, 2 pyruvate come out, with a net 2 ATP and 2 NADH along the way. Switch to "The Full Pathway" above to see every step acted out.</p><p>Glycolysis is actually 10 enzyme-catalyzed reactions: glucose → glucose 6-phosphate → fructose 6-phosphate → fructose 1,6-bisphosphate → DHAP + glyceraldehyde 3-phosphate → 1,3-bisphosphoglycerate → 3-phosphoglycerate → 2-phosphoglycerate → phosphoenolpyruvate → pyruvate.</p><p>The enzyme phosphofructokinase (step 3) is the main control point. It is inhibited by ATP, a classic example of feedback inhibition!</p>`},
     why:{title:"Why spend ATP to make ATP?", html:`<p>Adding two phosphates makes glucose unstable and "primed," like pushing a boulder to the top of a hill so it can roll down the other side. It also traps the sugar inside the cell, because phosphorylated sugars can't cross the membrane.</p>`},
     split:{title:"DHAP and G3P", html:`<p>The 6-carbon sugar actually splits into two <i>different</i> 3-carbon molecules: DHAP and G3P (glyceraldehyde 3-phosphate). An enzyme quickly turns DHAP into a second G3P, so the cell ends up with two identical G3P molecules. That's why everything after the split happens twice.</p>`},
-    other:{title:"Other sugars join in", html:`<p>Cells can feed other sugars into glycolysis. Galactose (from lactose) can be converted to glucose 6-phosphate, which enters glycolysis right after glucose. Fructose enters too, though — as the Full Pathway view shows — it takes a different door in. Glycerol from fats enters partway through as well.</p>`},
+    other:{title:"Substrate-level phosphorylation", html:`<p>This is the first step where glycolysis actually makes ATP, and it does it the <b>direct</b> way: the enzyme transfers a phosphate straight from the substrate (1,3-bisphosphoglycerate) onto ADP. That's <b>substrate-level phosphorylation</b> — ATP built by a single enzyme handing off a phosphate, with no membrane, no electron transport chain, and no oxygen needed.</p><p>It works because 1,3-bisphosphoglycerate carries an unusually high-energy phosphate bond — even higher-energy than ATP's — so dropping that phosphate onto ADP is a downhill, favorable reaction.</p><p>Contrast this with <b>oxidative phosphorylation</b>, where the electron transport chain and ATP synthase make the bulk of a cell's ATP using O₂. <i>Every</i> ATP glycolysis makes (here and again at pyruvate kinase) is substrate-level — which is exactly why a cell can still squeeze out a little ATP from glycolysis plus fermentation when oxygen runs out. Counting both lanes, this one step already repays the 2 ATP invested up front.</p>`},
     full:{title:"Why look at all ten steps?", html:`<p>This detailed view shows <i>why</i> those numbers happen: which steps cost energy, which capture it, and which ones your cells actually watch and adjust from moment to moment — plus a few connections to nutrition (vitamins, minerals, sugar) that only show up once you zoom in this far.</p>`},
     hexokinase:{title:"Hexokinase: a brake built from its own product", html:`<p><b>What kind of inhibition is this?</b> When G6P piles up, it binds hexokinase and slows it down. G6P is the enzyme's own <i>product</i>, so this is <b>product (feedback) inhibition</b>. In most cells' hexokinase, G6P binds an <b>allosteric site</b>, a separate spot from the active site where glucose binds. That makes it allosteric, noncompetitive-style inhibition: adding more glucose can't push G6P off, because it isn't competing for the active site.</p><p><b>Why it matters:</b> if the cell isn't using G6P (it's not making ATP, glycogen, or ribose right now), there's no point spending more ATP to make more of it. The brake keeps the cell from wasting ATP.</p><p><b>Still a ring.</b> Adding the phosphate doesn't open the sugar: G6P keeps glucose's ring shape. The ring only opens later, right before aldolase cuts it.</p><p><b>Hexokinase vs. glucokinase.</b> The liver uses a related enzyme, glucokinase, that isn't braked by G6P and only kicks in when blood glucose is high. That lets the liver soak up extra glucose after a meal.</p>`},
     pfk:{title:"PFK-1: the pathway's accelerator and brake", html:`<p><b>One enzyme, two kinds of sites.</b> ATP is PFK-1's substrate: it binds the <b>active site</b> to donate a phosphate. But ATP <i>also</i> binds a separate <b>allosteric site</b>. When ATP is plentiful, that allosteric binding changes PFK-1's shape and slows it. Same molecule, two different jobs depending on where it binds.</p><p><b>Brakes (inhibitors):</b> ATP and citrate. Both are signs that the cell already has plenty of energy, so this is <b>negative feedback inhibition</b>: products further down the line (ATP from the whole pathway, citrate from the Krebs cycle) turn down an early step.</p><p><b>Accelerators (activators):</b> AMP (made when ATP gets used up) and fructose-2,6-bisphosphate (a signal tied to hormones like insulin and glucagon).</p><p><b>cAMP and the lac operon.</b> AMP's cousin, cyclic AMP (cAMP), is the low-glucose alarm in bacteria. When <i>E. coli</i> runs low on glucose, cAMP rises, binds CAP, and switches on the lac operon so the cell can eat lactose instead. Bacteria use these nucleotide signals both ways: to tune enzymes that are already made (like PFK-1) and to turn whole genes on or off (like the lac operon).</p><p><b>The citrate test.</b> In micro lab, the Simmons citrate test checks whether a bacterium can use citrate as its <i>only</i> carbon source. Bacteria that can import citrate grow and turn the agar blue. It's the same citrate that, inside the cell, tells PFK-1 to ease off.</p><p>Think of PFK-1 like a thermostat, not an on/off switch: it constantly adjusts glycolysis to match what the cell needs right now.</p>`},
     dhap:{title:"From sugar to fat: the DHAP bridge", html:`<p>DHAP is converted to <b>glycerol</b> 3-phosphate. Glycerol is the three-carbon backbone of a <b>triglyceride</b>: one glycerol with three fatty acids attached (that's the "tri" in triglyceride). It's the same glycerol you learned about in fats and phospholipids!</p><p>The fatty acids themselves are built from acetyl CoA, which also comes from sugar (pyruvate → acetyl CoA). So both halves of a fat molecule can be made from carbohydrate. That's one real route by which extra carbohydrate calories end up stored as body fat, especially when glycolysis runs faster than the cell needs ATP.</p>`},
     nadvitamin:{title:"NAD⁺: more than a glycolysis helper", html:`<p>NAD⁺/NADH is used in hundreds of reactions across metabolism, far beyond glycolysis. It's also required by sirtuins (enzymes studied heavily in aging research) and by PARP enzymes (used in DNA repair).</p><p>Severe niacin (vitamin B3) deficiency causes a disease called pellagra — a real-world reminder that one missing vitamin can bottleneck dozens of pathways at once.</p>`},
-    fluoride:{title:"A weird enolase fact", html:`<p>Enolase is inhibited by fluoride ions. That's part of why fluoride in toothpaste and drinking water helps fight cavities: it slows the enzyme that oral bacteria use to ferment sugar into the acid that erodes enamel. Not on the exam — just a fun link between a Chapter 5 enzyme and your bathroom sink.</p>`},
+    fluoride:{title:"PEP: one of the cell's highest-energy molecules", html:`<p>The phosphate bond in <b>PEP</b> is one of the highest-energy bonds in all of biochemistry — higher-energy than ATP's. That's exactly why pyruvate kinase can use PEP to make ATP in the very next step.</p><p>But PEP isn't only a glycolysis intermediate; the cell pulls it aside for several other jobs:</p><ul><li><b>Importing sugar.</b> Many bacteria run a <b>phosphotransferase system (PTS)</b>: as a sugar like glucose crosses the membrane, PEP donates the phosphate that traps it inside as glucose 6-phosphate — importing and phosphorylating in one move. This same system senses the cell's glucose supply and helps control the <i>lac</i> operon you met in Chapter 8.</li><li><b>Building blocks.</b> PEP is a starting material for the aromatic amino acids (phenylalanine, tyrosine, tryptophan) and, in bacteria, for parts of the cell wall.</li><li><b>Making glucose.</b> PEP is a key branch point in gluconeogenesis, the pathway cells use to build glucose back up.</li></ul><p>And a fun aside: enolase, the enzyme that just made PEP, is blocked by fluoride ions — part of why fluoride in toothpaste and drinking water helps fight cavities, by slowing the glycolysis of the oral bacteria that ferment sugar into the acid that erodes tooth enamel — a fun link between a Chapter 5 enzyme and your bathroom sink.</p>`},
+    glycogen:{title:"G6P: a hub, not just a step", html:`<p>Once glucose is trapped as <b>glucose 6-phosphate</b>, the cell gets to decide what to do with it. G6P is a crossroads: it can keep going through glycolysis for energy, or it can turn off toward two other important fates.</p><p><b>Glycogen (storage).</b> When energy is plentiful, G6P is strung together into <b>glycogen</b>, a big branched polymer of glucose. The liver stores glycogen to keep your blood sugar steady between meals; muscle keeps its own private stash to fuel contraction. When fuel is needed again, glycogen is broken back down to G6P and dropped into glycolysis — skipping the first ATP-spending step, since it is already phosphorylated.</p><p><b>Pentose phosphate pathway.</b> G6P can instead be routed here to make <b>NADPH</b> (reducing power for building fats and defusing oxidative damage) and <b>ribose 5-phosphate</b> (the sugar backbone of DNA, RNA, ATP, and NAD⁺).</p><p>So phosphorylating glucose does more than trap it inside the cell — it creates the hub that lets the cell send that carbon toward energy, storage, or building blocks depending on what it needs.</p>`},
     fructose:{title:"Fructose, sucrose, and HFCS", html:`<p>Table sugar (sucrose) is half glucose, half fructose. High-fructose corn syrup is usually 42–55% fructose with the rest glucose. That's not wildly different from table sugar, but it's often consumed in large, concentrated amounts in sodas and processed foods.</p><p><b>Why athletes use quick sugar.</b> Sugar that enters glycolysis after PFK-1 isn't held back by the pathway's main checkpoint, so it can become ATP fast. That's part of why athletes reach for candy, gels, or sports drinks before and during games.</p><p><b>Why it's linked to fat storage.</b> The same shortcut means a big fructose load isn't slowed by the cell's "do we actually need this?" signal. Fructose also lands right on DHAP, which converts directly to glycerol, the backbone of fat. Whole fruit contains fructose too, but its fiber and water slow digestion and absorption, so fruit and a can of soda don't hit your metabolism the same way.</p>`}
   };
 
@@ -222,7 +224,7 @@
     const fruRing = (x, y, P1) => {
       const V = Array.from({length:5}, (_, k) => { const a = -Math.PI / 2 + k * 2 * Math.PI / 5; return [x + 22 * Math.cos(a), y + 22 * Math.sin(a)]; });
       const c1 = [V[1][0] + 28, V[1][1] - 6], c6 = [V[4][0] - 28, V[4][1] - 6];
-      let o = V.map((v, k) => bond(v, V[(k + 1) % 5])).join("") + bond(V[1], c1) + bond(V[4], c6);
+      let o = V.map((v, k) => bond(v, V[(k + 1) % 5])).join("") + bond(V[1], c1) + bond(V[4], c6) + bond(c6, [c6[0] - 24, c6[1]]) + (P1 ? bond(c1, [c1[0] + 24, c1[1]]) : "");
       o += V.map((v, k) => bead(v[0], v[1], k ? "C" : "O", k ? null : C.O)).join("") + bead(c1[0], c1[1], "C") + bead(c6[0], c6[1], "C");
       o += A.phos(c6[0] - 24, c6[1], 10); if (P1) o += A.phos(c1[0] + 24, c1[1], 10);
       return o; };
@@ -230,7 +232,7 @@
     const glcRing = (x, y) => {
       const V = Array.from({length:6}, (_, k) => { const a = (-30 + k * 60) * Math.PI / 180; return [x + 22 * Math.cos(a), y + 22 * Math.sin(a)]; });
       const c6 = [V[5][0] - 26, V[5][1] - 14];
-      let o = V.map((v, k) => bond(v, V[(k + 1) % 6])).join("") + bond(V[5], c6);
+      let o = V.map((v, k) => bond(v, V[(k + 1) % 6])).join("") + bond(V[5], c6) + bond(c6, [c6[0] - 24, c6[1]]);
       o += V.map((v, k) => bead(v[0], v[1], k ? "C" : "O", k ? null : C.O)).join("") + bead(c6[0], c6[1], "C");
       return o + A.phos(c6[0] - 24, c6[1], 10); };
     const SHAPE = {g6p:(x, y) => glcRing(x, y), f6p:(x, y) => fruRing(x, y, false), fbp:(x, y) => fruRing(x, y, true)};
@@ -246,7 +248,6 @@
       o += band(Y.fbp + 70, Y.g3p + 62, "#f6f1fb", "② The split", "aldolase → triose phosphate isomerase", "#6b4bb8");
       o += band(Y.g3p + 62, Y.pyr + 70, "#eef7f1", "③ Energy payoff", "GAPDH → pyruvate kinase", GREEN);
       o += band(Y.pyr + 70, H, "#f1f4fa", "④ The result", "", "#3f4cc0");
-      o += lbl(20, 62, "Every arrow below is one enzyme. Watch for energy, vitamins, minerals, and control points.", "#5a6376", 12, "start");
 
       /* step 0: glucose */
       const g0 = e(0);
@@ -286,10 +287,9 @@
           const x = lerp(CX + (k ? 32 : -32), LX[k], sp4), y = lerp(Y.fbp + 60, Y.split, sp4);
           o += A.carbons(x, y, 3, {r:9, gap:21, P:[k ? "end" : 0]});
           o += A.op(ease(seg(p4, .7, 1)), A.arrow(CX + (k ? 40 : -40), Y.fbp + 112, LX[k] + (k ? -8 : 8), Y.split - 40, "#8a93a3", 3));
-          o += A.op(ease(seg(p4, .8, 1)), lbl(LX[k], Y.split + 34, k ? "G3P" : "DHAP", "#343b4a", 14));
+          o += A.op(ease(seg(p4, .8, 1)), lbl(LX[k], Y.split + 32, k ? "Glyceraldehyde" : "Dihydroxyacetone", "#343b4a", 12) + lbl(LX[k], Y.split + 48, k ? "3-phosphate (G3P)" : "phosphate (DHAP)", "#5a6376", 11));
         });
         o += A.op(ease(seg(p4, .5, 1)), enzPill(CX, (Y.fbp + 112 + Y.split - 40) / 2 + 4, "aldolase", 1, null, true));
-        o += A.op(ease(seg(p4, .85, 1)), lbl(CX, Y.split + 54, "one split makes two different pieces", "#5a6376", 11));
         /* DHAP bridge to fat: glycerol backbone + three fatty-acid tails */
         const gb = ease(seg(p4, .85, 1)), gx = 30, gy = Y.split + 4;
         let tg = `<rect x="10" y="${Y.split - 56}" width="156" height="104" rx="14" fill="#fff6e0" stroke="#c98a0e" stroke-width="2"/>` + lbl(88, Y.split - 34, "GLYCEROL", "#8a5a00", 15) + lbl(88, Y.split - 18, "backbone of a triglyceride", "#8a5a00", 10);
@@ -304,10 +304,10 @@
         [0, 1].forEach(k => {
           o += down(LX[k], Y.split + 62, lerp(Y.split + 62, Y.g3p - 30, grow5), grow5 > .05 ? 1 : 0);
           o += A.op(grow5, A.carbons(LX[k], Y.g3p, 3, {r:9, gap:21, P:["end"]}));
-          o += A.op(grow5, lbl(LX[k], Y.g3p + 34, "G3P", "#343b4a", 14));
+          o += A.op(grow5, lbl(LX[k], Y.g3p + 32, "Glyceraldehyde", "#343b4a", 12) + lbl(LX[k], Y.g3p + 48, "3-phosphate (G3P)", "#5a6376", 11));
         });
         o += A.op(grow5, enzPill(CX, Y.split + 80, "triose phosphate isomerase", 1, null, true));
-        o += A.op(grow5, lbl(CX, Y.g3p + 52, "now both halves match", "#5a6376", 11));
+        o += A.op(grow5, lbl(CX, Y.g3p + 70, "now both halves match", "#5a6376", 11));
       }
 
       /* step 6: fructose enters right here, beside DHAP and G3P, after the PFK-1 checkpoint */
@@ -336,7 +336,7 @@
             if (kind === "NAD") o += A.carrier(bx, by, "NAD", drift > .5);
             else o += A.atp(bx - 12, by + 6, drift > .5 ? 3 : 2, {sc:.75});
           }
-          if (opts.water) o += A.op(drift, A.h2o(lerp(x, sx, drift), ym - 6));
+          if (opts.water) o += A.op(drift, A.h2o(lerp(x, sx, drift), ym - 6) + lbl(lerp(x, sx, drift), ym - 24, "H₂O", "#2f7fbf", 11));
           o += A.op(next, A.carbons(x, yB, 3, {r:9, gap:21, P}));
         });
         if (pi > 0){
@@ -348,8 +348,8 @@
       };
       pay(7, "NAD", Y.g3p, Y.bpg, [0, "end"], "1,3-bisphosphoglycerate · +2 NADH", "NAD⁺ picks up high-energy electrons → NADH", null, {enz:"GAPDH"});
       pay(8, "ADP", Y.bpg, Y.pg3, ["end"], "3-phosphoglycerate · +2 ATP", "direct (substrate-level) phosphorylation", null, {enz:"phosphoglycerate kinase"});
-      pay(9, null, Y.pg3, Y.pg2, ["end"], "2-phosphoglycerate", "repositions the phosphate, no energy change", null, {enz:"phosphoglycerate mutase"});
-      pay(10, null, Y.pg2, Y.pep, ["end"], "Phosphoenolpyruvate (PEP)", "removing H₂O concentrates the energy", null, {water:true, mg:true, enz:"enolase"});
+      pay(9, null, Y.pg3, Y.pg2, [1], "2-phosphoglycerate · phosphate now on the middle carbon", "repositions the phosphate (C3 → C2), no energy change", null, {enz:"phosphoglycerate mutase"});
+      pay(10, null, Y.pg2, Y.pep, [1], "Phosphoenolpyruvate (PEP)", "removing H₂O concentrates the energy", null, {water:true, mg:true, enz:"enolase"});
       pay(11, "ADP", Y.pep, Y.pyr, [], "Pyruvate · +2 ATP", "the pathway's second control point", null, {enz:"pyruvate kinase"});
 
       /* step 12: net tally */
@@ -382,11 +382,11 @@
       {focusY:Y.glu + 40, animMs:1900, tally:{used:1},
        action:{type:"drag", token:"ATP", count:1, from:[[560, Y.glu]], targets:[[CX, Y.glu]], label:"Drag the ATP onto glucose — hexokinase phosphorylates it."},
        pop:{x:PX, y:Y.g6p, title:"Hexokinase: paying the entry fee", more:"hexokinase",
-         text:`Hexokinase spends the first ATP, transferring one of its phosphates onto glucose. That phosphate carries real potential energy, like a loaded spring — and it also traps the sugar inside the cell, since a charged molecule can't slip back out through the membrane. Hexokinase needs a {{magnesium}} ion as its cofactor to grip ATP's phosphates. The protein on its own is the {{apoenzyme}}, and it's inactive. With Mg²⁺ bound, the complete, working enzyme is called the {{holoenzyme}}. In short: protein + cofactor = working enzyme. Notice G6P is still a ring.`}},
+         text:`Hexokinase spends the first ATP, transferring one of its phosphates onto glucose. That phosphate carries real potential energy, like a loaded spring — and it also traps the sugar inside the cell, since a charged molecule can't slip back out through the membrane. Hexokinase needs a magnesium (Mg²⁺) ion as its cofactor to grip ATP's phosphates. The protein on its own is the {{apoenzyme}}, and it's inactive. With Mg²⁺ bound, the complete, working enzyme is called the {{holoenzyme}}. In short: protein + cofactor = working enzyme. Notice G6P is still a ring.`}},
       {focusY:Y.f6p, animMs:1600,
        action:{type:"click", at:[CX, Y.f6p - 20], button:"Rearrange it", label:"Click to reshape the sugar."},
-       pop:{x:PX, y:Y.f6p, title:"A reshuffle, not a transfer",
-         text:`This step doesn't spend or capture any energy — it just repositions atoms so the next enzyme's active site fits. Not every arrow in a pathway is about energy; some are just structural setup. Look left: G6P, the molecule just before this step, is a {{branchpoint}}. The arrows show where it can leave: into glycogen for storage (and back out again when needed), or into the pentose phosphate pathway, which builds NADPH and the ribose sugar of DNA and RNA.`}},
+       pop:{x:PX, y:Y.f6p, title:"A reshuffle, not a transfer", more:"glycogen",
+         text:`This step doesn't spend or capture any energy — it just repositions atoms so the next enzyme's active site fits. Look left: G6P, the molecule just before this step, is a branch point. The arrows show where it can leave: into {{glycogen}} for storage (and back out again when needed), or into the pentose phosphate pathway, which builds NADPH and the ribose sugar of DNA and RNA.`}},
       {focusY:Y.fbp, animMs:1900, tally:{used:1},
        action:{type:"drag", token:"ATP", count:1, from:[[560, Y.f6p]], targets:[[CX, Y.f6p]], label:"Drag the ATP in — PFK-1 adds the second phosphate."},
        pop:{x:PX, y:Y.fbp, title:"PFK-1: the main control valve", more:"pfk",

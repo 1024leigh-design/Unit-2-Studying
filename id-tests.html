@@ -87,6 +87,7 @@
   .tsec{margin:14px 0}
   .tsec h3{font-size:.95rem;margin:0 0 8px;color:var(--accent)}
   .tsec p{margin:0;line-height:1.55;font-size:.95rem}
+  .tsec p + p{margin-top:10px}
   .tflowwrap{background:#f7f8fb;border-radius:14px;padding:8px;overflow-x:auto}
   .tflow{display:block;width:100%;min-width:720px;height:auto}
   .teqs{display:flex;flex-direction:column;gap:6px}
@@ -954,9 +955,9 @@
       lecture:["glycolysis", "ferment"],
       extra:"Why ferment at all? Without oxygen, cells must turn NADH back into NAD⁺ or glycolysis stops. Making acids (or alcohol) is how they recycle it."},
     mr:{
-      asks:"After eating the sugar, does this organism ferment through the <b>acidic</b> mixed-acid pathway — making so much stable acid it practically pickles itself?",
+      asks:"After eating the sugar, does this organism ferment through the <b>acidic</b> mixed-acid pathway — making so much stable acid it practically pickles itself 🥒?",
       flow:[{label:"Two competing fermentation pathways (both recycle NAD⁺)", items:[N("Sugar", SUG), "glycolysis", N("Pyruvate", PYR),
-        FORK({a:"mixed-acid (MR +)", n:N("Lots of stable acid", ACID, "pH < 4.4 → pickled")}, {a:"butanediol (VP +)", n:N("Neutral products", NEU, "pH stays near 7")})]}],
+        FORK({a:"", n:N("Lots of stable acid", ACID, "mixed-acid · pH < 4.4 (MR +)")}, {a:"", n:N("Neutral products", NEU, "butanediol · near pH 7 (VP +)")})]}],
       eq:[["sugar → 2 pyruvate", "glycolysis first"], ["pyruvate → lactic + acetic + formic acids", "mixed-acid: pH drops below 4.4"]],
       ind:"methyl",
       used:["the sugar in the broth"], made:["a pile of stable acid (pH < 4.4)"],
@@ -964,19 +965,19 @@
       reads:[{k:"tube", fill:"#d9443a", tag:"MR +", lab:"red"}, {k:"tube", fill:"#f2d23c", tag:"MR −", lab:"yellow"}],
       readNote:"Add <b>3–5 drops</b> of methyl red and read <b>right away</b> — the color is immediate, no waiting.",
       lecture:["ferment", "glycolysis"],
-      extra:"Same broth as VP: split one culture into two tubes. Most enterics are positive for one pathway and negative for the other."},
+      extra:"Same broth as VP: split one culture into two tubes."},
     vp:{
       asks:"After eating the sugar, does this organism ferment through the <b>neutral</b> 2,3-butanediol pathway instead of flooding itself with acid?",
       flow:[{label:"Two competing fermentation pathways (both recycle NAD⁺)", items:[N("Sugar", SUG), "glycolysis", N("Pyruvate", PYR),
-        FORK({a:"butanediol (VP +)", n:N("Acetoin → 2,3-butanediol", NEU, "neutral → pH stays ~7")}, {a:"mixed-acid (MR +)", n:N("Lots of acid", ACID, "pickled, pH < 4.4")})]}],
+        FORK({a:"", n:N("Acetoin → 2,3-butanediol", NEU, "butanediol · near pH 7 (VP +)")}, {a:"", n:N("Lots of acid", ACID, "mixed-acid · pH < 4.4 (MR +)")})]}],
       eq:[["sugar → 2 pyruvate", "glycolysis first"], ["pyruvate → acetoin → 2,3-butanediol", "neutral products, not acid"], ["acetoin + O₂ (shake) → pink-red", "the VP readout: acetoin is oxidized"]],
       ind:null, noInd:"No pH indicator. The pink-red is a <b>chemical reaction</b>: the reagents (plus oxygen from shaking) <b>oxidize acetoin</b>, not a pH change.",
       used:["the sugar in the broth"], made:["acetoin (→ pink-red with reagents)"],
-      why:"Like MR, this starts with fermentation to recycle NAD⁺ so glycolysis can keep running — but the <b>2,3-butanediol pathway</b> makes <b>neutral</b> products (acetoin, then butanediol), keeping the pH near 7 instead of pickling the cell in acid. To read it, add VP A then VP B and <b>shake</b>: oxygen oxidizes the acetoin, and the reagents turn it <b>pink-red</b>. It develops over 15–30 minutes, so reading too early gives a false negative.",
+      why:"Like MR, this starts with fermentation to recycle NAD⁺ so glycolysis can keep running — but the <b>2,3-butanediol pathway</b> makes <b>neutral</b> products (acetoin, then butanediol), keeping the pH near 7. To read it, add VP A then VP B and <b>shake</b>: oxygen oxidizes the acetoin, and the reagents turn it <b>pink-red</b>. It develops over 15–30 minutes, so reading too early gives a false negative.",
       reads:[{k:"tube", fill:"#d0455d", tag:"VP +", lab:"pink-red"}, {k:"tube", fill:"#b98a52", tag:"VP −", lab:"copper-brown"}],
       readNote:"Shake to add oxygen, then wait <b>15–30 min</b> for the pink-red to develop before reading.",
       lecture:["ferment", "glycolysis"],
-      extra:"The broth has sugar AND peptone: the bacteria eat the sugar first, then peptones. Making neutral acetoin keeps them from poisoning themselves with their own acid."},
+      extra:"The broth has sugar AND peptone: the bacteria eat the sugar first, then peptones."},
     oxidase:{
       asks:"Does this organism have <b>cytochrome c oxidase</b> (Complex IV), the enzyme that hands electrons to O₂ at the end of the electron transport chain?",
       flow:[{label:"The reagent plugs into the end of the ETC", items:[N("Reagent (colorless)", "#8b93a3", "an electron donor"), "gives e⁻", N("Cytochrome c", "#c4532f"), "cyt c oxidase (IV)", N("O₂ → H₂O", NC, "final acceptor")]}],
@@ -994,7 +995,7 @@
       eq:[["Nitrate (NO₃⁻) + 2 e⁻ → Nitrite (NO₂⁻)", "nitrate reductase: the key step"], ["Nitrate (NO₃⁻) + Zn → Nitrite (NO₂⁻)", "zinc does this chemically — it turns any LEFTOVER nitrate red"]],
       ind:null, noInd:"No pH indicator. Reagents A + B react only with <b>nitrite (NO₂⁻)</b> to make a red dye — so red means nitrite is in the tube.",
       used:["nitrate (NO₃⁻), as the electron acceptor"], made:["nitrite (NO₂⁻), then N₂ gas"],
-      why:"Red after A + B means <b>nitrite is present</b> → the organism reduced nitrate → <b>positive</b>. But <b>no color is ambiguous</b>, because it can happen two opposite ways: (1) the organism <b>lacks nitrate reductase</b>, so it never touched the nitrate — there's no nitrite to turn red; or (2) it's a strong reducer that pushed nitrate <b>all the way past nitrite to N₂ gas</b> — again no nitrite left, so no red. That's why you add <b>zinc</b>: zinc chemically reduces <b>nitrate → nitrite</b> on its own. So if any <b>nitrate is still sitting in the tube</b> (case 1), zinc converts it and the tube finally turns <b>red → negative</b>. If zinc does <b>nothing</b>, there was no nitrate left either — the bacteria already used it all up to N₂ gas → <b>positive</b>.",
+      why:"A red color after you add reagents A and B means nitrite is sitting in the tube. The bacteria took the nitrate and reduced it to nitrite, so this organism can breathe using nitrate. That is a clear <b>positive</b>, and you are finished.</p><p>If there is no color, you cannot tell yet, because two opposite situations both leave no nitrite behind: either the organism never touched the nitrate (it has no nitrate reductase), or it reduced the nitrate so completely that it turned into nitrogen gas. This is where zinc comes in. Zinc on its own turns any leftover nitrate into nitrite. So if the tube turns red after you add zinc, nitrate was still waiting in it and the bacteria never used it, which is a <b>negative</b>. If the tube stays colorless even after zinc, there was no nitrate left for the zinc to act on, so the bacteria must have used all of it up into gas, which is a <b>positive</b>.",
       readsTree:true,
       lecture:["ferment", "etc"],
       extra:"Anaerobic respiration still runs an ETC, just ending on nitrate instead of O₂ — so it makes much more ATP than fermentation does."},
@@ -1105,7 +1106,7 @@
         if (typeof it === "string"){
           const w = tArrW(it);
           s += `<line x1="${f1(x + 6)}" y1="${y}" x2="${f1(x + w - 12)}" y2="${y}" stroke="#8a93a3" stroke-width="2.5"/>${ahead(x + w - 6, y, 0)}`;
-          if (it) s += `<text x="${f1(x + w / 2)}" y="${f1(y - 8)}" font-size="11" font-weight="700" fill="${ENZC}" text-anchor="middle" font-style="italic">${it}</text>`;
+          if (it) s += `<text x="${f1(x + w / 2)}" y="${f1(y - 11)}" font-size="11" font-weight="700" fill="${ENZC}" text-anchor="middle" font-style="italic">${it}</text>`;
           x += w;
         } else if (it.fork){
           const aLen = 66, dy = 38, nw = Math.max(...it.fork.map(b => tNodeW(b.n)));
