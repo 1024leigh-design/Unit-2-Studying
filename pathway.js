@@ -232,7 +232,7 @@
         o += `<g data-pw="0" style="cursor:pointer"><rect x="${f1(x - w / 2 - 6 * pu)}" y="${f1(y - 24 - 3 * pu)}" width="${f1(w + 12 * pu)}" height="${f1(48 + 6 * pu)}" rx="26" fill="#f2b134" opacity=".3"/><rect x="${f1(x - w / 2)}" y="${y - 22}" width="${f1(w)}" height="44" rx="22" fill="#3f4cc0"/><text x="${x}" y="${y + 6}" font-size="17" font-weight="800" fill="#fff" text-anchor="middle">${a.button || a.label}</text></g>`;
         return o;
       }
-      a.targets.forEach((tg, k) => { if (filled.includes(k)) o += cfg.token(a.token, tg[0], tg[1]); else o += `<circle cx="${tg[0]}" cy="${tg[1]}" r="${f1(34 + 5 * pu)}" fill="rgba(242,177,52,.12)" stroke="#f2b134" stroke-width="3" stroke-dasharray="7 6"/>`; });
+      a.targets.forEach((tg, k) => { if (filled.includes(k)) o += a.hideFilled ? "" : cfg.token(a.token, tg[0], tg[1]); else o += `<circle cx="${tg[0]}" cy="${tg[1]}" r="${f1(34 + 5 * pu)}" fill="rgba(242,177,52,.12)" stroke="#f2b134" stroke-width="3" stroke-dasharray="7 6"/>`; });
       a.from.forEach((fp, k) => {
         if (used.includes(k) || k >= a.count) return;
         const moving = drag && drag.moved && drag.k === k;
