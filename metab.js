@@ -55,7 +55,22 @@
       const notch = o.notch === "tri" ? `L${-16 * open},-46 L0,${-46 + 26 * open} L${16 * open},-46` : `L-18,-46 C-18,${-46 + 30 * open} 18,${-46 + 30 * open} 18,-46`;
       return `<g transform="translate(${f1(x)},${f1(y)}) scale(${sc})"><path d="M-60,-46 ${notch} L60,-46 C84,-46 88,-20 88,4 C88,40 60,54 0,54 C-60,54 -88,40 -88,4 C-88,-20 -84,-46 -60,-46 Z" fill="${col}" stroke="#3e4aa8" stroke-width="2.5"/>${o.label ? `<text x="0" y="16" font-size="15" font-weight="700" fill="#fff" text-anchor="middle">${o.label}</text>` : ""}${o.allo ? `<rect x="66" y="10" width="26" height="26" rx="6" fill="#fff" stroke="#3e4aa8" stroke-width="2" stroke-dasharray="4 3"/>` : ""}</g>`; },
     membrane(x1, x2, y, h){ h = h || 44; let s = `<rect x="${x1}" y="${f1(y - h / 2)}" width="${x2 - x1}" height="${h}" fill="#f6e7c4"/>`; for (let x = x1 + 7; x < x2; x += 14){ s += `<circle cx="${x}" cy="${f1(y - h / 2 + 6)}" r="6" fill="#e6b85c"/><circle cx="${x}" cy="${f1(y + h / 2 - 6)}" r="6" fill="#e6b85c"/>`; } return s; },
-    glucoseRing: (x, y, o) => A.carbons(x, y, 6, {ring:true, ...(o || {})})
+    glucoseRing: (x, y, o) => A.carbons(x, y, 6, {ring:true, ...(o || {})}),
+    /* draggable answer chips: the same look on every page. state: "" | "pick" | "ok" */
+    chipW: s => s.replace(/<[^>]+>/g, "").length * 8.2 + 30,
+    chip(x, y, s, state){ const w = A.chipW(s), st = state || "";
+      const fill = st === "pick" ? "#fff6d6" : st === "ok" ? "#e1f3e8" : "#fff", stroke = st === "pick" ? C.gold : st === "ok" ? "#1b7f4e" : "#5a6376", txt = st === "ok" ? "#1b7f4e" : "#343b4a";
+      return (st ? "" : `<rect x="${f1(x - w / 2)}" y="${f1(y - 14)}" width="${f1(w)}" height="34" rx="17" fill="#1d2433" opacity=".14"/>`) + `<rect x="${f1(x - w / 2)}" y="${f1(y - 17)}" width="${f1(w)}" height="34" rx="17" fill="${fill}" stroke="${stroke}" stroke-width="${st === "pick" ? 4 : 2.5}"/><text x="${f1(x)}" y="${f1(y + 5)}" font-size="14" font-weight="700" fill="${txt}" text-anchor="middle">${s}</text>`; },
+    /* centered rows of chips ([id, label] pairs), wrapping past maxW. Returns {id: [x, y]} */
+    chipRows(list, cx, y, maxW, gap){
+      const rows = [[]]; let w = 0;
+      list.forEach(c => { const cw = A.chipW(c[1]); if (w + cw > maxW && rows[rows.length - 1].length){ rows.push([]); w = 0; } rows[rows.length - 1].push(c); w += cw + 12; });
+      const out = {};
+      rows.forEach((r, ri) => { let x = cx - (r.reduce((q, c) => q + A.chipW(c[1]), 0) + 12 * (r.length - 1)) / 2; r.forEach(c => { const cw = A.chipW(c[1]); out[c[0]] = [x + cw / 2, y + ri * (gap || 42)]; x += cw + 12; }); });
+      return out; },
+    /* a drop target on the diagram. state: "" (idle) | "ready" (something is picked up) | "over" (being hovered) */
+    zone(x, y, w, h, state, rx){ const s = state || "", r = rx === undefined ? 12 : rx;
+      return `<rect x="${f1(x - w / 2)}" y="${f1(y - h / 2)}" width="${f1(w)}" height="${f1(h)}" rx="${r}" fill="${s === "over" ? "#dfe3fb" : s === "ready" ? "#eef0fd" : "rgba(255,255,255,.75)"}" stroke="${s ? "#3f4cc0" : "#8a93a3"}" stroke-width="${s === "over" ? 3.5 : 2.5}"${s === "over" ? "" : ` stroke-dasharray="7 5"`}/>`; }
   };
 
   /* ================= Drag helper (mouse, touch, pen; tap also works) ================= */
@@ -155,7 +170,7 @@
     const gs = i => { if (!STEPS[i].gate) return {}; if (!gstate[i]) gstate[i] = STEPS[i].gate.init ? STEPS[i].gate.init() : {}; return gstate[i]; };
 
     /* ---- scene ---- */
-    function render(){ const st = STEPS[idx]; svg.innerHTML = st.scene ? st.scene(frozen && !st.live ? 0 : sceneT, {R, resolved, g:gs(idx), done:gateDone(idx), A}) : ""; }
+    function render(){ const st = STEPS[idx], vh = st.vh || 470; if (svg.dataset.vh !== String(vh)){ svg.setAttribute("viewBox", `0 0 1000 ${vh}`); svg.dataset.vh = vh; } svg.innerHTML = st.scene ? st.scene(frozen && !st.live ? 0 : sceneT, {R, resolved, g:gs(idx), done:gateDone(idx), A}) : ""; }
     let last = performance.now();
     function frame(now){ const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now; if (!frozen || STEPS[idx].live) sceneT += reduced ? dt * .5 : dt; render(); requestAnimationFrame(frame); }
 
@@ -347,5 +362,39 @@
       st.pick = null; o.drop(d.kind, toSVG(e));
     };
   }
-  window.Metab = {start, A, dragify, sortGate, svgDrag};
+  /* Place items onto zones drawn on the diagram.
+     o.items() -> [{id, label, x, y}] (what can still be picked up, where it is drawn)
+     o.zones() -> [{id, label, x, y, w, h, hit?(p)}] (drop targets, in SVG units)
+     o.put(itemId, zoneId) handles the drop (feedback, state); o.miss is the message for a drop on empty space.
+     Keyboard: invisible buttons sit over the graphic (they never catch the mouse); Tab to an item, Enter to pick it up,
+     then Tab to a spot and Enter to place it. */
+  function placeOn(api, st, o){
+    const svg = api.svg, lay = document.getElementById("stageLay");
+    const vb = () => svg.viewBox.baseVal;
+    const inside = (z, p) => z.hit ? z.hit(p) : Math.abs(p.x - z.x) <= z.w / 2 + 6 && Math.abs(p.y - z.y) <= z.h / 2 + 6;
+    const zoneAt = p => o.zones().find(z => inside(z, p));
+    const drop = (k, zid) => { o.put(k, zid); keys(); };
+    svgDrag(api, st, {picked:k => { api.msg(o.pickMsg || "Now tap the spot where it belongs.", ""); keys(); },
+      drop:(k, p) => { const z = zoneAt(p); if (!z){ api.msg(o.miss || "Drop it onto one of the dashed spots on the diagram.", ""); keys(); return; } drop(k, z.id); }});
+    function btn(x, y, w, h, label, fn){
+      const b = document.createElement("button"); const V = vb();
+      b.type = "button"; b.className = "kbspot"; b.setAttribute("aria-label", label);
+      b.style.cssText = `left:${(x - w / 2 - V.x) / V.width * 100}%;top:${(y - h / 2 - V.y) / V.height * 100}%;width:${w / V.width * 100}%;height:${h / V.height * 100}%`;
+      b.addEventListener("click", fn); lay.appendChild(b); return b;
+    }
+    function keys(focusZone){
+      if (!lay) return;
+      const had = lay.contains(document.activeElement) && document.activeElement.classList.contains("kbspot");
+      lay.querySelectorAll(".kbspot").forEach(b => b.remove());
+      let first = null;
+      if (st.pick !== undefined && st.pick !== null){
+        o.zones().forEach(z => { const b = btn(z.x, z.y, z.w, z.h, `Place it here: ${z.label}`, () => { const k = st.pick; st.pick = null; drop(k, z.id); }); if (!first) first = b; });
+      }
+      o.items().forEach(it => { const b = btn(it.x, it.y, A.chipW(it.label) + 6, 40, `Pick up ${it.label.replace(/<[^>]+>/g, "")}`, () => { st.pick = it.id; api.msg(o.pickMsg || "Now tab to the spot where it belongs and press Enter.", ""); keys(true); }); if (!first) first = b; });
+      if ((had || focusZone) && first) first.focus({preventScroll:true});
+    }
+    keys();
+    return {refresh:keys};
+  }
+  window.Metab = {start, A, dragify, sortGate, svgDrag, placeOn};
 })();

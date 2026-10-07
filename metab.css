@@ -124,6 +124,11 @@ button:focus-visible{outline:3px solid #f2b134;outline-offset:2px}
 .choice.right{border-color:var(--good);background:var(--good-soft);color:var(--good)}
 .choice.wrong{border-color:var(--bad);background:var(--bad-soft);color:var(--bad);animation:shake .32s}
 
+/* keyboard stand-ins for on-diagram drag and drop: invisible to the mouse, visible when focused */
+.kbspot{position:absolute;pointer-events:none !important;background:transparent;border:0;padding:0;margin:0;border-radius:12px}
+.kbspot:focus{outline:none}
+.kbspot:focus-visible{outline:3px solid #f2b134;outline-offset:2px;background:rgba(242,177,52,.12)}
+
 /* SVG text */
 .t11{font-size:11px;font-weight:700;fill:#343b4a}
 .t12{font-size:13px;font-weight:700;fill:#343b4a}
