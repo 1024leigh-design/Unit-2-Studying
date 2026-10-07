@@ -260,11 +260,11 @@
         const fly = kind ? ease(seg(pi, 0, .5)) : 0, grow = kind ? ease(seg(pi, .5, 1)) : ease(seg(pi, .3, 1));
         if (kind && pi > 0) o += A.op(1 - grow, A.atp(lerp(560 - 12, CX - 12, fly), yFrom + 6, 2, {sc:.7}));
         if (pi > 0){
-          o += down(CX, yFrom + 60, lerp(yFrom + 60, yTo - 30, grow), grow > .05 ? 1 : 0);
+          o += down(CX, yFrom + 66, lerp(yFrom + 66, yTo - 42, grow), grow > .05 ? 1 : 0);
           o += A.op(grow, SHAPE[shape](CX, yTo));
           o += enzPill(CX + 14, (yFrom + yTo) / 2 + 4, enz, grow, enzCol);
-          o += A.op(grow, lbl(CX, yTo + 34, label, "#343b4a", 13));
-          o += A.op(grow, lbl(CX, yTo + 52, tag, tagCol || "#5a6376", 11));
+          o += A.op(grow, lbl(CX, yTo + 46, label, "#343b4a", 13));
+          o += A.op(grow, lbl(CX, yTo + 64, tag, tagCol || "#5a6376", 11));
           if (mg) o += mgTag(CX + 210, yTo, grow);
         }
       };

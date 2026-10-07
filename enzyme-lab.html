@@ -144,7 +144,7 @@
       comp:[{n:"ddNTPs (dideoxy)", s:"ddNTP", k:4, note:"nucleotide look-alikes that end the chain (Sanger sequencing)"}],
       non:[{n:"hot-start antibody", s:"Ab", k:1.5, note:"binds Taq away from the active site until PCR heating releases it"}],
       kcat:60, Topt:75, Tmax:97, pH:8.3, salt:50, Eu:125, Ec:55, dG:-15, fact:"Taq comes from Thermus aquaticus, a hot-spring bacterium, so it survives PCR's 95°C steps."},
-    {id:"rnap", em:"📜", c1:"#5865d6", c2:"#3a44a6", ch:8, name:"RNA polymerase (E. coli)", where:"Transcription", rx:"RNA (n bases) + NTP → RNA (n+1 bases) + PPᵢ",
+    {id:"rnap", em:"📜", c1:"#5865d6", c2:"#3a44a6", ch:8, name:"RNA polymerase (<i>E. coli</i>)", where:"Transcription", rx:"RNA (n bases) + NTP → RNA (n+1 bases) + PPᵢ",
       subs:["NTPs (ATP, UTP, GTP, CTP)", "DNA template"], prods:["longer mRNA", "pyrophosphate"],
       cof:[{n:"Mg²⁺", s:"Mg", note:"in the active site, joins nucleotides"}, {n:"Zn²⁺", s:"Zn", note:"holds the enzyme's shape"}],
       comp:[{n:"cordycepin triphosphate", s:"Cor", k:4, note:"an ATP look-alike that ends the RNA chain"}],
@@ -255,7 +255,7 @@
     try { history.replaceState(null, "", "#" + e.id); } catch (err) {}
     st.e = e; Object.assign(st, best()); st.made = 0; prods.length = 0;
     renderPicker(); renderInfo(); renderSliders();
-    $("labTitle").textContent = e.em + " " + e.name;
+    $("labTitle").innerHTML = e.em + " " + e.name;
   }
   function setCount(k, v){
     const s = SL.find(x => x.k === k); st[k] = clamp(v, s.min, s.max);
