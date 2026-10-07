@@ -165,7 +165,8 @@
   }
   /* NADH's journey: loop A (with O2) delivers to the ETC; loop B (no O2) dumps the electrons in fermentation
      and the regenerated NAD+ travels the long way back to where it started */
-  const NADP = {home:[330, 215], etc:[690, 122], ferm:[690, 304]};
+  /* NADH parks just outside each box, so it never covers the box title */
+  const NADP = {home:[330, 215], etc:[630, 128], ferm:[630, 300]};
   const bez = (p, a, b, c, d) => { const v = 1 - p; return [v * v * v * a[0] + 3 * v * v * p * b[0] + 3 * v * p * p * c[0] + p * p * p * d[0], v * v * v * a[1] + 3 * v * v * p * b[1] + 3 * v * p * p * c[1] + p * p * p * d[1]]; };
   const LOOP = [[760, 354], [720, 476], [330, 476], [330, 240]];
   function nadScene(t, R){
@@ -204,7 +205,7 @@
       else { x = lerp(ex, dock[0] + 145 + (k ? 12 : -12), drop); y = lerp(ey, dock[1] + 6, drop); op = 1 - smooth(seg(drop, .6, 1)); }
       if (op > .01) o += A.op(op, (full ? `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(19 + 3 * Math.sin(t * 8 + k))}" fill="#ffe36b" opacity=".6"/>` : "") + A.eDot(x, y, 13));
     }
-    if (full) o += A.tx(cx, cy - 72, "⚡ high-energy e⁻", "t12 mid", `style="fill:#8a5a00"`);
+    if (full) o += A.tx(cx, cy + 44, "⚡ high-energy e⁻", "t12 mid", `style="fill:#8a5a00"`);
     return o;
   }
   function atpScene(t, R){

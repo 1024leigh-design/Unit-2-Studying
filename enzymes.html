@@ -151,10 +151,10 @@
       o += `<circle cx="${x}" cy="175" r="42" fill="${i === k ? "#fff6d6" : "#fff"}" stroke="${i === k ? C.gold : "#9aa3b5"}" stroke-width="${i === k ? 5 : 2.5}"/>` + A.tx(x, 187, L[i], "t20 mid");
       if (i < 3){ o += A.arrow(x + 50, 175, X[i + 1] - 52, 175, "#5a6376", 3); o += A.enzyme((x + X[i + 1]) / 2, 248, {sc:.42, label:""}) + A.tx((x + X[i + 1]) / 2, 302, `Enzyme ${i + 1}`, "t12 mid"); }
     });
-    /* Key idea: each enzyme is specific — only catalyzes ONE step */
+    /* Key idea: each enzyme is specific, only catalyzes ONE step */
     o += `<rect x="60" y="325" width="880" height="110" rx="18" fill="#fff" stroke="#d9dee7" stroke-width="1.5"/>`;
     o += A.tx(500, 355, "Each enzyme is specific: it only speeds up its own one reaction.", "t15 mid");
-    o += A.tx(500, 383, "Enzyme 1 cannot do Enzyme 3's job — and it won't even try.", "t14 mid muted");
+    o += A.tx(500, 383, "Enzyme 1 cannot do Enzyme 3's job. It won't even try.", "t14 mid muted");
     o += A.tx(250, 418, `${R("amphibolic") === "?" ? "?" : "Amphibolic"}: can go catabolic OR anabolic`, "t12 mid", `style="fill:#5b3fb0"`);
     o += A.tx(680, 418, "e.g. Krebs cycle intermediates → energy OR building blocks", "t12 mid", `style="fill:#5b3fb0"`);
     return o;
