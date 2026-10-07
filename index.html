@@ -83,17 +83,47 @@
     .pop{position:fixed;left:0;right:0;bottom:0;top:auto !important;width:100%;max-height:86vh;border-radius:20px 20px 0 0;z-index:30}
     .scrim{position:fixed;z-index:29}
   }
-  .moddir{display:grid;gap:14px;margin-top:18px}
-  .moddir h2{font-size:1.15rem;margin:6px 0 0}
-  .moddir .grid{display:grid;grid-template-columns:1fr;gap:10px}
-  @media (min-width:640px){ .moddir .grid{grid-template-columns:repeat(2,1fr)} }
-  @media (min-width:920px){ .moddir .grid{grid-template-columns:repeat(3,1fr)} }
-  .modtabs{display:flex;gap:8px;flex-wrap:wrap}
-  .modtab{font:700 .95rem var(--font);padding:10px 18px;border-radius:999px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
-  .modtab:hover{border-color:var(--accent)}
-  .modtab[aria-selected="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
-  .modpanel{display:grid;gap:14px;margin-top:4px}
+  /* ===== module directory ===== */
+  .moddir{display:grid;gap:16px;margin-top:26px}
+  .chaptabs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .chaptab{--cc:var(--accent);display:flex;align-items:center;gap:14px;text-align:left;font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:18px;padding:14px 18px;cursor:pointer;transition:transform .14s,border-color .14s,box-shadow .14s}
+  .chaptab:hover,.chaptab:focus-visible{border-color:var(--cc);transform:translateY(-2px);box-shadow:0 8px 20px rgba(29,36,51,.10);outline:none}
+  .chaptab .cnum{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:58px;height:58px;border-radius:16px;background:color-mix(in srgb,var(--cc) 12%,#fff);color:var(--cc);font-weight:800;font-size:1.6rem;line-height:1}
+  .chaptab .cnum small{display:block;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;line-height:1}
+  .chaptab .ctxt{flex:1;min-width:0}
+  .chaptab .ctxt b{display:block;font-size:1.12rem;line-height:1.2}
+  .chaptab .ctxt span{display:block;color:var(--muted);font-size:.86rem;margin-top:3px}
+  .chaptab .cbar{display:block;height:6px;border-radius:999px;background:#e6e9f0;margin-top:8px;overflow:hidden}
+  .chaptab .cbar i{display:block;height:100%;background:var(--cc);border-radius:999px}
+  .chaptab[aria-selected="true"]{background:var(--cc);border-color:var(--cc);color:#fff;box-shadow:0 10px 24px color-mix(in srgb,var(--cc) 30%,transparent)}
+  .chaptab[aria-selected="true"] .cnum{background:rgba(255,255,255,.18);color:#fff}
+  .chaptab[aria-selected="true"] .ctxt span{color:rgba(255,255,255,.85)}
+  .chaptab[aria-selected="true"] .cbar{background:rgba(255,255,255,.25)}
+  .chaptab[aria-selected="true"] .cbar i{background:#fff}
+  .chaptabs > *,.moddir .grid > *{min-width:0}
+  @media (max-width:560px){ .chaptabs{grid-template-columns:1fr;gap:8px} .chaptab{padding:10px 12px} .chaptab .cnum{width:50px;height:50px;font-size:1.4rem} .mtile .well{width:76px;height:58px} .mtile .well svg{width:68px} }
+  .modpanel{display:grid;gap:12px}
+  .modpanel h2{display:flex;align-items:center;gap:10px;font-size:1.15rem;margin:14px 0 0}
+  .modpanel h2 .cnt{font-size:.78rem;font-weight:700;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:2px 10px}
   .moddesc{color:var(--muted);margin:0;line-height:1.5;max-width:70ch}
+  .moddir .grid{display:grid;grid-template-columns:1fr;gap:12px}
+  @media (min-width:640px){ .moddir .grid{grid-template-columns:repeat(2,1fr)} }
+  @media (min-width:1080px){ .moddir .grid{grid-template-columns:repeat(3,1fr)} }
+  .mtile{--tc:var(--accent);position:relative;display:flex;align-items:center;gap:14px;min-height:96px;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px 12px 12px;overflow:hidden;transition:transform .14s,border-color .14s,box-shadow .14s}
+  .mtile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--tc)}
+  .mtile:hover,.mtile:focus-visible{transform:translateY(-2px);border-color:var(--tc);box-shadow:0 8px 20px rgba(29,36,51,.12);outline:none}
+  .mtile .well{flex:none;display:grid;place-items:center;width:96px;height:68px;border-radius:12px;background:color-mix(in srgb,var(--tc) 9%,#fff);margin-left:4px}
+  .mtile .well svg{width:84px;height:28px}
+  .mtile .mt{flex:1;min-width:0;display:grid;gap:2px}
+  .mtile .kick{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tc)}
+  .mtile b{font-size:1.02rem;line-height:1.2}
+  .mtile .d{font-size:.84rem;color:var(--muted);line-height:1.3}
+  .mtile .go{flex:none;align-self:center;font-weight:800;color:var(--tc);font-size:1.2rem;opacity:.55;transition:opacity .14s,transform .14s}
+  .mtile:hover .go{opacity:1;transform:translateX(3px)}
+  .mtile .ok{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#1b7f4e;color:#fff;font-size:.85rem;font-weight:800}
+  .mtile.done{background:linear-gradient(90deg,#fff 70%,#eef8f2)}
+  .mtile .gbest{font-size:.8rem;font-weight:700;color:#8a5a00}
+  .mtile .gbest.none{color:var(--muted);font-weight:400}
   .pathcard{background:var(--card);border:3px solid var(--accent);border-radius:20px;padding:18px 22px;margin:0 0 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
   .pathcard h2{margin:2px 0 6px;font-size:1.45rem}
   .pathcard p{margin:0 0 10px;color:var(--muted);line-height:1.5;max-width:62ch}
@@ -112,14 +142,14 @@
 <div class="wrap">
   <header>
     <h1>Inside the Bacterial Cell</h1>
-    <div class="sub"><strong>Welcome!</strong> Click the DNA, the mRNA, a ribosome, or a protein to explore — or click "Start the Study Path" below to see it all!</div>
+    <div class="sub"><strong>Welcome!</strong> Click the DNA, the mRNA, a ribosome, or a protein to explore. Or start the Study Path below to see it all, in order.</div>
   </header>
 
   <section class="pathcard" id="pathCard">
     <div class="pc-text">
       <div class="pc-tag">New? Start here</div>
       <h2>The Study Path</h2>
-      <p>The Study Path will take you through every Chapter 8 module, in order. Just keep tapping Next.</p>
+      <p>The Study Path takes you through every module in Chapters 8 and 5, in order. Just keep tapping Next.</p>
       <div class="pc-stops" id="pcStops"></div>
     </div>
     <div class="pc-actions" id="pcActions"></div>
@@ -159,7 +189,11 @@
     redox:`<svg viewBox="0 0 120 40"><ellipse cx="24" cy="20" rx="18" ry="13" fill="#3f4cc0"/><ellipse cx="96" cy="20" rx="18" ry="13" fill="#d9443a"/><path d="M46,14 q14,-12 28,0" stroke="#a8760f" stroke-width="2.5" fill="none"/><circle cx="60" cy="7" r="5" fill="#f2b134"/><text x="60" y="32" font-size="10" font-weight="700" fill="#5b3fb0" text-anchor="middle">OIL RIG</text></svg>`,
     gly:`<svg viewBox="0 0 120 40"><polygon points="20,8 32,14 32,26 20,32 8,26 8,14" fill="none" stroke="#4a5263" stroke-width="3"/><path d="M40,20 h16" stroke="#5a6376" stroke-width="2.5"/><circle cx="66" cy="12" r="4" fill="#4a5263"/><circle cx="76" cy="12" r="4" fill="#4a5263"/><circle cx="86" cy="12" r="4" fill="#4a5263"/><circle cx="66" cy="28" r="4" fill="#4a5263"/><circle cx="76" cy="28" r="4" fill="#4a5263"/><circle cx="86" cy="28" r="4" fill="#4a5263"/><text x="108" y="24" font-size="10" font-weight="700" fill="#8e5bd0" text-anchor="middle">2ATP</text></svg>`,
     ferm:`<svg viewBox="0 0 120 40"><path d="M30,4 v24 a8,8 0 0 0 16,0 v-24" fill="#f5c518" stroke="#8b93a3" stroke-width="2"/><path d="M60,4 v24 a8,8 0 0 0 16,0 v-24" fill="#e0463c" stroke="#8b93a3" stroke-width="2"/><circle cx="38" cy="14" r="2.5" fill="#fff"/><circle cx="41" cy="20" r="2" fill="#fff"/><text x="100" y="24" font-size="10" font-weight="700" fill="#1b7f4e" text-anchor="middle">NAD\u207A</text></svg>`,
-    resp:`<svg viewBox="0 0 120 40"><rect x="6" y="16" width="108" height="9" rx="4" fill="#cfe0f5"/><circle cx="30" cy="20" r="9" fill="#3b7dd8"/><circle cx="58" cy="20" r="9" fill="#5aa0e0"/><circle cx="86" cy="20" r="9" fill="#7cb9ea"/><path d="M30,9 v-6 M58,9 v-6 M86,9 v-6" stroke="#f2b134" stroke-width="3" stroke-linecap="round"/><text x="104" y="12" font-size="11" font-weight="700" fill="#b0873a">ATP</text></svg>`
+    cyc:`<svg viewBox="0 0 120 40"><circle cx="50" cy="20" r="14" fill="none" stroke="#c98a0e" stroke-width="3.5"/><path d="M61,9 l3,8 l-8,-1 z" fill="#c98a0e"/><path d="M39,31 l-3,-8 l8,1 z" fill="#c98a0e"/><circle cx="50" cy="6" r="4" fill="#4a5263"/><circle cx="64" cy="20" r="4" fill="#4a5263"/><circle cx="50" cy="34" r="4" fill="#4a5263"/><circle cx="36" cy="20" r="4" fill="#4a5263"/><circle cx="84" cy="12" r="4" fill="#d9443a"/><circle cx="100" cy="12" r="4" fill="#d9443a"/><circle cx="92" cy="12" r="5" fill="#4a5263"/><rect x="80" y="22" width="30" height="13" rx="6.5" fill="#2f9e63"/><text x="95" y="32" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">NADH</text></svg>`,
+    etc:`<svg viewBox="0 0 120 40"><rect x="2" y="18" width="116" height="12" fill="#f6e7c4"/><rect x="10" y="12" width="18" height="24" rx="6" fill="#7c8be8"/><rect x="34" y="14" width="14" height="20" rx="5" fill="#5fbd9c"/><rect x="54" y="14" width="14" height="20" rx="5" fill="#e78a80"/><rect x="88" y="12" width="12" height="24" rx="4" fill="#c9d0f5" stroke="#3f4cc0" stroke-width="1.5"/><circle cx="94" cy="38" r="0"/><circle cx="18" cy="5" r="4" fill="#dbe7fb" stroke="#3b7dd8" stroke-width="1.5"/><circle cx="41" cy="6" r="4" fill="#dbe7fb" stroke="#3b7dd8" stroke-width="1.5"/><circle cx="61" cy="5" r="4" fill="#dbe7fb" stroke="#3b7dd8" stroke-width="1.5"/><circle cx="76" cy="7" r="4" fill="#dbe7fb" stroke="#3b7dd8" stroke-width="1.5"/><path d="M94,8 v6" stroke="#3b7dd8" stroke-width="2.5"/><text x="110" y="10" font-size="9" font-weight="700" fill="#8e5bd0" text-anchor="middle">ATP</text></svg>`,
+    tubes:`<svg viewBox="0 0 120 40"><path d="M24,3 v26 a7,7 0 0 0 14,0 v-26" fill="#fff" stroke="#8b93a3" stroke-width="2"/><path d="M25.5,14 v15 a5.5,5.5 0 0 0 11,0 v-15 z" fill="#f5c518"/><path d="M53,3 v26 a7,7 0 0 0 14,0 v-26" fill="#fff" stroke="#8b93a3" stroke-width="2"/><path d="M54.5,14 v15 a5.5,5.5 0 0 0 11,0 v-15 z" fill="#e0463c"/><path d="M82,3 v26 a7,7 0 0 0 14,0 v-26" fill="#fff" stroke="#8b93a3" stroke-width="2"/><path d="M83.5,14 v15 a5.5,5.5 0 0 0 11,0 v-15 z" fill="#7b4fc4"/><rect x="28" y="16" width="6" height="11" rx="3" fill="#fff" stroke="#5a6376" stroke-width="1.2"/></svg>`,
+    flask:`<svg viewBox="0 0 120 40"><path d="M48,3 h14 M51,3 v11 l-12,20 a3,3 0 0 0 3,4 h26 a3,3 0 0 0 3,-4 l-12,-20 v-11" fill="#fff" stroke="#6b4bb8" stroke-width="2.4" stroke-linejoin="round"/><path d="M44,26 h22 l4,7 a2,2 0 0 1 -2,3 h-26 a2,2 0 0 1 -2,-3 z" fill="#c9b6ef"/><circle cx="52" cy="30" r="2.5" fill="#fff"/><circle cx="59" cy="27" r="1.8" fill="#fff"/><path d="M84,6 v22" stroke="#d9443a" stroke-width="3" stroke-linecap="round"/><circle cx="84" cy="31" r="5" fill="#d9443a"/></svg>`,
+    resp:`<svg viewBox="0 0 120 40"><rect x="6" y="16" width="108" height="9" rx="4" fill="#cfe0f5"/><circle cx="30" cy="20" r="9" fill="#3b7dd8"/><circle cx="58" cy="20" r="9" fill="#5aa0e0"/><circle cx="86" cy="20" r="9" fill="#7cb9ea"/><path d="M30,9 v-6 M58,9 v-6 M86,9 v-6" stroke="#f2b134" stroke-width="3" stroke-linecap="round"/><text x="104" y="11" font-size="10" font-weight="700" fill="#8e5bd0" text-anchor="middle">ATP</text></svg>`
   };
   const MOD = {
     replication:{name:"DNA Replication", href:"dna-replication.html", desc:"Helicase, primase, and Okazaki fragments", icon:"rep", col:"#0f766e", wide:true},
@@ -170,22 +204,22 @@
     mutations:{name:"Mutations", href:"mutations.html", desc:"Silent, missense, nonsense, frameshift", icon:"mut", col:"#e8744f", wide:true},
     editor:{name:"DNA Editor", href:"mutations.html#editor", desc:"Mutate a gene, watch the protein change", icon:"mut", col:"#e8744f"},
     splice:{name:"Splice Lab", href:"posttranscriptional-control.html#splice", desc:"Be the snRNP, cut out introns", icon:"post", col:"#8e5bd0"},
-    enzlab:{name:"Enzyme Lab", href:"enzyme-lab.html", desc:"Real enzymes, inhibitors, and every condition", icon:"enz", col:"#6b4bb8"},
+    enzlab:{name:"Enzyme Lab", href:"enzyme-lab.html", desc:"Real enzymes, inhibitors, and every condition", icon:"flask", col:"#6b4bb8"},
     repgame:{name:"Replication Race", href:"dna-replication.html#game", desc:"Pair A with T and G with C against the clock", icon:"rep", col:"#0f766e", game:"bio112-rep-race"},
     txgame:{name:"Transcription Race", href:"transcription.html#game", desc:"Type the mRNA for a DNA template, fast", icon:"tx", col:"#3f4cc0", game:"bio112-elong-scores"},
     tlgame:{name:"Translation Race", href:"translation.html#game", desc:"Match tRNAs to codons and build the protein", icon:"tl", col:"#1b7f4e", game:"bio112-tl-race"},
-    splicegame:{name:"Splice Lab race", href:"posttranscriptional-control.html#splice", desc:"Find 6 proteins from one gene, fast", icon:"post", col:"#8e5bd0", game:"bio112-splice-race"},
-    editgame:{name:"DNA Editor race", href:"mutations.html#editor", desc:"Make all 6 kinds of mutation, fast", icon:"mut", col:"#e8744f", game:"bio112-editor-race"},
+    splicegame:{name:"Splice Lab Race", href:"posttranscriptional-control.html#splice", desc:"Find 6 proteins from one gene, fast", icon:"post", col:"#8e5bd0", game:"bio112-splice-race"},
+    editgame:{name:"DNA Editor Race", href:"mutations.html#editor", desc:"Make all 6 kinds of mutation, fast", icon:"mut", col:"#e8744f", game:"bio112-editor-race"},
     translation:{name:"Translation", href:"translation.html", desc:"Ribosomes read codons and build protein", icon:"tl", col:"#1b7f4e", wide:true},
     posttx:{name:"Post-transcriptional control", href:"posttranscriptional-control.html", desc:"Splicing, riboswitches, and miRNA", icon:"post", col:"#8e5bd0", wide:true},
-    eterna:{name:"Eterna: fold your own RNA", href:"eterna.html", fun:true, desc:"Design RNA in a real science game", icon:"eterna", wide:true},
+    eterna:{name:"Eterna: fold your own RNA", href:"https://eternagame.org", fun:true, desc:"Design RNA in a real science game", icon:"eterna", wide:true},
     enzymes:{name:"Enzymes and metabolism", href:"enzymes.html", desc:"Active sites, inhibitors, feedback inhibition", icon:"enz", col:"#6b4bb8", wide:true},
     energy:{name:"Chemistry of energy production", href:"energy-chemistry.html", desc:"Energy in reactions, inhibition in respiration, and redox", icon:"redox", col:"#9a6212", wide:true},
     respov:{name:"Cellular respiration: the big picture", href:"respiration-overview.html", desc:"The 3 stages, where they happen, and the ATP payoff", icon:"resp", col:"#3f4cc0", wide:true},
     glycolysis:{name:"Glycolysis", href:"glycolysis.html", desc:"Glucose \u2192 2 pyruvate, 2 ATP, 2 NADH", icon:"gly", col:"#b83a34", wide:true},
-    krebs:{name:"The Krebs cycle", href:"krebs.html", desc:"Acetyl-CoA \u2192 CO\u2082, NADH, FADH\u2082, and ATP", icon:"resp", col:"#3f4cc0", wide:true},
-    etcmod:{name:"Electron transport chain & ATP synthase", href:"etc.html", desc:"Chemiosmosis, aerobic vs. anaerobic, ~34\u201338 ATP", icon:"resp", col:"#3f4cc0", wide:true},
-    idtests:{name:"Biochemical ID tests", href:"id-tests.html", desc:"Durham, MR/VP, oxidase, nitrate, MacConkey, EMB, MSA", icon:"resp", col:"#9a6212", wide:true},
+    krebs:{name:"The Krebs cycle", href:"krebs.html", desc:"Acetyl-CoA \u2192 CO\u2082, NADH, FADH\u2082, and ATP", icon:"cyc", col:"#3f4cc0", wide:true},
+    etcmod:{name:"Electron transport chain & ATP synthase", href:"etc.html", desc:"Chemiosmosis, H\u207A pumping, and ATP synthase", icon:"etc", col:"#3f4cc0", wide:true},
+    idtests:{name:"Biochemical ID tests", href:"id-tests.html", desc:"Durham, MR/VP, oxidase, nitrate, MacConkey, EMB, MSA", icon:"tubes", col:"#9a6212", wide:true},
     ferment:{name:"Fermentation and anaerobic respiration", href:"fermentation.html", desc:"Life without oxygen: NAD\u207A, nitrate, sulfate", icon:"ferm", col:"#1b7f4e", wide:true}
   };
 
@@ -543,50 +577,60 @@
     let bestTxt = "";
     if (m.game){ try { const a = JSON.parse(localStorage.getItem(m.game) || "[]"); if (Array.isArray(a) && a.length){ const b = Math.min(...a.map(r => r.t)); bestTxt = `<span class="gbest">🏆 Best: ${b >= 60 ? Math.floor(b / 60) + ":" + (b % 60).toFixed(1).padStart(4, "0") : b.toFixed(1) + "s"} · ${a.length} round${a.length === 1 ? "" : "s"}</span>`; } else bestTxt = `<span class="gbest none">Not played yet</span>`; } catch (e) {} }
     const inner = `${ic}<b>${m.name}${doneMod ? ' <i class="donechk" title="Test mode complete">\u2713</i>' : ""}</b>${opts.noDesc ? "" : `<span>${m.desc}</span>`}${bestTxt}`;
-    return m.soon ? `<div class="${cls}">${inner}</div>` : `<a class="${cls}" style="--tc:${m.col || "#5b3fb0"}" href="${m.href}">${inner}</a>`;
+    return m.soon ? `<div class="${cls}">${inner}</div>` : `<a class="${cls}" style="--tc:${m.col || "#5b3fb0"}" href="${m.href}"${/^https?:/.test(m.href) ? ` target="_blank" rel="noopener"` : ""}>${inner}</a>`;
+  };
+  /* a directory tile: icon well, kicker, name, description, and a done check or arrow */
+  const doneOf = m => { try { return !!(m.href && localStorage.getItem("bio112-done:" + m.href.split("#")[0]) === "1"); } catch (e) { return false; } };
+  const bestOf = m => { if (!m.game) return ""; try { const a = JSON.parse(localStorage.getItem(m.game) || "[]"); if (Array.isArray(a) && a.length){ const b = Math.min(...a.map(r => r.t)); return `<span class="gbest">🏆 Best: ${b >= 60 ? Math.floor(b / 60) + ":" + (b % 60).toFixed(1).padStart(4, "0") : b.toFixed(1) + "s"} · ${a.length} round${a.length === 1 ? "" : "s"}</span>`; } } catch (e) {} return `<span class="gbest none">Not played yet</span>`; };
+  const dirTile = (k, kick) => {
+    const m = MOD[k], done = m.wide && doneOf(m), ext = /^https?:/.test(m.href);
+    return `<a class="mtile${done ? " done" : ""}" style="--tc:${m.col || "#5b3fb0"}" href="${m.href}"${ext ? ` target="_blank" rel="noopener"` : ""}>
+      <span class="well" aria-hidden="true">${ICON[m.icon] || ""}</span>
+      <span class="mt"><span class="kick">${kick}</span><b>${m.name}</b><span class="d">${m.desc}</span>${bestOf(m)}</span>
+      ${done ? `<span class="ok" title="Test mode complete" aria-label="Done">✓</span>` : `<span class="go" aria-hidden="true">→</span>`}</a>`;
   };
   (function(){
     const CH8 = ["replication","pretx","transcription","posttx","translation","mutations"];
     const LABS_DIR = ["build","lab","splice","editor"];
     const GAMES = ["repgame","txgame","tlgame","splicegame","editgame"];
-    const GAMES_HTML = `<h2>Games</h2><p class="moddesc">Race the clock! Every round is a brand-new sequence, and your best times are saved on this browser.</p><div class="grid">${GAMES.map(k => tileHTML(k, {noWide:true})).join("")}</div>`;
-    /* Chapter 5 modules appear here as each one is revised. Still to come: enzymes, glycolysis, krebs, ferment
-       (restore their stops in studypath.js when they go live). */
-    const CH5 = ["enzymes","energy","respov","glycolysis","krebs","etcmod","ferment"];
+    /* same order as the Study Path (studypath.js STOPS) */
+    const CH5 = ["enzymes","energy","respov","glycolysis","ferment","krebs","etcmod"];
     const CH5_LABS = ["enzlab","idtests"];
-    const CH5_ENABLED = true;
-    const t = k => tileHTML(k, {noDesc:true, noWide:true});
     const el = document.getElementById("modDir");
     if (!el) return;
-    if (!CH5_ENABLED){
-      el.innerHTML = `<h2>Chapter 8: From DNA to Protein</h2>
-        <div class="grid">${CH8.map(t).join("")}</div>
-        <h2>Practice labs</h2>
-        <p class="moddesc">Ready to put it to the test? These hands-on labs let you test your knowledge and explore the material at your own pace.</p>
-        <div class="grid">${LABS_DIR.map(t).join("")}</div>${GAMES_HTML}`;
-      return;
-    }
-    el.innerHTML = `<div class="modtabs" role="tablist">
-        <button class="modtab" data-tab="ch8" aria-selected="true">Chapter 8: From DNA to Protein</button>
-        <button class="modtab" data-tab="ch5" aria-selected="false">Chapter 5: Microbial Metabolism</button>
+    const nDone = ks => ks.filter(k => doneOf(MOD[k])).length;
+    const tab = (key, num, title, ks, col, sel) => { const d = nDone(ks);
+      return `<button class="chaptab" role="tab" data-tab="${key}" aria-selected="${sel}" style="--cc:${col}"><span class="cnum"><small>Chapter</small>${num}</span><span class="ctxt"><b>${title}</b><span>${ks.length} modules · ${d} done in Test mode</span><span class="cbar"><i style="width:${Math.round(100 * d / ks.length)}%"></i></span></span></button>`; };
+    const grid = (ks, kick) => `<div class="grid">${ks.map((k, i) => dirTile(k, typeof kick === "function" ? kick(i) : kick)).join("")}</div>`;
+    const head = (t, n) => `<h2>${t}<span class="cnt">${n}</span></h2>`;
+    let saved = "ch8"; try { saved = localStorage.getItem("bio112-hub-tab") || "ch8"; } catch (e) {}
+    el.innerHTML = `<div class="chaptabs" role="tablist" aria-label="Chapters">
+        ${tab("ch8", 8, "From DNA to Protein", CH8, "#3f4cc0", saved !== "ch5")}
+        ${tab("ch5", 5, "Microbial Metabolism", CH5, "#0f766e", saved === "ch5")}
       </div>
-      <div class="modpanel" data-panel="ch8">
-        <div class="grid">${CH8.map(t).join("")}</div>
-        <h2>Practice labs</h2>
-        <p class="moddesc">Ready to put it to the test? These hands-on labs let you test your knowledge and explore the material at your own pace.</p>
-        <div class="grid">${LABS_DIR.map(t).join("")}</div>
-        ${GAMES_HTML}
+      <div class="modpanel" data-panel="ch8" role="tabpanel" ${saved === "ch5" ? "hidden" : ""}>
+        ${head("Modules", CH8.length)}
+        <p class="moddesc">Follow a gene's information from DNA all the way to a working protein, in this order.</p>
+        ${grid(CH8, i => "Module " + (i + 1))}
+        ${head("Practice labs", LABS_DIR.length)}
+        <p class="moddesc">Hands-on labs to test what you know and explore at your own pace.</p>
+        ${grid(LABS_DIR, "Lab")}
+        ${head("Games", GAMES.length)}
+        <p class="moddesc">Race the clock! Every round is a brand-new sequence, and your best times are saved on this browser.</p>
+        ${grid(GAMES, "Game")}
       </div>
-      <div class="modpanel" data-panel="ch5" hidden>
-        <div class="grid">${CH5.map(t).join("")}</div>
-        <p class="moddesc">Glucose to ATP, start to finish.</p>
-        <h2>Practice labs</h2>
+      <div class="modpanel" data-panel="ch5" role="tabpanel" ${saved === "ch5" ? "" : "hidden"}>
+        ${head("Modules", CH5.length)}
+        <p class="moddesc">Glucose to ATP, start to finish, in this order.</p>
+        ${grid(CH5, i => "Module " + (i + 1))}
+        ${head("Practice labs", CH5_LABS.length)}
         <p class="moddesc">Push a real enzyme to its limits, then run the biochemical tests microbiologists use to identify bacteria.</p>
-        <div class="grid">${CH5_LABS.map(t).join("")}</div>
+        ${grid(CH5_LABS, "Lab")}
       </div>`;
-    el.querySelectorAll(".modtab").forEach(b => b.addEventListener("click", () => {
-      el.querySelectorAll(".modtab").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+    el.querySelectorAll(".chaptab").forEach(b => b.addEventListener("click", () => {
+      el.querySelectorAll(".chaptab").forEach(x => x.setAttribute("aria-selected", String(x === b)));
       el.querySelectorAll(".modpanel").forEach(p => { p.hidden = p.dataset.panel !== b.dataset.tab; });
+      try { localStorage.setItem("bio112-hub-tab", b.dataset.tab); } catch (e) {}
     }));
   })();
   const factHTML = f => `<div class="fact"><span class="em">${f[0]}</span><span>${f[1]}</span></div>`;
