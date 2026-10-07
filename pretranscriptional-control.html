@@ -1866,7 +1866,7 @@
     const tc = uv ? "#fff" : "#343b4a";
     o += plate(300, 225, 185, res.spec, g, uv, "");
     if (!d.st.grown) o += `<text x="300" y="218" class="t15 mid" style="fill:${uv ? "#fff" : "#5a6376"}">Not incubated yet</text><text x="300" y="242" class="t13 mid" style="fill:${uv ? "#fff" : "#5a6376"}">${d.st.strain ? "Tap Incubate overnight" : "Transform your cells first"}</text>`;
-    const sn = d.st.strain ? L.strains.find(x => x[0] === d.st.strain)[1] : "No cells spread yet";
+    const sn = (d.st.strain ? L.strains.find(x => x[0] === d.st.strain)[1] : "No cells spread yet").replace("E. coli", '<tspan font-style="italic">E. coli</tspan>');
     const adds = ["LB"].concat(L.adds.filter(a => d.st[a[0]]).map(a => a[1]));
     o += `<text x="300" y="440" class="t13 mid" style="fill:${tc}">Cells: ${sn}</text><text x="300" y="462" class="t13 mid" style="fill:${tc}">Plate: ${adds.join(" + ")}</text>`;
     return o;

@@ -108,6 +108,7 @@
   .tread span{font-size:.8rem;color:var(--muted)}
   .tmini{width:84px;height:auto}
   .tlinks{display:flex;flex-wrap:wrap;gap:8px}
+  .treadnote{margin-top:10px!important;background:#eef1fb;border-radius:10px;padding:8px 12px;font-size:.9rem;color:#2c3796}
   .tfoot{display:flex;justify-content:flex-end;margin-top:8px}
 </style>
 </head>
@@ -128,7 +129,7 @@
      question:"Can this bacterium ferment the sugar in the tube, and does it make gas?",
      setup:"Phenol red broth with one sugar (0.5–1%) and a small upside-down Durham tube inside to trap gas. Pick a sugar, then inoculate.",
      orgs:[
-       {name:"Escherichia coli", short:"E. coli", cap:"#3f7bd1", sug:{glucose:"AG", lactose:"AG", sucrose:"-", fructose:"AG", mannitol:"AG", maltose:"AG"}, note:{sucrose:"Most lab strains of E. coli can't ferment sucrose (a few strains can)."}},
+       {name:"Escherichia coli", short:"E. coli", cap:"#3f7bd1", sug:{glucose:"AG", lactose:"AG", sucrose:"-", fructose:"AG", mannitol:"AG", maltose:"AG"}, note:{sucrose:"Most lab strains of <i>E. coli</i> can't ferment sucrose (a few strains can)."}},
        {name:"Klebsiella pneumoniae", short:"K. pneumoniae", cap:"#8e5bd0", sug:{glucose:"AG", lactose:"AG", sucrose:"AG", fructose:"AG", mannitol:"AG", maltose:"AG"}},
        {name:"Shigella flexneri", short:"S. flexneri", cap:"#2f9e63", sug:{glucose:"A", lactose:"-", sucrose:"-", fructose:"A", mannitol:"A", maltose:"-"}},
        {name:"Staphylococcus aureus", short:"S. aureus", cap:"#e0a020", sug:{glucose:"A", lactose:"A", sucrose:"A", fructose:"A", mannitol:"A", maltose:"A"}},
@@ -205,7 +206,7 @@
      quiz:[q("What does the oxidase test detect?", ["Cytochrome c oxidase (ETC Complex IV)", "Catalase", "Fermentation of glucose", "Nitrate reductase"], 0, "The reagent is oxidized by cytochrome c oxidase."),
        q("Is the purple color from a pH indicator?", ["No: the reagent itself turns purple when it's oxidized", "Yes, phenol red", "Yes, methyl red", "Yes, neutral red"], 0, "It's a redox reaction, not a pH change."),
        q("How long do you incubate before adding the reagent?", ["No incubation: smear, add reagent, read in 20–30 seconds", "24–48 hours", "1 week", "Overnight at 4°C"], 0, "It's a rapid test; colors that show up much later don't count."),
-       q("Why is the oxidase test useful for E. coli vs. Pseudomonas?", ["Pseudomonas is oxidase positive; E. coli is negative", "Both are positive", "Both are negative", "It tells you which one ferments lactose"], 0, "Enterics like E. coli are oxidase negative, which quickly separates them from Pseudomonas.")]},
+       q("Why is the oxidase test useful for <i>E. coli</i> vs. <i>Pseudomonas</i>?", ["<i>Pseudomonas</i> is oxidase positive; <i>E. coli</i> is negative", "Both are positive", "Both are negative", "It tells you which one ferments lactose"], 0, "Enterics like <i>E. coli</i> are oxidase negative, which quickly separates them from <i>Pseudomonas</i>.")]},
 
     {key:"nitrate", tab:"Nitrate Reduction", title:"Nitrate Reduction Test", medium:"broth", tools:["loop"], incubate:true, base:{fill:"#f3ecd2"},
      question:"Can this bacterium use nitrate as its final electron acceptor?",
@@ -267,12 +268,12 @@
        : {vis:{colonies:{fill:"#b67b8a", r:11}}, cls:"", tag:"Weaker fermenter", text:`<b>Large, mucoid, pinkish-brown colonies, no sheen.</b> <i>${o.short}</i> ferments lactose more slowly, with less acid.`},
      why:"EMB adds a third readout: green sheen (fast, strong lactose fermenter) vs. pink/brown (weaker) vs. colorless (non-fermenter).",
      quiz:[q("What do eosin Y and methylene blue do on EMB?", ["Inhibit gram-positives AND indicate lactose fermentation", "Only add color", "Kill gram-negatives", "Detect H₂S"], 0, "The same dyes are both selective and differential."),
-       q("A green metallic sheen means…", ["Strong, fast lactose fermentation (like E. coli)", "No growth", "Gram-positive", "Oxidase positive"], 0, "So much acid that the dyes precipitate on the colony."),
+       q("A green metallic sheen means…", ["Strong, fast lactose fermentation (like <i>E. coli</i>)", "No growth", "Gram-positive", "Oxidase positive"], 0, "So much acid that the dyes precipitate on the colony."),
        q("After incubation, what do you add?", ["Nothing: just read the plate", "Methyl red", "Zinc", "Iodine"], 0, "Read the colonies directly.")]},
 
     {key:"msa", tab:"MSA", title:"Mannitol Salt Agar (MSA)", medium:"plate", tools:["loop"], incubate:true, base:{fill:"#ef9a8c"},
      question:"Is this bacterium salt-tolerant, and does it ferment mannitol?",
-     setup:"7.5% NaCl selects for salt-tolerant bacteria (mostly Staphylococcus); mannitol + phenol red is the differential part.",
+     setup:"7.5% NaCl selects for salt-tolerant bacteria (mostly <i>Staphylococcus</i>); mannitol + phenol red is the differential part.",
      orgs:[
        {name:"Staphylococcus aureus", short:"S. aureus", cap:"#e0a020", growth:true, man:true},
        {name:"Staphylococcus epidermidis", short:"S. epidermidis", cap:"#9a6212", growth:true, man:false},
@@ -319,14 +320,14 @@
      reagents:[{name:"3% H₂O₂", drops:3, liquid:"#eef6fb", bottle:"#3b4250"}],
      outcome:o => o.pos
        ? {vis:{slant:"#ecdcab", butt:"#ecdcab", growth:true, bubbles:true}, cls:"pos", tag:"Catalase positive", text:`<b>Instant bubbling</b> on the slant. <i>${o.short}</i>'s catalase splits 2 H₂O₂ → 2 H₂O + O₂, and the bubbles are oxygen gas.`}
-       : {vis:{slant:"#ecdcab", butt:"#ecdcab", growth:true, bubbles:false}, cls:"neg", tag:"Catalase negative", text:`<b>No bubbles.</b> <i>${o.short}</i> has no catalase to break the peroxide down. This is the classic way to tell Streptococcus from Staphylococcus.`},
+       : {vis:{slant:"#ecdcab", butt:"#ecdcab", growth:true, bubbles:false}, cls:"neg", tag:"Catalase negative", text:`<b>No bubbles.</b> <i>${o.short}</i> has no catalase to break the peroxide down. This is the classic way to tell <i>Streptococcus</i> from <i>Staphylococcus</i>.`},
      why:"Aerobic metabolism makes small amounts of toxic peroxide. Catalase is one of the enzymes that detoxifies it.",
      link:["Review the electron transport chain →", "etc.html"],
      quiz:[q("What does the catalase test detect?", ["The enzyme catalase breaking down H₂O₂", "Acid from fermentation", "Cytochrome c oxidase", "Amylase"], 0, "Catalase: 2 H₂O₂ → 2 H₂O + O₂."),
        q("Is there a pH indicator?", ["No: you watch for O₂ bubbles", "Yes, phenol red", "Yes, methyl red", "Yes, bromothymol blue"], 0, "The readout is gas bubbles, not color."),
        q("How do you run it?", ["Grow it on a nutrient agar slant, then drip 3% H₂O₂ onto the growth and watch for bubbles", "Incubate 48 h in broth, then add methyl red", "Add Kovac's reagent", "Flood a plate with iodine"], 0, "Peroxide goes right onto the cells on the slant; bubbles show up immediately."),
        q("What are the bubbles?", ["Oxygen gas released as catalase breaks down H₂O₂", "CO₂ from fermentation", "Hydrogen gas", "Air trapped in the agar"], 0, "2 H₂O₂ → 2 H₂O + O₂: the O₂ is what fizzes."),
-       q("Which pair does catalase best tell apart?", ["Staphylococcus (+) vs. Streptococcus (−)", "E. coli vs. Klebsiella", "Pseudomonas vs. E. coli", "Proteus vs. Salmonella"], 0, "Both are gram-positive cocci; catalase separates them.")]},
+       q("Which pair does catalase best tell apart?", ["<i>Staphylococcus</i> (+) vs. <i>Streptococcus</i> (−)", "<i>E. coli</i> vs. <i>Klebsiella</i>", "<i>Pseudomonas</i> vs. <i>E. coli</i>", "<i>Proteus</i> vs. <i>Salmonella</i>"], 0, "Both are gram-positive cocci; catalase separates them.")]},
 
     {key:"starch", tab:"Starch", title:"Starch Hydrolysis Test", medium:"plate", tools:["loop"], incubate:true, base:{fill:"#efe2bf"},
      question:"Does this bacterium secrete amylase to break down starch?",
@@ -927,7 +928,7 @@
     btb:{name:"Bromothymol blue", axis:"pH", range:[5, 9], stops:[[5, "#e8d23c"], [6.0, "#d6cf3c"], [6.8, "#4f9a4a"], [7.6, "#2f6fbf"], [9, "#2f5fbf"]],
       marks:[[6.0, "6.0"], [7.6, "7.6"]], zones:[[5, 6.0, "yellow: acid"], [6.0, 7.6, "green: neutral"], [7.6, 9, "blue: alkaline"]]},
     neutral:{name:"Neutral red", axis:"pH", range:[5, 9], stops:[[5, "#ff2e97"], [6.8, "#f0608a"], [8.0, "#f0c45a"], [9, "#f6df6a"]],
-      marks:[[6.8, "6.8"], [8.0, "8.0"]], zones:[[5, 6.8, "pink-red: acid"], [6.8, 8.0, ""], [8.0, 9, "yellow: alkaline"]]},
+      marks:[[6.8, "6.8"], [8.0, "8.0"]], zones:[[5, 6.8, "pink-red: acid"], [6.8, 8.0, ""], [8.0, 9, "pale: no acid"]]},
     emb:{name:"Eosin Y + methylene blue", axis:"how much acid →", range:[0, 3], stops:[[0, "#efe7d6"], [1, "#c98aa0"], [2, "#4b2a4a"], [3, "#1f2f28"]],
       marks:[], zones:[[0, 1, "colorless: none"], [1, 2, "pink: some"], [2, 3, "dark + green sheen: lots"]]}
   };
@@ -935,178 +936,187 @@
     etc:["Electron transport chain", "etc.html"], enzymes:["Enzymes", "enzymes.html"], energy:["Chemistry of energy production", "energy-chemistry.html"],
     lac:["The lac operon (Ch. 8)", "pretranscriptional-control.html#ind"], overview:["Respiration: the big picture", "respiration-overview.html"]};
   const N = (t, c, sub) => ({t, c, sub});
-  const SUG = "#c98a0e", PYR = "#c4532f", ACID = "#d9443a", GAS = "#5a6376", ENZC = "#5865d6", OKC = "#1b7f4e", NC = "#3f4cc0";
+  const FORK = (a, b) => ({fork:[a, b]});
+  const SUG = "#c98a0e", PYR = "#c4532f", ACID = "#d9443a", GAS = "#5a6376", ENZC = "#5865d6", OKC = "#1b7f4e", NC = "#3f4cc0", NEU = "#6b4bb8";
+  const i = s => `<i>${s}</i>`;
 
   const THEORY = {
     durham:{
       asks:"Can this organism ferment <b>this one sugar</b>, and does its fermentation pathway release <b>gas</b>?",
-      flow:[{label:"Fermenting the sugar", items:[N("Sugar", SUG, "e.g. glucose"), "glycolysis", N("Pyruvate", PYR, "3C"), "fermentation", N("Organic acids", ACID, "lactic, acetic, formic")]},
-        {label:"Where the gas comes from", items:[N("Formic acid", ACID), "formic hydrogenlyase", N("CO₂ + H₂", GAS, "gas → bubble")]},
-        {label:"If the sugar is NOT fermented", items:[N("Peptones", "#8a5a00", "amino acids"), "deamination", N("NH₃", NC, "alkaline → pink")]}],
-      eq:[["C₆H₁₂O₆ → 2 pyruvate + 2 ATP + 2 NADH", "glycolysis"], ["pyruvate + NADH → lactic acid + NAD⁺", "fermentation regenerates NAD⁺"], ["HCOOH → CO₂ + H₂", "formic hydrogenlyase: the gas"]],
+      flow:[{label:"Ferment the sugar, then restore NAD⁺", items:[N("Sugar", SUG), "glycolysis", N("Pyruvate", PYR, "3C"), "fermentation",
+        FORK({a:"", n:N("Lactic acid", ACID, "acid → yellow")}, {a:"", n:N("Ethanol + CO₂", "#9a6212", "CO₂ gas → bubble")})]}],
+      eq:[["sugar → 2 pyruvate", "glycolysis"], ["pyruvate → lactic acid", "acid drops the pH → yellow"], ["pyruvate → ethanol + CO₂", "CO₂ gas → bubble"]],
       ind:"phenol",
-      used:["the sugar (glucose, lactose, sucrose…)"], made:["organic acids (→ yellow)", "CO₂ + H₂ gas (→ bubble)"],
-      why:"Fermentation acids drop the pH below 6.8, so phenol red turns <b>yellow</b>. Gas floats up and gets trapped in the upside-down Durham tube as a <b>bubble</b>. Color and bubble are two separate readouts: an organism can make acid without gas. If it can't use the sugar, it eats the peptones instead, releasing ammonia, and the broth stays red or turns <b>pink</b>.",
-      reads:[{k:"tube", fill:"#f2d23c", durham:true, gas:true, tag:"A/G", lab:"acid + gas"}, {k:"tube", fill:"#f2d23c", durham:true, tag:"A", lab:"acid, no gas"}, {k:"tube", fill:"#d9443a", durham:true, tag:"−", lab:"no fermentation"}],
+      used:["the sugar (glucose, lactose, sucrose…)"], made:["acid (→ yellow)", "CO₂ gas (→ bubble)"],
+      why:"Fermentation acids drop the pH below 6.8, so phenol red turns <b>yellow</b>. If the pathway also makes CO₂, it rises and gets trapped in the upside-down Durham tube as a <b>bubble</b>. Color (acid) and bubble (gas) are two <b>separate</b> readouts. Timing matters: a <b>slow fermenter</b> may turn <b>orange</b> first and go fully yellow only later, and some organisms make acid early, then run out of sugar and start digesting peptones, which raises the pH and swings the tube <b>back toward red/pink</b>. Read on time.",
+      reads:[{k:"tube", fill:"#f2d23c", durham:true, gas:true, tag:"A / G", lab:"acid + gas"}, {k:"tube", fill:"#f2d23c", durham:true, tag:"A", lab:"acid, no gas"}, {k:"tube", fill:"#e8603a", durham:true, gas:true, tag:"G", lab:"gas, no acid (rare)"}, {k:"tube", fill:"#d9443a", durham:true, tag:"−", lab:"no fermentation"}],
+      readNote:"A slow grower caught early can look <b>orange</b> (partway to yellow) — give it the full incubation time before calling it.",
       lecture:["glycolysis", "ferment"],
-      extra:"Why ferment at all? Without oxygen, cells must turn NADH back into NAD⁺ or glycolysis stops. Making acids is how they do it."},
+      extra:"Why ferment at all? Without oxygen, cells must turn NADH back into NAD⁺ or glycolysis stops. Making acids (or alcohol) is how they recycle it."},
     mr:{
-      asks:"Does this organism use <b>mixed-acid fermentation</b>, making enough stable acid to drop the pH below 4.4?",
-      flow:[{label:"Mixed-acid fermentation (MR +)", items:[N("Glucose", SUG), "glycolysis", N("Pyruvate", PYR), "mixed-acid pathway", N("Lactic, acetic, succinic, formic acids", ACID, "stable, lots of acid")]},
-        {label:"The competing route (MR −, VP +)", items:[N("Pyruvate", PYR), "butanediol pathway", N("Acetoin → 2,3-butanediol", "#6b4bb8", "neutral, little acid")]}],
-      eq:[["glucose → lactate + acetate + succinate + formate + ethanol + CO₂ + H₂", "mixed-acid fermentation"], ["pH < 4.4 → methyl red is red", "the readout"]],
+      asks:"After eating the sugar, does this organism ferment through the <b>acidic</b> mixed-acid pathway — making so much stable acid it practically pickles itself?",
+      flow:[{label:"Two competing fermentation pathways (both recycle NAD⁺)", items:[N("Sugar", SUG), "glycolysis", N("Pyruvate", PYR),
+        FORK({a:"mixed-acid (MR +)", n:N("Lots of stable acid", ACID, "pH < 4.4 → pickled")}, {a:"butanediol (VP +)", n:N("Neutral products", NEU, "pH stays near 7")})]}],
+      eq:[["sugar → 2 pyruvate", "glycolysis first"], ["pyruvate → lactic + acetic + formic acids", "mixed-acid: pH drops below 4.4"]],
       ind:"methyl",
-      used:["glucose (in MR-VP broth)"], made:["a pile of stable mixed acids (pH < 4.4)"],
-      why:"Methyl red is added <b>after</b> 48 hours of growth. Only a lot of stable acid holds the pH below 4.4, where methyl red is <b>red</b>. Butanediol fermenters make neutral products instead, so the pH stays above 6.2 and methyl red is <b>yellow</b>.",
+      used:["the sugar in the broth"], made:["a pile of stable acid (pH < 4.4)"],
+      why:"MR-VP broth holds <b>both sugar and peptone</b>: the bacteria burn through the sugar first, then switch to peptones (or die out). Mixed-acid fermenters flood themselves with so much stable acid that the pH drops below 4.4, where methyl red stays <b>red</b>. Butanediol fermenters (VP +) make neutral products instead, so their pH stays above 6.2 and methyl red goes <b>yellow</b>.",
       reads:[{k:"tube", fill:"#d9443a", tag:"MR +", lab:"red"}, {k:"tube", fill:"#f2d23c", tag:"MR −", lab:"yellow"}],
+      readNote:"Add <b>3–5 drops</b> of methyl red and read <b>right away</b> — the color is immediate, no waiting.",
       lecture:["ferment", "glycolysis"],
-      extra:"Same broth as VP: split one culture into two tubes. Most enterics are positive for one and negative for the other."},
+      extra:"Same broth as VP: split one culture into two tubes. Most enterics are positive for one pathway and negative for the other."},
     vp:{
-      asks:"Does this organism use the <b>2,3-butanediol pathway</b>, which makes <b>acetoin</b>?",
-      flow:[{label:"The butanediol pathway", items:[N("2 Pyruvate", PYR), "α-acetolactate synthase", N("α-Acetolactate", "#9a6212"), "decarboxylase", N("Acetoin", "#6b4bb8", "what VP detects"), "reductase", N("2,3-Butanediol", "#5a6376")]},
-        {label:"How the reagents reveal it", items:[N("Acetoin", "#6b4bb8"), "KOH + O₂ (shake)", N("Diacetyl", "#c4532f"), "+ guanidine, α-naphthol", N("Pink-red complex", "#d0455d", "positive")]}],
-      eq:[["2 pyruvate → acetoin + 2 CO₂", "butanediol pathway"], ["acetoin + O₂ → diacetyl", "KOH + shaking oxidizes it"], ["diacetyl + guanidine (from peptone) → red complex", "α-naphthol intensifies the color"]],
-      ind:null, noInd:"No pH indicator. The pink-red is a <b>chemical reaction</b> with acetoin, not a pH change.",
-      used:["glucose (in MR-VP broth)"], made:["acetoin (→ pink-red with reagents)"],
-      why:"VP A (α-naphthol) then VP B (KOH) are added. Shaking adds oxygen, which oxidizes acetoin to diacetyl; diacetyl reacts with guanidine groups from the peptone to form a <b>pink-red</b> color. It takes 15–30 minutes, so reading too early can give a false negative.",
-      reads:[{k:"tube", fill:"#d0455d", tag:"VP +", lab:"pink-red"}, {k:"tube", fill:"#b98a52", tag:"VP −", lab:"copper"}],
+      asks:"After eating the sugar, does this organism ferment through the <b>neutral</b> 2,3-butanediol pathway instead of flooding itself with acid?",
+      flow:[{label:"Two competing fermentation pathways (both recycle NAD⁺)", items:[N("Sugar", SUG), "glycolysis", N("Pyruvate", PYR),
+        FORK({a:"butanediol (VP +)", n:N("Acetoin → 2,3-butanediol", NEU, "neutral → pH stays ~7")}, {a:"mixed-acid (MR +)", n:N("Lots of acid", ACID, "pickled, pH < 4.4")})]}],
+      eq:[["sugar → 2 pyruvate", "glycolysis first"], ["pyruvate → acetoin → 2,3-butanediol", "neutral products, not acid"], ["acetoin + O₂ (shake) → pink-red", "the VP readout: acetoin is oxidized"]],
+      ind:null, noInd:"No pH indicator. The pink-red is a <b>chemical reaction</b>: the reagents (plus oxygen from shaking) <b>oxidize acetoin</b>, not a pH change.",
+      used:["the sugar in the broth"], made:["acetoin (→ pink-red with reagents)"],
+      why:"Like MR, this starts with fermentation to recycle NAD⁺ so glycolysis can keep running — but the <b>2,3-butanediol pathway</b> makes <b>neutral</b> products (acetoin, then butanediol), keeping the pH near 7 instead of pickling the cell in acid. To read it, add VP A then VP B and <b>shake</b>: oxygen oxidizes the acetoin, and the reagents turn it <b>pink-red</b>. It develops over 15–30 minutes, so reading too early gives a false negative.",
+      reads:[{k:"tube", fill:"#d0455d", tag:"VP +", lab:"pink-red"}, {k:"tube", fill:"#b98a52", tag:"VP −", lab:"copper-brown"}],
+      readNote:"Shake to add oxygen, then wait <b>15–30 min</b> for the pink-red to develop before reading.",
       lecture:["ferment", "glycolysis"],
-      extra:"Making neutral acetoin instead of acids keeps the pH from getting low enough to hurt the cell."},
+      extra:"The broth has sugar AND peptone: the bacteria eat the sugar first, then peptones. Making neutral acetoin keeps them from poisoning themselves with their own acid."},
     oxidase:{
-      asks:"Does this organism have <b>cytochrome c oxidase</b> (Complex IV), the enzyme that hands electrons to O₂?",
-      flow:[{label:"The end of the electron transport chain", items:[N("NADH", OKC), "Complex I", N("Q", "#9a6212"), "Complex III", N("Cytochrome c", "#c4532f"), "cyt c oxidase (IV)", N("O₂ → H₂O", NC, "final acceptor")]},
-        {label:"What the reagent does", items:[N("Reagent (colorless)", "#8b93a3", "TMPD, reduced"), "gives e⁻ to cyt c", N("Cytochrome c", "#c4532f"), "oxidase pulls e⁻ on", N("Reagent (purple)", "#4b2a8a", "oxidized = positive")]}],
-      eq:[["O₂ + 4 H⁺ + 4 e⁻ → 2 H₂O", "cytochrome c oxidase"], ["reduced reagent (colorless) → oxidized reagent (purple) + e⁻", "the color change"]],
-      ind:null, noInd:"No pH indicator. The reagent is a <b>redox</b> dye: colorless when reduced, purple when oxidized.",
+      asks:"Does this organism have <b>cytochrome c oxidase</b> (Complex IV), the enzyme that hands electrons to O₂ at the end of the electron transport chain?",
+      flow:[{label:"The reagent plugs into the end of the ETC", items:[N("Reagent (colorless)", "#8b93a3", "an electron donor"), "gives e⁻", N("Cytochrome c", "#c4532f"), "cyt c oxidase (IV)", N("O₂ → H₂O", NC, "final acceptor")]}],
+      eq:[["O₂ + 4 H⁺ + 4 e⁻ → 2 H₂O", "cytochrome c oxidase (Complex IV)"], ["colorless reagent → purple reagent", "it goes purple as the oxidase pulls its electrons away"]],
+      ind:null, noInd:"No pH indicator. The reagent is a <b>redox</b> dye: colorless when it still has its electrons, dark purple once they're pulled off.",
       used:["the oxidase reagent (an electron donor)"], made:["oxidized, purple reagent"],
-      why:"The reagent stands in for the ETC's normal electron supply. If cytochrome c oxidase is there, it keeps pulling electrons off the reagent through cytochrome c, and the oxidized reagent turns <b>dark purple</b> within 20–30 seconds.",
-      reads:[{k:"strip", spot:"#4b2a8a", tag:"+", lab:"purple"}, {k:"strip", spot:"#efe7cf", tag:"−", lab:"no change"}],
+      why:"The reagent stands in for the ETC's normal electron carriers. If cytochrome c oxidase is present, it keeps pulling electrons off the reagent, and the oxidized reagent turns <b>dark purple</b>. <b>Read within 20–30 seconds.</b> The reagent also air-oxidizes slowly on its own, so a purple that creeps in <b>after</b> that window is a <b>false positive</b> — don't count it.",
+      reads:[{k:"strip", spot:"#4b2a8a", tag:"+", lab:"purple in ≤30 s"}, {k:"strip", spot:"#efe7cf", tag:"−", lab:"no change"}],
+      readNote:"<b>Timing rule:</b> count only color that appears within <b>20–30 seconds</b>. Later purple = air oxidation = false positive.",
       lecture:["etc", "overview"],
-      extra:"Enterics like E. coli are oxidase negative; Pseudomonas is positive. It's one of the fastest ways to split gram-negative rods."},
+      extra:"Enterics like " + i("E. coli") + " are oxidase negative; " + i("Pseudomonas") + " is positive. It's one of the fastest ways to split gram-negative rods."},
     nitrate:{
-      asks:"Can this organism do <b>anaerobic respiration</b> using nitrate (NO₃⁻) instead of O₂ as the final electron acceptor?",
-      flow:[{label:"Nitrate as the final electron acceptor", items:[N("NO₃⁻", NC, "nitrate"), "nitrate reductase", N("NO₂⁻", ACID, "nitrite"), "denitrification", N("NO, N₂O → N₂", GAS, "gas")]},
-        {label:"Reading it", items:[N("NO₂⁻", ACID), "+ Nitrate A + B", N("Red dye", "#d9443a", "positive")]},
-        {label:"No color? Add zinc", items:[N("Leftover NO₃⁻", NC), "zinc reduces it", N("NO₂⁻ → red", ACID, "= negative")]}],
-      eq:[["NO₃⁻ + 2 e⁻ + 2 H⁺ → NO₂⁻ + H₂O", "nitrate reductase"], ["2 NO₃⁻ + 10 e⁻ + 12 H⁺ → N₂ + 6 H₂O", "complete denitrification"], ["NO₂⁻ + sulfanilic acid (A) + α-naphthylamine (B) → red azo dye", "the color reaction"]],
-      ind:null, noInd:"No pH indicator. Reagents A + B react specifically with <b>nitrite</b> to make a red dye.",
-      used:["nitrate (NO₃⁻), as the electron acceptor"], made:["nitrite (NO₂⁻) or N₂ gas"],
-      why:"Red after A + B means nitrite is present: <b>positive</b>. No color is ambiguous: either nitrate was never touched, or it was reduced all the way past nitrite. Zinc settles it by reducing any leftover nitrate. <b>Red after zinc = negative</b> (nitrate was still there). <b>Still no color = positive</b> (reduced to N₂).",
-      reads:[{k:"tube", fill:"#d9443a", tag:"+", lab:"red after A+B"}, {k:"tube", fill:"#f3ecd2", tag:"+", lab:"no color, even after zinc"}, {k:"tube", fill:"#d9443a", tag:"−", lab:"red only after zinc"}],
+      asks:"Can this organism do <b>anaerobic respiration</b>, using nitrate as its final electron acceptor instead of O₂?",
+      flow:[{label:"Nitrate takes the place of oxygen at the end of the ETC", items:[N("Nitrate (NO₃⁻)", NC), "nitrate reductase", N("Nitrite (NO₂⁻)", ACID), "reduced further", N("N₂ gas", GAS, "all the way down")]}],
+      eq:[["Nitrate (NO₃⁻) + 2 e⁻ → Nitrite (NO₂⁻)", "nitrate reductase: the key step"], ["Nitrate (NO₃⁻) + Zn → Nitrite (NO₂⁻)", "zinc does this chemically — it turns any LEFTOVER nitrate red"]],
+      ind:null, noInd:"No pH indicator. Reagents A + B react only with <b>nitrite (NO₂⁻)</b> to make a red dye — so red means nitrite is in the tube.",
+      used:["nitrate (NO₃⁻), as the electron acceptor"], made:["nitrite (NO₂⁻), then N₂ gas"],
+      why:"Red after A + B means <b>nitrite is present</b> → the organism reduced nitrate → <b>positive</b>. But <b>no color is ambiguous</b>, because it can happen two opposite ways: (1) the organism <b>lacks nitrate reductase</b>, so it never touched the nitrate — there's no nitrite to turn red; or (2) it's a strong reducer that pushed nitrate <b>all the way past nitrite to N₂ gas</b> — again no nitrite left, so no red. That's why you add <b>zinc</b>: zinc chemically reduces <b>nitrate → nitrite</b> on its own. So if any <b>nitrate is still sitting in the tube</b> (case 1), zinc converts it and the tube finally turns <b>red → negative</b>. If zinc does <b>nothing</b>, there was no nitrate left either — the bacteria already used it all up to N₂ gas → <b>positive</b>.",
+      readsTree:true,
       lecture:["ferment", "etc"],
-      extra:"Anaerobic respiration still uses an ETC, just with a different final acceptor, so it makes more ATP than fermentation."},
+      extra:"Anaerobic respiration still runs an ETC, just ending on nitrate instead of O₂ — so it makes much more ATP than fermentation does."},
     macconkey:{
-      asks:"Is this organism <b>gram-negative</b> (it grows), and does it <b>ferment lactose</b> (pink)?",
-      flow:[{label:"Lactose fermentation (pink)", items:[N("Lactose", SUG), "β-galactosidase (lacZ)", N("Glucose + galactose", SUG), "fermentation", N("Acid", ACID, "pH drops → pink")]},
-        {label:"Non-fermenters (yellow)", items:[N("Peptones", "#8a5a00"), "deamination", N("NH₃", NC, "pH rises → yellow")]}],
-      eq:[["lactose + H₂O → glucose + galactose", "β-galactosidase"], ["glucose → acids", "fermentation"], ["acid + bile salts → pink precipitate around colonies", ""]],
+      asks:"Is this organism <b>gram-negative</b> (it grows at all), and does it <b>ferment lactose</b> (turns pink)?",
+      flow:[{label:"Lactose fermenters make acid → pink", items:[N("Lactose", SUG), "β-galactosidase (lacZ)", N("Glucose + galactose", SUG), "fermentation", N("Acid", ACID, "pH drops → pink")]}],
+      eq:[["lactose → glucose + galactose", "β-galactosidase splits it"], ["acid lowers the pH → neutral red turns pink", "the readout"]],
       ind:"neutral",
-      used:["lactose (or peptones)"], made:["acid (→ pink) or ammonia (→ yellow)"],
-      why:"<b>Selective:</b> bile salts and crystal violet stop gram-positive bacteria. <b>Differential:</b> lactose fermenters make acid, so neutral red turns their colonies <b>bright pink</b>. Non-fermenters break down peptones, release ammonia, and look <b>pale yellow</b>.",
-      reads:[{k:"plate", agar:"#e39ab4", col:"#ff2e97", halo:"#ff6fb8", tag:"Lac +", lab:"pink"}, {k:"plate", agar:"#e39ab4", col:"#f6df6a", halo:"#f3e39a", tag:"Lac −", lab:"yellow"}, {k:"plate", agar:"#e39ab4", tag:"No growth", lab:"gram +"}],
+      used:["lactose"], made:["acid (→ pink colonies)"],
+      why:"<b>Selective:</b> bile salts and crystal violet stop gram-positive bacteria, so only gram-negatives grow. <b>Differential:</b> a lactose fermenter makes acid, and neutral red turns those colonies <b>bright pink</b>. A non-fermenter makes no acid from lactose, so its colonies stay <b>pale</b> — it grew (gram-negative), it just can't ferment lactose.",
+      reads:[{k:"plate", agar:"#e39ab4", col:"#ff2e97", halo:"#ff6fb8", tag:"Lac +", lab:"pink"}, {k:"plate", agar:"#e39ab4", col:"#f6df6a", halo:"#f3e39a", tag:"Lac −", lab:"pale"}, {k:"plate", agar:"#e39ab4", tag:"No growth", lab:"gram +"}],
       lecture:["lac", "ferment"],
-      extra:"β-galactosidase is the lacZ gene product from the lac operon you learned in Chapter 8: a lactose fermenter has to switch that operon on."},
+      extra:"β-galactosidase is the lacZ gene product from the lac operon in Chapter 8: to ferment lactose, a cell first has to switch that operon on."},
     emb:{
       asks:"Is this a <b>gram-negative coliform</b>, and how <b>strongly</b> does it ferment lactose?",
-      flow:[{label:"Strong, fast lactose fermentation", items:[N("Lactose", SUG), "β-galactosidase", N("Glucose + galactose", SUG), "rapid fermentation", N("Lots of acid", ACID), "dyes precipitate", N("Green metallic sheen", "#1f6f48", "E. coli")]}],
-      eq:[["lactose + H₂O → glucose + galactose", "β-galactosidase"], ["lots of acid + eosin Y + methylene blue → dark precipitate (green sheen)", ""]],
+      flow:[{label:"More acid → darker colonies", items:[N("Lactose", SUG), "β-galactosidase", N("Glucose + galactose", SUG), "fast fermentation", N("Lots of acid", ACID, "dyes precipitate → green sheen")]}],
+      eq:[["lactose → glucose + galactose", "β-galactosidase"], ["lots of acid → dyes precipitate (green metallic sheen)", "classic " + i("E. coli")]],
       ind:"emb",
       used:["lactose"], made:["acid (how much sets the color)"],
-      why:"The dyes do double duty: they <b>inhibit gram-positives</b>, and they <b>change color with acid</b>. A little acid gives pink colonies; a lot makes the dyes precipitate as dark colonies with a <b>green metallic sheen</b> (classic E. coli).",
+      why:"The dyes do double duty: they <b>inhibit gram-positives</b>, and they <b>change color with acid</b>. A little acid gives pink colonies; a lot makes the dyes precipitate as dark colonies with a <b>green metallic sheen</b> (classic " + i("E. coli") + "). A non-fermenter stays colorless.",
       reads:[{k:"plate", agar:"#6c4a7e", col:"#1f2f28", sheen:true, tag:"Strong", lab:"green sheen"}, {k:"plate", agar:"#6c4a7e", col:"#c98aa0", tag:"Weak", lab:"pink"}, {k:"plate", agar:"#6c4a7e", col:"#efe7d6", tag:"Lac −", lab:"colorless"}],
       lecture:["lac", "ferment"]},
     msa:{
-      asks:"Is this organism <b>salt-tolerant</b> (it grows), and does it <b>ferment mannitol</b> (yellow)?",
-      flow:[{label:"Mannitol fermentation", items:[N("Mannitol", SUG, "a sugar alcohol"), "mannitol-1-P dehydrogenase", N("Fructose-6-P", SUG), "glycolysis", N("Pyruvate", PYR), "fermentation", N("Acid", ACID, "→ yellow")]}],
-      eq:[["mannitol → fructose-6-phosphate → glycolysis", "enters glycolysis"], ["pyruvate → acids", "fermentation"]],
+      asks:"Is this organism <b>salt-tolerant</b> (it grows at all), and does it <b>ferment mannitol</b> (turns yellow)?",
+      flow:[{label:"Mannitol fermenters make acid → yellow", items:[N("Mannitol", SUG, "a sugar alcohol"), "enters glycolysis", N("Pyruvate", PYR), "fermentation", N("Acid", ACID, "pH drops → yellow")]}],
+      eq:[["mannitol → fructose-6-phosphate → glycolysis", "it funnels into glycolysis"], ["acid lowers the pH → phenol red turns yellow", "the readout"]],
       ind:"phenol",
       used:["mannitol"], made:["acid (→ yellow halo)"],
-      why:"<b>Selective:</b> 7.5% NaCl stops most bacteria except salt-tolerant ones like Staphylococcus. <b>Differential:</b> mannitol fermentation makes acid, turning phenol red <b>yellow</b> around the colonies. S. aureus is yellow; S. epidermidis grows but leaves the agar red.",
+      why:"<b>Selective:</b> 7.5% NaCl stops most bacteria except salt-tolerant ones like " + i("Staphylococcus") + ". <b>Differential:</b> fermenting mannitol makes acid, turning phenol red <b>yellow</b> around the colonies. " + i("S. aureus") + " goes yellow; " + i("S. epidermidis") + " grows but leaves the agar red.",
       reads:[{k:"plate", agar:"#ef9a8c", col:"#f2d23c", halo:"#f2d23c", tag:"Man +", lab:"yellow"}, {k:"plate", agar:"#ef9a8c", col:"#f6e8e0", tag:"Man −", lab:"red agar"}, {k:"plate", agar:"#ef9a8c", tag:"No growth", lab:"salt-sensitive"}],
       lecture:["glycolysis", "ferment"]},
     citrate:{
       asks:"Can this organism use <b>citrate as its only carbon source</b>?",
-      flow:[{label:"Bringing citrate in and using it", items:[N("Citrate (outside)", "#9a6212"), "citrate permease", N("Citrate (inside)", "#9a6212"), "citrate lyase", N("Oxaloacetate + acetate", "#c4532f"), "decarboxylase", N("Pyruvate + CO₂", PYR)]},
-        {label:"Why it turns blue", items:[N("CO₂ + Na⁺", GAS), "", N("Na₂CO₃", NC, "alkaline"), "", N("pH > 7.6 → blue", "#2f5fbf")]}],
-      eq:[["citrate → oxaloacetate + acetate", "citrate lyase"], ["oxaloacetate → pyruvate + CO₂", ""], ["NH₄⁺ (the only N source) used → NH₃", "also raises the pH"]],
+      flow:[{label:"Pull citrate in, use it, raise the pH", items:[N("Citrate (outside)", "#9a6212"), "citrate permease", N("Citrate (inside)", "#9a6212"), "used for energy", N("Alkaline byproducts", NC, "pH rises → blue")]}],
+      eq:[["citrate → pyruvate + CO₂ (used for energy)", "only if the cell has citrate permease"], ["alkaline byproducts raise the pH → bromothymol blue turns blue", "the readout"]],
       ind:"btb",
       used:["citrate (only carbon source)", "ammonium salts (only nitrogen source)"], made:["alkaline products (→ blue)"],
-      why:"Simmons citrate agar has no sugar, only citrate. An organism with <b>citrate permease</b> can pull it in and use it, and the alkaline byproducts push the pH above 7.6, turning bromothymol blue <b>Prussian blue</b>. No permease = no food = no growth, so the slant stays <b>green</b>.",
-      reads:[{k:"slant", fill:"#2f5fbf", tag:"+", lab:"blue"}, {k:"slant", fill:"#4f9a4a", tag:"−", lab:"green"}],
+      why:"Simmons citrate agar has no sugar — only citrate. A cell with <b>citrate permease</b> can pull it in and live on it, and its alkaline byproducts push the pH above 7.6, turning bromothymol blue <b>Prussian blue</b>. No permease = no food = no growth, so the slant stays <b>green</b>.",
+      reads:[{k:"slant", fill:"#2f5fbf", tag:"+", lab:"blue + growth"}, {k:"slant", fill:"#4f9a4a", tag:"−", lab:"green, no growth"}],
       lecture:["krebs"],
       extra:"Citrate is the first molecule of the Krebs cycle. This test asks whether a bacterium can grab it from outside the cell."},
     catalase:{
       asks:"Does this organism make <b>catalase</b> to destroy toxic hydrogen peroxide?",
-      flow:[{label:"Where peroxide comes from", items:[N("O₂", NC), "aerobic metabolism", N("Superoxide O₂⁻", ACID, "toxic"), "superoxide dismutase", N("H₂O₂", "#c4532f", "toxic")]},
-        {label:"What catalase does", items:[N("2 H₂O₂", "#c4532f"), "catalase", N("2 H₂O + O₂", OKC, "O₂ = bubbles")]}],
-      eq:[["2 H₂O₂ → 2 H₂O + O₂", "catalase"], ["2 O₂⁻ + 2 H⁺ → H₂O₂ + O₂", "superoxide dismutase"]],
+      flow:[{label:"Aerobic metabolism makes peroxide — catalase clears it", items:[N("O₂ (aerobic metabolism)", NC), "makes", N("H₂O₂", "#c4532f", "toxic"), "catalase", N("H₂O + O₂", OKC, "O₂ = bubbles")]}],
+      eq:[["2 H₂O₂ → 2 H₂O + O₂", "catalase — the O₂ is what bubbles"]],
       ind:null, noInd:"No pH indicator. The readout is <b>O₂ gas bubbles</b>.",
       used:["hydrogen peroxide (H₂O₂)"], made:["water + oxygen gas (bubbles)"],
       why:"Drip 3% H₂O₂ onto growth on a nutrient agar slant. Catalase splits it instantly, and the O₂ released <b>fizzes as bubbles</b>. No catalase, no bubbles.",
       reads:[{k:"slant", fill:"#ecdcab", bubbles:true, tag:"+", lab:"bubbles"}, {k:"slant", fill:"#ecdcab", tag:"−", lab:"no bubbles"}],
       lecture:["etc", "enzymes"],
-      extra:"Aerobes and facultative anaerobes need catalase because using O₂ creates peroxide. Staphylococcus (+) vs. Streptococcus (−) is the classic split."},
+      extra:"Aerobes and facultative anaerobes need catalase because using O₂ creates peroxide. " + i("Staphylococcus") + " (+) vs. " + i("Streptococcus") + " (−) is the classic split."},
     starch:{
-      asks:"Does this organism <b>secrete amylase</b> to break down starch outside the cell?",
-      flow:[{label:"Digesting starch outside the cell", items:[N("Starch", SUG, "too big to enter"), "amylase (secreted)", N("Maltose + glucose", SUG), "transported in", N("Glycolysis", PYR, "fuel")]},
-        {label:"Reading it with iodine", items:[N("Iodine + intact starch", "#2b2340"), "", N("Blue-black", "#2b2340")]},
-        {label:"", items:[N("Iodine + digested starch", "#efe2bf"), "", N("Clear zone", "#c9b98f", "positive")]}],
-      eq:[["starch + H₂O → maltose + glucose", "amylase (hydrolysis)"], ["I₂ + amylose helix → blue-black complex", "iodine only stains intact starch"]],
-      ind:null, noInd:"No pH indicator. <b>Iodine</b> stains starch blue-black; digested starch can't be stained.",
-      used:["starch"], made:["maltose and glucose (a clear zone)"],
-      why:"After incubation, flood the plate with Gram's iodine. Everywhere starch is still intact turns <b>blue-black</b>. A <b>clear zone</b> around the growth means amylase diffused out and digested the starch there.",
+      asks:"Does this organism <b>secrete amylase</b> to break starch down outside the cell?",
+      flow:[{label:"Starch is too big to eat whole — digest it outside first", items:[N("Starch", SUG, "too big to enter"), "amylase (secreted)", N("Maltose + glucose", SUG), "taken in", N("Glycolysis", PYR, "fuel")]}],
+      eq:[["starch → maltose + glucose", "amylase (secreted, breaks it down)"], ["iodine + intact starch → blue-black", "digested starch can't be stained → clear zone"]],
+      ind:null, noInd:"No pH indicator. <b>Iodine</b> stains intact starch blue-black; wherever starch was digested, there's nothing to stain, so it stays clear.",
+      used:["starch"], made:["maltose and glucose (leaving a clear zone)"],
+      why:"After incubation, flood the plate with Gram's iodine. Wherever starch is still intact, it turns <b>blue-black</b>. A <b>clear zone</b> around the growth means amylase diffused out and digested the starch there.",
       reads:[{k:"plate", agar:"#efe2bf", col:"#f4ecd6", iodine:true, clear:true, tag:"+", lab:"clear zone"}, {k:"plate", agar:"#efe2bf", col:"#f4ecd6", iodine:true, tag:"−", lab:"dark to the edge"}],
       lecture:["enzymes", "glycolysis"],
-      extra:"Amylase is a hydrolase, a catabolic enzyme: it uses water to break one big polymer into small sugars."},
+      extra:"Amylase is a hydrolase, a catabolic enzyme: it uses water to break one big polymer into small sugars the cell can actually absorb."},
     indole:{
-      asks:"Does this organism have <b>tryptophanase</b>, which splits tryptophan into indole?",
-      flow:[{label:"Breaking down tryptophan", items:[N("Tryptophan", "#6b4bb8", "an amino acid"), "tryptophanase", N("Indole", ACID, "detected"), "", N("+ Pyruvate + NH₃", PYR, "fuel for Krebs")]},
-        {label:"Reading it", items:[N("Indole", ACID), "+ Kovac's reagent", N("Red ring", "#c0392b", "positive")]}],
-      eq:[["tryptophan + H₂O → indole + pyruvate + NH₃", "tryptophanase"], ["indole + p-dimethylaminobenzaldehyde → red dye", "Kovac's reagent"]],
+      asks:"Does this organism have <b>tryptophanase</b>, which splits the amino acid tryptophan and releases indole?",
+      flow:[{label:"Break down tryptophan, keep the leftover pyruvate", items:[N("Tryptophan", NEU, "an amino acid"), "tryptophanase", N("Indole + pyruvate + NH₃", ACID, "pyruvate → Krebs fuel")]}],
+      eq:[["tryptophan → indole + pyruvate + NH₃", "tryptophanase"], ["indole + Kovac's reagent → red", "the readout: a red ring on top"]],
       ind:null, noInd:"No pH indicator. Kovac's reagent reacts <b>chemically</b> with indole to make red.",
       used:["tryptophan (in tryptone broth)"], made:["indole (→ red ring)", "pyruvate + ammonia"],
-      why:"Kovac's reagent doesn't mix with water, so it floats as a layer on top. Indole moves up into that layer and reacts, forming a <b>red ring</b>. No indole, and the layer stays <b>yellow</b>. Don't shake it.",
+      why:"Kovac's reagent doesn't mix with water, so it floats as a layer on top. Indole rises into that layer and reacts, forming a <b>red ring</b>. No indole, and the layer stays <b>yellow</b>. Don't shake it.",
       reads:[{k:"tube", fill:"#f3e6bd", ring:"#c0392b", tag:"+", lab:"red ring"}, {k:"tube", fill:"#f3e6bd", ring:"#f2d23c", tag:"−", lab:"yellow ring"}],
+      readNote:"Add about <b>10 drops</b> of Kovac's reagent and read the ring — <b>don't shake</b>.",
       lecture:["krebs", "enzymes"],
       extra:"This is amino acid catabolism: the pyruvate left over can enter the Krebs cycle."},
     h2s:{
       asks:"Does this organism make <b>hydrogen sulfide (H₂S)</b>?",
-      flow:[{label:"Two ways to make H₂S", items:[N("Cysteine", "#6b4bb8", "sulfur amino acid"), "cysteine desulfhydrase", N("H₂S + pyruvate + NH₃", "#5a6376")]},
-        {label:"", items:[N("Thiosulfate S₂O₃²⁻", "#9a6212"), "thiosulfate reductase", N("H₂S", "#5a6376", "anaerobic respiration")]},
-        {label:"Why it turns black", items:[N("H₂S", "#5a6376"), "+ iron (Fe²⁺)", N("FeS", "#231e1b", "black precipitate")]}],
-      eq:[["S₂O₃²⁻ + 2 e⁻ → H₂S + SO₃²⁻", "thiosulfate reductase"], ["H₂S + Fe²⁺ → FeS (black) + 2 H⁺", "the readout"], ["sugar → acid → phenol red turns yellow", "fermentation (background color)"]],
+      flow:[{label:"Make H₂S from sulfur, then trap it with iron", items:[N("Sulfur source", NEU, "cysteine / thiosulfate"), "reduced by the cell", N("H₂S", GAS, "colorless gas"), "+ iron (Fe²⁺)", N("FeS", "#231e1b", "black precipitate")]}],
+      eq:[["sulfur source → H₂S", "the cell reduces cysteine or thiosulfate"], ["H₂S + Fe²⁺ → FeS (black)", "the readout: black iron sulfide"]],
       ind:"phenol",
       used:["sulfur amino acids / thiosulfate", "iron salts"], made:["H₂S → black iron sulfide"],
-      why:"H₂S is colorless, so the agar contains <b>iron salts</b>. H₂S reacts with iron to form <b>black iron sulfide</b>, which spreads from the stab. Phenol red also turns the deep <b>yellow</b> if sugar was fermented, but the black is what you read.",
+      why:"H₂S is a colorless gas, so the agar is packed with <b>iron salts</b>. H₂S reacts with the iron to form <b>black iron sulfide</b>, which spreads out from the stab line. Phenol red also turns the deep <b>yellow</b> if sugar was fermented, but the <b>black</b> is what you're reading.",
       reads:[{k:"deep", fill:"#f2d23c", black:true, tag:"H₂S +", lab:"black"}, {k:"deep", fill:"#f2d23c", tag:"H₂S −", lab:"yellow only"}],
       lecture:["ferment", "krebs"],
-      extra:"Using thiosulfate as an electron acceptor is another kind of anaerobic respiration."}
+      extra:"Reducing thiosulfate for energy is another kind of anaerobic respiration — sulfur standing in for oxygen."}
   };
 
   /* ---------- theory graphics ---------- */
-  const esc2 = s => String(s);
+  const ahead = (x, y, ang) => { const h = 8; return `<path d="M${f1(x)},${f1(y)} L${f1(x - h * Math.cos(ang - .42))},${f1(y - h * Math.sin(ang - .42))} L${f1(x - h * Math.cos(ang + .42))},${f1(y - h * Math.sin(ang + .42))} Z" fill="#8a93a3"/>`; };
+  const tNodeW = n => Math.max(n.t.length, (n.sub || "").length * .82) * 7.6 + 28;
+  const tArrW = l => Math.max(70, (l || "").length * 6.3 + 24);
+  function tPill(cx, cy, w, n){
+    let o = `<rect x="${f1(cx - w / 2)}" y="${f1(cy - 19)}" width="${f1(w)}" height="38" rx="19" fill="${n.c}" opacity=".14"/><rect x="${f1(cx - w / 2)}" y="${f1(cy - 19)}" width="${f1(w)}" height="38" rx="19" fill="none" stroke="${n.c}" stroke-width="2"/>`;
+    o += `<text x="${f1(cx)}" y="${f1(cy + 5)}" font-size="13.5" font-weight="700" fill="${shade(n.c, -.25)}" text-anchor="middle">${n.t}</text>`;
+    if (n.sub) o += `<text x="${f1(cx)}" y="${f1(cy + 34)}" font-size="11" fill="#5a6376" text-anchor="middle">${n.sub}</text>`;
+    return o;
+  }
   function flowSVG(rows){
-    const nodeW = n => Math.max(n.t.length, (n.sub || "").length * .82) * 7.6 + 28, arrW = l => Math.max(70, (l || "").length * 6.3 + 24);
-    const rowH = 92, top = 10;
-    const widths = rows.map(r => r.items.reduce((w, it) => w + (typeof it === "string" ? arrW(it) : nodeW(it)), 0));
-    const W = Math.max(860, ...widths) + 20, H = top + rows.length * rowH;
+    const forkW = f => 70 + Math.max(...f.fork.map(b => tNodeW(b.n)));
+    const itemW = it => typeof it === "string" ? tArrW(it) : it.fork ? forkW(it) : tNodeW(it);
+    const rowH = r => r.items.some(it => it.fork) ? 150 : 92;
+    const widths = rows.map(r => r.items.reduce((w, it) => w + itemW(it), 0));
+    const W = Math.max(840, ...widths) + 20;
+    let ys = [], acc = 0; rows.forEach(r => { ys.push(acc); acc += rowH(r); });
+    const H = acc + 8;
     let s = `<svg viewBox="0 0 ${f1(W)} ${H}" class="tflow" role="img" aria-label="Pathway diagram">`;
     rows.forEach((r, ri) => {
-      const y = top + ri * rowH + 50; let x = 10;
-      if (r.label) s += `<text x="10" y="${y - 34}" font-size="12" font-weight="700" fill="#5a6376">${r.label}</text>`;
+      const y = ys[ri] + rowH(r) / 2 + 8; let x = 10;
+      if (r.label) s += `<text x="10" y="${f1(ys[ri] + 18)}" font-size="12" font-weight="700" fill="#5a6376">${r.label}</text>`;
       r.items.forEach(it => {
         if (typeof it === "string"){
-          const w = arrW(it);
-          s += `<line x1="${f1(x + 6)}" y1="${y}" x2="${f1(x + w - 12)}" y2="${y}" stroke="#8a93a3" stroke-width="2.5"/><path d="M${f1(x + w - 6)},${y} l-10,-6 v12 Z" fill="#8a93a3"/>`;
-          if (it) s += `<text x="${f1(x + w / 2)}" y="${y - 8}" font-size="11" font-weight="700" fill="${ENZC}" text-anchor="middle" font-style="italic">${it}</text>`;
+          const w = tArrW(it);
+          s += `<line x1="${f1(x + 6)}" y1="${y}" x2="${f1(x + w - 12)}" y2="${y}" stroke="#8a93a3" stroke-width="2.5"/>${ahead(x + w - 6, y, 0)}`;
+          if (it) s += `<text x="${f1(x + w / 2)}" y="${f1(y - 8)}" font-size="11" font-weight="700" fill="${ENZC}" text-anchor="middle" font-style="italic">${it}</text>`;
           x += w;
-        } else {
-          const w = nodeW(it);
-          s += `<rect x="${f1(x)}" y="${y - 19}" width="${f1(w)}" height="38" rx="19" fill="${it.c}" opacity=".14"/><rect x="${f1(x)}" y="${y - 19}" width="${f1(w)}" height="38" rx="19" fill="none" stroke="${it.c}" stroke-width="2"/>`;
-          s += `<text x="${f1(x + w / 2)}" y="${y + 5}" font-size="13.5" font-weight="700" fill="${shade(it.c, -.25)}" text-anchor="middle">${it.t}</text>`;
-          if (it.sub) s += `<text x="${f1(x + w / 2)}" y="${y + 34}" font-size="11" fill="#5a6376" text-anchor="middle">${it.sub}</text>`;
-          x += w;
-        }
+        } else if (it.fork){
+          const aLen = 66, dy = 38, nw = Math.max(...it.fork.map(b => tNodeW(b.n)));
+          it.fork.forEach((b, bi) => {
+            const ny = y + (bi ? dy : -dy), nx = x + aLen + nw / 2, ex = x + aLen, ang = Math.atan2(ny - y, aLen);
+            s += `<line x1="${f1(x + 4)}" y1="${f1(y)}" x2="${f1(ex - 4)}" y2="${f1(ny)}" stroke="#8a93a3" stroke-width="2.5"/>${ahead(ex, ny, ang)}`;
+            if (b.a) s += `<text x="${f1(x + aLen / 2)}" y="${f1((y + ny) / 2 + (bi ? 13 : -6))}" font-size="10.5" font-weight="700" fill="${ENZC}" text-anchor="middle" font-style="italic">${b.a}</text>`;
+            s += tPill(nx, ny, nw, b.n);
+          });
+          x += aLen + nw;
+        } else { const w = tNodeW(it); s += tPill(x + w / 2, y, w, it); x += w; }
       });
     });
     return s + `</svg>`;
@@ -1142,14 +1152,42 @@
       if (o.ring) s += `<rect x="${l}" y="${top + 18}" width="${w}" height="9" fill="${o.ring}"/>`;
       if (o.durham){ s += `<path d="M${cx - 6},${b - 6} L${cx - 6},${b - 50} A6,6 0 0 1 ${cx + 6},${b - 50} L${cx + 6},${b - 6}" fill="${o.fill}" stroke="#6d7686" stroke-width="1.6"/>`; if (o.gas) s += `<rect x="${cx - 4.5}" y="${b - 55}" width="9" height="16" rx="4" fill="#fbfcfe"/>`; }
       if (o.black) s += `<path d="M${cx - 1},${top + 34} C${cx - 4},${top + 52} ${l},${b - 34} ${l},${b - 30} L${l},${b} L${r},${b} L${r},${b - 36} C${r - 2},${b - 40} ${cx + 4},${top + 52} ${cx + 1},${top + 34} Z" fill="#231e1b" filter="url(#tsoft2)"/>`;
-      if (o.bubbles) s += [[l + 6, top + 36], [l + 13, top + 40], [l + 20, top + 46], [l + 9, top + 46], [l + 25, top + 52], [l + 16, top + 52]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${2.5 + (i % 3)}" fill="#fff" fill-opacity=".6" stroke="#6fa8cc" stroke-width="1.1"/>`).join("");
+      if (o.bubbles) s += [[l + 6, top + 36], [l + 13, top + 40], [l + 20, top + 46], [l + 9, top + 46], [l + 25, top + 52], [l + 16, top + 52]].map(([x, y], i2) => `<circle cx="${x}" cy="${y}" r="${2.5 + (i2 % 3)}" fill="#fff" fill-opacity=".6" stroke="#6fa8cc" stroke-width="1.1"/>`).join("");
       s += `</g><path d="M${l},${top} L${l},${b - w / 2} A${w / 2},${w / 2} 0 0 0 ${r},${b - w / 2} L${r},${top}" fill="none" stroke="#8b93a3" stroke-width="2.4"/>`;
     }
+    return s + `</svg>`;
+  }
+  /* nitrate: a branching decision tree */
+  function nitrateTreeSVG(){
+    const W = 660, tube = (cx, cy, fill) => { const w = 22, h = 54, l = cx - w / 2, r = cx + w / 2, top = cy - h / 2, b = cy + h / 2;
+      return `<path d="M${l},${top} L${l},${b - 11} A11,11 0 0 0 ${r},${b - 11} L${r},${top} Z" fill="${fill}" stroke="#8b93a3" stroke-width="2"/><rect x="${l - 2}" y="${top - 3}" width="${w + 4}" height="5" rx="2" fill="#cdd3dd"/>`; };
+    const arrow = (x1, y1, x2, y2) => { const ang = Math.atan2(y2 - y1, x2 - x1); return `<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2 - 7 * Math.cos(ang))}" y2="${f1(y2 - 7 * Math.sin(ang))}" stroke="#8a93a3" stroke-width="2.5"/>${ahead(x2, y2, ang)}`; };
+    const tag = (cx, y, txt, col) => `<text x="${f1(cx)}" y="${f1(y)}" font-size="12.5" font-weight="800" fill="${col}" text-anchor="middle">${txt}</text>`;
+    const note = (cx, y, txt) => `<text x="${f1(cx)}" y="${f1(y)}" font-size="11" fill="#5a6376" text-anchor="middle">${txt}</text>`;
+    let s = `<svg viewBox="0 0 ${W} 400" class="tflow" style="min-width:600px" role="img" aria-label="Nitrate decision tree">`;
+    s += tube(300, 44, "#efe3c0") + note(300, 80, "grew in nitrate broth");
+    s += `<text x="300" y="104" font-size="12" font-weight="700" fill="#343b4a" text-anchor="middle">① add Nitrate A + B</text>`;
+    s += arrow(255, 118, 165, 150) + arrow(345, 118, 435, 150);
+    s += `<text x="195" y="138" font-size="11" font-weight="700" fill="#b83a34" text-anchor="middle">RED</text>`;
+    s += `<text x="410" y="138" font-size="11" font-weight="700" fill="#5a6376" text-anchor="middle">no color</text>`;
+    /* left: red = positive */
+    s += tube(150, 182, "#d9443a") + tag(150, 228, "POSITIVE", "#1b7f4e") + note(150, 246, "nitrite is present");
+    /* right: clear → add zinc */
+    s += tube(450, 182, "#f3ecd2");
+    s += `<text x="450" y="230" font-size="12" font-weight="700" fill="#343b4a" text-anchor="middle">② add zinc dust</text>`;
+    s += arrow(410, 244, 345, 282) + arrow(490, 244, 560, 282);
+    s += `<text x="368" y="266" font-size="11" font-weight="700" fill="#b83a34" text-anchor="middle">turns RED</text>`;
+    s += `<text x="548" y="266" font-size="11" font-weight="700" fill="#5a6376" text-anchor="middle">stays clear</text>`;
+    s += tube(330, 314, "#d9443a") + tag(330, 360, "NEGATIVE", "#b83a34") + note(330, 378, "nitrate never reduced");
+    s += tube(560, 314, "#f3ecd2") + tag(560, 360, "POSITIVE", "#1b7f4e") + note(560, 378, "reduced to N₂ gas");
     return s + `</svg>`;
   }
   function theoryHTML(t){
     const th = THEORY[t.key]; if (!th) return "";
     const chips = arr => arr.map(x => `<span class="tchip">${x}</span>`).join("");
+    const readsBlock = th.readsTree
+      ? `<div class="tflowwrap">${nitrateTreeSVG()}</div>`
+      : `<div class="treads">${th.reads.map(r => `<div class="tread">${miniSVG(r)}<b>${r.tag}</b><span>${r.lab}</span></div>`).join("")}</div>`;
     return `<div class="thead"><div><div class="tkick">Understand the test</div><h2 id="tTitle">${t.title}</h2></div><button class="tclose" id="tClose" aria-label="Close">×</button></div>
       <div class="tasks"><span class="tlabel">The question it answers</span><p>${th.asks}</p></div>
       <div class="tsec"><h3>What's happening inside (and outside) the cell</h3><div class="tflowwrap">${flowSVG(th.flow)}</div></div>
@@ -1159,7 +1197,7 @@
         <div class="tsec"><h3>What's measured</h3><div class="tio"><div><span class="tlabel">The bacteria use</span>${chips(th.used)}</div><div class="tarrow">→</div><div><span class="tlabel">You detect</span>${chips(th.made)}</div></div></div>
       </div>
       <div class="tsec"><h3>Why it changes</h3><p>${th.why}</p>${th.extra ? `<p class="textra">💡 ${th.extra}</p>` : ""}</div>
-      <div class="tsec"><h3>How to read it</h3><div class="treads">${th.reads.map(r => `<div class="tread">${miniSVG(r)}<b>${r.tag}</b><span>${r.lab}</span></div>`).join("")}</div></div>
+      <div class="tsec"><h3>How to read it</h3>${readsBlock}${th.readNote ? `<p class="treadnote">📝 ${th.readNote}</p>` : ""}</div>
       <div class="tsec"><h3>Where this connects to lecture</h3><div class="tlinks">${th.lecture.map(k => `<a class="btn secondary sm" href="${LECT[k][1]}">${LECT[k][0]} →</a>`).join("")}</div></div>
       <div class="tfoot"><button class="btn primary" id="tBack">Back to the bench</button></div>`;
   }
