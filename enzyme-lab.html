@@ -17,7 +17,7 @@
   .ecard .em{font-size:1.9rem;line-height:1;display:block;margin-bottom:6px}
   .ecard b{display:block;font-size:1.05rem;line-height:1.2}
   .ecard span{display:block;font-size:.8rem;opacity:.92;margin-top:3px}
-  .ecard i{position:absolute;top:10px;right:10px;font-style:normal;font-size:.7rem;font-weight:700;background:rgba(255,255,255,.25);border-radius:999px;padding:2px 8px}
+  .ecard .etag{position:absolute;top:10px;right:10px;font-style:normal;font-size:.7rem;font-weight:700;background:rgba(255,255,255,.25);border-radius:999px;padding:2px 8px}
   .pickgrid.small .ecard{min-height:0;padding:10px 12px}
   .pickgrid.small .ecard .em{font-size:1.3rem;margin-bottom:3px}
   .pickgrid.small .ecard b{font-size:.92rem}
@@ -74,9 +74,9 @@
 </head>
 <body>
 <div class="wrap">
-  <header><div><a class="backlink" href="index.html">All modules</a><h1>Enzyme and Metabolism Lab<span class="chap">Chapter 5 lab</span></h1></div></header>
+  <header><div><a class="backlink" href="index.html">All modules</a><h1>Enzyme and Metabolism Lab<span class="chap">Metabolism lab</span></h1></div></header>
   <section id="landing">
-    <p class="intro">Pick a real enzyme from Chapter 5 or 8. Then drag molecules into its reaction chamber, push the sliders to extremes, and watch the products, the activation energy, and the turnover number change.</p>
+    <p class="intro">Pick a real enzyme from the metabolism or gene expression modules. Then drag molecules into its reaction chamber, push the sliders to extremes, and watch the products, the activation energy, and the turnover number change.</p>
     <div class="pickgrid" id="pickTop"></div>
   </section>
   <section id="lab" hidden>
@@ -209,7 +209,7 @@
 
   /* ================= Picker + info ================= */
   function renderPicker(){
-    const card = e => `<button class="ecard" style="--c1:${e.c1};--c2:${e.c2}" data-id="${e.id}" ${started && e === st.e ? 'aria-current="true"' : ""}><i>Ch. ${e.ch}</i><span class="em" aria-hidden="true">${e.em}</span><b>${e.name}</b><span>${e.where}</span></button>`;
+    const card = e => `<button class="ecard" style="--c1:${e.c1};--c2:${e.c2}" data-id="${e.id}" ${started && e === st.e ? 'aria-current="true"' : ""}><span class="etag">${e.ch === 8 ? "DNA to Protein" : "Metabolism"}</span><span class="em" aria-hidden="true">${e.em}</span><b>${e.name}</b><span>${e.where}</span></button>`;
     const all = ENZ.map(card).join("");
     $("pickTop").innerHTML = all; $("pickBottom").innerHTML = all;
     document.querySelectorAll(".ecard").forEach(b => b.addEventListener("click", () => { choose(ENZ.find(e => e.id === b.dataset.id)); $("lab").scrollIntoView({behavior:"smooth", block:"start"}); }));
@@ -217,7 +217,7 @@
   function renderInfo(){
     const e = st.e;
     const list = (arr, key, cls) => arr.map((x, i) => key ? `<label><input type="radio" name="${key}" value="${i}" ${e[key === "comp" ? "ci" : "ni"] === i ? "checked" : ""}><span><b style="display:inline;text-transform:none;letter-spacing:0;font-size:.84rem">${x.n}</b>: <small>${x.note}</small></span></label>` : `<div>${x.n}${x.note ? `: <small>${x.note}</small>` : ""}</div>`).join("");
-    $("info").innerHTML = `<div class="card"><h3>${e.name}</h3><div class="where">Chapter ${e.ch} · ${e.where}</div><div class="rx">${e.rx}</div>
+    $("info").innerHTML = `<div class="card"><h3>${e.name}</h3><div class="where">${e.ch === 8 ? "DNA to Protein" : "Metabolism"} · ${e.where}</div><div class="rx">${e.rx}</div>
         <div class="fact"><b>Products:</b> ${e.prods.join(", ")}</div><div class="fact"><b>Works best at:</b> ${e.Topt}°C, pH ${e.pH}, about ${e.salt} mM salt · max turnover ≈ ${e.kcat}/s</div><div class="fact">💡 ${e.fact}</div></div>
       <div class="card parts">
         <div class="part p-sub"><b>Substrates</b>${list(e.subs.map(n => ({n})), null)}</div>

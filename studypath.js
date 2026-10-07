@@ -9,13 +9,13 @@
     {page:"posttranscriptional-control.html", title:"Post-transcriptional control", area:"Post-transcriptional control"},
     {page:"translation.html", title:"Translation", area:"Translation"},
     {page:"mutations.html", title:"Mutations", area:"Mutations"},
-    {page:"enzymes.html", title:"Enzymes and metabolism", area:"Chapter 5: Metabolism"},
-    {page:"energy-chemistry.html", title:"Chemistry of energy production", area:"Chapter 5: Metabolism"},
-    {page:"respiration-overview.html", title:"Cellular respiration: the big picture", area:"Chapter 5: Metabolism"},
-    {page:"glycolysis.html", title:"Glycolysis", area:"Chapter 5: Metabolism"},
-    {page:"krebs.html", title:"The Krebs cycle", area:"Chapter 5: Metabolism"},
-    {page:"etc.html", title:"Electron transport chain and ATP synthase", area:"Chapter 5: Metabolism"},
-    {page:"fermentation.html", title:"Fermentation and anaerobic respiration", area:"Chapter 5: Metabolism"}
+    {page:"enzymes.html", title:"Enzymes and metabolism", area:"Metabolism"},
+    {page:"energy-chemistry.html", title:"Chemistry of energy production", area:"Metabolism"},
+    {page:"respiration-overview.html", title:"Cellular respiration: the big picture", area:"Metabolism"},
+    {page:"glycolysis.html", title:"Glycolysis", area:"Metabolism"},
+    {page:"krebs.html", title:"The Krebs cycle", area:"Metabolism"},
+    {page:"etc.html", title:"Electron transport chain and ATP synthase", area:"Metabolism"},
+    {page:"fermentation.html", title:"Fermentation and anaerobic respiration", area:"Metabolism"}
   ];
   const KEY = "bio112-path", DONE = "bio112-path-done";
   const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
