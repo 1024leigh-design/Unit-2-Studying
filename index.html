@@ -115,7 +115,6 @@
   .mtile .well{flex:none;display:grid;place-items:center;width:96px;height:68px;border-radius:12px;background:color-mix(in srgb,var(--tc) 9%,#fff);margin-left:4px}
   .mtile .well svg{width:84px;height:28px}
   .mtile .mt{flex:1;min-width:0;display:grid;gap:2px}
-  .mtile .kick{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tc)}
   .mtile b{font-size:1.02rem;line-height:1.2}
   .mtile .d{font-size:.84rem;color:var(--muted);line-height:1.3}
   .mtile .go{flex:none;align-self:center;font-weight:800;color:var(--tc);font-size:1.2rem;opacity:.55;transition:opacity .14s,transform .14s}
@@ -579,14 +578,14 @@
     const inner = `${ic}<b>${m.name}${doneMod ? ' <i class="donechk" title="Test mode complete">\u2713</i>' : ""}</b>${opts.noDesc ? "" : `<span>${m.desc}</span>`}${bestTxt}`;
     return m.soon ? `<div class="${cls}">${inner}</div>` : `<a class="${cls}" style="--tc:${m.col || "#5b3fb0"}" href="${m.href}"${/^https?:/.test(m.href) ? ` target="_blank" rel="noopener"` : ""}>${inner}</a>`;
   };
-  /* a directory tile: icon well, kicker, name, description, and a done check or arrow */
+  /* a directory tile: icon well, name, description, and a done check or arrow */
   const doneOf = m => { try { return !!(m.href && localStorage.getItem("bio112-done:" + m.href.split("#")[0]) === "1"); } catch (e) { return false; } };
   const bestOf = m => { if (!m.game) return ""; try { const a = JSON.parse(localStorage.getItem(m.game) || "[]"); if (Array.isArray(a) && a.length){ const b = Math.min(...a.map(r => r.t)); return `<span class="gbest">🏆 Best: ${b >= 60 ? Math.floor(b / 60) + ":" + (b % 60).toFixed(1).padStart(4, "0") : b.toFixed(1) + "s"} · ${a.length} round${a.length === 1 ? "" : "s"}</span>`; } } catch (e) {} return `<span class="gbest none">Not played yet</span>`; };
-  const dirTile = (k, kick) => {
+  const dirTile = k => {
     const m = MOD[k], done = m.wide && doneOf(m), ext = /^https?:/.test(m.href);
     return `<a class="mtile${done ? " done" : ""}" style="--tc:${m.col || "#5b3fb0"}" href="${m.href}"${ext ? ` target="_blank" rel="noopener"` : ""}>
       <span class="well" aria-hidden="true">${ICON[m.icon] || ""}</span>
-      <span class="mt"><span class="kick">${kick}</span><b>${m.name}</b><span class="d">${m.desc}</span>${bestOf(m)}</span>
+      <span class="mt"><b>${m.name}</b><span class="d">${m.desc}</span>${bestOf(m)}</span>
       ${done ? `<span class="ok" title="Test mode complete" aria-label="Done">✓</span>` : `<span class="go" aria-hidden="true">→</span>`}</a>`;
   };
   (function(){
@@ -601,7 +600,7 @@
     const nDone = ks => ks.filter(k => doneOf(MOD[k])).length;
     const tab = (key, num, title, ks, col, sel) => { const d = nDone(ks);
       return `<button class="chaptab" role="tab" data-tab="${key}" aria-selected="${sel}" style="--cc:${col}"><span class="cnum" aria-hidden="true">${num}</span><span class="ctxt"><b>${title}</b><span>${ks.length} modules · ${d} done in Test mode</span><span class="cbar"><i style="width:${Math.round(100 * d / ks.length)}%"></i></span></span></button>`; };
-    const grid = (ks, kick) => `<div class="grid">${ks.map((k, i) => dirTile(k, typeof kick === "function" ? kick(i) : kick)).join("")}</div>`;
+    const grid = ks => `<div class="grid">${ks.map(k => dirTile(k)).join("")}</div>`;
     const head = (t, n) => `<h2>${t}<span class="cnt">${n}</span></h2>`;
     let saved = "ch8"; try { saved = localStorage.getItem("bio112-hub-tab") || "ch8"; } catch (e) {}
     el.innerHTML = `<div class="chaptabs" role="tablist" aria-label="Topics">
@@ -611,21 +610,21 @@
       <div class="modpanel" data-panel="ch8" role="tabpanel" ${saved === "ch5" ? "hidden" : ""}>
         ${head("Modules", CH8.length)}
         <p class="moddesc">Follow a gene's information from DNA all the way to a working protein, in this order.</p>
-        ${grid(CH8, i => "Module " + (i + 1))}
+        ${grid(CH8)}
         ${head("Practice labs", LABS_DIR.length)}
         <p class="moddesc">Hands-on labs to test what you know and explore at your own pace.</p>
-        ${grid(LABS_DIR, "Lab")}
+        ${grid(LABS_DIR)}
         ${head("Games", GAMES.length)}
         <p class="moddesc">Race the clock! Every round is a brand-new sequence, and your best times are saved on this browser.</p>
-        ${grid(GAMES, "Game")}
+        ${grid(GAMES)}
       </div>
       <div class="modpanel" data-panel="ch5" role="tabpanel" ${saved === "ch5" ? "" : "hidden"}>
         ${head("Modules", CH5.length)}
         <p class="moddesc">Glucose to ATP, start to finish, in this order.</p>
-        ${grid(CH5, i => "Module " + (i + 1))}
+        ${grid(CH5)}
         ${head("Practice labs", CH5_LABS.length)}
         <p class="moddesc">Push a real enzyme to its limits, then run the biochemical tests microbiologists use to identify bacteria.</p>
-        ${grid(CH5_LABS, "Lab")}
+        ${grid(CH5_LABS)}
       </div>`;
     el.querySelectorAll(".chaptab").forEach(b => b.addEventListener("click", () => {
       el.querySelectorAll(".chaptab").forEach(x => x.setAttribute("aria-selected", String(x === b)));
