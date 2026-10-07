@@ -196,6 +196,18 @@
       if (hit) placeOne(hit.k, d.k);
     };
     svg.addEventListener("pointerup", end); svg.addEventListener("pointercancel", end);
+    /* The board is redrawn every animation frame, so a native SVG <a> is destroyed
+       mid-click and never navigates. Resolve the link ourselves on a clean tap. */
+    let tapX = 0, tapY = 0;
+    svg.addEventListener("pointerdown", e => { tapX = e.clientX; tapY = e.clientY; }, true);
+    svg.addEventListener("pointerup", e => {
+      if (drag || Math.hypot(e.clientX - tapX, e.clientY - tapY) > 10) return;
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const a = el && el.closest && el.closest("a");
+      if (!a) return;
+      const href = a.getAttribute("href") || a.getAttributeNS("http://www.w3.org/1999/xlink", "href");
+      if (href) window.location.href = href;
+    });
 
     /* ---------- drawing ---------- */
     function actionLayer(t){
