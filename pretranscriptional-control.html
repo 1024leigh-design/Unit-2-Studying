@@ -645,7 +645,7 @@
      text:`Eukaryotic genes also have control sequences that can sit far away from the gene. Activator proteins bind {{enhancers}} to boost transcription. Repressor proteins bind {{silencers}} to turn transcription down. The DNA can bend into a loop so these proteins can reach RNA polymerase.`},
     {part:"Wrap-up", title:"The big picture", v:T("compare"), play:"bigtable",
      text:`Nice work! Prokaryotes control whole groups of genes with operons, so they can switch sets of genes on or off quickly. Eukaryotes control genes one at a time using packaging, transcription factors, enhancers, and silencers. That's slower, but it gives much finer control. Build the summary table below to lock it in!`,
-     after:`You've got the eukaryote basics. Operons are next — use the Prokaryotes tab above, or Next!`}
+     after:`You've got the eukaryote basics. Operons are next: use the Prokaryotes tab above, or Next!`}
   ];
 
   const P2 = "Operon basics", P3 = "The lac operon", P4 = "The trp operon";
@@ -864,7 +864,7 @@
     p.on = on; if (on) p.did.on = true; else if (p.did.on) p.did.off = true;
     const justDone = p.did.on && !p.done; if (justDone) p.done = true;
     applyVisual(PLAYS.repressor.def(p)); renderPlay();
-    if (justDone){ playMsg("That's negative control: the protein's presence on the operator turns the genes OFF. Try dragging it back off, too — or tap Next when you're ready!", "good"); updateButtons(); }
+    if (justDone){ playMsg("That's negative control: the protein's presence on the operator turns the genes OFF. Try dragging it back off, too, or tap Next when you're ready!", "good"); updateButtons(); }
     else playMsg(on ? "Stop sign up! RNA polymerase can bind the promoter, but it can't get past the repressor. No mRNA." : "The operator is clear, so RNA polymerase transcribes the genes again. Vroom!", "good");
   }
   function setActOn(p, on){
@@ -872,7 +872,7 @@
     p.on = on; if (on) p.did.on = true; else if (p.did.on) p.did.off = true;
     const justDone = p.did.on && !p.done; if (justDone) p.done = true;
     applyVisual(PLAYS.activator.def(p)); renderPlay();
-    if (justDone){ playMsg("That's positive control: the activator helps RNA polymerase grab on and hold tight. Try dragging it back off, too — or tap Next when you're ready!", "good"); updateButtons(); }
+    if (justDone){ playMsg("That's positive control: the activator helps RNA polymerase grab on and hold tight. Try dragging it back off, too, or tap Next when you're ready!", "good"); updateButtons(); }
     else playMsg(on ? "Gas in the tank! RNA polymerase grabs the promoter and holds tight. Vroom!" : "No gas now. RNA polymerase can still start sometimes, but it usually stalls.", "good");
   }
   const curStep = () => steps()[idx()];
@@ -2313,7 +2313,7 @@
     let h = `<div class="ps-h"><span class="num">1</span> Transform the bacteria</div>`;
     h += `<div class="ps-outlbl">Outside the cell</div>`;
     h += `<div class="ps-tray" data-drop="tray">${tray.map(tok).join("") || `<span class="muted-s">All plasmids are in the cell.</span>`}</div>`;
-    h += `<div class="ps-outlbl">Inside the cell — <i>E. coli</i> cell${st.strain ? " ✓ transformed" : ": drag plasmids here"}</div>`;
+    h += `<div class="ps-outlbl">Inside the cell: <i>E. coli</i> cell${st.strain ? " ✓ transformed" : ": drag plasmids here"}</div>`;
     h += `<div class="ps-cell${st.strain ? " done" : ""}" data-drop="cell"><svg class="ps-flag" viewBox="0 0 40 20" width="30" height="15" aria-hidden="true"><path d="M40,10 Q28,2 20,10 T2,10" stroke="#6f9a5f" stroke-width="3" fill="none" stroke-linecap="round"/></svg><div class="ps-in">${inCell.map(k => tok(L.plasmids.find(x => x[0] === k))).join("") || `<span class="muted-s">No plasmid (a control)</span>`}</div></div>`;
     h += `<button class="btn primary" id="xfBtn" ${st.strain || dis ? "disabled" : ""}>${st.strain ? "Transformed!" : "⚡ Transform"}</button>`;
     h += `<div class="ps-h"><span class="num">2</span> Add to the plate</div><div class="ps-adds">` + L.adds.map(x => `<button class="chipbtn" data-add="${x[0]}" aria-pressed="${!!st[x[0]]}" ${dis}>${st[x[0]] ? "✓ " : "+ "}${x[1]}</button>`).join("") + `</div>`;

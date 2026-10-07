@@ -30,7 +30,7 @@
       + lbl(x, y + 30, "cofactor", "#7a5fc0", 12)); };
   const tok = (x, y1, y2) => [[x, y1], [x, y2]];
 
-  /* tokens the students drag — shared by both views */
+  /* tokens the students drag, shared by both views */
   function token(kind, x, y){
     if (kind === "ATP") return A.atp(x - 12, y + 6, 3, {sc:.75});
     if (kind === "ADP") return A.atp(x - 2, y + 6, 2, {sc:.75});
