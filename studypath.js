@@ -13,13 +13,20 @@
     {page:"energy-chemistry.html", title:"Chemistry of energy production", area:"Chapter 5: Metabolism"},
     {page:"respiration-overview.html", title:"Cellular respiration: the big picture", area:"Chapter 5: Metabolism"},
     {page:"glycolysis.html", title:"Glycolysis", area:"Chapter 5: Metabolism"},
-    {page:"fermentation.html", title:"Fermentation and anaerobic respiration", area:"Chapter 5: Metabolism"},
     {page:"krebs.html", title:"The Krebs cycle", area:"Chapter 5: Metabolism"},
-    {page:"etc.html", title:"Electron transport chain and ATP synthase", area:"Chapter 5: Metabolism"}
+    {page:"etc.html", title:"Electron transport chain and ATP synthase", area:"Chapter 5: Metabolism"},
+    {page:"fermentation.html", title:"Fermentation and anaerobic respiration", area:"Chapter 5: Metabolism"}
   ];
   const KEY = "bio112-path", DONE = "bio112-path-done";
   const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const set = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
+  /* fermentation moved from stop 12 to stop 14 (after the ETC): carry saved progress over once */
+  if (get("bio112-path-order") !== "2"){
+    const mv = i => i === 11 ? 13 : i === 12 ? 11 : i === 13 ? 12 : i;
+    try { const d = JSON.parse(get(DONE) || "[]"); if (d.length) set(DONE, JSON.stringify(d.map(mv))); } catch (e) {}
+    if (get(KEY) !== null) set(KEY, String(mv(+get(KEY))));
+    set("bio112-path-order", "2");
+  }
   const done = () => { try { return JSON.parse(get(DONE) || "[]"); } catch (e) { return []; } };
   const markDone = i => { const d = done(); if (!d.includes(i)){ d.push(i); set(DONE, JSON.stringify(d)); } };
   const PAGE = location.pathname.split("/").pop() || "index.html";
@@ -47,6 +54,52 @@
     return cands[0];
   }
   if (PAGE === "index.html") return;
+
+  /* ---------- first visit to a module: point out the Learn/Test switch and the version switch ---------- */
+  function tips(){
+    const TK = "bio112-tips:" + PAGE;
+    if (get(TK)) return;
+    const mode = document.querySelector('.seg[aria-label="Mode"]');
+    if (!mode || !mode.offsetParent) return;
+    const ver = document.querySelector(".pwvariant");
+    const st = document.createElement("style");
+    st.textContent = `.sptipring{position:absolute;z-index:45;border:3px solid #f2b134;border-radius:999px;pointer-events:none;box-shadow:0 0 0 5px rgba(242,177,52,.25);animation:sptip 1.6s ease-in-out infinite}
+    .sptip{position:absolute;z-index:46;width:min(300px,calc(100vw - 24px));background:#fff;border:2px solid #f2b134;border-radius:16px;padding:12px 14px;box-shadow:0 12px 30px rgba(29,36,51,.22);font:400 .95rem/1.45 var(--font,system-ui);color:#1d2433}
+    .sptip::before{content:"";position:absolute;top:-10px;left:var(--ax,40px);width:16px;height:16px;background:#fff;border-left:2px solid #f2b134;border-top:2px solid #f2b134;transform:rotate(45deg)}
+    .sptip b{color:#3f4cc0}.sptip .sph{display:block;font-weight:700;margin-bottom:4px;color:#8a5a00}
+    .sptip button{margin-top:8px;font:700 .9rem var(--font,system-ui);border-radius:999px;padding:7px 16px;border:0;background:#3f4cc0;color:#fff;cursor:pointer}
+    @keyframes sptip{0%,100%{box-shadow:0 0 0 3px rgba(242,177,52,.35)}50%{box-shadow:0 0 0 9px rgba(242,177,52,0)}}
+    @media (prefers-reduced-motion:reduce){.sptipring{animation:none}}`;
+    document.head.appendChild(st);
+    const els = [], back = window.scrollY;
+    /* the switches live in the page header: bring it into view, and return to the lesson afterwards */
+    if (mode.getBoundingClientRect().top < 0) window.scrollTo({top:0, behavior:"auto"});
+    const close = () => { if (!els.length) return; els.forEach(e => e.remove()); els.length = 0; set(TK, "1"); if (back > 0) window.scrollTo({top:back, behavior:"smooth"}); document.removeEventListener("pointerdown", outside, true); window.removeEventListener("resize", close); };
+    const outside = e => { if (!els.some(x => x.contains(e.target))) close(); };
+    const vlabels = ver ? [...ver.querySelectorAll("button")].map(b => b.textContent.trim()) : [];
+    const items = [];
+    if (ver) items.push([ver, `<span class="sph">🔍 Pick your version</span>${vlabels.map(l => `<b>${l}</b>`).join(" · ")}<br>New here? Start with <b>${vlabels[0]}</b>. When it clicks, level up to <b>${vlabels[1]}</b>${vlabels[2] ? ` or try <b>${vlabels[2]}</b>` : ""}.`]);
+    items.push([mode, `<span class="sph">📖 Learn or ✏️ Test?</span><b>Learn</b> shows every key word. <b>Test</b> hides them so you can fill them in and check yourself. Switch anytime, you've got this!`]);
+    let lastBottom = 0;
+    items.forEach(([el, html], k) => {
+      const r = el.getBoundingClientRect(), sx = window.scrollX, sy = window.scrollY;
+      const ring = document.createElement("div"); ring.className = "sptipring";
+      ring.style.cssText = `left:${r.left + sx - 6}px;top:${r.top + sy - 6}px;width:${r.width + 12}px;height:${r.height + 12}px`;
+      const tip = document.createElement("div"); tip.className = "sptip"; tip.setAttribute("role", "note");
+      tip.innerHTML = html + (k === items.length - 1 ? `<br><button type="button">Got it!</button>` : "");
+      document.body.appendChild(ring); document.body.appendChild(tip); els.push(ring, tip);
+      const w = tip.offsetWidth, vw = document.documentElement.clientWidth;
+      const left = Math.max(12, Math.min(r.left + r.width / 2 - w / 2, vw - w - 12));
+      const top = Math.max(r.bottom + 16, lastBottom + 18);
+      tip.style.left = left + sx + "px"; tip.style.top = top + sy + "px";
+      tip.style.setProperty("--ax", Math.max(14, Math.min(w - 30, r.left + r.width / 2 - left - 8)) + "px");
+      if (top > r.bottom + 20) tip.style.setProperty("--ax", "-999px");
+      lastBottom = top + tip.offsetHeight;
+      const b = tip.querySelector("button"); if (b) b.addEventListener("click", close);
+    });
+    setTimeout(() => { document.addEventListener("pointerdown", outside, true); window.addEventListener("resize", close); }, 50);
+  }
+  window.addEventListener("load", () => setTimeout(tips, 350));
 
   if (get(KEY) === null){
     const nudgeCss = document.createElement("style");
