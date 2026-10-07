@@ -907,8 +907,8 @@
   }
 
   document.getElementById("app").innerHTML = `<div class="wrap">
-    <header><div><a class="backlink" href="index.html">All modules</a><h1>Biochemical ID Tests<span class="chap">Chapter 5 lab</span></h1></div></header>
-    <p class="labq" style="max-width:70ch">Real microbiology labs identify unknown bacteria with short biochemical tests. Grab a loop or needle, pick up a pure culture, inoculate the medium, incubate, add any reagents, and read the result. Every test reinforces something from Chapter 5: fermentation, the electron transport chain, and how cells break down fuel.</p>
+    <header><div><a class="backlink" href="index.html">All modules</a><h1>Biochemical ID Tests<span class="chap">Metabolism lab</span></h1></div></header>
+    <p class="labq" style="max-width:70ch">Real microbiology labs identify unknown bacteria with short biochemical tests. Grab a loop or needle, pick up a pure culture, inoculate the medium, incubate, add any reagents, and read the result. Every test reinforces something from the metabolism modules: fermentation, the electron transport chain, and how cells break down fuel.</p>
     <div class="labtabs" id="labTabs"></div>
     <div class="labwrap" id="labArea"></div>
   </div>`;
@@ -1008,7 +1008,7 @@
       why:"<b>Selective:</b> bile salts and crystal violet stop gram-positive bacteria, so only gram-negatives grow. <b>Differential:</b> a lactose fermenter makes acid, and neutral red turns those colonies <b>bright pink</b>. A non-fermenter makes no acid from lactose, so its colonies stay <b>pale</b>: it grew (gram-negative), it just can't ferment lactose.",
       reads:[{k:"plate", agar:"#e39ab4", col:"#ff2e97", halo:"#ff6fb8", tag:"Lac +", lab:"pink"}, {k:"plate", agar:"#e39ab4", col:"#f6df6a", halo:"#f3e39a", tag:"Lac −", lab:"pale"}, {k:"plate", agar:"#e39ab4", tag:"No growth", lab:"gram +"}],
       lecture:["lac", "ferment"],
-      extra:"β-galactosidase is the lacZ gene product from the lac operon in Chapter 8: to ferment lactose, a cell first has to switch that operon on."},
+      extra:"β-galactosidase is the lacZ gene product from the lac operon (gene regulation): to ferment lactose, a cell first has to switch that operon on."},
     emb:{
       asks:"Is this a <b>gram-negative coliform</b>, and how <b>strongly</b> does it ferment lactose?",
       flow:[{label:"More acid → darker colonies", items:[N("Lactose", SUG), "β-galactosidase", N("Glucose + galactose", SUG), "fast fermentation", N("Lots of acid", ACID, "dyes precipitate → green sheen")]}],
@@ -1069,7 +1069,7 @@
       reads:[{k:"tube", fill:"#f3e6bd", ring:"#c0392b", tag:"+", lab:"red ring"}, {k:"tube", fill:"#f3e6bd", ring:"#f2d23c", tag:"−", lab:"yellow ring"}],
       readNote:"Add about <b>10 drops</b> of Kovac's reagent and read the ring, <b>don't shake</b>.",
       lecture:["krebs", "enzymes", "trp"],
-      extra:"This is amino acid catabolism, the mirror image of the <i>trp</i> operon from Chapter 8. There, the cell <b>builds</b> tryptophan and switches the operon off (represses it) once tryptophan is plentiful. Here it does the opposite: when tryptophan is abundant, tryptophanase <b>breaks it down</b>, and the leftover pyruvate can feed the Krebs cycle."},
+      extra:"This is amino acid catabolism, the mirror image of the <i>trp</i> operon (gene regulation). There, the cell <b>builds</b> tryptophan and switches the operon off (represses it) once tryptophan is plentiful. Here it does the opposite: when tryptophan is abundant, tryptophanase <b>breaks it down</b>, and the leftover pyruvate can feed the Krebs cycle."},
     h2s:{
       asks:"Does this organism make <b>hydrogen sulfide (H₂S)</b>?",
       flow:[{label:"Make H₂S from sulfur, then trap it with iron", items:[N("Sulfur source", NEU, "cysteine / thiosulfate"), "reduced by the cell", N("H₂S", GAS, "colorless gas"), "+ iron (Fe²⁺)", N("FeS", "#231e1b", "black precipitate")]}],
@@ -1210,7 +1210,7 @@
       </div>
       <div class="tsec"><h3>Why it changes</h3><p>${th.why}</p>${th.extra ? `<p class="textra">💡 ${th.extra}</p>` : ""}</div>
       <div class="tsec"><h3>How to read it</h3>${readsBlock}${th.readNote ? `<p class="treadnote">📝 ${th.readNote}</p>` : ""}</div>
-      <div class="tsec"><h3>Where this connects to lecture</h3><div class="tlinks">${th.lecture.map(k => `<a class="btn secondary sm" href="${LECT[k][1]}">${LECT[k][0]} →</a>`).join("")}</div></div>
+      <div class="tsec"><h3>Where this connects to the modules</h3><div class="tlinks">${th.lecture.map(k => `<a class="btn secondary sm" href="${LECT[k][1]}">${LECT[k][0]} →</a>`).join("")}</div></div>
       <div class="tfoot"><button class="btn primary" id="tBack">Back to the bench</button></div>`;
   }
   function openTheory(){

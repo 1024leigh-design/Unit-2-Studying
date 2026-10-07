@@ -14,7 +14,7 @@
     const PAGE = location.pathname.split("/").pop() || cfg.page;
     document.title = cfg.title;
     (document.getElementById("app") || document.body).innerHTML = `<div class="wrap pwwrap">
-      <header><div><a class="backlink" href="index.html">All modules</a><h1>${cfg.title}<span class="chap">Chapter 5</span></h1></div>
+      <header><div><a class="backlink" href="index.html">All modules</a><h1>${cfg.title}<span class="chap">Metabolism</span></h1></div>
         <div class="controls">${cfg.variants ? `<div class="seg pwvariant" role="group" aria-label="Detail level">${cfg.variants.map(v => `<button data-variant="${v.key}" aria-pressed="${v.key === cfg.variant}">${v.label}</button>`).join("")}</div>` : ""}<div class="seg" role="group" aria-label="Mode"><button id="learnBtn" aria-pressed="${cfg.mode === "test" ? "false" : "true"}">Learn</button><button id="testBtn" aria-pressed="${cfg.mode === "test" ? "true" : "false"}">Test</button></div><button class="ghost" id="restartBtn">Restart</button></div></header>
       ${cfg.intro ? `<p class="pwintro">${cfg.intro}</p>` : ""}
       <div class="pwbar" id="pwBar"><div class="pwdo" id="pwDo"></div><div class="pwtally" id="pwTally"></div></div>

@@ -1,4 +1,4 @@
-/* Shared engine for the Chapter 5 metabolism modules.
+/* Shared engine for the metabolism modules.
    A page calls Metab.start({title, page, BL, MORE, STEPS, next}) and the engine builds the
    header, animated stage, step bubble (Learn/Test blanks), hands-on activities, and navigation. */
 (function(){
@@ -139,7 +139,7 @@
     const PAGE = location.pathname.split("/").pop() || cfg.page;
     document.title = cfg.title;
     (document.getElementById("app") || document.body).innerHTML = `<div class="wrap">
-      <header><div><a class="backlink" href="index.html">All modules</a><h1>${cfg.title}<span class="chap">Chapter 5</span></h1></div>
+      <header><div><a class="backlink" href="index.html">All modules</a><h1>${cfg.title}<span class="chap">Metabolism</span></h1></div>
         <div class="controls"><div class="seg" role="group" aria-label="Mode"><button id="learnBtn" aria-pressed="true">Learn</button><button id="testBtn" aria-pressed="false">Test</button></div><button class="ghost" id="restartBtn">Restart</button></div></header>
       <p class="modehint" id="modeHint"></p>
       <div class="stage"><svg id="scene" viewBox="0 0 1000 470" role="img" aria-label="${cfg.title} diagram"></svg><div class="stagelay" id="stageLay"></div></div>

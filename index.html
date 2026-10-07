@@ -149,7 +149,7 @@
     <div class="pc-text">
       <div class="pc-tag">New? Start here</div>
       <h2>The Study Path</h2>
-      <p>The Study Path takes you through every module in Chapters 8 and 5, in order. Just keep tapping Next.</p>
+      <p>The Study Path takes you through every module, from DNA to protein and on through metabolism, in order. Just keep tapping Next.</p>
       <div class="pc-stops" id="pcStops"></div>
     </div>
     <div class="pc-actions" id="pcActions"></div>
@@ -223,7 +223,7 @@
     ferment:{name:"Fermentation and anaerobic respiration", href:"fermentation.html", desc:"Life without oxygen: NAD\u207A, nitrate, sulfate", icon:"ferm", col:"#1b7f4e", wide:true}
   };
 
-  /* ================= Panel content (from the Chapter 8 slides) ================= */
+  /* ================= Panel content: gene expression facts ================= */
   const PARTS = {
     dna:{title:"The nucleoid (chromosome)", kick:"DNA", col:TEAL, side:"right", top:"12%", hero:"dna",
       facts:[
@@ -600,13 +600,13 @@
     if (!el) return;
     const nDone = ks => ks.filter(k => doneOf(MOD[k])).length;
     const tab = (key, num, title, ks, col, sel) => { const d = nDone(ks);
-      return `<button class="chaptab" role="tab" data-tab="${key}" aria-selected="${sel}" style="--cc:${col}"><span class="cnum"><small>Chapter</small>${num}</span><span class="ctxt"><b>${title}</b><span>${ks.length} modules · ${d} done in Test mode</span><span class="cbar"><i style="width:${Math.round(100 * d / ks.length)}%"></i></span></span></button>`; };
+      return `<button class="chaptab" role="tab" data-tab="${key}" aria-selected="${sel}" style="--cc:${col}"><span class="cnum" aria-hidden="true">${num}</span><span class="ctxt"><b>${title}</b><span>${ks.length} modules · ${d} done in Test mode</span><span class="cbar"><i style="width:${Math.round(100 * d / ks.length)}%"></i></span></span></button>`; };
     const grid = (ks, kick) => `<div class="grid">${ks.map((k, i) => dirTile(k, typeof kick === "function" ? kick(i) : kick)).join("")}</div>`;
     const head = (t, n) => `<h2>${t}<span class="cnt">${n}</span></h2>`;
     let saved = "ch8"; try { saved = localStorage.getItem("bio112-hub-tab") || "ch8"; } catch (e) {}
-    el.innerHTML = `<div class="chaptabs" role="tablist" aria-label="Chapters">
-        ${tab("ch8", 8, "From DNA to Protein", CH8, "#3f4cc0", saved !== "ch5")}
-        ${tab("ch5", 5, "Microbial Metabolism", CH5, "#0f766e", saved === "ch5")}
+    el.innerHTML = `<div class="chaptabs" role="tablist" aria-label="Topics">
+        ${tab("ch8", "🧬", "From DNA to Protein", CH8, "#3f4cc0", saved !== "ch5")}
+        ${tab("ch5", "⚡", "Microbial Metabolism", CH5, "#0f766e", saved === "ch5")}
       </div>
       <div class="modpanel" data-panel="ch8" role="tabpanel" ${saved === "ch5" ? "hidden" : ""}>
         ${head("Modules", CH8.length)}
@@ -702,9 +702,9 @@
   const SP = window.StudyPath; if (!SP) return;
   const d = SP.done(), first = SP.STOPS.findIndex((x, i) => !d.includes(i)), cur = SP.active() ? SP.current() : (d.length ? Math.max(first, 0) : -1);
   const idxed = SP.STOPS.map((s, i) => ({s, i}));
-  const ch8 = idxed.filter(x => !x.s.area.startsWith("Chapter 5")), ch5 = idxed.filter(x => x.s.area.startsWith("Chapter 5"));
+  const ch8 = idxed.filter(x => x.s.area !== "Metabolism"), ch5 = idxed.filter(x => x.s.area === "Metabolism");
   const bucket = (arr, label) => { const n = arr.filter(x => d.includes(x.i)).length; return `<span class="bucket${n === arr.length ? " done" : ""}"><b>${label}</b>: ${n} of ${arr.length}</span>`; };
-  document.getElementById("pcStops").innerHTML = bucket(ch8, "Chapter 8") + (ch5.length ? bucket(ch5, "Chapter 5") : "");
+  document.getElementById("pcStops").innerHTML = bucket(ch8, "DNA to Protein") + (ch5.length ? bucket(ch5, "Metabolism") : "");
   const A = document.getElementById("pcActions");
   A.innerHTML = cur >= 0 || d.length
     ? `<button class="pc-go" id="pcGo">Continue: stop ${Math.max(cur, 0) + 1} \u2192</button><button class="pc-alt" id="pcRestart">Start the path over</button>`
