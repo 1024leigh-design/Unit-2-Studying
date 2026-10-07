@@ -125,6 +125,13 @@
           <button class="btn primary sm" id="pwGot" ${needs ? "hidden" : ""}>${live ? (i >= STEPS.length - 1 ? "Finish ✓" : "Got it ✓") : "Close"}</button>
           ${st.pop.more && MORE[st.pop.more] ? `<button class="more-btn" data-more="${st.pop.more}">Learn more</button>` : ""}</div>`;
       layer.appendChild(c);
+      /* keep the whole card inside the board: near the top or bottom of a tall board the card
+         would otherwise hang off the edge (it is centered on its y with translateY(-50%)) */
+      if (!p.narrow){
+        const bw = $("pwBoard").clientWidth, bh = $("pwBoard").clientHeight, h = c.offsetHeight, w = c.offsetWidth;
+        c.style.top = clamp(p.top, h / 2 + 8, Math.max(h / 2 + 8, bh - h / 2 - 8)) + "px";
+        c.style.left = Math.max(8, Math.min(p.left, bw - w - 8)) + "px";
+      }
       renderMarkers();
       const got = c.querySelector("#pwGot"), fb = c.querySelector("#pwFb");
       got.addEventListener("click", closeCard);

@@ -19,11 +19,12 @@
   const A = Metab.A, {f1, lerp, clamp, smooth, seg, C} = A;
   const ease = smooth, GREEN = "#1b7f4e", RED = "#b83a34", BLUE = "#3f4cc0", AMBER = "#a8760f", WATER = "#2f7fbf", VIOLET = "#8e5bd0";
   const lbl = (x, y, s, fill, size, anchor) => `<text x="${f1(x)}" y="${f1(y)}" font-size="${size || 13}" font-weight="700" fill="${fill || "#5a6376"}" text-anchor="${anchor || "middle"}">${s}</text>`;
-  const hion = (x, y, r) => { r = r || 13; return `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="#dbe7fb" stroke="${C.H}" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4.5)}" font-size="${r > 13 ? 13 : 12}" font-weight="700" fill="#1f4a9c" text-anchor="middle">H⁺</text>`; };
+  /* shared molecule art (metab.js), so H⁺, O₂ and nitrate look the same on every page */
+  const hion = (x, y, r) => A.hion(x, y, r || 13);
   const epair = (x, y) => A.eDot(x - 10, y, 9) + A.eDot(x + 10, y, 9);
-  const o2tok = (x, y) => `<circle cx="${f1(x - 10)}" cy="${f1(y)}" r="13" fill="${C.O}" stroke="#fff" stroke-width="2"/><circle cx="${f1(x + 10)}" cy="${f1(y)}" r="13" fill="${C.O}" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4.5)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">O₂</text>`;
-  const no3tok = (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="18" fill="${VIOLET}" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">NO₃⁻</text>`;
-  const no2tok = (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="15" fill="#c7a9ec" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="10" font-weight="700" fill="#3b1f66" text-anchor="middle">NO₂⁻</text>`;
+  const o2tok = (x, y) => A.o2(x, y, 13);
+  const no3tok = (x, y) => A.no3(x, y);
+  const no2tok = (x, y) => A.no2(x, y);
   const h2otok = (x, y) => A.h2o(x, y - 2);
 
   function token(kind, x, y){
@@ -169,7 +170,7 @@
     o += cring(ang);
     /* ADP + Pi in, ATP out */
     const adpX = lerp(76, 188, ease(seg(fr, 0, .4))), atpX = lerp(190, 76, ease(seg(fr, .66, 1)));
-    if (fr < .66) o += A.pill(adpX, HEAD.y + 12, "ADP + Pᵢ", "#0f766e", 1, 13);
+    if (fr < .66) o += `<rect x="${f1(adpX - 46)}" y="${HEAD.y - 1}" width="92" height="26" rx="13" fill="#fff" stroke="${VIOLET}" stroke-width="2.5"/>` + lbl(adpX, HEAD.y + 17, "ADP + Pᵢ", "#5b3fb0", 13);
     if (fr > .5 && ang > 60) o += A.pill(atpX, HEAD.y + 12, "ATP", VIOLET, ease(seg(fr, .5, .66)), 14);
     /* labels */
     o += A.pill(128, 955, "c-ring: the rotor", "#3f4cc0", 1, 13) + `<path d="M${RX - RR - 6},955 L190,955" stroke="#3f4cc0" stroke-width="2" stroke-dasharray="4 3"/>`;
