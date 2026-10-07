@@ -930,12 +930,12 @@
       marks:[[6.0, "6.0"], [7.6, "7.6"]], zones:[[5, 6.0, "yellow: acid"], [6.0, 7.6, "green: neutral"], [7.6, 9, "blue: alkaline"]]},
     neutral:{name:"Neutral red", axis:"pH", range:[5, 9], stops:[[5, "#ff2e97"], [6.8, "#f0608a"], [8.0, "#f0c45a"], [9, "#f6df6a"]],
       marks:[[6.8, "6.8"], [8.0, "8.0"]], zones:[[5, 6.8, "pink-red: acid"], [6.8, 8.0, ""], [8.0, 9, "pale: no acid"]]},
-    emb:{name:"Eosin Y + methylene blue", axis:"how much acid →", range:[0, 3], stops:[[0, "#efe7d6"], [1, "#c98aa0"], [2, "#4b2a4a"], [3, "#1f2f28"]],
-      marks:[], zones:[[0, 1, "colorless: none"], [1, 2, "pink: some"], [2, 3, "dark + green sheen: lots"]]}
+    emb:{name:"Eosin Y + methylene blue", axis:"how much acid →", range:[0, 3], stops:[[0, "#efe7d6"], [0.9, "#cf8fa6"], [1.8, "#5a2d52"], [2.35, "#15231b"], [3, "#2fe08a"]],
+      marks:[], zones:[[0, 1, "colorless: none"], [1, 2, "pink: some"], [2, 3, "dark → green sheen: lots"]]}
   };
   const LECT = {glycolysis:["Glycolysis", "glycolysis.html"], ferment:["Fermentation & anaerobic respiration", "fermentation.html"], krebs:["Krebs cycle", "krebs.html"],
     etc:["Electron transport chain", "etc.html"], enzymes:["Enzymes", "enzymes.html"], energy:["Chemistry of energy production", "energy-chemistry.html"],
-    lac:["The lac operon (Ch. 8)", "pretranscriptional-control.html#ind"], overview:["Respiration: the big picture", "respiration-overview.html"]};
+    lac:["The lac operon (Ch. 8)", "pretranscriptional-control.html#ind"], trp:["The trp operon (Ch. 8)", "pretranscriptional-control.html#rep"], overview:["Respiration: the big picture", "respiration-overview.html"]};
   const N = (t, c, sub) => ({t, c, sub});
   const FORK = (a, b) => ({fork:[a, b]});
   const SUG = "#c98a0e", PYR = "#c4532f", ACID = "#d9443a", GAS = "#5a6376", ENZC = "#5865d6", OKC = "#1b7f4e", NC = "#3f4cc0", NEU = "#6b4bb8";
@@ -1017,7 +1017,8 @@
       used:["lactose"], made:["acid (how much sets the color)"],
       why:"The dyes do double duty: they <b>inhibit gram-positives</b>, and they <b>change color with acid</b>. A little acid gives pink colonies; a lot makes the dyes precipitate as dark colonies with a <b>green metallic sheen</b> (classic " + i("E. coli") + "). A non-fermenter stays colorless.",
       reads:[{k:"plate", agar:"#6c4a7e", col:"#1f2f28", sheen:true, tag:"Strong", lab:"green sheen"}, {k:"plate", agar:"#6c4a7e", col:"#c98aa0", tag:"Weak", lab:"pink"}, {k:"plate", agar:"#6c4a7e", col:"#efe7d6", tag:"Lac −", lab:"colorless"}],
-      lecture:["lac", "ferment"]},
+      lecture:["lac", "ferment"],
+      extra:"EMB is less stringent than a Gram stain or MacConkey: the dyes slow gram-positives but don't fully stop them, so a tough gram-positive can sometimes still grow. Use it to sort coliforms by how hard they ferment lactose, not as proof of Gram status."},
     msa:{
       asks:"Is this organism <b>salt-tolerant</b> (it grows at all), and does it <b>ferment mannitol</b> (turns yellow)?",
       flow:[{label:"Mannitol fermenters make acid → yellow", items:[N("Mannitol", SUG, "a sugar alcohol"), "enters glycolysis", N("Pyruvate", PYR), "fermentation", N("Acid", ACID, "pH drops → yellow")]}],
@@ -1026,7 +1027,8 @@
       used:["mannitol"], made:["acid (→ yellow halo)"],
       why:"<b>Selective:</b> 7.5% NaCl stops most bacteria except salt-tolerant ones like " + i("Staphylococcus") + ". <b>Differential:</b> fermenting mannitol makes acid, turning phenol red <b>yellow</b> around the colonies. " + i("S. aureus") + " goes yellow; " + i("S. epidermidis") + " grows but leaves the agar red.",
       reads:[{k:"plate", agar:"#ef9a8c", col:"#f2d23c", halo:"#f2d23c", tag:"Man +", lab:"yellow"}, {k:"plate", agar:"#ef9a8c", col:"#f6e8e0", tag:"Man −", lab:"red agar"}, {k:"plate", agar:"#ef9a8c", tag:"No growth", lab:"salt-sensitive"}],
-      lecture:["glycolysis", "ferment"]},
+      lecture:["glycolysis", "ferment"],
+      extra:"MSA uses the <b>same phenol red indicator as the Durham sugar tubes</b> — think of it as a mannitol fermentation tube flattened into a plate: acid from fermenting mannitol turns phenol red yellow. The 7.5% salt selects for salt-loving and salt-tolerant bacteria (halophiles / halotolerant organisms) like " + i("Staphylococcus") + "."},
     citrate:{
       asks:"Can this organism use <b>citrate as its only carbon source</b>?",
       flow:[{label:"Pull citrate in, use it, raise the pH", items:[N("Citrate (outside)", "#9a6212"), "citrate permease", N("Citrate (inside)", "#9a6212"), "used for energy", N("Alkaline byproducts", NC, "pH rises → blue")]}],
@@ -1036,7 +1038,7 @@
       why:"Simmons citrate agar has no sugar — only citrate. A cell with <b>citrate permease</b> can pull it in and live on it, and its alkaline byproducts push the pH above 7.6, turning bromothymol blue <b>Prussian blue</b>. No permease = no food = no growth, so the slant stays <b>green</b>.",
       reads:[{k:"slant", fill:"#2f5fbf", tag:"+", lab:"blue + growth"}, {k:"slant", fill:"#4f9a4a", tag:"−", lab:"green, no growth"}],
       lecture:["krebs"],
-      extra:"Citrate is the first molecule of the Krebs cycle. This test asks whether a bacterium can grab it from outside the cell."},
+      extra:"Citrate is the first molecule of the Krebs cycle — this test asks whether a bacterium can grab it from <i>outside</i> the cell. The pH climbs for two reasons: using citrate for energy releases CO₂ that becomes alkaline carbonate, and the cell strips nitrogen from the ammonium salts (its only N source), releasing ammonia. Both push bromothymol blue past 7.6 to blue."},
     catalase:{
       asks:"Does this organism make <b>catalase</b> to destroy toxic hydrogen peroxide?",
       flow:[{label:"Aerobic metabolism makes peroxide — catalase clears it", items:[N("O₂ (aerobic metabolism)", NC), "makes", N("H₂O₂", "#c4532f", "toxic"), "catalase", N("H₂O + O₂", OKC, "O₂ = bubbles")]}],
@@ -1054,7 +1056,7 @@
       ind:null, noInd:"No pH indicator. <b>Iodine</b> stains intact starch blue-black; wherever starch was digested, there's nothing to stain, so it stays clear.",
       used:["starch"], made:["maltose and glucose (leaving a clear zone)"],
       why:"After incubation, flood the plate with Gram's iodine. Wherever starch is still intact, it turns <b>blue-black</b>. A <b>clear zone</b> around the growth means amylase diffused out and digested the starch there.",
-      reads:[{k:"plate", agar:"#efe2bf", col:"#f4ecd6", iodine:true, clear:true, tag:"+", lab:"clear zone"}, {k:"plate", agar:"#efe2bf", col:"#f4ecd6", iodine:true, tag:"−", lab:"dark to the edge"}],
+      reads:[{k:"plate", agar:"#efe2bf", col:"#f4ecd6", iodine:true, clear:true, single:true, tag:"+", lab:"clear zone"}, {k:"plate", agar:"#efe2bf", col:"#f4ecd6", iodine:true, single:true, tag:"−", lab:"dark to the edge"}],
       lecture:["enzymes", "glycolysis"],
       extra:"Amylase is a hydrolase, a catabolic enzyme: it uses water to break one big polymer into small sugars the cell can actually absorb."},
     indole:{
@@ -1066,15 +1068,15 @@
       why:"Kovac's reagent doesn't mix with water, so it floats as a layer on top. Indole rises into that layer and reacts, forming a <b>red ring</b>. No indole, and the layer stays <b>yellow</b>. Don't shake it.",
       reads:[{k:"tube", fill:"#f3e6bd", ring:"#c0392b", tag:"+", lab:"red ring"}, {k:"tube", fill:"#f3e6bd", ring:"#f2d23c", tag:"−", lab:"yellow ring"}],
       readNote:"Add about <b>10 drops</b> of Kovac's reagent and read the ring — <b>don't shake</b>.",
-      lecture:["krebs", "enzymes"],
-      extra:"This is amino acid catabolism: the pyruvate left over can enter the Krebs cycle."},
+      lecture:["krebs", "enzymes", "trp"],
+      extra:"This is amino acid catabolism — the mirror image of the <i>trp</i> operon from Chapter 8. There, the cell <b>builds</b> tryptophan and switches the operon off (represses it) once tryptophan is plentiful. Here it does the opposite: when tryptophan is abundant, tryptophanase <b>breaks it down</b>, and the leftover pyruvate can feed the Krebs cycle."},
     h2s:{
       asks:"Does this organism make <b>hydrogen sulfide (H₂S)</b>?",
       flow:[{label:"Make H₂S from sulfur, then trap it with iron", items:[N("Sulfur source", NEU, "cysteine / thiosulfate"), "reduced by the cell", N("H₂S", GAS, "colorless gas"), "+ iron (Fe²⁺)", N("FeS", "#231e1b", "black precipitate")]}],
       eq:[["sulfur source → H₂S", "the cell reduces cysteine or thiosulfate"], ["H₂S + Fe²⁺ → FeS (black)", "the readout: black iron sulfide"]],
       ind:"phenol",
-      used:["sulfur amino acids / thiosulfate", "iron salts"], made:["H₂S → black iron sulfide"],
-      why:"H₂S is a colorless gas, so the agar is packed with <b>iron salts</b>. H₂S reacts with the iron to form <b>black iron sulfide</b>, which spreads out from the stab line. Phenol red also turns the deep <b>yellow</b> if sugar was fermented, but the <b>black</b> is what you're reading.",
+      used:["sulfur amino acids / thiosulfate", "iron salts (e.g. FeSO₄)"], made:["H₂S → black iron sulfide"],
+      why:"H₂S is a colorless gas, so the agar is packed with <b>iron salts</b> (such as ferrous sulfate, FeSO₄, or ferric ammonium citrate). H₂S reacts with the iron to form <b>black iron sulfide</b>, which spreads out from the stab line. Phenol red also turns the deep <b>yellow</b> if sugar was fermented, but the <b>black</b> is what you're reading.",
       reads:[{k:"deep", fill:"#f2d23c", black:true, tag:"H₂S +", lab:"black"}, {k:"deep", fill:"#f2d23c", tag:"H₂S −", lab:"yellow only"}],
       lecture:["ferment", "krebs"],
       extra:"Reducing thiosulfate for energy is another kind of anaerobic respiration — sulfur standing in for oxygen."}
@@ -1138,10 +1140,12 @@
     let s = `<svg viewBox="0 0 90 104" class="tmini">`;
     if (o.k === "plate"){
       s += `<circle cx="45" cy="50" r="42" fill="#f2f5f9" stroke="#b9c2cf" stroke-width="2"/><circle cx="45" cy="50" r="37" fill="${o.iodine ? "#2b2340" : o.agar}"/>`;
-      const pts = [[22, 34], [34, 30], [46, 33], [58, 30], [68, 36], [60, 48], [48, 50], [36, 48], [24, 52], [30, 64], [44, 66], [58, 64]];
-      if (o.clear) s += `<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${o.agar}" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>`;
-      if (o.halo) s += `<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${o.halo}" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".6" filter="url(#tsoft)"/>`;
-      if (o.col) pts.forEach(([x, y]) => { s += `<circle cx="${x}" cy="${y}" r="4.2" fill="${o.col}" stroke="${shade(o.col, -.25)}" stroke-width="1"/>` + (o.sheen ? `<path d="M${x - 3},${y} a3,3 0 0 1 4,-3" fill="none" stroke="#63e08f" stroke-width="1.6"/>` : ""); });
+      const single = o.single, pts = single ? [[30, 24], [44, 50], [58, 76]] : [[22, 34], [34, 30], [46, 33], [58, 30], [68, 36], [60, 48], [48, 50], [36, 48], [24, 52], [30, 64], [44, 66], [58, 64]];
+      const poly = w => `points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="${w}"`;
+      if (o.clear) s += `<polyline ${poly(single ? 16 : 14)} stroke="${o.agar}"/>`;
+      if (o.halo) s += `<polyline ${poly(16)} stroke="${o.halo}" opacity=".6" filter="url(#tsoft)"/>`;
+      if (o.col){ if (single) s += `<polyline ${poly(6)} stroke="${o.col}"/>`;
+        else pts.forEach(([x, y]) => { s += `<circle cx="${x}" cy="${y}" r="4.2" fill="${o.col}" stroke="${shade(o.col, -.25)}" stroke-width="1"/>` + (o.sheen ? `<path d="M${x - 3},${y} a3,3 0 0 1 4,-3" fill="none" stroke="#63e08f" stroke-width="1.6"/>` : ""); }); }
     } else if (o.k === "strip"){
       s += `<rect x="6" y="22" width="78" height="56" rx="6" fill="#fbfaf2" stroke="#d9cfa6" stroke-width="2"/><circle cx="45" cy="50" r="18" fill="${o.spot}"/>`;
     } else {
