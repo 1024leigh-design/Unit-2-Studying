@@ -17,16 +17,22 @@
 <script>
 (function(){
   const A = Metab.A, {f1, lerp, clamp, smooth, seg, C} = A;
-  const ease = smooth, GREEN = "#1b7f4e", RED = "#b83a34", BLUE = "#3f4cc0";
+  const ease = smooth, GREEN = "#1b7f4e", RED = "#b83a34", BLUE = "#3f4cc0", AMBER = "#a8760f", WATER = "#2f7fbf", VIOLET = "#8e5bd0";
   const lbl = (x, y, s, fill, size, anchor) => `<text x="${f1(x)}" y="${f1(y)}" font-size="${size || 13}" font-weight="700" fill="${fill || "#5a6376"}" text-anchor="${anchor || "middle"}">${s}</text>`;
-  const down = (x, y1, y2, o) => A.op(o === undefined ? 1 : o, A.arrow(x, y1, x, y2, "#8a93a3", 3));
-  const tok = (x, y1, y2) => [[x, y1], [x, y2]];
+  const hion = (x, y, r) => { r = r || 13; return `<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" fill="#dbe7fb" stroke="${C.H}" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4.5)}" font-size="${r > 13 ? 13 : 12}" font-weight="700" fill="#1f4a9c" text-anchor="middle">H⁺</text>`; };
+  const epair = (x, y) => A.eDot(x - 10, y, 9) + A.eDot(x + 10, y, 9);
+  const o2tok = (x, y) => `<circle cx="${f1(x - 10)}" cy="${f1(y)}" r="13" fill="${C.O}" stroke="#fff" stroke-width="2"/><circle cx="${f1(x + 10)}" cy="${f1(y)}" r="13" fill="${C.O}" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4.5)}" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">O₂</text>`;
+  const no3tok = (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="18" fill="${VIOLET}" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">NO₃⁻</text>`;
+  const no2tok = (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="15" fill="#c7a9ec" stroke="#fff" stroke-width="2"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="10" font-weight="700" fill="#3b1f66" text-anchor="middle">NO₂⁻</text>`;
+  const h2otok = (x, y) => A.h2o(x, y - 2);
 
   function token(kind, x, y){
     if (kind === "NADH") return A.carrier(x, y, "NAD", true);
     if (kind === "FADH2") return A.carrier(x, y, "FAD", true);
-    if (kind === "epair") return A.eDot(x - 9, y, 9) + A.eDot(x + 9, y, 9);
-    if (kind === "H") return A.hion(x, y, 12);
+    if (kind === "epair") return epair(x, y);
+    if (kind === "H") return hion(x, y, 15);
+    if (kind === "O2") return o2tok(x, y);
+    if (kind === "NO3") return no3tok(x, y);
     return "";
   }
 
@@ -38,222 +44,441 @@
     nadplus2:{show:"NAD⁺", ans:["nad","nadplus"]},
     chemiosmosis:{show:"chemiosmosis", ans:["chemiosmosis"], fuzzy:true},
     gradient:{show:"concentration gradient", ans:["concentrationgradient","gradient","electrochemicalgradient"], fuzzy:true},
-    iron:{show:"iron", ans:["iron","fe"]},
     atpsynthase:{show:"ATP synthase", ans:["atpsynthase","atpsynthetase"], fuzzy:true}
   };
   const MORE = {
-    whyfewer:{title:"Why FADH₂ is worth less than NADH", html:`<p>Complex I sits at a big energy drop — NADH's electrons have a lot of potential energy to give up, enough to pump protons right away. FADH₂'s electrons enter at Complex II, already partway down the energy hill, so they never trigger Complex I's pump. That's the whole reason textbooks count roughly 2.5 ATP per NADH but only about 1.5 ATP per FADH₂ (often rounded to 3 and 2).</p>`},
-    cytc:{title:"Cytochrome c's second job", html:`<p>Cytochrome c doesn't just ferry electrons — when a cell is damaged beyond repair, it can be released from the mitochondrion into the rest of the cell, where it helps trigger apoptosis (programmed cell death). One small protein, two very different jobs.</p>`},
-    motor:{title:"A real rotary motor", html:`<p>ATP synthase is an actual mechanical motor: protons flowing through it spin a rotor at thousands of RPM, and that spinning physically squeezes ADP and phosphate together. Peter Mitchell won the 1978 Nobel Prize in Chemistry for figuring out this chemiosmotic mechanism — at the time, a wildly controversial idea.</p>`},
-    poisons:{title:"How some poisons work", html:`<p>Cyanide and carbon monoxide both work by jamming Complex IV shut, so electrons can't be handed off to the final acceptor. The whole chain backs up almost instantly, protons stop being pumped, and ATP production collapses — which is why they're so fast-acting and dangerous.</p>`},
+    whyfewer:{title:"Why FADH₂ is worth less than NADH", html:`<p>Complex I sits at a big energy drop: NADH's electrons have a lot of potential energy to give up, enough to pump protons right away. FADH₂'s electrons enter at Complex II, already partway down the energy hill, so they never trigger Complex I's pump. That's the whole reason textbooks count roughly 2.5 ATP per NADH but only about 1.5 ATP per FADH₂ (often rounded to 3 and 2).</p>`},
+    cytc:{title:"Cytochrome c's second job", html:`<p>Cytochrome c doesn't just ferry electrons. When a cell is damaged beyond repair, it can be released from the mitochondrion into the rest of the cell, where it helps trigger apoptosis (programmed cell death). One small protein, two very different jobs.</p>`},
+    motor:{title:"A real rotary motor", html:`<p>ATP synthase is an actual mechanical motor: protons flowing through it spin a rotor at thousands of RPM, and that spinning physically squeezes ADP and phosphate together. Peter Mitchell won the 1978 Nobel Prize in Chemistry for figuring out this chemiosmotic mechanism. At the time, it was a wildly controversial idea.</p>`},
+    poisons:{title:"How some poisons work", html:`<p>Cyanide and carbon monoxide both work by jamming Complex IV shut, so electrons can't be handed off to the final acceptor. The whole chain backs up almost instantly, protons stop being pumped, and ATP production collapses, which is why they're so fast-acting and dangerous.</p>`},
     altacceptors:{title:"Other final electron acceptors", html:`<p>Different microbes use different final acceptors depending on what's available: nitrate (denitrifying bacteria, forming nitrite or N₂ gas), sulfate (forming the rotten-egg smell of hydrogen sulfide), and even iron or fumarate. Whichever one is used, the same basic chain and the same ATP synthase are doing the work.</p>`},
-    coq10:{title:"That supplement aisle name", html:`<p>Ubiquinone is also called coenzyme Q10 — yes, the same CoQ10 sold as a supplement. Your cells already make their own; the supplement's real-world benefit is much less dramatic than the marketing suggests.</p>`}
+    coq10:{title:"That supplement aisle name", html:`<p>Ubiquinone is also called coenzyme Q10, yes, the same CoQ10 sold as a supplement. Your cells already make their own; the supplement's real-world benefit is much less dramatic than the marketing suggests.</p>`}
   };
 
-  /* ================= Shared board layout ================= */
-  const H = 1760, CX = 500;
-  const MX1 = 90, MX2 = 960, MY = 560, MH = 110;
-  const CPX = {c1:170, c2:340, q:460, c3:580, cyt:680, c4:800, atp:920};
-  const Y = {top:120, redox:280, gradLbl:395, atpsyn:1050, tally:1300, grand:1470, go:1650};
-  const CARDY = {c1:445, c2:520, q3:595, cytiv:670, final:745, gradient:820};
+  /* ================= Board layout =================
+     The membrane runs left to right. The whole chain fits in the left 640 units, so the explanation
+     cards (x = 650) sit in their own column and never cover the pathway. */
+  const H = 1800, CARDX = 650;
+  const MY = 420, MH = 110, MT = MY - MH / 2, MB = MY + MH / 2;
+  const IMS_TOP = 36, MATRIX_BOT = 762;
+  const POS = {c1:88, c2:186, q:252, c3:332, cyt:412, c4:476, atp:578};
+  const NADHP = [96, 548], FADP = [196, 548];
+  const CYT_Y = 290;
+  const Y = {tally:1360, grand:1520, go:1700};
+  const CARDY = [220, 275, 330, 390, 450, 510, 570, 630, 1000, 1110, Y.tally, Y.grand, Y.go];
+  const PANEL = {x:20, y:770, w:600, h:440};
+  const COL = {c1:["#7c8be8", "#3e4aa8"], c2:["#eab04d", "#a8760f"], c3:["#5fbd9c", "#1f7f66"], c4:["#e78a80", "#a8372f"]};
+  const CP = [{k:"c1", x:POS.c1, w:96, h:150, lab:"I"}, {k:"c2", x:POS.c2, w:56, h:128, lab:"II"}, {k:"c3", x:POS.c3, w:76, h:140, lab:"III"}, {k:"c4", x:POS.c4, w:64, h:128, lab:"IV"}];
+  const STEP_OF = {c1:2, c2:3, c3:4, c4:5};
 
-  function membraneDiagram(o){
-    let s = `<rect x="0" y="${MY - MH / 2 - 130}" width="1000" height="${MH + 260}" fill="#eef1f5"/>`;
-    s += lbl(CX, MY - MH / 2 - 100, "Intermembrane space (bacteria: outside the plasma membrane)", "#5a6376", 12);
-    s += A.membrane(MX1, MX2, MY, MH);
-    s += lbl(CX, MY + MH / 2 + 40, "Matrix (bacteria: cytoplasm)", "#5a6376", 12);
+  /* where each pumped H+ comes to rest in the intermembrane space (16 in all: 4 + 8 + 4) */
+  const SLOT = {
+    c1:j => [POS.c1 - 42 + j * 28, MT - 30],
+    c3:j => [POS.c3 - 45 + (j % 4) * 30, MT - 30 - Math.floor(j / 4) * 28],
+    c4:j => [POS.c4 - 42 + j * 28, MT - 30]
+  };
+  const MATRIX_H = [[236, 566], [304, 612], [372, 562]];
+  const DOWN = (x, y1, y2) => A.arrow(x, y1, x, y2, "#8a93a3", 3);
+
+  /* ---- ATP synthase close-up geometry ---- */
+  const RX = 290, RR = 40, RING_T = 907, RING_B = 1023;
+  const HEAD = {x:RX, y:1122};
+  const POOL = [];
+  for (let i = 0; i < 8; i++) POOL.push([58 + i * 36, i % 2 ? 884 : 850]);
+  [412, 468, 522, 574].forEach(x => POOL.push([x, 867]));
+  const DRAGS = [[440, 850], [495, 884], [550, 850], [596, 884]];
+  const MOUTH = [381, 884];
+  const IONPATH = [MOUTH, [381, 950], [340, 968], [330, 986], [346, 1004], [349, 1032], [349, 1088]];
+  function onPath(pts, u){
+    const L = []; let tot = 0;
+    for (let i = 0; i < pts.length - 1; i++){ const d = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]); L.push(d); tot += d; }
+    let s = clamp(u, 0, 1) * tot;
+    for (let i = 0; i < L.length; i++){ if (s <= L[i] || i === L.length - 1){ const k = L[i] ? clamp(s / L[i], 0, 1) : 0; return [lerp(pts[i][0], pts[i + 1][0], k), lerp(pts[i][1], pts[i + 1][1], k)]; } s -= L[i]; }
+    return pts[pts.length - 1];
+  }
+
+  /* ---- shapes ---- */
+  function complex(k, x, w, h, lab, glow){
+    const [fill, edge] = COL[k];
+    let s = "";
+    if (glow > 0) s += `<rect x="${f1(x - w / 2 - 9)}" y="${f1(MY - h / 2 - 9)}" width="${w + 18}" height="${h + 18}" rx="28" fill="#f2b134" opacity="${f1(.55 * glow)}"/>`;
+    s += `<rect x="${f1(x - w / 2)}" y="${f1(MY - h / 2)}" width="${w}" height="${h}" rx="22" fill="${fill}" stroke="${edge}" stroke-width="3"/>`;
+    s += `<rect x="${f1(x - w / 2 + 8)}" y="${f1(MY - h / 2 + 8)}" width="${f1(w * .36)}" height="${f1(h * .3)}" rx="10" fill="#fff" opacity=".22"/>`;
+    s += `<text x="${f1(x)}" y="${f1(MY + 8)}" font-size="${lab.length > 2 ? 22 : 26}" font-weight="800" fill="#fff" text-anchor="middle">${lab}</text>`;
     return s;
+  }
+  function mobile(x, y, lab, r, fill, edge, tcol, size){
+    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${edge}" stroke-width="2.5"/>` + lbl(x, y + 4.5, lab, tcol, size);
+  }
+  /* ATP synthase as it sits in the membrane on the main board */
+  function atpMain(x, glow){
+    let s = "";
+    if (glow > 0) s += `<rect x="${x - 40}" y="${MT - 22}" width="80" height="${MB - MT + 124}" rx="30" fill="#f2b134" opacity="${f1(.4 * glow)}"/>`;
+    s += `<rect x="${x + 22}" y="${MB - 4}" width="9" height="62" rx="4" fill="#9aa7ee" stroke="${BLUE}" stroke-width="1.5"/>`;
+    s += `<rect x="${x - 26}" y="${MT - 10}" width="52" height="${MB - MT + 20}" rx="14" fill="#c9d0f5" stroke="${BLUE}" stroke-width="3"/>`;
+    [-14, 0, 14].forEach(dx => s += `<rect x="${x + dx - 4}" y="${MT + 2}" width="8" height="${MB - MT - 4}" rx="4" fill="#8e9bf0" opacity=".7"/>`);
+    s += `<rect x="${x - 4}" y="${MB + 8}" width="8" height="30" fill="#2b3a9e"/>`;
+    s += `<circle cx="${x - 16}" cy="${MB + 58}" r="22" fill="#f6d28a" stroke="#c98a0e" stroke-width="2.5"/><circle cx="${x + 16}" cy="${MB + 58}" r="22" fill="#f6d28a" stroke="#c98a0e" stroke-width="2.5"/><circle cx="${x}" cy="${MB + 42}" r="22" fill="#f9dfa6" stroke="#c98a0e" stroke-width="2.5"/>`;
+    return s;
+  }
+  function eq(x, y, parts, o){
+    const n = parts.reduce((a, q) => a + q[0].length, 0), w = n * 9.4 + 40;
+    return A.op(o, `<rect x="${f1(x - w / 2)}" y="${y - 28}" width="${f1(w)}" height="56" rx="18" fill="#fff" stroke="#8a93a3" stroke-width="2"/>` +
+      `<text x="${x}" y="${y + 6}" font-size="18" font-weight="800" text-anchor="middle">${parts.map(q => `<tspan fill="${q[1]}">${q[0]}</tspan>`).join("")}</text>`);
+  }
+
+  /* ---- the zoomed-in ATP synthase (c-ring rotor, a-subunit channel, spinning stalk, F1 head) ---- */
+  function cring(th){
+    const items = [];
+    for (let i = 0; i < 8; i++){ const a = (th + i * 45) * Math.PI / 180; items.push({i, d:Math.cos(a), x:RX + RR * Math.sin(a)}); }
+    items.sort((p, q) => p.d - q.d);
+    let s = `<rect x="${RX - RR - 5}" y="${RING_T - 3}" width="${2 * RR + 10}" height="${RING_B - RING_T + 6}" rx="18" fill="#e7eafc" stroke="${BLUE}" stroke-width="2"/>`;
+    items.forEach(it => {
+      if (it.d < -.4) return;
+      const w = 6 + 15 * Math.max(0, it.d), fill = it.i === 0 ? "#2b3a9e" : it.d > .3 ? "#6e7fe0" : "#a4b0f0";
+      s += `<rect x="${f1(it.x - w / 2)}" y="${RING_T}" width="${f1(w)}" height="${RING_B - RING_T}" rx="7" fill="${fill}" stroke="#3f4cc0" stroke-width="1.6"/>`;
+    });
+    return s;
+  }
+  function closeUp(c, S){
+    const {t, idx, phase, prog} = c;
+    const fade = clamp((t - S.t8) / .6, 0, 1);
+    let o = "";
+    const px = PANEL.x, py = PANEL.y;
+    o += `<rect x="${px}" y="${py}" width="${PANEL.w}" height="${PANEL.h}" rx="20" fill="#fff" stroke="${BLUE}" stroke-width="2.5"/>`;
+    o += lbl(px + PANEL.w / 2, py + 26, "Zoom in: ATP synthase", BLUE, 16);
+    o += `<rect x="${px + 2}" y="${py + 38}" width="${PANEL.w - 4}" height="109" fill="#e8eefb"/>`;
+    o += lbl(px + 16, py + 62, "Intermembrane space: lots of H⁺", "#5a6376", 13, "start");
+    o += A.membrane(px + 2, px + PANEL.w - 2, 965, 100);
+    o += `<rect x="${px + 2}" y="1015" width="${PANEL.w - 4}" height="170" fill="#fbf6ee"/>`;
+    o += lbl(px + 16, 1176, "Matrix: few H⁺", "#5a6376", 13, "start");
+    /* the stator: a-subunit with its two half-channels, and the b arm that holds F1 still */
+    o += `<path d="M396,1025 L396,1088 Q396,1112 352,1114" fill="none" stroke="#9aa7ee" stroke-width="11" stroke-linecap="round"/>`;
+    o += `<rect x="336" y="905" width="70" height="120" rx="12" fill="#c9d0f5" stroke="${BLUE}" stroke-width="2.5"/>`;
+    o += `<path d="M381,905 L381,950 L338,968" fill="none" stroke="#eaf1ff" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>`;
+    o += `<path d="M338,984 L349,1002 L349,1025" fill="none" stroke="#eaf1ff" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>`;
+    /* F1 head: three lobes, the left one is where ADP + Pi get squeezed into ATP */
+    const ang = S.angle, cyc = Math.min(3, Math.floor(ang / 120 - 1e-9)), fr = clamp((ang - cyc * 120) / 120, 0, 1);
+    const squeeze = clamp(1 - Math.abs(fr - .5) / .22, 0, 1);
+    o += `<circle cx="${HEAD.x}" cy="${HEAD.y - 32}" r="36" fill="#f9dfa6" stroke="#c98a0e" stroke-width="2.5"/>`;
+    o += `<circle cx="${HEAD.x + 38}" cy="${HEAD.y + 6}" r="36" fill="#f6d28a" stroke="#c98a0e" stroke-width="2.5"/>`;
+    o += `<circle cx="${HEAD.x - 38}" cy="${HEAD.y + 6}" r="${f1(36 - 3 * squeeze)}" fill="${squeeze > .1 ? "#f2b84a" : "#f6d28a"}" stroke="#c98a0e" stroke-width="2.5"/>`;
+    /* the spinning stalk, drawn as a twisting rod so you can see it turn */
+    const off = 7 * Math.sin(ang * Math.PI / 180), off2 = 7 * Math.sin((ang + 90) * Math.PI / 180);
+    o += `<path d="M${RX},${RING_B - 4} L${f1(RX + off)},${RING_B + 26} L${f1(RX - off2)},${RING_B + 54} L${f1(RX + off)},${RING_B + 84} L${RX},${HEAD.y - 4}" fill="none" stroke="#2b3a9e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`;
+    o += cring(ang);
+    /* ADP + Pi in, ATP out */
+    const adpX = lerp(76, 188, ease(seg(fr, 0, .4))), atpX = lerp(190, 76, ease(seg(fr, .66, 1)));
+    if (fr < .66) o += A.pill(adpX, HEAD.y + 12, "ADP + Pᵢ", "#0f766e", 1, 13);
+    if (fr > .5 && ang > 60) o += A.pill(atpX, HEAD.y + 12, "ATP", VIOLET, ease(seg(fr, .5, .66)), 14);
+    /* labels */
+    o += A.pill(128, 955, "c-ring: the rotor", "#3f4cc0", 1, 13) + `<path d="M${RX - RR - 6},955 L190,955" stroke="#3f4cc0" stroke-width="2" stroke-dasharray="4 3"/>`;
+    o += A.pill(128, 1058, "γ stalk: spins", "#2b3a9e", 1, 13) + `<path d="M${RX - 4},1058 L190,1058" stroke="#2b3a9e" stroke-width="2" stroke-dasharray="4 3"/>`;
+    o += A.pill(505, 965, "a: stator + H⁺ channel", "#3f4cc0", 1, 13) + `<path d="M406,965 L428,965" stroke="#3f4cc0" stroke-width="2" stroke-dasharray="4 3"/>`;
+    o += A.pill(502, 1060, "b: stator arm", "#6b78d6", 1, 13) + `<path d="M401,1060 L424,1060" stroke="#6b78d6" stroke-width="2" stroke-dasharray="4 3"/>`;
+    o += A.pill(498, 1135, "F₁ head: makes ATP", "#c98a0e", 1, 13) + `<path d="M${HEAD.x + 74},1130 L${HEAD.x + 116},1133" stroke="#c98a0e" stroke-width="2" stroke-dasharray="4 3"/>`;
+    o += lbl(px + PANEL.w - 16, 1199, `ATP made here: <tspan fill="${GREEN}">${S.made}</tspan>`, "#343b4a", 14, "end");
+    o += lbl(px + 16, 1199, "Rotor spin ↻", "#5a6376", 13, "start");
+    return A.op(fade, o);
   }
 
   function makeDraw(FINAL){
+   const S = {t8:0, ion8:[], angle:0, made:0};
    return function draw(c){
-    const {prog, idx} = c;
+    const {prog, idx, phase, t} = c;
+    if (idx < 8){ S.t8 = 0; S.ion8.length = 0; }
     const p = i => prog(i), e = i => ease(p(i));
     let o = "";
-    o += membraneDiagram();
 
-    /* step 0: NADH and FADH2 arrive from the matrix */
+    /* ---------- how much of the pumped gradient has flowed back (for fading the pool) ---------- */
+    let flowed = 0;
+    if (idx === 8) flowed = phase === "act" ? c.placed : Math.min(4, S.ion8.filter(s => t - s > .8).length);
+    else if (idx === 9) flowed = 4 + 12 * e(9);
+    else if (idx > 9) flowed = 16;
+    const ionA = k => clamp(k + 1 - flowed, 0, 1);
+
+    /* ---------- bands and membrane ---------- */
+    o += `<rect x="0" y="${IMS_TOP}" width="1000" height="${MT - IMS_TOP}" fill="#e8eefb"/>`;
+    o += `<rect x="0" y="${MB}" width="1000" height="${MATRIX_BOT - MB}" fill="#fbf6ee"/>`;
+    o += A.membrane(0, 1000, MY, MH);
+    o += lbl(20, IMS_TOP + 30, "Intermembrane space (bacteria: outside the plasma membrane)", "#5a6376", 13, "start");
+    o += lbl(20, MATRIX_BOT - 12, "Matrix (bacteria: cytoplasm)", "#5a6376", 13, "start");
+
+    /* ---------- the zoom beam to the close-up, drawn behind everything ---------- */
+    if (idx >= 8) o += `<path d="M${POS.atp - 40},${MB + 40} L${PANEL.x + 540},${PANEL.y} M${POS.atp + 40},${MB + 40} L${PANEL.x + PANEL.w - 6},${PANEL.y}" stroke="${BLUE}" stroke-width="2.5" stroke-dasharray="7 6" fill="none" opacity=".6"/><ellipse cx="${POS.atp}" cy="${MY + 50}" rx="46" ry="108" fill="none" stroke="${BLUE}" stroke-width="2.5" stroke-dasharray="7 6"/>`;
+
+    /* ---------- every enzyme is already in the membrane ---------- */
+    const pulse = k => { const i = STEP_OF[k]; if (idx !== i || phase !== "anim") return 0; const u = p(i); return u > .12 && u < .95 ? .55 + .45 * Math.sin(t * 7) : 0; };
+    CP.forEach(q => o += complex(q.k, q.x, q.w, q.h, q.lab, pulse(q.k)));
+    o += mobile(POS.q, MY, "Q", 20, "#f6e7c4", "#c9a15a", "#6b4b1f", 15);
+    o += mobile(POS.cyt, CYT_Y, "cyt c", 22, "#fbe8e7", RED, "#7a2e28", 11);
+    o += `<path d="M${POS.cyt},${CYT_Y + 22} L${POS.cyt},${MT - 4}" stroke="${RED}" stroke-width="2" stroke-dasharray="3 3"/>`;
+    o += atpMain(POS.atp, idx === 8 || idx === 9 ? .5 + .5 * Math.sin(t * 4) : 0);
+    o += lbl(POS.atp, MT - 66, "ATP", BLUE, 13) + lbl(POS.atp, MT - 50, "synthase", BLUE, 13);
+    MATRIX_H.forEach(([x, y]) => o += hion(x + 2 * Math.sin(t * 1.7 + x), y + 3 * Math.cos(t * 1.3 + y), 13));
+    o += lbl(300, MB + 164, "(a few H⁺ here)", "#8a93a3", 12);
+
+    /* ---------- step 0: NADH and FADH2 are waiting in the matrix, right beside Complexes I and II ---------- */
     const g0 = e(0);
-    o += A.op(g0, A.carrier(CPX.c1 - 10, Y.top, "NAD", true) + A.carrier(CPX.c2 + 10, Y.top, "FAD", true));
-    o += A.op(g0, lbl(CX, Y.top + 40, "From glycolysis and the Krebs cycle", "#343b4a", 13));
+    const nadhHere = idx < 2 || (idx === 2 && p(2) < .001), fadhHere = idx < 3 || (idx === 3 && p(3) < .001);
+    if (nadhHere) o += A.op(g0, A.carrier(NADHP[0], NADHP[1], "NAD", true));
+    if (fadhHere) o += A.op(g0, A.carrier(FADP[0], FADP[1], "FAD", true));
+    o += A.op(g0, lbl(150, MB + 116, "From glycolysis and the Krebs cycle", "#343b4a", 13));
 
-    /* step 2: Complex I */
+    /* ---------- step 1: a quick redox demo ---------- */
+    const p1 = p(1);
+    if (idx === 1 && p1 > 0){
+      const u = ease(seg(p1, .15, .7)), done = u > .96;
+      o += `<rect x="40" y="170" width="560" height="120" rx="18" fill="#fff" stroke="#8a93a3" stroke-width="2"/>`;
+      o += A.carrier(130, 215, "NAD", u < .5);
+      o += `<rect x="410" y="199" width="130" height="32" rx="16" fill="#fff" stroke="#8a93a3" stroke-width="2.5"/>` + lbl(475, 220, "next carrier", "#5a6376", 13);
+      o += A.arrow(200, 215, 400, 215, "#8a93a3", 3);
+      if (u > 0 && u < 1) o += A.eDot(lerp(180, 430, u), 215 - 16 * Math.sin(u * Math.PI), 10);
+      if (done) o += A.eDot(535, 200, 9);
+      o += lbl(130, 262, "OXIDIZED: lost e⁻", RED, 14) + lbl(475, 262, done ? "REDUCED: gained e⁻" : "", GREEN, 14);
+    }
+
+    /* ---------- helpers for the pump animations ---------- */
+    const pump = (key, n, pp, k0) => {
+      let s = "";
+      for (let j = 0; j < n; j++){
+        const st = j / n * .5, u = ease(seg(pp, st, st + .5));
+        if (u <= 0) continue;
+        const [sx, sy] = SLOT[key](j), bob = u >= 1 ? 2.2 * Math.sin(t * 2.4 + k0 + j) : 0;
+        s += A.op(Math.min(1, u * 6) * ionA(k0 + j), hion(sx, lerp(MB + 34, sy, u) + bob, 13));
+      }
+      return s;
+    };
+    const arrowsUp = (x, pp) => pp > 0 && pp < 1 ? A.op(Math.sin(pp * Math.PI), `<path d="M${x - 8},${MT - 8} l8,-14 l8,14 M${x - 8},${MT + 14} l8,-14 l8,14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>`) : "";
+
+    /* ---------- step 2: NADH gives its electrons to Complex I ---------- */
     const p2 = p(2);
     if (idx >= 2 && p2 > 0){
-      const drift = ease(seg(p2, 0, .5)), merge = ease(seg(p2, .5, .8)), pump = ease(seg(p2, .8, 1));
-      o += A.op(1 - merge, token("NADH", CPX.c1, lerp(Y.top + 30, MY, drift)));
-      o += A.op(merge, A.enzyme(CPX.c1, MY, {label:"I", sc:.85}));
-      o += A.op(merge * (1 - pump * .3), lbl(CPX.c1, MY - 90, "NADH → NAD⁺", GREEN, 12));
-      o += A.op(pump, `<circle cx="${CPX.c1}" cy="${MY - 130}" r="16" fill="#dbe7fb" stroke="${C.H}" stroke-width="2"/><text x="${CPX.c1}" y="${MY - 125}" font-size="12" font-weight="700" fill="#1f4a9c" text-anchor="middle">H⁺×4</text>`);
+      const a = ease(seg(p2, 0, .3)), b = ease(seg(p2, .3, .85)), hop = ease(seg(p2, .35, .75));
+      if (p2 < .3) o += A.carrier(lerp(NADHP[0], POS.c1, a), lerp(NADHP[1], MB + 16, a), "NAD", true);
+      else o += A.carrier(lerp(POS.c1, 66, b), lerp(MB + 16, 626, b), "NAD", false);
+      if (hop < 1) o += epair(lerp(POS.c1 + 20, POS.q - 6, hop), MY - 30 - 14 * Math.sin(hop * Math.PI));
+      o += arrowsUp(POS.c1, seg(p2, .35, 1));
+      o += pump("c1", 4, seg(p2, .35, 1), 0);
+      o += A.op(b, lbl(66, 654, "recycled", GREEN, 12));
     }
-    /* step 3: Complex II */
+    /* the pair waiting at Q (top spot) until it is moved on in step 4 */
+    if ((idx === 2 && p2 > .75) || idx === 3) o += epair(POS.q - 6, MY - 28);
+
+    /* ---------- step 3: FADH2 gives its electrons to Complex II ---------- */
     const p3 = p(3);
     if (idx >= 3 && p3 > 0){
-      const drift = ease(seg(p3, 0, .5)), merge = ease(seg(p3, .5, .8));
-      o += A.op(1 - merge, token("FADH2", CPX.c2, lerp(Y.top + 30, MY, drift)));
-      o += A.op(merge, A.enzyme(CPX.c2, MY, {label:"II", sc:.7}));
-      o += A.op(merge, lbl(CPX.c2, MY - 90, "FADH₂ → FAD", RED, 12));
+      const a = ease(seg(p3, 0, .3)), b = ease(seg(p3, .3, .85)), hop = ease(seg(p3, .35, .75));
+      if (p3 < .3) o += A.carrier(lerp(FADP[0], POS.c2, a), lerp(FADP[1], MB + 16, a), "FAD", true);
+      else o += A.carrier(lerp(POS.c2, 196, b), lerp(MB + 16, 626, b), "FAD", false);
+      if (hop < 1) o += epair(lerp(POS.c2 + 10, POS.q + 4, hop), MY + 28 + 10 * Math.sin(hop * Math.PI));
+      o += A.op(b, lbl(196, 654, "recycled", GREEN, 12));
+      o += A.op(ease(seg(p3, .5, 1)), lbl(POS.c2, MB + 22, "no H⁺ pumped", RED, 12));
     }
-    /* Q, always visible once either I or II has run */
-    if (idx >= 2 && (p(2) > .5 || p(3) > .5)) o += `<circle cx="${CPX.q}" cy="${MY}" r="20" fill="#f6e7c4" stroke="#c9a15a" stroke-width="2"/>` + lbl(CPX.q, MY + 4, "Q", "#6b4b1f", 13);
-    /* step 4: electrons move, Q -> Complex III */
+    if ((idx === 3 && p3 > .75)) o += epair(POS.q + 6, MY + 28);
+
+    /* ---------- step 4: Q hands both electron pairs to Complex III ---------- */
     const p4 = p(4);
     if (idx >= 4 && p4 > 0){
-      const drift = ease(seg(p4, 0, .55)), merge = ease(seg(p4, .55, .85)), pump = ease(seg(p4, .85, 1));
-      o += A.op(1 - merge, token("epair", lerp(CPX.q + 20, CPX.c3 - 30, drift), MY));
-      o += A.op(merge, A.enzyme(CPX.c3, MY, {label:"III", sc:.85}));
-      o += A.op(pump, `<circle cx="${CPX.c3}" cy="${MY - 130}" r="16" fill="#dbe7fb" stroke="${C.H}" stroke-width="2"/><text x="${CPX.c3}" y="${MY - 125}" font-size="12" font-weight="700" fill="#1f4a9c" text-anchor="middle">H⁺×4</text>`);
+      const absorb = ease(seg(p4, 0, .35));
+      o += A.op(1 - absorb, epair(POS.c3 - 22, MY - 28) + epair(POS.c3 + 18, MY + 28));
+      o += arrowsUp(POS.c3, seg(p4, .25, .85));
+      o += pump("c3", 8, seg(p4, .25, .9), 4);
+      const rise = ease(seg(p4, .72, 1));
+      if (rise > 0 && idx === 4) o += epair(lerp(POS.c3 - 10, POS.cyt - 28, rise), lerp(MT, CYT_Y - 38, rise)) + epair(lerp(POS.c3 + 10, POS.cyt + 28, rise), lerp(MT, CYT_Y - 38, rise));
     }
-    if (idx >= 4 && p(4) > .5) o += `<circle cx="${CPX.cyt}" cy="${MY - 65}" r="16" fill="#fbe8e7" stroke="${RED}" stroke-width="2"/>` + lbl(CPX.cyt, MY - 61, "cyt c", "#7a2e28", 10);
-    /* step 5: cytochrome c -> Complex IV */
+
+    /* ---------- step 5: cytochrome c hands both pairs to Complex IV ---------- */
     const p5 = p(5);
     if (idx >= 5 && p5 > 0){
-      const drift = ease(seg(p5, 0, .55)), merge = ease(seg(p5, .55, .85)), pump = ease(seg(p5, .85, 1));
-      o += A.op(1 - merge, token("epair", lerp(CPX.cyt, CPX.c4 - 30, drift), MY - lerp(65, 0, drift)));
-      o += A.op(merge, A.enzyme(CPX.c4, MY, {label:"IV", sc:.85}));
-      o += A.op(pump, `<circle cx="${CPX.c4}" cy="${MY - 130}" r="16" fill="#dbe7fb" stroke="${C.H}" stroke-width="2"/><text x="${CPX.c4}" y="${MY - 125}" font-size="12" font-weight="700" fill="#1f4a9c" text-anchor="middle">H⁺×2</text>`);
+      const absorb = ease(seg(p5, 0, .35));
+      o += A.op(1 - absorb, epair(POS.c4 - 18, MY - 28) + epair(POS.c4 + 16, MY + 28));
+      o += arrowsUp(POS.c4, seg(p5, .3, .9));
+      o += pump("c4", 4, seg(p5, .3, .95), 12);
     }
-    /* ATP synthase always visible once the chain has started */
-    if (idx >= 2) o += A.op(ease(seg(p(2), 0, .3)), `<g transform="translate(${CPX.atp},${MY})"><rect x="-18" y="-55" width="36" height="110" rx="14" fill="#e7e9fb" stroke="${BLUE}" stroke-width="2.5"/><circle cx="0" cy="-55" r="22" fill="#c9d0f5" stroke="${BLUE}" stroke-width="2.5"/></g>` + lbl(CPX.atp, MY + 90, "ATP synthase", BLUE, 12));
 
-    /* step 6: final electron acceptor (aerobic O2 -> H2O, or anaerobic alternative) */
+    /* ---------- step 6: O2 (or an alternative) takes the electrons and H+ and becomes water ---------- */
     const p6 = p(6);
     if (idx >= 6 && p6 > 0){
-      const a = ease(seg(p6, 0, .6));
-      o += A.op(a, FINAL.icon(CPX.c4 + 70, MY + 50));
-      o += A.op(a, lbl(CPX.c4 + 70, MY + 80, FINAL.arrowLabel, FINAL.color, 12));
+      const tg = FINAL.targets, n = tg.length;
+      const accOp = 1 - ease(seg(p6, .66, .74));
+      tg.forEach(q => o += A.op(accOp, FINAL.tok(q[0], q[1])));
+      for (let j = 0; j < 4; j++){
+        const d = tg[j % n], s0 = .04 + j * .07, u = ease(seg(p6, s0, s0 + .28));
+        if (u <= 0 || u >= 1) continue;
+        o += A.eDot(lerp(POS.c4 + (j % 2 ? 14 : -14), d[0] + (j % 2 ? 9 : -9), u), lerp(MY - 30 + (j > 1 ? 18 : 0), d[1] - 6, u), 8);
+      }
+      const hx = [412, 452, 500, 540];
+      for (let j = 0; j < 4; j++){
+        const d = tg[j % n], s0 = .3 + j * .07, u = ease(seg(p6, s0, s0 + .3));
+        if (u <= 0 || u >= 1) continue;
+        o += hion(lerp(hx[j], d[0] + (j % 2 ? 10 : -10), u), lerp(578, d[1] + 8, u), 12);
+      }
+      const fl = clamp(1 - Math.abs(p6 - .7) / .08, 0, 1);
+      if (fl > 0) tg.forEach(q => o += `<circle cx="${q[0]}" cy="${q[1]}" r="${f1(14 + 34 * fl)}" fill="#f2b134" opacity="${f1(.5 * (1 - fl) + .25)}"/>`);
+      const r = ease(seg(p6, .72, 1));
+      FINAL.rest.forEach((q, j) => {
+        const from = tg[Math.floor(j / (FINAL.rest.length / n))];
+        const x = lerp(from[0], q[1], r), y = lerp(from[1], q[2], r);
+        o += A.op(r, (q[0] === "h2o" ? h2otok(x, y) : no2tok(x, y)) + (r > .9 ? lbl(x, q[2] + 26, q[0] === "h2o" ? "H₂O" : "NO₂⁻", q[0] === "h2o" ? WATER : "#6b4bb8", 12) : ""));
+      });
+      o += eq(420, 690, FINAL.eq, ease(seg(p6, .55, .85)));
     }
 
-    /* step 7: the proton gradient */
+    /* ---------- step 7: the gradient ---------- */
     const p7 = p(7);
     if (idx >= 7 && p7 > 0){
       const a = ease(seg(p7, 0, .6));
-      o += A.op(a, `<rect x="${MX1}" y="${MY - MH / 2 - 90}" width="${MX2 - MX1}" height="70" rx="14" fill="rgba(63,76,192,.08)"/>`);
-      const hs = [CPX.c1, CPX.c3, CPX.c4, 250, 630, 850];
-      hs.forEach((x, i) => o += A.op(a, A.hion(x, MY - MH / 2 - 60 - (i % 2) * 20, 13)));
-      o += A.op(a, lbl(CX, Y.gradLbl, "High H⁺ concentration outside the membrane →", BLUE, 13));
-    }
-    /* step 8: ATP synthase close-up + drag H+ through */
-    const p8 = p(8);
-    if (idx >= 8){
-      const zx = CX, zy = Y.atpsyn;
-      o += `<rect x="${zx - 260}" y="${zy - 160}" width="520" height="320" rx="20" fill="#fff" stroke="${BLUE}" stroke-width="2"/>`;
-      o += lbl(zx, zy - 130, "ATP synthase close-up", BLUE, 14);
-      o += lbl(zx, zy - 130 + 220, "Matrix side (low H⁺)", "#5a6376", 12);
-      o += lbl(zx, zy - 130 - 20, "Intermembrane space (high H⁺)", "#5a6376", 12);
-      o += `<g transform="translate(${zx},${zy})"><rect x="-30" y="-70" width="60" height="140" rx="18" fill="#e7e9fb" stroke="${BLUE}" stroke-width="3"/><circle cx="0" cy="-70" r="30" fill="#c9d0f5" stroke="${BLUE}" stroke-width="3"/></g>`;
+      o += A.op(a, `<rect x="0" y="${IMS_TOP}" width="1000" height="${MT - IMS_TOP}" fill="rgba(63,76,192,.10)"/>`);
+      o += A.op(a, lbl(320, IMS_TOP + 56, "HIGH H⁺ concentration, more + charge", BLUE, 14));
+      o += A.op(a, lbl(310, MATRIX_BOT - 32, "LOW H⁺ concentration, more − charge", "#5a6376", 14));
     }
 
-    /* step 9: tally this one pass */
-    const p9 = p(9);
-    if (idx >= 9 && p9 > 0){
-      const r = ease(seg(p9, .1, .6));
-      o += A.op(r, `<rect x="${CX - 260}" y="${Y.tally - 40}" width="520" height="90" rx="18" fill="#fff" stroke="${GREEN}" stroke-width="2.5"/>`);
-      o += A.op(r, lbl(CX, Y.tally - 6, "This one NADH + FADH₂ pass:", "#343b4a", 14));
-      o += A.op(r, lbl(CX, Y.tally + 26, "10 H⁺ pumped · 4 ATP made", GREEN, 16));
+    /* ---------- steps 8 and 9: ATP synthase close-up ---------- */
+    if (idx >= 8){
+      if (!S.t8) S.t8 = t;
+      /* each H+ that is dropped in gets its own timed trip through the channel (staggered) */
+      if (idx === 8 && phase === "act" && c.placed === 0) S.ion8.length = 0;
+      if (idx === 8) while (S.ion8.length < c.placed) S.ion8.push(Math.max(t, (S.ion8[S.ion8.length - 1] || 0) + .4));
+      const TRIP = 1.5, rot = (u0, u1) => ease(seg(u0, .35, .65));
+      let ang = 0, trips = [];
+      if (idx === 8 || idx > 8){
+        for (let k = 0; k < 4; k++){ const u = idx > 8 ? 1 : (S.ion8[k] === undefined ? 0 : clamp((t - S.ion8[k]) / TRIP, 0, 1)); ang += 30 * rot(u); if (u > 0 && u < 1) trips.push([MOUTH, u]); }
+      }
+      let rest = [];
+      if (idx >= 9){
+        const pp = idx > 9 ? 1 : p(9);
+        for (let k = 0; k < 12; k++){ const s0 = k / 12 * .78, u = clamp((pp - s0) / .22, 0, 1); ang += 30 * rot(u); if (u > 0 && u < 1) rest.push([POOL[k], u]); else if (u === 0 && idx === 9 && phase !== "act") rest.push([POOL[k], 0]); }
+      }
+      S.angle = ang;
+      S.made = Math.min(4, Math.floor((ang + 30) / 120));
+      o += closeUp(c, S);
+      /* pool: lots of H+ above the channel, thinning out as they flow through */
+      const fade = clamp((t - S.t8) / .6, 0, 1);
+      POOL.forEach((q, k) => {
+        const gone = idx < 9 ? 0 : idx > 9 ? 1 : clamp((p(9) - k / 12 * .78) / .08, 0, 1);
+        if (gone >= 1) return;
+        o += A.op(fade * (1 - gone), hion(q[0] + 2 * Math.sin(t * 2 + k), q[1] + 3 * Math.cos(t * 1.7 + k * 2), 13));
+      });
+      trips.forEach(([, u]) => { const q = onPath(IONPATH, u); o += hion(q[0], q[1], 14); });
+      rest.forEach(([start, u]) => { if (u <= 0) return; const full = [start].concat(IONPATH), q = onPath(full, u); o += hion(q[0], q[1], 13); });
     }
-    /* step 10: the whole-glucose grand total */
+
+    /* ---------- step 10: tally this one pass ---------- */
     const p10 = p(10);
     if (idx >= 10 && p10 > 0){
       const r = ease(seg(p10, .1, .6));
-      o += A.op(r, `<rect x="${CX - 260}" y="${Y.grand - 46}" width="520" height="140" rx="18" fill="#fff" stroke="${FINAL.color}" stroke-width="2.5"/>`);
-      o += A.op(r, lbl(CX, Y.grand - 14, "Glycolysis: 2 ATP  ·  Krebs cycle: 2 ATP", "#343b4a", 14));
-      o += A.op(r, lbl(CX, Y.grand + 16, "Electron transport chain: ~30–34 ATP", "#343b4a", 14));
-      o += A.op(r, lbl(CX, Y.grand + 52, FINAL.key === "anaerobic" ? "Total: usually a bit less than aerobic" : "Total: up to ~34–38 ATP per glucose", FINAL.color, 15));
+      o += A.op(r, `<rect x="${60}" y="${Y.tally - 44}" width="520" height="116" rx="18" fill="#fff" stroke="${GREEN}" stroke-width="2.5"/>`);
+      o += A.op(r, lbl(320, Y.tally - 12, "This one NADH + FADH₂ pass:", "#343b4a", 15));
+      o += A.op(r, lbl(320, Y.tally + 20, "16 H⁺ pumped · about 4 ATP made", GREEN, 18));
+      o += A.op(r, lbl(320, Y.tally + 50, "(NADH ≈ 2.5 ATP, FADH₂ ≈ 1.5 ATP)", "#5a6376", 13));
     }
-    /* step 11: where next */
+    /* ---------- step 11: the whole-glucose grand total ---------- */
     const p11 = p(11);
     if (idx >= 11 && p11 > 0){
-      const r = ease(seg(p11, 0, .6));
-      o += A.op(r, `<circle cx="${CX}" cy="${Y.go}" r="34" fill="#fbe8e7" stroke="${RED}" stroke-width="2.5"/>` + lbl(CX, Y.go + 6, "?", RED, 22));
-      o += A.op(r, lbl(CX, Y.go + 56, "No final acceptor at all → fermentation", RED, 13));
+      const r = ease(seg(p11, .1, .6));
+      o += A.op(r, `<rect x="40" y="${Y.grand - 46}" width="560" height="148" rx="18" fill="#fff" stroke="${FINAL.color}" stroke-width="2.5"/>`);
+      o += A.op(r, lbl(320, Y.grand - 14, "Glycolysis: 2 ATP  ·  Krebs cycle: 2 ATP", "#343b4a", 15));
+      o += A.op(r, lbl(320, Y.grand + 18, "Electron transport chain: ~30–34 ATP", "#343b4a", 15));
+      o += A.op(r, lbl(320, Y.grand + 58, FINAL.key === "anaerobic" ? "Total: usually a bit less than aerobic" : "Total: up to ~34–38 ATP per glucose", FINAL.color, 16));
     }
-
+    /* ---------- step 12: where next ---------- */
+    const p12 = p(12);
+    if (idx >= 12 && p12 > 0){
+      const r = ease(seg(p12, 0, .6));
+      o += A.op(r, `<circle cx="320" cy="${Y.go}" r="34" fill="#fbe8e7" stroke="${RED}" stroke-width="2.5"/>` + lbl(320, Y.go + 8, "?", RED, 24));
+      o += A.op(r, lbl(320, Y.go + 62, "No final acceptor at all → fermentation", RED, 14));
+    }
     return o;
    };
   }
 
   /* ================= Two variants: Aerobic and Anaerobic ================= */
   const AEROBIC = {
-    key:"aerobic", label:"Aerobic (uses O₂)",
+    key:"aerobic", label:"Aerobic (uses O₂)", kind:"O2",
     finalTitle:"Oxygen: the final electron acceptor",
-    finalText:`At the very end of the chain, {{acceptor}} grabs the spent electrons and picks up H⁺ to form {{product}}. Without something waiting to accept those electrons, the whole chain backs up and stops — that's the entire reason cells need oxygen.`,
+    finalText:`At the very end of the chain, {{acceptor}} grabs the spent electrons and picks up H⁺ from the matrix to form {{product}}. In symbols: O₂ + 4 H⁺ + 4 e⁻ → 2 H₂O. Without something waiting to accept those electrons, the whole chain backs up and stops. That's the entire reason cells need oxygen.`,
     acceptorBL:{show:"oxygen (O₂)", ans:["oxygen","o2"], fuzzy:true},
     productBL:{show:"water (H₂O)", ans:["water","h2o"], fuzzy:true},
-    icon:(x, y) => A.o2(x, y) + A.arrow(x - 40, y, x - 10, y, "#3f4cc0", 2),
-    arrowLabel:"O₂ + 4H⁺ + 4e⁻ → 2 H₂O",
-    color:BLUE,
-    introExtra:``
+    from:[[470, 606]], targets:[[POS.c4, 455]], tok:o2tok,
+    rest:[["h2o", 452, 590], ["h2o", 504, 590]],
+    eq:[["O₂", C.O], [" + 4 ", "#343b4a"], ["H⁺", "#1f4a9c"], [" + 4 ", "#343b4a"], ["e⁻", AMBER], ["  →  2 ", "#343b4a"], ["H₂O", WATER]],
+    color:BLUE, introExtra:``
   };
   const ANAEROBIC = {
-    key:"anaerobic", label:"Anaerobic (no O₂)",
+    key:"anaerobic", label:"Anaerobic (no O₂)", kind:"NO3",
     finalTitle:"A different final electron acceptor",
-    finalText:`Some cells have no oxygen available, so a different molecule waits at the end of the chain instead — here, {{acceptor}}, which becomes {{product}}. The chain, the proton gradient, and ATP synthase all work exactly the same way; only the very last handoff changes.`,
+    finalText:`Some cells have no oxygen available, so a different molecule waits at the end of the chain instead. Here, {{acceptor}} takes the electrons and H⁺ and becomes {{product}} (plus water): NO₃⁻ + 2 H⁺ + 2 e⁻ → NO₂⁻ + H₂O. The chain, the proton gradient, and ATP synthase all work the same way; only the very last handoff changes.`,
     acceptorBL:{show:"nitrate (NO₃⁻)", ans:["nitrate","no3"], fuzzy:true},
     productBL:{show:"nitrite (NO₂⁻)", ans:["nitrite","no2"], fuzzy:true},
-    icon:(x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="14" fill="#8e5bd0"/><text x="${f1(x)}" y="${f1(y + 4)}" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">NO₃⁻</text>`,
-    arrowLabel:"NO₃⁻ + 2H⁺ + 2e⁻ → NO₂⁻ + H₂O",
-    color:"#8e5bd0",
-    introExtra:`<p><b>This is anaerobic respiration</b>: it uses the same electron transport chain, the same Krebs cycle, and the same ATP synthase as aerobic respiration — the only difference is which molecule waits at the very end of the chain to accept electrons. No oxygen required, though the energy payoff is usually a bit smaller, since most alternative acceptors don't pull electrons down as strong an energy drop as oxygen does.</p>`
+    from:[[430, 606], [520, 606]], targets:[[POS.c4 - 26, 455], [POS.c4 + 26, 455]], tok:no3tok,
+    rest:[["no2", 410, 590], ["h2o", 448, 590], ["no2", 486, 590], ["h2o", 524, 590]],
+    eq:[["2 NO₃⁻", VIOLET], [" + 4 ", "#343b4a"], ["H⁺", "#1f4a9c"], [" + 4 ", "#343b4a"], ["e⁻", AMBER], ["  →  2 NO₂⁻ + 2 H₂O", "#343b4a"]],
+    color:VIOLET,
+    introExtra:`<p><b>This is anaerobic respiration</b>: it uses the same electron transport chain, the same Krebs cycle, and the same ATP synthase as aerobic respiration. The only difference is which molecule waits at the very end of the chain to accept electrons. No oxygen required, though the energy payoff is usually a bit smaller, since most alternative acceptors don't pull electrons down as strong an energy drop as oxygen does.</p>`
   };
 
   function buildVariant(FINAL){
     const STEPS = [
-      {focusY:Y.top, animMs:900,
-       pop:{y:Y.top, x:700, title:FINAL.key === "anaerobic" ? "Anaerobic respiration" : "The electron transport chain",
+      {focusY:310, animMs:900,
+       pop:{y:CARDY[0], x:CARDX, title:FINAL.key === "anaerobic" ? "Anaerobic respiration" : "The electron transport chain",
          text: FINAL.key === "anaerobic"
-           ? `${FINAL.introExtra}<p>NADH and FADH₂ arrive from glycolysis and the Krebs cycle, ready to hand off their electrons in the {{innermembrane}} (bacteria: the plasma membrane).</p>`
-           : `NADH and FADH₂ arrive from glycolysis and the Krebs cycle, carrying electrons collected all through respiration. They deliver those electrons here, in the {{innermembrane}} (bacteria: the plasma membrane).`}},
-      {focusY:Y.redox, animMs:1600,
-       action:{type:"click", at:[CX, Y.redox], button:"See the electrons move!", label:"Click to watch an electron transfer."},
-       pop:{y:Y.redox, x:700, title:"A quick refresher: redox",
+           ? `${FINAL.introExtra}<p>NADH and FADH₂ wait in the matrix, right beside the protein complexes already built into the {{innermembrane}} (bacteria: the plasma membrane). Your job is to move their electrons down the chain.</p>`
+           : `NADH and FADH₂ arrive from glycolysis and the Krebs cycle carrying electrons collected all through respiration. They wait in the matrix, right beside the protein complexes already built into the {{innermembrane}} (bacteria: the plasma membrane). Your job is to move their electrons down the chain.`}},
+      {focusY:300, animMs:1700,
+       action:{type:"click", at:[320, 235], button:"See the electrons move!", label:"Click to watch an electron transfer."},
+       pop:{y:CARDY[1], x:CARDX, title:"A quick refresher: redox",
          text:`Every handoff in this chain is a redox reaction. The molecule that gives up electrons is {{oxidized}}; the one that accepts them is {{reduced}}. NADH and FADH₂ are about to be oxidized, one handoff at a time, all the way down this chain.`}},
-      {focusY:MY, animMs:1900, tally:{h:4},
-       action:{type:"drag", token:"NADH", count:1, from:[[CPX.c1, Y.top]], targets:[[CPX.c1, MY]], label:"Drag NADH to Complex I."},
-       pop:{y:CARDY.c1, x:700, title:"Complex I: the first big drop", more:"whyfewer",
-         text:`NADH is oxidized back to {{nadplus2}} — which recycles right back to glycolysis and the Krebs cycle — while Complex I is reduced as it accepts those electrons. The energy released pumps H⁺ across the membrane. Complex I (and III and IV) are studded with {{iron}}-sulfur clusters, another reason dietary iron matters for energy metabolism.`}},
-      {focusY:MY, animMs:1900, tally:{h:0},
-       action:{type:"drag", token:"FADH2", count:1, from:[[CPX.c2, Y.top]], targets:[[CPX.c2, MY]], label:"Drag FADH₂ to Complex II."},
-       pop:{y:CARDY.c2, x:700, title:"Complex II: a smaller drop", more:"whyfewer",
-         text:`FADH₂'s electrons enter here at a lower energy point than NADH's did, so Complex II hands them into the chain without pumping any H⁺ at all. That's the mechanical reason each FADH₂ ends up worth less ATP than each NADH.`}},
-      {focusY:MY - 60, animMs:1800, tally:{h:4},
-       action:{type:"drag", token:"epair", count:1, from:[[CPX.q, MY]], targets:[[CPX.c3, MY]], label:"Drag the electron pair from Q to Complex III."},
-       pop:{y:CARDY.q3, x:700, title:"Moving electrons: Q to Complex III",
-         text:`Ubiquinone (Q) is a small, mobile carrier that shuttles electrons from Complexes I and II over to Complex III — you just moved them yourself. Complex III passes the electrons on and pumps more H⁺ across the membrane.`}},
-      {focusY:MY - 60, animMs:1800, tally:{h:2},
-       action:{type:"drag", token:"epair", count:1, from:[[CPX.cyt, MY - 65]], targets:[[CPX.c4, MY]], label:"Drag the electron from cytochrome c to Complex IV."},
-       pop:{y:CARDY.cytiv, x:700, title:"Moving electrons: cytochrome c to Complex IV", more:"cytc",
-         text:`Cytochrome c is another mobile carrier, ferrying one electron at a time along the outer face of the membrane to Complex IV — the last stop before the electrons are handed off for good.`}},
-      {focusY:MY + 60, animMs:1600,
-       action:{type:"click", at:[CPX.c4 + 70, MY + 50], button:`Combine with ${FINAL.acceptorBL.show}`, label:`Click to complete the handoff to ${FINAL.acceptorBL.show}.`},
-       pop:{y:CARDY.final, x:700, title:FINAL.finalTitle, more:FINAL.key === "aerobic" ? "poisons" : "altacceptors",
+      {focusY:MY + 40, animMs:2300, tally:{h:4},
+       action:{type:"drag", token:"NADH", count:1, from:[NADHP], targets:[[POS.c1, MY + 20]], r:80, label:"Drag NADH up to Complex I."},
+       pop:{y:CARDY[2], x:CARDX, title:"Complex I: the first big drop", more:"whyfewer",
+         text:`NADH hands its electrons to Complex I and is oxidized back to {{nadplus2}}, which recycles to glycolysis and the Krebs cycle. Complex I is reduced as it accepts those electrons, and the energy released pumps 4 H⁺ from the matrix across the membrane (watch them rise). These complexes pass electrons along using iron: iron-sulfur clusters and heme groups, the same kind of iron that colors your blood red. That's one more reason dietary iron matters for energy metabolism.`}},
+      {focusY:MY + 40, animMs:2000, tally:{h:0},
+       action:{type:"drag", token:"FADH2", count:1, from:[FADP], targets:[[POS.c2, MY + 20]], r:80, label:"Drag FADH₂ up to Complex II."},
+       pop:{y:CARDY[3], x:CARDX, title:"Complex II: a smaller drop", more:"whyfewer",
+         text:`FADH₂'s electrons enter here at a lower energy point than NADH's did, so Complex II passes them into the chain without pumping any H⁺ at all. That's the mechanical reason each FADH₂ ends up worth less ATP than each NADH.`}},
+      {focusY:MY, animMs:2800, tally:{h:8},
+       action:{type:"drag", token:"epair", count:2, from:[[POS.q - 6, MY - 28], [POS.q + 6, MY + 28]], targets:[[POS.c3 - 22, MY - 28], [POS.c3 + 18, MY + 28]], r:60, label:"Drag both electron pairs from Q to Complex III."},
+       pop:{y:CARDY[4], x:CARDX, title:"Moving electrons: Q to Complex III",
+         text:`Ubiquinone (Q) is a small, mobile carrier that picks up electrons from Complexes I and II and shuttles them to Complex III. You just moved both pairs yourself. Complex III pumps 4 H⁺ for each pair of electrons, so 8 H⁺ this time, and passes the electrons on.`}},
+      {focusY:MY - 40, animMs:2400, tally:{h:4},
+       action:{type:"drag", token:"epair", count:2, from:[[POS.cyt - 28, CYT_Y - 38], [POS.cyt + 28, CYT_Y - 38]], targets:[[POS.c4 - 18, MY - 28], [POS.c4 + 16, MY + 28]], r:60, label:"Drag both electron pairs from cytochrome c to Complex IV."},
+       pop:{y:CARDY[5], x:CARDX, title:"Moving electrons: cytochrome c to Complex IV", more:"cytc",
+         text:`Cytochrome c is another mobile carrier, ferrying electrons along the outer face of the membrane to Complex IV, the last stop before they're handed off for good. Complex IV pumps 2 H⁺ for each pair, so 4 H⁺ this time. That makes 16 H⁺ pumped by one NADH and one FADH₂.`}},
+      {focusY:MY + 90, animMs:3200,
+       action:{type:"drag", token:FINAL.kind, count:FINAL.targets.length, from:FINAL.from, targets:FINAL.targets, r:70, label:`Drag ${FINAL.acceptorBL.show} up to Complex IV.`},
+       pop:{y:CARDY[6], x:CARDX, title:FINAL.finalTitle, more:FINAL.key === "aerobic" ? "poisons" : "altacceptors",
          text:FINAL.finalText}},
-      {focusY:CARDY.gradient, animMs:1900,
-       action:{type:"click", at:[CX, CARDY.gradient - 60], button:"See the gradient", label:"Click to see the H⁺ that's built up."},
-       pop:{y:CARDY.gradient, x:700, title:"Chemiosmosis: storing the energy",
-         text:`Every proton pumped across the membrane adds to a {{gradient}} — more H⁺ (and more positive charge) outside than in. That gradient is potential energy, like water held behind a dam, and it's the real product of everything the chain has done so far.`}},
-      {focusY:Y.atpsyn, animMs:2200, tally:{made:4},
-       action:{type:"drag", token:"H", count:4, from:tok(CX - 180, Y.atpsyn - 260, Y.atpsyn - 200).concat(tok(CX - 60, Y.atpsyn - 260, Y.atpsyn - 200)), targets:[[CX - 45, Y.atpsyn], [CX - 15, Y.atpsyn], [CX + 15, Y.atpsyn], [CX + 45, Y.atpsyn]], r:40, label:"Drag each H⁺ through ATP synthase."},
-       pop:{y:Y.atpsyn + 100, x:700, title:"ATP synthase: the payoff", more:"motor",
-         text:`As H⁺ flows back down its gradient, back into the matrix, it spins {{atpsynthase}} like a tiny turbine. Each full turn presses ADP and phosphate together to make ATP — this whole process is called {{chemiosmosis}}.`}},
+      {focusY:MY + 50, animMs:1900,
+       action:{type:"click", at:[320, 235], button:"See the gradient", label:"Click to see the H⁺ that's built up."},
+       pop:{y:CARDY[7], x:CARDX, title:"Chemiosmosis: storing the energy",
+         text:`Every proton pumped across the membrane adds to a {{gradient}}: more H⁺ (and more positive charge) outside than in. That gradient is potential energy, like water held behind a dam, and it's the real product of everything the chain has done so far.`}},
+      {focusY:PANEL.y + 190, animMs:2200, tally:{made:1},
+       action:{type:"drag", token:"H", count:4, from:DRAGS, targets:[MOUTH, MOUTH, MOUTH, MOUTH], r:90, hideFilled:true, label:"Drag 4 H⁺ into the channel of ATP synthase."},
+       pop:{y:CARDY[8], x:CARDX, title:"ATP synthase: the payoff", more:"motor",
+         text:`H⁺ flows back down its gradient through a channel in {{atpsynthase}}. Each proton turns the ring of c subunits one notch, and the ring spins the central stalk like a tiny turbine. The spinning stalk twists the F₁ head, which squeezes ADP and phosphate together into ATP. It takes about 4 H⁺ to make 1 ATP, and making ATP with a proton gradient is called {{chemiosmosis}}.`}},
+      {focusY:PANEL.y + 250, animMs:6000, tally:{made:3},
+       action:{type:"click", at:[320, 1250], button:"Let the rest flow", label:"Click to let the rest of the gradient flow."},
+       pop:{y:CARDY[9], x:CARDX, title:"Spending the whole gradient",
+         text:`That was 4 H⁺ for 1 ATP. This one NADH and one FADH₂ pumped 16 H⁺ in all, so letting the rest of the gradient run through ATP synthase makes about 4 ATP in total. Notice the pool of H⁺ outside draining away as the rotor spins.`}},
       {focusY:Y.tally, animMs:1800,
-       action:{type:"click", at:[CX, Y.tally - 60], button:"Add it up", label:"Tally this pass through the chain."},
-       pop:{y:Y.tally, x:700, title:"One NADH and one FADH₂, tallied",
-         text:`Multiply this by every NADH and FADH₂ made across glycolysis and the Krebs cycle, and the electron transport chain accounts for roughly 30–34 of a cell's ATP per glucose — by far the largest share.`}},
+       action:{type:"click", at:[320, Y.tally - 80], button:"Add it up", label:"Tally this pass through the chain."},
+       pop:{y:CARDY[10], x:CARDX, title:"One NADH and one FADH₂, tallied",
+         text:`Multiply this by every NADH and FADH₂ made across glycolysis and the Krebs cycle, and the electron transport chain accounts for roughly 30–34 of a cell's ATP per glucose, by far the largest share.`}},
       {focusY:Y.grand, animMs:2000,
-       action:{type:"click", at:[CX, Y.grand - 60], button:"See the whole picture", label:"See the full glucose total."},
-       pop:{y:Y.grand, x:700, title:"The whole point of respiration",
-         text:`Glycolysis: 2 ATP. Krebs cycle: 2 ATP. Electron transport chain and ATP synthase: the rest — up to roughly 34–38 ATP total per glucose${FINAL.key === "anaerobic" ? ", usually a bit less here since the final acceptor isn't oxygen" : ""}. Nearly everything upstream exists to load electron carriers for this last stage.`}},
+       action:{type:"click", at:[320, Y.grand - 80], button:"See the whole picture", label:"See the full glucose total."},
+       pop:{y:CARDY[11], x:CARDX, title:"The whole point of respiration",
+         text:`Glycolysis: 2 ATP. Krebs cycle: 2 ATP. Electron transport chain and ATP synthase: the rest, up to roughly 34–38 ATP total per glucose${FINAL.key === "anaerobic" ? ", usually a bit less here since the final acceptor isn't oxygen" : ""}. Nearly everything upstream exists to load electron carriers for this last stage.`}},
       {focusY:Y.go, animMs:1500,
-       action:{type:"click", at:[CX, Y.go - 40], button:"What if there's no acceptor at all?", label:"See what happens without any final acceptor."},
-       pop:{y:Y.go, x:700, title:"Electron transport chain summarized",
-         text:`<i>"NADH and FADH₂ deliver electrons to a chain of protein complexes, which pump H⁺ across the membrane. That H⁺ gradient drives ATP synthase, making most of the cell's ATP."</i> But what happens when there's no acceptor — not even an alternative one — waiting at the end?`}}
+       action:{type:"click", at:[320, Y.go - 60], button:"What if there's no acceptor at all?", label:"See what happens without any final acceptor."},
+       pop:{y:CARDY[12], x:CARDX, title:"Electron transport chain summarized",
+         text:`<i>"NADH and FADH₂ deliver electrons to a chain of protein complexes, which pump H⁺ across the membrane. That H⁺ gradient drives ATP synthase, making most of the cell's ATP."</i> But what happens when there's no acceptor, not even an alternative one, waiting at the end?`}}
     ];
-    return {title:`Electron Transport Chain: ${FINAL.label}`, page:"etc.html", H, BL:{...BL, acceptor:FINAL.acceptorBL, product:FINAL.productBL}, MORE, steps:STEPS,
+    return {title:`Electron Transport Chain: ${FINAL.label}`, page:"etc.html", H, narrowW:680, BL:{...BL, acceptor:FINAL.acceptorBL, product:FINAL.productBL}, MORE, steps:STEPS,
       draw:makeDraw(FINAL), token,
-      intro:`The chain sits in the membrane, laid out left to right. Move NADH, FADH₂ and electrons down the chain, then move H⁺ back through ATP synthase to make ATP.`,
+      intro:`Every protein in the chain is already sitting in the membrane. Move NADH, FADH₂ and electrons down the chain, watch H⁺ get pumped across, then let it flow back through ATP synthase to make ATP.`,
       tally:[["h", "H⁺ pumped", BLUE], ["made", "ATP made", GREEN]],
-      endTitle:"You built the electron transport chain!", endText:"The chain moved electrons, pumped H⁺, and used that gradient to make ATP — most of the cell's energy payoff. Tap any marker to review a step.",
+      endTitle:"You built the electron transport chain!", endText:"The chain moved electrons, pumped H⁺, and used that gradient to make ATP, most of the cell's energy payoff. Tap any marker to review a step.",
       next:[["Fermentation & Anaerobic Respiration →", "fermentation.html"], ["Try it in the lab: " + (FINAL.key === "anaerobic" ? "the nitrate reduction test →" : "the oxidase test →"), "id-tests.html#" + (FINAL.key === "anaerobic" ? "nitrate" : "oxidase")], ["Big picture: respiration overview", "respiration-overview.html"], ["All modules", "index.html"]]};
   }
 
